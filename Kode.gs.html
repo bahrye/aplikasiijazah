@@ -1,13 +1,13 @@
-/**
- * @OnlyCurrentDoc
- */
-
 const SHEET_DATA_SEKOLAH = "Data Sekolah";
 const SHEET_DATA_SISWA = "Data Siswa";
 const SHEET_MAPEL = "Data Mata Pelajaran";
 const SHEET_BOBOT = "Data Bobot Nilai";
 const SHEET_NILAI_UJIAN_MADRASAH = "Nilai Ujian Madrasah";
 const SHEET_NILAI_UJIAN_PRAKTEK = "Nilai Ujian Praktek";
+const SHEET_REKAP_UJIAN = "Rekap Nilai Ujian";
+const SHEET_REKAP_RAPOR = "Rekap Nilai Rapor";
+const SHEET_REKAP_IJAZAH = "Rekap Nilai Ijazah";
+
 
 function doGet(e) {
   return HtmlService.createHtmlOutputFromFile('Index')
@@ -15,7 +15,6 @@ function doGet(e) {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-// ================= FUNGSI DATA SEKOLAH =================
 function saveSchoolData(dataObj) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -49,7 +48,6 @@ function getSchoolData() {
   }
 }
 
-// ================= FUNGSI DATA SISWA =================
 function getStudents() {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -113,7 +111,6 @@ function deleteAllStudents() {
     return { status: "error", message: "Gagal menghapus data siswa: " + e.message };
   }
 }
-
 function generateSiswaTemplate() {
   let tempFile;
   try {
@@ -152,7 +149,6 @@ function generateSiswaTemplate() {
     }
   }
 }
-
 function importFromExcel(fileData, sheetName) {
   let tempFile;
   try {
@@ -242,7 +238,6 @@ function importFromExcel(fileData, sheetName) {
   }
 }
 
-// ================= FUNGSI MAPEL & BOBOT =================
 function getMapel() {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -287,7 +282,6 @@ function deleteMapel(rowNumber) {
     return { status: "success", message: "Mata pelajaran berhasil dihapus." };
   } catch (e) { Logger.log(e); return { status: "error", message: "Gagal menghapus mapel: " + e.message }; }
 }
-
 function generateMapelTemplate() {
   let tempFile;
   try {
@@ -324,7 +318,6 @@ function generateMapelTemplate() {
     }
   }
 }
-
 function saveBobot(bobotData) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -351,7 +344,6 @@ function getBobot() {
   } catch (e) { Logger.log(e); return null; }
 }
 
-// ================= FUNGSI NILAI UJIAN & RAPOR =================
 function getMapelByJenis(jenis) {
   const allMapel = getMapel();
   if (jenis === 'madrasah') return allMapel.filter(m => m.jenisUjian === 'Ujian Madrasah' || m.jenisUjian === 'Keduanya');
@@ -412,7 +404,6 @@ function processAndSaveScores(sheetName, mapelList, nilai) {
   } catch (e) { Logger.log(e); return { status: 'error', message: `Gagal menyimpan data: ${e.message}` }; }
 }
 
-// ================= FUNGSI REKAPITULASI =================
 function getSheetDataAsObject(sheetName) {
     try {
         const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -429,7 +420,7 @@ function getSheetDataAsObject(sheetName) {
             const nisn = row[nisnIndex].toString().trim();
             dataObj[nisn] = {};
             headers.forEach((header, index) => {
-                if (index !== nisnIndex) dataObj[nisn][header] = row[index];
+                if (index > 1) dataObj[nisn][header] = row[index];
             });
         });
         return dataObj;
@@ -438,7 +429,9 @@ function getSheetDataAsObject(sheetName) {
         return {};
     }
 }
-function getRekapitulasiData() {
+
+function updateRekapitulasi() {
+  try {
     const students = getStudents();
     const mapel = getMapel();
     const bobot = getBobot() || { bobotUjian: 0, bobotRapor: 0 };
@@ -446,21 +439,16 @@ function getRekapitulasiData() {
 
     const nilaiUjianMadrasah = getSheetDataAsObject(SHEET_NILAI_UJIAN_MADRASAH);
     const nilaiUjianPraktek = getSheetDataAsObject(SHEET_NILAI_UJIAN_PRAKTEK);
-
-    const rekapData = {
-        students,
-        mapel,
-        bobot,
-        rekapUjian: {},
-        rekapRapor: {},
-        rekapIjazah: {}
-    };
+    
+    const rekapUjian = {};
+    const rekapRapor = {};
+    const rekapIjazah = {};
 
     students.forEach(student => {
         const nisn = student.nisn.toString().trim();
-        rekapData.rekapUjian[nisn] = {};
-        rekapData.rekapRapor[nisn] = {};
-        rekapData.rekapIjazah[nisn] = {};
+        rekapUjian[nisn] = {};
+        rekapRapor[nisn] = {};
+        rekapIjazah[nisn] = {};
 
         mapel.forEach(m => {
             const kode = m.kode;
@@ -471,11 +459,10 @@ function getRekapitulasiData() {
             if (!isNaN(nilaiUM) && !isNaN(nilaiUP)) rataUjian = (nilaiUM + nilaiUP) / 2;
             else if (!isNaN(nilaiUM)) rataUjian = nilaiUM;
             else if (!isNaN(nilaiUP)) rataUjian = nilaiUP;
-            rekapData.rekapUjian[nisn][kode] = rataUjian;
+            rekapUjian[nisn][kode] = rataUjian;
 
             let totalNilaiRapor = 0;
             let semesterCount = 0;
-            const semesters = { MI: 5, MTS: 5, MA: 5 };
             const semesterKeys = {
               MI: ['k4_ganjil', 'k4_genap', 'k5_ganjil', 'k5_genap', 'k6_ganjil'],
               MTS: ['k7_ganjil', 'k7_genap', 'k8_ganjil', 'k8_genap', 'k9_ganjil'],
@@ -498,12 +485,79 @@ function getRekapitulasiData() {
             });
 
             const rataRapor = semesterCount > 0 ? totalNilaiRapor / semesterCount : 0;
-            rekapData.rekapRapor[nisn][kode] = rataRapor;
+            rekapRapor[nisn][kode] = rataRapor;
 
             const nilaiAkhir = (rataUjian * (bobot.bobotUjian / 100)) + (rataRapor * (bobot.bobotRapor / 100));
-            rekapData.rekapIjazah[nisn][kode] = nilaiAkhir;
+            rekapIjazah[nisn][kode] = nilaiAkhir;
         });
     });
 
-    return rekapData;
+    saveRekapSheet(SHEET_REKAP_UJIAN, students, mapel, rekapUjian);
+    saveRekapSheet(SHEET_REKAP_RAPOR, students, mapel, rekapRapor);
+    saveRekapSheet(SHEET_REKAP_IJAZAH, students, mapel, rekapIjazah);
+    
+    return {status: "success", message: "Data rekapitulasi berhasil diperbarui."};
+  } catch(e) {
+    Logger.log(e);
+    return {status: "error", message: "Gagal memperbarui rekapitulasi: " + e.message};
+  }
+}
+
+function saveRekapSheet(sheetName, students, mapel, data) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(sheetName);
+    if (!sheet) {
+        sheet = ss.insertSheet(sheetName);
+    }
+    sheet.clear();
+    const headers = ["NISN", "Nama Lengkap", ...mapel.map(m => m.kode)];
+    sheet.appendRow(headers);
+    sheet.getRange("A1:Z1").setFontWeight("bold");
+    sheet.getRange("A:A").setNumberFormat("@");
+
+    const rows = students.map(student => {
+        const nisn = student.nisn.toString().trim();
+        const rowData = [nisn, student.nama];
+        mapel.forEach(m => {
+            rowData.push((data[nisn] || {})[m.kode] || 0);
+        });
+        return rowData;
+    });
+
+    if (rows.length > 0) {
+        sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+    }
+}
+
+function getRekapitulasiData() {
+  const students = getStudents();
+  const mapel = getMapel();
+  return {
+    students,
+    mapel,
+    rekapUjian: getSheetDataAsObject(SHEET_REKAP_UJIAN),
+    rekapRapor: getSheetDataAsObject(SHEET_REKAP_RAPOR),
+    rekapIjazah: getSheetDataAsObject(SHEET_REKAP_IJAZAH),
+  };
+}
+
+function checkRekapSheetsExist() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetUjian = ss.getSheetByName(SHEET_REKAP_UJIAN);
+  const sheetRapor = ss.getSheetByName(SHEET_REKAP_RAPOR);
+  const sheetIjazah = ss.getSheetByName(SHEET_REKAP_IJAZAH);
+  return !!(sheetUjian && sheetRapor && sheetIjazah);
+}
+
+function createRekapSheets() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss.getSheetByName(SHEET_REKAP_UJIAN)) ss.insertSheet(SHEET_REKAP_UJIAN);
+    if (!ss.getSheetByName(SHEET_REKAP_RAPOR)) ss.insertSheet(SHEET_REKAP_RAPOR);
+    if (!ss.getSheetByName(SHEET_REKAP_IJAZAH)) ss.insertSheet(SHEET_REKAP_IJAZAH);
+    return { status: "success", message: "Sheet rekapitulasi berhasil dibuat." };
+  } catch(e) {
+    Logger.log(e);
+    return { status: "error", message: "Gagal membuat sheet rekapitulasi: " + e.message };
+  }
 }
