@@ -1,0 +1,509 @@
+/**
+ * @OnlyCurrentDoc
+ */
+
+const SHEET_DATA_SEKOLAH = "Data Sekolah";
+const SHEET_DATA_SISWA = "Data Siswa";
+const SHEET_MAPEL = "Data Mata Pelajaran";
+const SHEET_BOBOT = "Data Bobot Nilai";
+const SHEET_NILAI_UJIAN_MADRASAH = "Nilai Ujian Madrasah";
+const SHEET_NILAI_UJIAN_PRAKTEK = "Nilai Ujian Praktek";
+
+function doGet(e) {
+  return HtmlService.createHtmlOutputFromFile('Index')
+    .setTitle('Aplikasi Akademik Sekolah')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+// ================= FUNGSI DATA SEKOLAH =================
+function saveSchoolData(dataObj) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(SHEET_DATA_SEKOLAH);
+    const headers = ["Jenjang Sekolah", "Nama Sekolah", "NPSN", "Alamat", "Kelurahan/Desa", "Kecamatan", "Kabupaten/Kota", "Provinsi", "Kode Pos", "Telepon", "Email", "Website", "Nama Kepala Sekolah", "NIP Kepala Sekolah"];
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_DATA_SEKOLAH, 0);
+      sheet.appendRow(headers);
+      sheet.getRange("A1:N1").setFontWeight("bold");
+    }
+    const schoolDataRow = [dataObj.jenjang||"", dataObj.namaSekolah||"", dataObj.npsn||"", dataObj.alamat||"", dataObj.kelurahan||"", dataObj.kecamatan||"", dataObj.kabupaten||"", dataObj.provinsi||"", dataObj.kodePos||"", dataObj.telepon||"", dataObj.email||"", dataObj.website||"", dataObj.namaKepsek||"", dataObj.nipKepsek||""];
+    if (sheet.getLastRow() >= 2) sheet.getRange(2, 1, 1, headers.length).clearContent();
+    sheet.getRange(2, 1, 1, schoolDataRow.length).setValues([schoolDataRow]);
+    return { status: "success", message: "Data sekolah berhasil diperbarui." };
+  } catch (error) {
+    Logger.log(error);
+    return { status: "error", message: "Gagal menyimpan data sekolah: " + error.message };
+  }
+}
+
+function getSchoolData() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_DATA_SEKOLAH);
+    if (!sheet || sheet.getLastRow() < 2) return null;
+    const values = sheet.getRange("A2:N2").getValues()[0];
+    return {jenjang:values[0], namaSekolah:values[1], npsn:values[2], alamat:values[3], kelurahan:values[4], kecamatan:values[5], kabupaten:values[6], provinsi:values[7], kodePos:values[8], telepon:values[9], email:values[10], website:values[11], namaKepsek:values[12], nipKepsek:values[13]};
+  } catch (error) {
+    Logger.log(error);
+    return null;
+  }
+}
+
+// ================= FUNGSI DATA SISWA =================
+function getStudents() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
+    if (!sheet || sheet.getLastRow() < 2) return [];
+    sheet.getRange("A:B").setNumberFormat('@');
+    const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, 5);
+    const values = dataRange.getValues();
+    return values.map((row, index) => ({row: index + 2, nisn: row[0], nis: row[1], nama: row[2], tempatLahir: row[3], tanggalLahir: row[4] ? new Date(row[4]).toLocaleDateString('id-ID') : ''}));
+  } catch (e) { 
+    Logger.log(e);
+    return []; 
+  }
+}
+function addStudent(studentData) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(SHEET_DATA_SISWA);
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_DATA_SISWA);
+      const headers = ["NISN", "NIS", "Nama Lengkap", "Tempat Lahir", "Tanggal Lahir"];
+      sheet.appendRow(headers);
+      sheet.getRange("A1:E1").setFontWeight("bold");
+    }
+    sheet.getRange("A:B").setNumberFormat('@');
+    const newRow = [studentData.nisn, studentData.nis, studentData.nama, studentData.tempatLahir, studentData.tanggalLahir];
+    sheet.appendRow(newRow);
+    return { status: "success", message: `Siswa "${studentData.nama}" berhasil ditambahkan.` };
+  } catch (e) { Logger.log(e); return { status: "error", message: "Gagal menambah siswa: " + e.message }; }
+}
+function updateStudent(studentData) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
+    if (!sheet) throw new Error("Sheet Data Siswa tidak ditemukan.");
+    sheet.getRange("A:B").setNumberFormat('@');
+    const rowToUpdate = [studentData.nisn, studentData.nis, studentData.nama, studentData.tempatLahir, studentData.tanggalLahir];
+    sheet.getRange(studentData.studentRow, 1, 1, rowToUpdate.length).setValues([rowToUpdate]);
+    return { status: "success", message: `Data siswa "${studentData.nama}" berhasil diperbarui.` };
+  } catch (e) { Logger.log(e); return { status: "error", message: "Gagal memperbarui data: " + e.message }; }
+}
+function deleteStudent(rowNumber) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
+    if (!sheet) throw new Error("Sheet Data Siswa tidak ditemukan.");
+    sheet.deleteRow(rowNumber);
+    return { status: "success", message: "Data siswa berhasil dihapus." };
+  } catch (e) { Logger.log(e); return { status: "error", message: "Gagal menghapus data: " + e.message }; }
+}
+function deleteAllStudents() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
+    if (sheet && sheet.getLastRow() > 1) {
+      sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
+    }
+    return { status: "success", message: "Semua data siswa telah berhasil dihapus." };
+  } catch (e) {
+    Logger.log(e);
+    return { status: "error", message: "Gagal menghapus data siswa: " + e.message };
+  }
+}
+
+function generateSiswaTemplate() {
+  let tempFile;
+  try {
+    const templateName = `Template_Import_Siswa_${new Date().getTime()}`;
+    const ss = SpreadsheetApp.create(templateName);
+    tempFile = DriveApp.getFileById(ss.getId());
+    
+    const sheet = ss.getSheets()[0];
+    const headers = ["NISN", "NIS", "Nama Lengkap", "Tempat Lahir", "Tanggal Lahir (Format:YYYY-MM-DD)"];
+    sheet.appendRow(headers);
+    sheet.getRange("A1:E1").setFontWeight("bold").setBackground("#d9ead3");
+    sheet.getRange("A:B").setNumberFormat("@");
+    sheet.setColumnWidths(1, 5, 150);
+    sheet.getRange("E:E").setNumberFormat("yyyy-mm-dd");
+
+    SpreadsheetApp.flush();
+
+    const url = `https://www.googleapis.com/drive/v3/files/${ss.getId()}/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`;
+    const response = UrlFetchApp.fetch(url, {
+      headers: { Authorization: `Bearer ${ScriptApp.getOAuthToken()}` },
+      muteHttpExceptions: true
+    });
+
+    const blob = response.getBlob();
+    return {
+      fileName: 'Template_Import_Siswa.xlsx',
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      base64Data: Utilities.base64Encode(blob.getBytes())
+    };
+  } catch (e) {
+    Logger.log(e);
+    return { error: e.toString() };
+  } finally {
+    if (tempFile) {
+      tempFile.setTrashed(true);
+    }
+  }
+}
+
+function importFromExcel(fileData, sheetName) {
+  let tempFile;
+  try {
+    const decoded = Utilities.base64Decode(fileData.content, Utilities.Charset.UTF_8);
+    const blob = Utilities.newBlob(decoded, fileData.mimeType, fileData.fileName);
+    
+    const tempSpreadsheetFile = Drive.Files.insert({title: `temp_import_${new Date().getTime()}`}, blob, {convert: true});
+    tempFile = DriveApp.getFileById(tempSpreadsheetFile.id);
+    const sheet = SpreadsheetApp.openById(tempFile.getId()).getSheets()[0];
+    const data = sheet.getDataRange().getValues();
+    
+    if (data.length <= 1) throw new Error("File kosong atau hanya berisi header.");
+    data.shift(); 
+
+    const targetSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    let targetSheet = targetSpreadsheet.getSheetByName(sheetName);
+    if (!targetSheet) {
+      targetSheet = targetSpreadsheet.insertSheet(sheetName);
+      if (sheetName === SHEET_DATA_SISWA) {
+        targetSheet.appendRow(["NISN", "NIS", "Nama Lengkap", "Tempat Lahir", "Tanggal Lahir"]);
+      } else if (sheetName === SHEET_MAPEL) {
+        targetSheet.appendRow(["Kode Mapel", "Nama Mata Pelajaran", "Kelompok", "Jenis Ujian"]);
+      }
+    }
+    
+    if (sheetName === SHEET_DATA_SISWA) {
+        const existingStudents = getStudents();
+        const existingNisnMap = new Map();
+        existingStudents.forEach(s => {
+            existingNisnMap.set(s.nisn.toString().trim(), s);
+        });
+
+        const newStudents = [];
+        const skippedDuplicates = [];
+        const conflicts = [];
+        const processedNisns = new Set(); 
+
+        data.forEach((row) => {
+            const nisn = (row[0] || '').toString().trim();
+            const nama = (row[2] || '').toString().trim();
+            if (!nisn || !nama) return; 
+            if (processedNisns.has(nisn)) {
+                skippedDuplicates.push({nisn, nama, reason: 'Duplikat di dalam file import.'});
+                return;
+            }
+            processedNisns.add(nisn);
+            if (existingNisnMap.has(nisn)) {
+                const existingStudent = existingNisnMap.get(nisn);
+                if (existingStudent.nama.trim().toLowerCase() === nama.toLowerCase()) {
+                    skippedDuplicates.push({nisn, nama, reason: 'Data sudah ada.'});
+                } else {
+                    conflicts.push({nisn, nama, reason: `NISN sudah terdaftar dengan nama: ${existingStudent.nama}`});
+                }
+            } else {
+                newStudents.push(row);
+            }
+        });
+        
+        if (newStudents.length > 0) {
+          targetSheet.getRange("A:B").setNumberFormat("@");
+          targetSheet.getRange(targetSheet.getLastRow() + 1, 1, newStudents.length, newStudents[0].length).setValues(newStudents);
+        }
+
+        return {
+          status: "partial",
+          message: "Proses impor selesai.",
+          newCount: newStudents.length,
+          skippedCount: skippedDuplicates.length,
+          conflictCount: conflicts.length,
+          conflicts: conflicts
+        };
+    } else { 
+        const rowsToAppend = data.filter(row => row.some(cell => cell.toString().trim() !== ""));
+        if (rowsToAppend.length > 0) {
+          targetSheet.getRange(targetSheet.getLastRow() + 1, 1, rowsToAppend.length, rowsToAppend[0].length).setValues(rowsToAppend);
+        }
+        return { status: "success", message: `${rowsToAppend.length} data berhasil diimpor ke sheet ${sheetName}.` };
+    }
+
+  } catch (e) {
+    Logger.log(e);
+    return { status: "error", message: `Gagal mengimpor data: ${e.toString()}` };
+  } finally {
+      if (tempFile) {
+          tempFile.setTrashed(true);
+      }
+  }
+}
+
+// ================= FUNGSI MAPEL & BOBOT =================
+function getMapel() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_MAPEL);
+    if (!sheet || sheet.getLastRow() < 2) return [];
+    const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, 4);
+    const values = dataRange.getValues();
+    return values.map((row, index) => ({ row: index + 2, kode: row[0], nama: row[1], kelompok: row[2], jenisUjian: row[3] || '' }));
+  } catch (e) { Logger.log(e); return []; }
+}
+function addMapel(mapelData) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(SHEET_MAPEL);
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_MAPEL);
+      const headers = ["Kode Mapel", "Nama Mata Pelajaran", "Kelompok", "Jenis Ujian"];
+      sheet.appendRow(headers);
+      sheet.getRange("A1:D1").setFontWeight("bold");
+    }
+    const newRow = [mapelData.kode, mapelData.nama, mapelData.kelompok, mapelData.jenisUjian];
+    sheet.appendRow(newRow);
+    return { status: "success", message: `Mata Pelajaran "${mapelData.nama}" berhasil ditambahkan.` };
+  } catch (e) { Logger.log(e); return { status: "error", message: "Gagal menambah mapel: " + e.message }; }
+}
+function updateMapel(mapelData) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_MAPEL);
+    if (!sheet) throw new Error("Sheet Mata Pelajaran tidak ditemukan.");
+    const rowToUpdate = [mapelData.kode, mapelData.nama, mapelData.kelompok, mapelData.jenisUjian];
+    sheet.getRange(mapelData.mapelRow, 1, 1, rowToUpdate.length).setValues([rowToUpdate]);
+    return { status: "success", message: `Mata Pelajaran "${mapelData.nama}" berhasil diperbarui.` };
+  } catch (e) { Logger.log(e); return { status: "error", message: "Gagal memperbarui data mapel: " + e.message }; }
+}
+function deleteMapel(rowNumber) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_MAPEL);
+    if (!sheet) throw new Error("Sheet Mata Pelajaran tidak ditemukan.");
+    sheet.deleteRow(rowNumber);
+    return { status: "success", message: "Mata pelajaran berhasil dihapus." };
+  } catch (e) { Logger.log(e); return { status: "error", message: "Gagal menghapus mapel: " + e.message }; }
+}
+
+function generateMapelTemplate() {
+  let tempFile;
+  try {
+    const templateName = `Template_Import_Mapel_${new Date().getTime()}`;
+    const ss = SpreadsheetApp.create(templateName);
+    tempFile = DriveApp.getFileById(ss.getId());
+    
+    const sheet = ss.getSheets()[0];
+    const headers = ["Kode Mapel", "Nama Mata Pelajaran", "Kelompok (Umum/Peminatan/Muatan Lokal)", "Jenis Ujian (Ujian Madrasah/Ujian Praktek/Keduanya)"];
+    sheet.appendRow(headers);
+    sheet.getRange("A1:D1").setFontWeight("bold").setBackground("#d9ead3");
+    sheet.setColumnWidths(1, 4, 200);
+
+    SpreadsheetApp.flush();
+
+    const url = `https://www.googleapis.com/drive/v3/files/${ss.getId()}/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`;
+    const response = UrlFetchApp.fetch(url, {
+      headers: { Authorization: `Bearer ${ScriptApp.getOAuthToken()}` },
+      muteHttpExceptions: true
+    });
+
+    const blob = response.getBlob();
+    return {
+      fileName: 'Template_Import_Mapel.xlsx',
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      base64Data: Utilities.base64Encode(blob.getBytes())
+    };
+  } catch (e) {
+    Logger.log(e);
+    return { error: e.toString() };
+  } finally {
+    if (tempFile) {
+      tempFile.setTrashed(true);
+    }
+  }
+}
+
+function saveBobot(bobotData) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(SHEET_BOBOT);
+    const headers = ["Bobot Nilai Ujian", "Bobot Nilai Rapor"];
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_BOBOT);
+      sheet.appendRow(headers);
+      sheet.getRange("A1:B1").setFontWeight("bold");
+    }
+    const bobotRow = [bobotData.bobotUjian, bobotData.bobotRapor];
+    if (sheet.getLastRow() >= 2) sheet.getRange("A2:B2").clearContent();
+    sheet.getRange(2, 1, 1, bobotRow.length).setValues([bobotRow]);
+    return { status: "success", message: "Bobot nilai berhasil disimpan." };
+  } catch (e) { Logger.log(e); return { status: "error", message: "Gagal menyimpan bobot nilai: " + e.message }; }
+}
+function getBobot() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_BOBOT);
+    if (!sheet || sheet.getLastRow() < 2) return null;
+    const values = sheet.getRange("A2:B2").getValues()[0];
+    return { bobotUjian: values[0], bobotRapor: values[1] };
+  } catch (e) { Logger.log(e); return null; }
+}
+
+// ================= FUNGSI NILAI UJIAN & RAPOR =================
+function getMapelByJenis(jenis) {
+  const allMapel = getMapel();
+  if (jenis === 'madrasah') return allMapel.filter(m => m.jenisUjian === 'Ujian Madrasah' || m.jenisUjian === 'Keduanya');
+  if (jenis === 'praktek') return allMapel.filter(m => m.jenisUjian === 'Ujian Praktek' || m.jenisUjian === 'Keduanya');
+  return [];
+}
+function saveNilai(data) {
+  const { jenis, nilai } = data;
+  const sheetName = jenis === 'madrasah' ? SHEET_NILAI_UJIAN_MADRASAH : SHEET_NILAI_UJIAN_PRAKTEK;
+  const mapelList = getMapelByJenis(jenis);
+  return processAndSaveScores(sheetName, mapelList, nilai);
+}
+function saveNilaiRapor(data) {
+  const { semesterKey, jenisNilai, nilai } = data;
+  const sheetName = `Rapor_${jenisNilai}_${semesterKey}`;
+  const mapelList = getMapel();
+  return processAndSaveScores(sheetName, mapelList, nilai);
+}
+function getExistingNilai(sheetName) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(sheetName);
+    if (!sheet || sheet.getLastRow() < 2) return {};
+    sheet.getRange("A:A").setNumberFormat('@');
+    const data = sheet.getDataRange().getValues();
+    const headers = data.shift();
+    const nisnIndex = headers.indexOf("NISN");
+    const existingScores = {};
+    data.forEach(row => {
+      const nisn = row[nisnIndex];
+      existingScores[nisn] = {};
+      headers.forEach((header, index) => {
+        if (index > 1) existingScores[nisn][header] = row[index];
+      });
+    });
+    return existingScores;
+  } catch(e) { Logger.log(e); return {}; }
+}
+function processAndSaveScores(sheetName, mapelList, nilai) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(sheetName);
+  const headers = ["NISN", "Nama Lengkap", ...mapelList.map(m => m.kode)];
+  try {
+    if (!sheet) sheet = ss.insertSheet(sheetName);
+    sheet.clear(); 
+    sheet.appendRow(headers);
+    sheet.getRange("A:A").setNumberFormat('@');
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+    const rows = nilai.map(n => {
+      const rowData = [n.nisn, n.nama];
+      mapelList.forEach(mapel => {
+        rowData.push(n.scores[mapel.kode] || '');
+      });
+      return rowData;
+    });
+    if (rows.length > 0) sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+    return { status: 'success', message: `Data nilai untuk sheet '${sheetName}' berhasil disimpan.` };
+  } catch (e) { Logger.log(e); return { status: 'error', message: `Gagal menyimpan data: ${e.message}` }; }
+}
+
+// ================= FUNGSI REKAPITULASI =================
+function getSheetDataAsObject(sheetName) {
+    try {
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        const sheet = ss.getSheetByName(sheetName);
+        if (!sheet || sheet.getLastRow() < 2) return {};
+        sheet.getRange("A:A").setNumberFormat('@');
+        const data = sheet.getDataRange().getValues();
+        const headers = data.shift();
+        const nisnIndex = headers.indexOf("NISN");
+        if (nisnIndex === -1) return {};
+
+        const dataObj = {};
+        data.forEach(row => {
+            const nisn = row[nisnIndex].toString().trim();
+            dataObj[nisn] = {};
+            headers.forEach((header, index) => {
+                if (index !== nisnIndex) dataObj[nisn][header] = row[index];
+            });
+        });
+        return dataObj;
+    } catch (e) {
+        Logger.log(`Error getting data from ${sheetName}: ${e}`);
+        return {};
+    }
+}
+function getRekapitulasiData() {
+    const students = getStudents();
+    const mapel = getMapel();
+    const bobot = getBobot() || { bobotUjian: 0, bobotRapor: 0 };
+    const jenjang = (getSchoolData() || {}).jenjang;
+
+    const nilaiUjianMadrasah = getSheetDataAsObject(SHEET_NILAI_UJIAN_MADRASAH);
+    const nilaiUjianPraktek = getSheetDataAsObject(SHEET_NILAI_UJIAN_PRAKTEK);
+
+    const rekapData = {
+        students,
+        mapel,
+        bobot,
+        rekapUjian: {},
+        rekapRapor: {},
+        rekapIjazah: {}
+    };
+
+    students.forEach(student => {
+        const nisn = student.nisn.toString().trim();
+        rekapData.rekapUjian[nisn] = {};
+        rekapData.rekapRapor[nisn] = {};
+        rekapData.rekapIjazah[nisn] = {};
+
+        mapel.forEach(m => {
+            const kode = m.kode;
+            const nilaiUM = parseFloat( (nilaiUjianMadrasah[nisn] || {})[kode] );
+            const nilaiUP = parseFloat( (nilaiUjianPraktek[nisn] || {})[kode] );
+
+            let rataUjian = 0;
+            if (!isNaN(nilaiUM) && !isNaN(nilaiUP)) rataUjian = (nilaiUM + nilaiUP) / 2;
+            else if (!isNaN(nilaiUM)) rataUjian = nilaiUM;
+            else if (!isNaN(nilaiUP)) rataUjian = nilaiUP;
+            rekapData.rekapUjian[nisn][kode] = rataUjian;
+
+            let totalNilaiRapor = 0;
+            let semesterCount = 0;
+            const semesters = { MI: 5, MTS: 5, MA: 5 };
+            const semesterKeys = {
+              MI: ['k4_ganjil', 'k4_genap', 'k5_ganjil', 'k5_genap', 'k6_ganjil'],
+              MTS: ['k7_ganjil', 'k7_genap', 'k8_ganjil', 'k8_genap', 'k9_ganjil'],
+              MA: ['k10_ganjil', 'k10_genap', 'k11_ganjil', 'k11_genap', 'k12_ganjil']
+            };
+
+            (semesterKeys[jenjang] || []).forEach(smKey => {
+                const nilaiP = parseFloat((getSheetDataAsObject(`Rapor_Pengetahuan_${smKey}`)[nisn] || {})[kode]);
+                const nilaiK = parseFloat((getSheetDataAsObject(`Rapor_Keterampilan_${smKey}`)[nisn] || {})[kode]);
+                if (!isNaN(nilaiP) && !isNaN(nilaiK)) {
+                    totalNilaiRapor += (nilaiP + nilaiK) / 2;
+                    semesterCount++;
+                } else if (!isNaN(nilaiP)) {
+                    totalNilaiRapor += nilaiP;
+                    semesterCount++;
+                } else if (!isNaN(nilaiK)) {
+                    totalNilaiRapor += nilaiK;
+                    semesterCount++;
+                }
+            });
+
+            const rataRapor = semesterCount > 0 ? totalNilaiRapor / semesterCount : 0;
+            rekapData.rekapRapor[nisn][kode] = rataRapor;
+
+            const nilaiAkhir = (rataUjian * (bobot.bobotUjian / 100)) + (rataRapor * (bobot.bobotRapor / 100));
+            rekapData.rekapIjazah[nisn][kode] = nilaiAkhir;
+        });
+    });
+
+    return rekapData;
+}
