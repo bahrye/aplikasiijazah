@@ -370,10 +370,11 @@
                     
                     <div id="page-input-ujian" class="content-page hidden">
                         <h1 class="text-3xl font-bold text-gray-800">Input Nilai Ujian</h1>
-                        <p class="mt-2 text-gray-600 mb-8">Pilih jenis ujian yang akan diinput nilainya.</p>
-                        <div class="flex space-x-4 mb-8">
+                        <p class="mt-2 text-gray-600 mb-8">Pilih jenis ujian yang akan diinput nilainya atau cek rata-rata.</p>
+                        <div class="flex flex-wrap gap-4 mb-8">
                             <button id="btn-show-ujian-madrasah" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors">Input Nilai Ujian Madrasah</button>
                             <button id="btn-show-ujian-praktek" class="bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition-colors">Input Nilai Ujian Praktek</button>
+                            <button id="btn-cek-rata-ujian" class="bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition-colors">Cek Rata-Rata Nilai Ujian</button>
                         </div>
                         <div id="input-ujian-container"></div>
                     </div>
@@ -1428,24 +1429,30 @@
                 }, 3000);
             }
         }
-        document.getElementById('btn-show-ujian-madrasah').addEventListener('click', () => buildScoreTable('madrasah'));
-        document.getElementById('btn-show-ujian-praktek').addEventListener('click', () => buildScoreTable('praktek'));
-        function buildScoreTable(jenis) {
+        document.getElementById('btn-show-ujian-madrasah').addEventListener('click', () => buildScoreTable('madrasah', 'Tabel Input Nilai Ujian Madrasah'));
+        document.getElementById('btn-show-ujian-praktek').addEventListener('click', () => buildScoreTable('praktek', 'Tabel Input Nilai Ujian Praktek'));
+        document.getElementById('btn-cek-rata-ujian').addEventListener('click', calculateUjianAverage);
+
+        function buildScoreTable(jenis, title) {
             const container = document.getElementById('input-ujian-container');
-            container.innerHTML = `<div class="text-center p-8"><p class="font-bold">Memuat data...</p><p>Silakan tunggu sebentar.</p></div>`;
+            container.innerHTML = `<h2 class="text-2xl font-bold text-gray-800 mb-4">${title}</h2><div class="text-center p-8"><p class="font-bold loading-animation">Memuat data</p><p>Silakan tunggu sebentar.</p></div>`;
             const sheetName = jenis === 'madrasah' ? 'Nilai Ujian Madrasah' : 'Nilai Ujian Praktek';
             Promise.all([ 
                 new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getStudents(userSpreadsheetId)), 
                 new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getMapelByJenis(userSpreadsheetId, jenis)), 
                 new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getExistingNilai(userSpreadsheetId, sheetName)) 
             ]).then(([students, mapelList, existingScores]) => {
-                if (!students || students.length === 0) { container.innerHTML = `<p class="text-center text-red-500 p-4">Data siswa tidak ditemukan. Harap isi data siswa terlebih dahulu.</p>`; return; }
-                if (!mapelList || mapelList.length === 0) { container.innerHTML = `<p class="text-center text-red-500 p-4">Tidak ada mata pelajaran yang ditandai untuk Ujian ${jenis}. Silahkan edit dan ubah Jenis Ujian pada Mata Pelajaran.</p>`; return; }
-                const tableWrapper = document.createElement('div'); tableWrapper.className = 'bg-white p-4 rounded-lg shadow-md';
+                const contentDiv = container.querySelector('div');
+                if (!students || students.length === 0) { contentDiv.innerHTML = `<p class="text-center text-red-500 p-4">Data siswa tidak ditemukan. Harap isi data siswa terlebih dahulu.</p>`; return; }
+                if (!mapelList || mapelList.length === 0) { contentDiv.innerHTML = `<p class="text-center text-red-500 p-4">Tidak ada mata pelajaran yang ditandai untuk Ujian ${jenis}. Silahkan edit dan ubah Jenis Ujian pada Mata Pelajaran.</p>`; return; }
+                
+                const tableWrapper = document.createElement('div');
+                tableWrapper.className = 'bg-white p-4 rounded-lg shadow-md';
                 const tableHtml = `<form id="form-nilai-${jenis}"><div class="overflow-x-auto"><table id="score-table-${jenis}" class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>${mapelList.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}<th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th><th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"></tbody></table></div><div class="mt-6 pt-4 border-t flex justify-end space-x-3"><button type="button" class="clear-scores-btn bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400">Bersihkan</button><button type="submit" class="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700">Simpan Nilai ${jenis}</button></div></form>`;
                 tableWrapper.innerHTML = tableHtml; const tbody = tableWrapper.querySelector('tbody');
                 students.forEach((s, index) => { const studentScores = existingScores[s.nisn] || {}; let rowHtml = `<tr data-nisn="${s.nisn}" data-nama="${s.nama}"><td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${index + 1}</td><td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">${s.nama}</td>`; mapelList.forEach(m => { rowHtml += `<td class="px-2 py-1"><input type="number" min="0" max="100" class="score-input p-1 border rounded-md" data-mapel-kode="${m.kode}" value="${studentScores[m.kode] || ''}"></td>`; }); rowHtml += `<td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell jumlah-nilai">0</td><td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell rata-rata-nilai">0.00</td></tr>`; tbody.innerHTML += rowHtml; });
-                container.innerHTML = ''; container.appendChild(tableWrapper);
+                contentDiv.innerHTML = ''; 
+                contentDiv.appendChild(tableWrapper);
                 const scoreTable = document.getElementById(`score-table-${jenis}`); scoreTable.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row)); scoreTable.addEventListener('input', handleScoreInput); scoreTable.addEventListener('paste', handleSmartPaste); document.getElementById(`form-nilai-${jenis}`).addEventListener('submit', (e) => handleSaveNilai(e, jenis));
                 tableWrapper.querySelector('.clear-scores-btn').addEventListener('click', (e) => {
                     const form = e.target.closest('form');
@@ -1621,19 +1628,21 @@
 
     /** Menghitung ulang total dan rata-rata untuk satu baris tabel nilai. */
     function updateRowTotals(rowElement) { 
-        const inputs = rowElement.querySelectorAll('.score-input'); 
+        const inputs = rowElement.querySelectorAll('.score-input, .average-score-cell'); 
         let total = 0; 
         let count = 0; 
         inputs.forEach(input => { 
-            const value = parseFloat(input.value); 
+            const value = parseFloat(input.value || input.textContent); 
             if (!isNaN(value)) { 
                 total += value; 
                 count++; 
             } 
         }); 
         const average = count > 0 ? (total / count).toFixed(2) : '0.00'; 
-        rowElement.querySelector('.jumlah-nilai').textContent = total; 
-        rowElement.querySelector('.rata-rata-nilai').textContent = average; 
+        const totalCell = rowElement.querySelector('.jumlah-nilai');
+        const avgCell = rowElement.querySelector('.rata-rata-nilai');
+        if(totalCell) totalCell.textContent = Math.round(total); 
+        if(avgCell) avgCell.textContent = average; 
     }
     
     /** Menangani input pada kolom nilai untuk memanggil updateRowTotals. */
@@ -1672,6 +1681,57 @@
         });
     }
 
+    /** Menghitung rata-rata nilai Ujian Madrasah dan Ujian Praktek */
+    function calculateUjianAverage() {
+        const container = document.getElementById('input-ujian-container');
+        container.innerHTML = `<h2 class="text-2xl font-bold text-gray-800 mb-4">Tabel Rata-Rata Nilai Ujian</h2><div class="text-center p-8"><p class="font-bold loading-animation">Menghitung rata-rata</p><p>Silakan tunggu...</p></div>`;
+
+        Promise.all([
+            new Promise(resolve => google.script.run.withSuccessHandler(resolve).getStudents(userSpreadsheetId)),
+            new Promise(resolve => google.script.run.withSuccessHandler(resolve).getMapel(userSpreadsheetId)),
+            new Promise(resolve => google.script.run.withSuccessHandler(resolve).getExistingNilai(userSpreadsheetId, 'Nilai Ujian Madrasah')),
+            new Promise(resolve => google.script.run.withSuccessHandler(resolve).getExistingNilai(userSpreadsheetId, 'Nilai Ujian Praktek'))
+        ]).then(([students, allMapel, nilaiMadrasah, nilaiPraktek]) => {
+            if (!students || students.length === 0) { container.innerHTML = `<p class="text-red-500">Data siswa tidak ditemukan.</p>`; return; }
+            if (!allMapel || allMapel.length === 0) { container.innerHTML = `<p class="text-red-500">Data mata pelajaran tidak ditemukan.</p>`; return; }
+            
+            const tableWrapper = document.createElement('div');
+            tableWrapper.className = 'bg-white p-4 rounded-lg shadow-md';
+            let tableHtml = `<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>${allMapel.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}<th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th><th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th></tr></thead><tbody>`;
+
+            students.forEach((student, index) => {
+                tableHtml += `<tr><td class="px-3 py-2 text-sm">${index + 1}</td><td class="px-4 py-2 text-sm">${student.nisn}</td><td class="px-4 py-2 text-sm font-medium">${student.nama}</td>`;
+                const studentScores = [];
+                allMapel.forEach(mapel => {
+                    const nilaiM = parseFloat((nilaiMadrasah[student.nisn] || {})[mapel.kode]);
+                    const nilaiP = parseFloat((nilaiPraktek[student.nisn] || {})[mapel.kode]);
+                    let avgScore = 0;
+                    if (!isNaN(nilaiM) && !isNaN(nilaiP)) {
+                        avgScore = (nilaiM + nilaiP) / 2;
+                    } else if (!isNaN(nilaiM)) {
+                        avgScore = nilaiM;
+                    } else if (!isNaN(nilaiP)) {
+                        avgScore = nilaiP;
+                    }
+                    studentScores.push(avgScore);
+                    tableHtml += `<td class="px-2 py-1 text-center average-score-cell">${Math.round(avgScore) || '-'}</td>`;
+                });
+
+                const total = studentScores.reduce((sum, score) => sum + score, 0);
+                const count = studentScores.filter(s => s > 0).length;
+                const average = count > 0 ? (total / count).toFixed(2) : "0.00";
+
+                tableHtml += `<td class="px-4 py-2 text-center font-bold">${Math.round(total)}</td><td class="px-4 py-2 text-center font-bold">${average}</td></tr>`;
+            });
+            
+            tableHtml += `</tbody></table></div>`;
+            tableWrapper.innerHTML = tableHtml;
+            container.querySelector('div').innerHTML = ''; // Clear loading
+            container.querySelector('div').appendChild(tableWrapper);
+
+        }).catch(err => { container.innerHTML = `<p class="text-red-500">Gagal memuat data rata-rata: ${err.message}</p>`; });
+    }
+
     /** Memulai halaman Input Nilai Rapor dengan mengambil data jenjang sekolah. */
     function initRaporPage() {
         const container = document.getElementById('rapor-container'); 
@@ -1686,17 +1746,68 @@
             const semesterList = semesters[jenjang]; 
             let html = '';
             for (const key in semesterList) { 
-                html += `<div class="mb-6 bg-white p-4 rounded-lg shadow-sm"><h3 class="text-xl font-bold text-gray-700">${semesterList[key]}</h3><div class="flex space-x-4 mt-3"><button onclick="buildRaporScoreTable('${key}', 'Pengetahuan')" class="bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600 text-sm">Input Nilai Pengetahuan</button><button onclick="buildRaporScoreTable('${key}', 'Keterampilan')" class="bg-teal-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-teal-600 text-sm">Input Nilai Keterampilan</button></div><div id="table-container-${key}" class="mt-4"></div></div>`; 
+                html += `<div class="mb-6 bg-white p-4 rounded-lg shadow-sm"><h3 class="text-xl font-bold text-gray-700">${semesterList[key]}</h3><div class="flex flex-wrap gap-4 mt-3"><button onclick="buildRaporScoreTable('${key}', 'Pengetahuan')" class="bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600 text-sm">Input Nilai Pengetahuan</button><button onclick="buildRaporScoreTable('${key}', 'Keterampilan')" class="bg-teal-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-teal-600 text-sm">Input Nilai Keterampilan</button><button onclick="calculateRaporAverage('${key}')" class="bg-amber-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-amber-600 text-sm">Cek Rata-Rata Nilai</button></div><div id="table-container-${key}" class="mt-4"></div></div>`; 
             }
             container.innerHTML = html;
         })
         .getSchoolData(userSpreadsheetId);
     }
+
+    /** Menghitung rata-rata nilai Pengetahuan & Keterampilan untuk satu semester */
+    function calculateRaporAverage(semesterKey) {
+        const container = document.getElementById(`table-container-${semesterKey}`);
+        container.innerHTML = `<h4 class="text-lg font-semibold mb-3">Tabel Rata-Rata Nilai</h4><div class="text-center p-8"><p class="font-bold loading-animation">Menghitung rata-rata</p><p>Silakan tunggu...</p></div>`;
+
+        const sheetNameP = `Rapor_Pengetahuan_${semesterKey}`;
+        const sheetNameK = `Rapor_Keterampilan_${semesterKey}`;
+
+        Promise.all([
+            new Promise(resolve => google.script.run.withSuccessHandler(resolve).getStudents(userSpreadsheetId)),
+            new Promise(resolve => google.script.run.withSuccessHandler(resolve).getMapel(userSpreadsheetId)),
+            new Promise(resolve => google.script.run.withSuccessHandler(resolve).getExistingNilai(userSpreadsheetId, sheetNameP)),
+            new Promise(resolve => google.script.run.withSuccessHandler(resolve).getExistingNilai(userSpreadsheetId, sheetNameK))
+        ]).then(([students, mapelList, nilaiPengetahuan, nilaiKeterampilan]) => {
+            if (!students || students.length === 0) { container.innerHTML = `<p class="text-red-500">Data siswa tidak ditemukan.</p>`; return; }
+            if (!mapelList || mapelList.length === 0) { container.innerHTML = `<p class="text-red-500">Data mata pelajaran tidak ditemukan.</p>`; return; }
+
+            const tableWrapper = document.createElement('div');
+            tableWrapper.className = 'p-4 border rounded-lg';
+            let tableHtml = `<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>${mapelList.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}<th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th><th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th></tr></thead><tbody>`;
+
+            students.forEach((student, index) => {
+                let rowHtml = `<tr data-nisn="${student.nisn}" data-nama="${student.nama}"><td class="px-3 py-2 text-sm">${index + 1}</td><td class="px-4 py-2 text-sm">${student.nisn}</td><td class="px-4 py-2 text-sm font-medium">${student.nama}</td>`;
+                mapelList.forEach(mapel => {
+                    const nilaiP = parseFloat((nilaiPengetahuan[student.nisn] || {})[mapel.kode]);
+                    const nilaiK = parseFloat((nilaiKeterampilan[student.nisn] || {})[mapel.kode]);
+                    let avgScore = 0;
+                    if (!isNaN(nilaiP) && !isNaN(nilaiK)) {
+                        avgScore = (nilaiP + nilaiK) / 2;
+                    } else if (!isNaN(nilaiP)) {
+                        avgScore = nilaiP;
+                    } else if (!isNaN(nilaiK)) {
+                        avgScore = nilaiK;
+                    }
+                    rowHtml += `<td class="px-2 py-1 text-center average-score-cell">${Math.round(avgScore) || '-'}</td>`;
+                });
+                rowHtml += `<td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell jumlah-nilai">0</td><td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell rata-rata-nilai">0.00</td></tr>`;
+                tableHtml += rowHtml;
+            });
+            
+            tableHtml += `</tbody></table></div>`;
+            tableWrapper.innerHTML = tableHtml;
+            container.innerHTML = `<h4 class="text-lg font-semibold mb-3">Tabel Rata-Rata Nilai</h4>`;
+            container.appendChild(tableWrapper);
+            
+            // Recalculate totals after rendering
+            tableWrapper.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row));
+
+        }).catch(err => { container.innerHTML = `<p class="text-red-500">Gagal memuat data rata-rata: ${err.message}</p>`; });
+    }
     
     /** Membuat tabel input nilai rapor berdasarkan semester dan jenis nilai. */
     function buildRaporScoreTable(semesterKey, jenisNilai) {
         const container = document.getElementById(`table-container-${semesterKey}`); 
-        container.innerHTML = `<div class="text-center p-8"><p class="font-bold">Memuat data...</p></div>`; 
+        container.innerHTML = `<div class="text-center p-8"><p class="font-bold loading-animation">Memuat data</p></div>`; 
         const sheetName = `Rapor_${jenisNilai}_${semesterKey}`;
         Promise.all([ 
             new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getStudents(userSpreadsheetId)), 
