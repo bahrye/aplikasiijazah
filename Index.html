@@ -3,11 +3,15 @@
 <head>
     <base target="_top">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        body { font-family: 'Inter', sans-serif; }
         .nav-link { transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out; border-left: 4px solid transparent; }
         .nav-link.active { background-color: #3b82f6; color: white; border-left-color: #facc15; }
         .nav-link:hover { background-color: #2563eb; color: white; }
-        .content-page { animation: fadeIn 0.5s ease-in-out; }
+        .content-page, #login-container, #signup-container { animation: fadeIn 0.5s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .modal-backdrop { transition: opacity 0.3s ease-in-out; }
         .modal-content { transition: transform 0.3s ease-in-out; }
@@ -19,217 +23,354 @@
             color: white;
             box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
         }
+        .gradient-bg {
+            background-color: #f3f4f6;
+            background-image: 
+                radial-gradient(at 0% 0%, rgb(243, 244, 246) 0px, transparent 50%),
+                radial-gradient(at 95% 20%, rgb(229, 231, 235) 0px, transparent 50%),
+                radial-gradient(at 20% 90%, rgb(209, 213, 219) 0px, transparent 50%);
+        }
+        /* Animasi untuk titik-titik loading */
+        .loading-animation::after {
+            display: inline-block;
+            animation: loading-dots 1.4s infinite;
+            content: '.';
+            width: 1em;
+            text-align: left;
+        }
+        @keyframes loading-dots {
+            0% { content: '.'; }
+            33% { content: '..'; }
+            66% { content: '...'; }
+        }
     </style>
 </head>
 <body class="bg-gray-100">
-    <div class="flex h-screen">
-        <aside class="w-64 bg-blue-800 text-white flex flex-col">
-            <div class="h-16 flex items-center justify-center text-xl font-bold border-b border-blue-700"><span>AKADEMIK</span></div>
-            <nav class="flex-1 px-4 py-4 space-y-2">
-                <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md active" data-page="dashboard"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg><span>Dashboard</span></a>
-                <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="data-sekolah"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg><span>Data Sekolah</span></a>
-                <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="data-siswa"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197m0 0A5.975 5.975 0 0112 13a5.975 5.975 0 01-3 5.197z" /></svg><span>Data Siswa</span></a>
-                <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="mapel"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v11.494m-9-5.747h18" /></svg><span>Mapel & Bobot</span></a>
-                <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="input-ujian"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 0v6m0-6L9 13" /></svg><span>Input Nilai Ujian</span></a>
-                <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="input-rapor"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><span>Input Nilai Rapor</span></a>
-                <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="rekapitulasi"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><span>Rekapitulasi</span></a>
-            </nav>
-        </aside>
 
-        <main class="flex-1 p-6 md:p-10 overflow-y-auto">
-            <div id="page-dashboard" class="content-page">
-                 <h1 class="text-3xl font-bold text-gray-800">Selamat Datang!</h1>
-                 <p class="mt-2 text-gray-600">Pusat kendali manajemen data akademik. Pilih menu di kiri untuk memulai.</p>
-            </div>
-            <div id="page-data-sekolah" class="content-page hidden">
-                <h1 class="text-3xl font-bold text-gray-800">Data Sekolah</h1>
-                <p class="mt-2 text-gray-600 mb-8">Gunakan formulir ini untuk mengisi atau memperbarui informasi detail mengenai sekolah Anda.</p>
-                <div class="bg-white p-8 rounded-lg shadow-md max-w-4xl">
-                    <form id="schoolDataForm">
-                        <div class="mb-6 pb-6 border-b">
-                          <label for="jenjang" class="block text-sm font-medium text-gray-700">Jenjang Sekolah</label>
-                          <select id="jenjang" name="jenjang" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                            <option value="">-- Pilih Jenjang --</option>
-                            <option value="MI">MI (Madrasah Ibtidaiyah)</option>
-                            <option value="MTS">MTS (Madrasah Tsanawiyah)</option>
-                            <option value="MA">MA (Madrasah Aliyah)</option>
-                          </select>
+    <!-- Auth Container -->
+    <div id="auth-wrapper" class="gradient-bg">
+        <div class="flex items-center justify-center min-h-screen py-8 px-4">
+            <div class="w-full max-w-md">
+                <!-- Container untuk Login -->
+                <div id="login-container">
+                    <div class="bg-white rounded-2xl shadow-xl p-8 md:p-10">
+                        <div class="text-center mb-8">
+                            <h1 class="text-3xl font-bold text-gray-800">Login Aplikasi</h1>
+                            <p class="text-gray-500 mt-2">Silakan masuk untuk melanjutkan</p>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                            <div>
-                                <label for="namaSekolah" class="block text-sm font-medium text-gray-700">Nama Sekolah</label>
-                                <input type="text" id="namaSekolah" name="namaSekolah" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                <label for="npsn" class="block text-sm font-medium text-gray-700 mt-4">NPSN</label>
-                                <input type="text" id="npsn" name="npsn" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                <label for="alamat" class="block text-sm font-medium text-gray-700 mt-4">Alamat Jalan</label>
-                                <textarea id="alamat" name="alamat" rows="3" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
-                                <label for="kelurahan" class="block text-sm font-medium text-gray-700 mt-4">Kelurahan/Desa</label>
-                                <input type="text" id="kelurahan" name="kelurahan" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                <label for="kecamatan" class="block text-sm font-medium text-gray-700 mt-4">Kecamatan</label>
-                                <input type="text" id="kecamatan" name="kecamatan" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            <div>
-                                <label for="kabupaten" class="block text-sm font-medium text-gray-700">Kabupaten/Kota</label>
-                                <input type="text" id="kabupaten" name="kabupaten" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                <label for="provinsi" class="block text-sm font-medium text-gray-700 mt-4">Provinsi</label>
-                                <input type="text" id="provinsi" name="provinsi" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                <label for="kodePos" class="block text-sm font-medium text-gray-700 mt-4">Kode Pos</label>
-                                <input type="text" id="kodePos" name="kodePos" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                <label for="telepon" class="block text-sm font-medium text-gray-700 mt-4">Nomor Telepon</label>
-                                <input type="tel" id="telepon" name="telepon" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                <label for="email" class="block text-sm font-medium text-gray-700 mt-4">Email</label>
-                                <input type="email" id="email" name="email" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                <label for="website" class="block text-sm font-medium text-gray-700 mt-4">Website</label>
-                                <input type="url" id="website" name="website" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                        </div>
-                        <div class="mt-8 border-t pt-6">
-                             <h2 class="text-lg font-medium text-gray-900">Data Kepala Sekolah</h2>
-                             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mt-4">
+                        <div id="login-info-message" class="mb-4 text-center text-sm"></div>
+                        <form id="loginForm">
+                            <div class="space-y-6">
                                 <div>
-                                    <label for="namaKepsek" class="block text-sm font-medium text-gray-700">Nama Kepala Sekolah</label>
-                                    <input type="text" id="namaKepsek" name="namaKepsek" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <label for="email" class="text-sm font-medium text-gray-700 block mb-2">Alamat Email</label>
+                                    <input type="email" name="email" id="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="nama@email.com" required>
                                 </div>
                                 <div>
-                                    <label for="nipKepsek" class="block text-sm font-medium text-gray-700">NIP Kepala Sekolah (Jika ada)</label>
-                                    <input type="text" id="nipKepsek" name="nipKepsek" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                </div>
-                             </div>
-                        </div>
-                        <div class="mt-8 pt-5 border-t">
-                            <button type="submit" id="schoolSubmitBtn" class="w-full md:w-auto flex justify-center py-2 px-8 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400">
-                                <span id="schoolSubmitBtnText">Simpan Data Sekolah</span>
-                                <span id="schoolLoadingSpinner" class="hidden">Menyimpan...</span>
-                            </button>
-                        </div>
-                    </form>
-                    <div id="schoolStatusMessage" class="mt-6 p-4 rounded-md text-center opacity-0 transition-opacity"></div>
-                </div>
-            </div>
-            
-            <div id="page-data-siswa" class="content-page hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <div>
-                        <h1 class="text-3xl font-bold text-gray-800">Manajemen Data Siswa</h1>
-                        <p class="mt-2 text-gray-600">Tambah, lihat, edit, atau hapus data siswa di sekolah Anda.</p>
-                    </div>
-                    <div class="flex space-x-2">
-                        <button id="addStudentBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">+ Tambah Siswa</button>
-                        <button id="deleteAllStudentsBtn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">Hapus Semua Siswa</button>
-                    </div>
-                </div>
-                <div class="mt-8 border-t pt-6">
-                    <h2 class="text-xl font-bold text-gray-800">Import Data Siswa</h2>
-                    <p class="mt-1 text-gray-600">Unggah data siswa secara massal menggunakan template Excel.</p>
-                    <div class="mt-4 flex flex-wrap items-center gap-4">
-                        <button id="downloadTemplateBtn" class="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700">Download Template</button>
-                        <input type="file" id="siswaFileInput" class="hidden" accept=".xlsx, .xls, .csv">
-                        <label for="siswaFileInput" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg cursor-pointer hover:bg-green-700">Pilih File...</label>
-                        <span id="fileName" class="text-gray-500">Tidak ada file dipilih</span>
-                        <button id="importSiswaBtn" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Import Data</button>
-                    </div>
-                    <div id="importStatus" class="mt-4"></div>
-                </div>
-                <div class="bg-white p-4 rounded-lg shadow-md mt-8">
-                    <div id="siswaTableContainer" class="overflow-x-auto"></div>
-                </div>
-            </div>
-            
-            <div id="page-mapel" class="content-page hidden">
-                <div class="mb-10">
-                    <h2 class="text-2xl font-bold text-gray-800">Pengaturan Bobot Nilai</h2>
-                    <p class="mt-1 text-gray-600">Atur persentase bobot antara nilai ujian dan nilai rapor. Total keduanya harus 100%.</p>
-                    <div class="mt-4 bg-white p-6 rounded-lg shadow-md max-w-xl">
-                        <form id="bobotForm">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                                <div>
-                                    <label for="bobotUjian" class="block text-sm font-medium text-gray-700">Bobot Nilai Ujian</label>
-                                    <div class="mt-1 relative rounded-md shadow-sm">
-                                        <input type="number" id="bobotUjian" name="bobotUjian" min="0" max="100" class="w-full p-2 pr-8 border rounded-md" required>
-                                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3"><span class="text-gray-500 sm:text-sm">%</span></div>
+                                    <label for="password" class="text-sm font-medium text-gray-700 block mb-2">Kata Sandi</label>
+                                    <div class="relative">
+                                        <input type="password" name="password" id="password" class="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="••••••••" required>
+                                        <button type="button" data-toggle-password="password" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600">
+                                            <svg class="eye-icon h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                            <svg class="eye-slash-icon h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                                        </button>
                                     </div>
                                 </div>
                                 <div>
-                                    <label for="bobotRapor" class="block text-sm font-medium text-gray-700">Bobot Nilai Rapor</label>
-                                     <div class="mt-1 relative rounded-md shadow-sm">
-                                        <input type="number" id="bobotRapor" name="bobotRapor" min="0" max="100" class="w-full p-2 pr-8 border rounded-md" required>
-                                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3"><span class="text-gray-500 sm:text-sm">%</span></div>
-                                    </div>
+                                    <button type="submit" id="loginButton" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:scale-105 shadow-lg">
+                                        <span id="loginButtonText">Masuk</span>
+                                        <span id="loginSpinner" class="hidden loading-animation">Memproses</span>
+                                    </button>
                                 </div>
-                            </div>
-                             <div class="mt-6 pt-4 border-t">
-                                <button type="submit" id="saveBobotBtn" class="bg-blue-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400">Simpan Bobot</button>
                             </div>
                         </form>
-                    </div>
-                </div>
-                <div class="mb-10 border-t pt-6">
-                    <h2 class="text-xl font-bold text-gray-800">Import Data Mata Pelajaran</h2>
-                    <p class="mt-1 text-gray-600">Unggah data mata pelajaran secara massal menggunakan template Excel.</p>
-                    <div class="mt-4 flex flex-wrap items-center gap-4">
-                        <button id="downloadMapelTemplateBtn" class="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700">Download Template Mapel</button>
-                        <input type="file" id="mapelFileInput" class="hidden" accept=".xlsx, .xls, .csv">
-                        <label for="mapelFileInput" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg cursor-pointer hover:bg-green-700">Pilih File...</label>
-                        <span id="mapelFileName" class="text-gray-500">Tidak ada file dipilih</span>
-                        <button id="importMapelBtn" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Import Data Mapel</button>
-                    </div>
-                    <div id="importMapelStatus" class="mt-4"></div>
-                </div>
-                <div class="flex justify-between items-center mb-6">
-                    <div>
-                        <h2 class="text-2xl font-bold text-gray-800">Manajemen Mata Pelajaran</h2>
-                        <p class="mt-1 text-gray-600">Kelola daftar mata pelajaran yang ada di sekolah Anda.</p>
-                    </div>
-                    <button id="addMapelBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">+ Tambah Mapel</button>
-                </div>
-                <div class="bg-white p-4 rounded-lg shadow-md">
-                    <div id="mapelTableContainer" class="overflow-x-auto"></div>
-                </div>
-            </div>
-            
-            <div id="page-input-ujian" class="content-page hidden">
-                <h1 class="text-3xl font-bold text-gray-800">Input Nilai Ujian</h1>
-                <p class="mt-2 text-gray-600 mb-8">Pilih jenis ujian yang akan diinput nilainya.</p>
-                <div class="flex space-x-4 mb-8">
-                    <button id="btn-show-ujian-madrasah" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors">Input Nilai Ujian Madrasah</button>
-                    <button id="btn-show-ujian-praktek" class="bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition-colors">Input Nilai Ujian Praktek</button>
-                </div>
-                <div id="input-ujian-container"></div>
-            </div>
-
-            <div id="page-input-rapor" class="content-page hidden">
-                 <h1 class="text-3xl font-bold text-gray-800">Input Nilai Rapor</h1>
-                 <div id="rapor-container" class="mt-4"></div>
-            </div>
-            <div id="page-rekapitulasi" class="content-page hidden">
-                <h1 class="text-3xl font-bold text-gray-800">Rekapitulasi Nilai Akhir</h1>
-                <p class="mt-2 text-gray-600 mb-8">Lihat ringkasan nilai ujian, rapor, dan nilai akhir ijazah.</p>
-                
-                <div id="rekap-loader" class="text-center p-8">
-                    <p class="font-bold">Mengumpulkan dan memproses semua data nilai...</p>
-                    <p>Silakan tunggu, ini mungkin memakan waktu beberapa saat.</p>
-                </div>
-                
-                <div id="rekap-content" class="hidden">
-                    <div class="flex space-x-4 mb-8 border-b pb-4">
-                        <button data-rekap="ujian" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors">Rekap Nilai Ujian</button>
-                        <button data-rekap="rapor" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors">Rekap Nilai Rapor</button>
-                        <button data-rekap="ijazah" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors">Rekap Nilai Ijazah</button>
-                        <button id="updateRekapBtn" class="ml-auto bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Perbarui & Muat Ulang Data</button>
-                    </div>
-                    <div id="rekap-display-area">
+                        <div id="login-error-message" class="mt-4 text-center text-red-600 text-sm h-4"></div>
+                         <p class="text-center text-sm text-gray-600 mt-6">
+                            Belum punya akun? 
+                            <a href="#" id="show-signup" class="font-medium text-blue-600 hover:text-blue-500">Daftar sekarang</a>
+                        </p>
                     </div>
                 </div>
 
-                <div id="rekap-setup" class="hidden text-center p-8 bg-yellow-100 rounded-lg">
-                    <p class="font-bold text-yellow-800">Sheet Rekapitulasi belum dibuat.</p>
-                    <p class="text-yellow-700 mt-2">Silakan klik tombol di bawah untuk membuat sheet yang diperlukan untuk menampilkan data rekapitulasi.</p>
-                    <button id="createRekapSheetsBtn" class="mt-4 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Buat Sheet Rekapitulasi</button>
+                <!-- Container untuk Signup (awalnya disembunyikan) -->
+                <div id="signup-container" class="hidden">
+                    <div class="bg-white rounded-2xl shadow-xl p-8 md:p-10">
+                        <div class="text-center mb-8">
+                            <h1 class="text-3xl font-bold text-gray-800">Buat Akun Sekolah</h1>
+                            <p class="text-gray-500 mt-2">Isi form di bawah untuk mendaftar.</p>
+                        </div>
+                        <form id="signupForm">
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="signup-namasekolah" class="text-sm font-medium text-gray-700 block mb-2">Nama Sekolah</label>
+                                    <input type="text" id="signup-namasekolah" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm" placeholder="Contoh: MI Al-Hidayah" required>
+                                </div>
+                                <div>
+                                  <label for="signup-jenjang" class="text-sm font-medium text-gray-700 block mb-2">Jenjang Sekolah</label>
+                                  <select id="signup-jenjang" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white" required>
+                                    <option value="" disabled selected>-- Pilih Jenjang --</option>
+                                    <option value="MI">MI (Madrasah Ibtidaiyah)</option>
+                                    <option value="MTS">MTS (Madrasah Tsanawiyah)</option>
+                                    <option value="MA">MA (Madrasah Aliyah)</option>
+                                  </select>
+                                </div>
+                                <div>
+                                    <label for="signup-email" class="text-sm font-medium text-gray-700 block mb-2">Alamat Email</label>
+                                    <input type="email" id="signup-email" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm" placeholder="nama@email.com" required>
+                                </div>
+                                <div>
+                                    <label for="signup-password" class="text-sm font-medium text-gray-700 block mb-2">Kata Sandi</label>
+                                    <div class="relative">
+                                        <input type="password" id="signup-password" class="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg shadow-sm" placeholder="••••••••" required>
+                                        <button type="button" data-toggle-password="signup-password" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600">
+                                            <svg class="eye-icon h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                            <svg class="eye-slash-icon h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="confirm-password" class="text-sm font-medium text-gray-700 block mb-2">Konfirmasi Kata Sandi</label>
+                                    <div class="relative">
+                                        <input type="password" id="confirm-password" class="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg shadow-sm" placeholder="••••••••" required>
+                                        <button type="button" data-toggle-password="confirm-password" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600">
+                                            <svg class="eye-icon h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                            <svg class="eye-slash-icon h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <button type="submit" id="signupButton" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-transform transform hover:scale-105 shadow-lg">
+                                        <span id="signupButtonText">Daftar</span>
+                                        <span id="signupSpinner" class="hidden loading-animation">Memproses</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                        <div id="signup-message" class="mt-4 text-center text-sm h-4"></div>
+                        <p class="text-center text-sm text-gray-600 mt-6">
+                            Sudah punya akun? 
+                            <a href="#" id="show-login" class="font-medium text-blue-600 hover:text-blue-500">Masuk di sini</a>
+                        </p>
+                    </div>
                 </div>
             </div>
-        </main>
+        </div>
     </div>
 
+
+    <!-- Container untuk Aplikasi Utama (awalnya disembunyikan) -->
+    <div id="app-container" class="hidden">
+        <div class="flex h-screen">
+            <aside class="w-64 bg-blue-800 text-white flex flex-col">
+                <div class="h-16 flex items-center justify-center text-xl font-bold border-b border-blue-700"><span>AKADEMIK</span></div>
+                <nav class="flex-1 px-4 py-4 space-y-2">
+                    <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md active" data-page="dashboard"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg><span>Dashboard</span></a>
+                    <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="data-sekolah"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg><span>Data Sekolah</span></a>
+                    <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="data-siswa"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197m0 0A5.975 5.975 0 0112 13a5.975 5.975 0 01-3 5.197z" /></svg><span>Data Siswa</span></a>
+                    <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="mapel"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v11.494m-9-5.747h18" /></svg><span>Mapel & Bobot</span></a>
+                    <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="input-ujian"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 0v6m0-6L9 13" /></svg><span>Input Nilai Ujian</span></a>
+                    <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="input-rapor"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><span>Input Nilai Rapor</span></a>
+                    <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="rekapitulasi"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><span>Rekapitulasi</span></a>
+                </nav>
+                <div class="mt-auto p-4 border-t border-blue-700">
+                     <a href="#" id="logoutButton" class="nav-link flex items-center space-x-3 p-2 rounded-md"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg><span>Logout</span></a>
+                </div>
+            </aside>
+
+            <main class="flex-1 p-6 md:p-10 overflow-y-auto">
+                <div id="page-dashboard" class="content-page">
+                     <h1 class="text-3xl font-bold text-gray-800">Selamat Datang!</h1>
+                     <p class="mt-2 text-gray-600">Pusat kendali manajemen data akademik. Pilih menu di kiri untuk memulai.</p>
+                </div>
+                <div id="page-data-sekolah" class="content-page hidden">
+                    <h1 class="text-3xl font-bold text-gray-800">Data Sekolah</h1>
+                    <p class="mt-2 text-gray-600 mb-8">Gunakan formulir ini untuk mengisi atau memperbarui informasi detail mengenai sekolah Anda.</p>
+                    <div class="bg-white p-8 rounded-lg shadow-md max-w-4xl">
+                        <form id="schoolDataForm">
+                            <div class="mb-6 pb-6 border-b">
+                              <label for="jenjang" class="block text-sm font-medium text-gray-700">Jenjang Sekolah</label>
+                              <select id="jenjang" name="jenjang" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" disabled>
+                                <option value="">-- Pilih Jenjang --</option>
+                                <option value="MI">MI (Madrasah Ibtidaiyah)</option>
+                                <option value="MTS">MTS (Madrasah Tsanawiyah)</option>
+                                <option value="MA">MA (Madrasah Aliyah)</option>
+                              </select>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                <div>
+                                    <label for="namaSekolah" class="block text-sm font-medium text-gray-700">Nama Sekolah</label>
+                                    <input type="text" id="namaSekolah" name="namaSekolah" class="mt-1 w-full px-3 py-2 border border-gray-300 bg-gray-100 rounded-md shadow-sm" readonly>
+                                    <label for="npsn" class="block text-sm font-medium text-gray-700 mt-4">NPSN</label>
+                                    <input type="text" id="npsn" name="npsn" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <label for="alamat" class="block text-sm font-medium text-gray-700 mt-4">Alamat Jalan</label>
+                                    <textarea id="alamat" name="alamat" rows="3" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+                                    <label for="kelurahan" class="block text-sm font-medium text-gray-700 mt-4">Kelurahan/Desa</label>
+                                    <input type="text" id="kelurahan" name="kelurahan" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <label for="kecamatan" class="block text-sm font-medium text-gray-700 mt-4">Kecamatan</label>
+                                    <input type="text" id="kecamatan" name="kecamatan" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="kabupaten" class="block text-sm font-medium text-gray-700">Kabupaten/Kota</label>
+                                    <input type="text" id="kabupaten" name="kabupaten" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <label for="provinsi" class="block text-sm font-medium text-gray-700 mt-4">Provinsi</label>
+                                    <input type="text" id="provinsi" name="provinsi" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <label for="kodePos" class="block text-sm font-medium text-gray-700 mt-4">Kode Pos</label>
+                                    <input type="text" id="kodePos" name="kodePos" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <label for="telepon" class="block text-sm font-medium text-gray-700 mt-4">Nomor Telepon</label>
+                                    <input type="tel" id="telepon" name="telepon" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <label for="email-sekolah" class="block text-sm font-medium text-gray-700 mt-4">Email</label>
+                                    <input type="email" id="email-sekolah" name="email" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <label for="website" class="block text-sm font-medium text-gray-700 mt-4">Website</label>
+                                    <input type="url" id="website" name="website" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+                            <div class="mt-8 border-t pt-6">
+                                 <h2 class="text-lg font-medium text-gray-900">Data Kepala Sekolah</h2>
+                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mt-4">
+                                    <div>
+                                        <label for="namaKepsek" class="block text-sm font-medium text-gray-700">Nama Kepala Sekolah</label>
+                                        <input type="text" id="namaKepsek" name="namaKepsek" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label for="nipKepsek" class="block text-sm font-medium text-gray-700">NIP Kepala Sekolah (Jika ada)</label>
+                                        <input type="text" id="nipKepsek" name="nipKepsek" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                 </div>
+                            </div>
+                            <div class="mt-8 pt-5 border-t">
+                                <button type="submit" id="schoolSubmitBtn" class="w-full md:w-auto flex justify-center py-2 px-8 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400">
+                                    <span id="schoolSubmitBtnText">Simpan Data Sekolah</span>
+                                    <span id="schoolLoadingSpinner" class="hidden loading-animation">Menyimpan</span>
+                                </button>
+                            </div>
+                        </form>
+                        <div id="schoolStatusMessage" class="mt-6 p-4 rounded-md text-center opacity-0 transition-opacity"></div>
+                    </div>
+                </div>
+                
+                <div id="page-data-siswa" class="content-page hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h1 class="text-3xl font-bold text-gray-800">Manajemen Data Siswa</h1>
+                            <p class="mt-2 text-gray-600">Tambah, lihat, edit, atau hapus data siswa di sekolah Anda.</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button id="addStudentBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">+ Tambah Siswa</button>
+                            <button id="deleteAllStudentsBtn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">Hapus Semua Siswa</button>
+                        </div>
+                    </div>
+                    <div class="mt-8 border-t pt-6">
+                        <h2 class="text-xl font-bold text-gray-800">Import Data Siswa</h2>
+                        <p class="mt-1 text-gray-600">Unggah data siswa secara massal menggunakan template Excel.</p>
+                        <div class="mt-4 flex flex-wrap items-center gap-4">
+                            <button id="downloadTemplateBtn" class="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700">Download Template</button>
+                            <input type="file" id="siswaFileInput" class="hidden" accept=".xlsx, .xls, .csv">
+                            <label for="siswaFileInput" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg cursor-pointer hover:bg-green-700">Pilih File...</label>
+                            <span id="fileName" class="text-gray-500">Tidak ada file dipilih</span>
+                            <button id="importSiswaBtn" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Import Data</button>
+                        </div>
+                        <div id="importStatus" class="mt-4"></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-md mt-8">
+                        <div id="siswaTableContainer" class="overflow-x-auto"></div>
+                    </div>
+                </div>
+                
+                <div id="page-mapel" class="content-page hidden">
+                    <div class="mb-10">
+                        <h2 class="text-2xl font-bold text-gray-800">Pengaturan Bobot Nilai</h2>
+                        <p class="mt-1 text-gray-600">Atur persentase bobot antara nilai ujian dan nilai rapor. Total keduanya harus 100%.</p>
+                        <div class="mt-4 bg-white p-6 rounded-lg shadow-md max-w-xl">
+                            <form id="bobotForm">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                                    <div>
+                                        <label for="bobotUjian" class="block text-sm font-medium text-gray-700">Bobot Nilai Ujian</label>
+                                        <div class="mt-1 relative rounded-md shadow-sm">
+                                            <input type="number" id="bobotUjian" name="bobotUjian" min="0" max="100" class="w-full p-2 pr-8 border rounded-md" required>
+                                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3"><span class="text-gray-500 sm:text-sm">%</span></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label for="bobotRapor" class="block text-sm font-medium text-gray-700">Bobot Nilai Rapor</label>
+                                         <div class="mt-1 relative rounded-md shadow-sm">
+                                            <input type="number" id="bobotRapor" name="bobotRapor" min="0" max="100" class="w-full p-2 pr-8 border rounded-md" required>
+                                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3"><span class="text-gray-500 sm:text-sm">%</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                 <div class="mt-6 pt-4 border-t">
+                                    <button type="submit" id="saveBobotBtn" class="bg-blue-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400">Simpan Bobot</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="mb-10 border-t pt-6">
+                        <h2 class="text-xl font-bold text-gray-800">Import Data Mata Pelajaran</h2>
+                        <p class="mt-1 text-gray-600">Unggah data mata pelajaran secara massal menggunakan template Excel.</p>
+                        <div class="mt-4 flex flex-wrap items-center gap-4">
+                            <button id="downloadMapelTemplateBtn" class="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700">Download Template Mapel</button>
+                            <input type="file" id="mapelFileInput" class="hidden" accept=".xlsx, .xls, .csv">
+                            <label for="mapelFileInput" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg cursor-pointer hover:bg-green-700">Pilih File...</label>
+                            <span id="mapelFileName" class="text-gray-500">Tidak ada file dipilih</span>
+                            <button id="importMapelBtn" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Import Data Mapel</button>
+                        </div>
+                        <div id="importMapelStatus" class="mt-4"></div>
+                    </div>
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800">Manajemen Mata Pelajaran</h2>
+                            <p class="mt-1 text-gray-600">Kelola daftar mata pelajaran yang ada di sekolah Anda.</p>
+                        </div>
+                        <button id="addMapelBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">+ Tambah Mapel</button>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-md">
+                        <div id="mapelTableContainer" class="overflow-x-auto"></div>
+                    </div>
+                </div>
+                
+                <div id="page-input-ujian" class="content-page hidden">
+                    <h1 class="text-3xl font-bold text-gray-800">Input Nilai Ujian</h1>
+                    <p class="mt-2 text-gray-600 mb-8">Pilih jenis ujian yang akan diinput nilainya.</p>
+                    <div class="flex space-x-4 mb-8">
+                        <button id="btn-show-ujian-madrasah" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors">Input Nilai Ujian Madrasah</button>
+                        <button id="btn-show-ujian-praktek" class="bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition-colors">Input Nilai Ujian Praktek</button>
+                    </div>
+                    <div id="input-ujian-container"></div>
+                </div>
+    
+                <div id="page-input-rapor" class="content-page hidden">
+                     <h1 class="text-3xl font-bold text-gray-800">Input Nilai Rapor</h1>
+                     <div id="rapor-container" class="mt-4"></div>
+                </div>
+                <div id="page-rekapitulasi" class="content-page hidden">
+                    <h1 class="text-3xl font-bold text-gray-800">Rekapitulasi Nilai Akhir</h1>
+                    <p class="mt-2 text-gray-600 mb-8">Lihat ringkasan nilai ujian, rapor, dan nilai akhir ijazah.</p>
+                    
+                    <div id="rekap-loader" class="text-center p-8">
+                        <p class="font-bold loading-animation">Mengumpulkan dan memproses semua data nilai</p>
+                        <p>Silakan tunggu, ini mungkin memakan waktu beberapa saat.</p>
+                    </div>
+                    
+                    <div id="rekap-content" class="hidden">
+                        <div class="flex space-x-4 mb-8 border-b pb-4">
+                            <button data-rekap="ujian" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors">Rekap Nilai Ujian</button>
+                            <button data-rekap="rapor" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors">Rekap Nilai Rapor</button>
+                            <button data-rekap="ijazah" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors">Rekap Nilai Ijazah</button>
+                            <button id="updateRekapBtn" class="ml-auto bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Perbarui & Muat Ulang Data</button>
+                        </div>
+                        <div id="rekap-display-area">
+                        </div>
+                    </div>
+    
+                    <div id="rekap-setup" class="hidden text-center p-8 bg-yellow-100 rounded-lg">
+                        <p class="font-bold text-yellow-800">Sheet Rekapitulasi belum dibuat.</p>
+                        <p class="text-yellow-700 mt-2">Silakan klik tombol di bawah untuk membuat sheet yang diperlukan untuk menampilkan data rekapitulasi.</p>
+                        <button id="createRekapSheetsBtn" class="mt-4 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Buat Sheet Rekapitulasi</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
     <div id="siswa-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
         <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-lg p-6 transform scale-95">
              <div class="flex justify-between items-center border-b pb-3 mb-5">
@@ -313,8 +454,218 @@
     <div id="globalStatusMessage" class="fixed bottom-5 right-5 z-50"></div>
 
     <script>
-    let rekapitulasiData = null;
-    window.onload = function() {
+    // Global variable to hold the user's spreadsheet ID
+    let userSpreadsheetId = null;
+    let inactivityTimer;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const loginContainer = document.getElementById('login-container');
+        const signupContainer = document.getElementById('signup-container');
+        const showSignupLink = document.getElementById('show-signup');
+        const showLoginLink = document.getElementById('show-login');
+        
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const logoutButton = document.getElementById('logoutButton');
+
+        // Check for existing session on page load
+        const storedId = sessionStorage.getItem('userSpreadsheetId');
+        const lastPage = sessionStorage.getItem('lastActivePage') || 'dashboard';
+
+        if(storedId) {
+            userSpreadsheetId = storedId;
+            document.getElementById('auth-wrapper').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
+            initializeApp(lastPage);
+        }
+
+        showSignupLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('login-info-message').textContent = '';
+            document.getElementById('login-info-message').className = "mb-4 text-center text-sm";
+            loginContainer.classList.add('hidden');
+            signupContainer.classList.remove('hidden');
+        });
+
+        showLoginLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            signupContainer.classList.add('hidden');
+            loginContainer.classList.remove('hidden');
+        });
+
+        if (loginForm) {
+            loginForm.addEventListener('submit', handleLogin);
+        }
+        
+        if (signupForm) {
+            signupForm.addEventListener('submit', handleSignup);
+        }
+
+        logoutButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            logoutUser();
+        });
+
+        setupPasswordToggles();
+    });
+    
+    function setupPasswordToggles() {
+        document.querySelectorAll('[data-toggle-password]').forEach(button => {
+            button.addEventListener('click', () => {
+                const inputId = button.getAttribute('data-toggle-password');
+                const passwordInput = document.getElementById(inputId);
+                if (passwordInput) {
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+                    
+                    button.querySelector('.eye-icon').classList.toggle('hidden');
+                    button.querySelector('.eye-slash-icon').classList.toggle('hidden');
+                }
+            });
+        });
+    }
+
+    function logoutUser() {
+        userSpreadsheetId = null;
+        sessionStorage.removeItem('userSpreadsheetId');
+        sessionStorage.removeItem('lastActivePage');
+        clearTimeout(inactivityTimer);
+
+        document.getElementById('app-container').classList.add('hidden');
+        document.getElementById('auth-wrapper').classList.remove('hidden');
+        document.getElementById('signup-container').classList.add('hidden');
+        document.getElementById('login-container').classList.remove('hidden');
+    }
+
+    function resetInactivityTimer() {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(logoutUser, 5 * 60 * 1000); // 5 menit
+    }
+
+    function handleLogin(event) {
+        event.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const loginButton = document.getElementById('loginButton');
+        const loginButtonText = document.getElementById('loginButtonText');
+        const loginSpinner = document.getElementById('loginSpinner');
+        const errorMessageDiv = document.getElementById('login-error-message');
+
+        errorMessageDiv.textContent = '';
+        loginButton.disabled = true;
+        loginButtonText.classList.add('hidden');
+        loginSpinner.classList.remove('hidden');
+
+        google.script.run
+            .withSuccessHandler(response => {
+                loginButton.disabled = false;
+                loginButtonText.classList.remove('hidden');
+                loginSpinner.classList.add('hidden');
+
+                if (response.status === 'success') {
+                    userSpreadsheetId = response.spreadsheetId;
+                    sessionStorage.setItem('userSpreadsheetId', userSpreadsheetId);
+                    sessionStorage.setItem('lastActivePage', 'dashboard');
+                    document.getElementById('auth-wrapper').classList.add('hidden');
+                    document.getElementById('app-container').classList.remove('hidden');
+                    initializeApp('dashboard');
+                } else {
+                    errorMessageDiv.textContent = response.message || 'Login gagal.';
+                }
+            })
+            .withFailureHandler(error => {
+                errorMessageDiv.textContent = 'Terjadi kesalahan: ' + error.message;
+                loginButton.disabled = false;
+                loginButtonText.classList.remove('hidden');
+                loginSpinner.classList.add('hidden');
+            })
+            .checkLogin(email, password);
+    }
+    
+    function handleSignup(event) {
+        event.preventDefault();
+        const namaSekolah = document.getElementById('signup-namasekolah').value;
+        const jenjang = document.getElementById('signup-jenjang').value;
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+        
+        const signupButton = document.getElementById('signupButton');
+        const signupButtonText = document.getElementById('signupButtonText');
+        const signupSpinner = document.getElementById('signupSpinner');
+        const messageDiv = document.getElementById('signup-message');
+        
+        messageDiv.textContent = '';
+        messageDiv.classList.remove('text-red-600', 'text-green-600');
+        
+        if (!namaSekolah || !jenjang) {
+            messageDiv.textContent = 'Nama Sekolah dan Jenjang wajib diisi.';
+            messageDiv.classList.add('text-red-600');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            messageDiv.textContent = 'Kata sandi tidak cocok.';
+            messageDiv.classList.add('text-red-600');
+            return;
+        }
+
+        signupButton.disabled = true;
+        signupButtonText.classList.add('hidden');
+        signupSpinner.classList.remove('hidden');
+
+        const userData = {
+            email: email,
+            password: password,
+            namaSekolah: namaSekolah,
+            jenjang: jenjang
+        };
+
+        google.script.run
+            .withSuccessHandler(response => {
+                signupButton.disabled = false;
+                signupButtonText.classList.remove('hidden');
+                signupSpinner.classList.add('hidden');
+                if (response.status === 'success') {
+                    document.getElementById('signupForm').reset();
+                    document.getElementById('signup-container').classList.add('hidden');
+                    document.getElementById('login-container').classList.remove('hidden');
+                    const loginInfoMessageDiv = document.getElementById('login-info-message');
+                    loginInfoMessageDiv.textContent = "Pendaftaran berhasil! Silakan masuk dengan akun yang baru Anda buat.";
+                    loginInfoMessageDiv.className = "mb-4 text-center text-sm p-3 bg-green-100 text-green-800 rounded-lg";
+                } else {
+                    messageDiv.textContent = response.message;
+                    messageDiv.classList.add('text-red-600');
+                }
+            })
+            .withFailureHandler(error => {
+                messageDiv.textContent = 'Terjadi kesalahan: ' + error.message;
+                messageDiv.classList.add('text-red-600');
+                signupButton.disabled = false;
+                signupButtonText.classList.remove('hidden');
+                signupSpinner.classList.add('hidden');
+            })
+            .registerUser(userData);
+    }
+
+    function initializeApp(lastPage = 'dashboard') {
+        if (!userSpreadsheetId) {
+            alert("Error: Sesi tidak valid. Silakan login ulang.");
+            logoutUser();
+            return;
+        }
+
+        // Setup inactivity timer
+        window.onload = resetInactivityTimer;
+        document.onmousemove = resetInactivityTimer;
+        document.onmousedown = resetInactivityTimer; 
+        document.ontouchstart = resetInactivityTimer;
+        document.onclick = resetInactivityTimer;
+        document.onkeydown = resetInactivityTimer;
+        document.addEventListener('scroll', resetInactivityTimer, true);
+
+        let rekapitulasiData = null;
+
         const navLinks = document.querySelectorAll('.nav-link');
         const contentPages = document.querySelectorAll('.content-page');
         
@@ -323,11 +674,15 @@
         navLinks.forEach(link => {
             link.addEventListener('click', e => {
                 e.preventDefault();
+                if(e.currentTarget.id === 'logoutButton') return;
+                
                 const targetPageId = e.currentTarget.dataset.page;
+                sessionStorage.setItem('lastActivePage', targetPageId);
                 contentPages.forEach(p => p.classList.add('hidden'));
                 document.getElementById('page-' + targetPageId)?.classList.remove('hidden');
                 navLinks.forEach(l => l.classList.remove('active'));
                 e.currentTarget.classList.add('active');
+
                 if (targetPageId === 'data-siswa') loadStudentsData();
                 if (targetPageId === 'mapel') {
                     loadMapelData();
@@ -344,634 +699,779 @@
                 }
             });
         });
-    };
+
+        const lastActiveLink = document.querySelector(`.nav-link[data-page="${lastPage}"]`);
+        if (lastActiveLink) {
+            lastActiveLink.click();
+        }
     
-    function showGlobalStatus(message, isSuccess) {
-        const statusDiv = document.createElement('div');
-        statusDiv.className = `p-4 rounded-lg shadow-lg text-white ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`;
-        statusDiv.textContent = message;
-        document.getElementById('globalStatusMessage').appendChild(statusDiv);
-        setTimeout(() => statusDiv.remove(), 4000);
-    }
+        function showGlobalStatus(message, isSuccess) {
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `p-4 rounded-lg shadow-lg text-white ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`;
+            statusDiv.textContent = message;
+            document.getElementById('globalStatusMessage').appendChild(statusDiv);
+            setTimeout(() => statusDiv.remove(), 4000);
+        }
     
-    function loadSchoolData(){
-        if(typeof google === 'undefined' || !google.script || !google.script.run) return;
-        google.script.run.withSuccessHandler(data => {
-            if (data) {
-                for (const key in data) {
-                    const element = document.getElementById(key);
-                    if (element) element.value = data[key] || '';
+        function loadSchoolData(){
+            google.script.run
+                .withSuccessHandler(data => {
+                    if (data) {
+                        for (const key in data) {
+                            let element;
+                            if (key === 'email') {
+                                element = document.getElementById('email-sekolah');
+                            } else {
+                                element = document.getElementById(key);
+                            }
+                            if (element) element.value = data[key] || '';
+                        }
+                    }
+                })
+                .getSchoolData(userSpreadsheetId);
+        }
+
+        const schoolDataForm = document.getElementById('schoolDataForm');
+        if (schoolDataForm) {
+            schoolDataForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const btn = this.querySelector('button[type="submit"]');
+                const btnText = btn.querySelector('#schoolSubmitBtnText');
+                const btnSpinner = btn.querySelector('#schoolLoadingSpinner');
+                
+                btn.disabled = true;
+                btnText.classList.add('hidden');
+                btnSpinner.classList.remove('hidden');
+                
+                const dataObj = Object.fromEntries(new FormData(this).entries());
+                dataObj.jenjang = document.getElementById('jenjang').value;
+                dataObj.namaSekolah = document.getElementById('namaSekolah').value;
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        showGlobalStatus(response.message, response.status === 'success');
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        btnSpinner.classList.add('hidden');
+                    })
+                    .withFailureHandler(error => {
+                        showGlobalStatus('Error: ' + error.message, false);
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        btnSpinner.classList.add('hidden');
+                    })
+                    .saveSchoolData(userSpreadsheetId, dataObj);
+            });
+        }
+
+        const addStudentBtn = document.getElementById('addStudentBtn');
+        const siswaModal = document.getElementById('siswa-modal');
+        const closeSiswaModalBtn = document.getElementById('closeSiswaModalBtn');
+        const cancelSiswaBtn = document.getElementById('cancelSiswaBtn');
+        const siswaForm = document.getElementById('siswaForm');
+        const siswaModalTitle = document.getElementById('siswa-modal-title');
+        const studentRowInput = document.getElementById('studentRow');
+        const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
+        const importSiswaBtn = document.getElementById('importSiswaBtn');
+        const siswaFileInput = document.getElementById('siswaFileInput');
+        const fileNameSpan = document.getElementById('fileName');
+        const importStatusDiv = document.getElementById('importStatus');
+        const deleteAllStudentsBtn = document.getElementById('deleteAllStudentsBtn');
+
+        const openSiswaModal = () => {
+            siswaModal.classList.remove('hidden');
+            setTimeout(() => {
+                siswaModal.querySelector('.modal-content').style.transform = 'scale(1)';
+            }, 10);
+        };
+        const closeSiswaModal = () => {
+            siswaModal.querySelector('.modal-content').style.transform = 'scale(0.95)';
+            setTimeout(() => siswaModal.classList.add('hidden'), 300);
+        };
+        if(addStudentBtn) {
+          addStudentBtn.addEventListener('click', () => {
+              siswaForm.reset();
+              studentRowInput.value = '';
+              siswaModalTitle.textContent = "Tambah Siswa Baru";
+              openSiswaModal();
+          });
+          closeSiswaModalBtn.addEventListener('click', closeSiswaModal);
+          cancelSiswaBtn.addEventListener('click', closeSiswaModal);
+        }
+        if(deleteAllStudentsBtn) {
+            deleteAllStudentsBtn.addEventListener('click', function() {
+                const btn = this;
+                if (btn.dataset.confirming) {
+                    btn.disabled = true;
+                    btn.textContent = 'Menghapus...';
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            showGlobalStatus(response.message, response.status === 'success');
+                            if (response.status === 'success') {
+                                loadStudentsData();
+                            }
+                            btn.disabled = false;
+                            btn.textContent = 'Hapus Semua Siswa';
+                            delete btn.dataset.confirming;
+                        })
+                        .withFailureHandler(err => {
+                            showGlobalStatus('Error: ' + err.message, false);
+                            btn.disabled = false;
+                            btn.textContent = 'Hapus Semua Siswa';
+                            delete btn.dataset.confirming;
+                        })
+                        .deleteAllStudents(userSpreadsheetId);
+                } else {
+                    btn.dataset.confirming = 'true';
+                    btn.textContent = 'YAKIN? KLIK LAGI UNTUK HAPUS';
+                    btn.classList.replace('bg-red-600', 'bg-yellow-500');
+                    btn.classList.replace('hover:bg-red-700', 'hover:bg-yellow-600');
+                    
+                    setTimeout(() => {
+                        if (btn.dataset.confirming) {
+                            btn.textContent = 'Hapus Semua Siswa';
+                            delete btn.dataset.confirming;
+                            btn.classList.replace('bg-yellow-500', 'bg-red-600');
+                            btn.classList.replace('hover:bg-yellow-600', 'hover:bg-red-700');
+                        }
+                    }, 4000);
+                }
+            });
+        }
+        if (downloadTemplateBtn) {
+            downloadTemplateBtn.addEventListener('click', () => {
+                const btn = downloadTemplateBtn;
+                btn.disabled = true;
+                btn.textContent = 'Membuat Template...';
+                google.script.run
+                    .withSuccessHandler(result => {
+                        btn.disabled = false;
+                        btn.textContent = 'Download Template';
+                        if (result.base64Data) {
+                            const link = document.createElement('a');
+                            link.href = `data:${result.mimeType};base64,${result.base64Data}`;
+                            link.download = result.fileName;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            showGlobalStatus('Template berhasil diunduh.', true);
+                        } else {
+                            showGlobalStatus('Gagal membuat template: ' + (result.error || 'Unknown error'), false);
+                        }
+                    })
+                    .withFailureHandler(error => {
+                        showGlobalStatus('Error: ' + error.message, false);
+                        btn.disabled = false;
+                        btn.textContent = 'Download Template';
+                    })
+                    .generateSiswaTemplate();
+            });
+        }
+        if (siswaFileInput) {
+            siswaFileInput.addEventListener('change', () => {
+                const file = siswaFileInput.files[0];
+                if (file) {
+                    fileNameSpan.textContent = file.name;
+                    importSiswaBtn.disabled = false;
+                } else {
+                    fileNameSpan.textContent = 'Tidak ada file dipilih';
+                    importSiswaBtn.disabled = true;
+                }
+            });
+        }
+        if (importSiswaBtn) {
+            importSiswaBtn.addEventListener('click', () => {
+                const file = siswaFileInput.files[0];
+                if (!file) {
+                    showGlobalStatus('Silakan pilih file untuk diimpor.', false);
+                    return;
+                }
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    const fileData = {
+                        fileName: file.name,
+                        mimeType: file.type,
+                        content: reader.result.split(',')[1]
+                    };
+                    importStatusDiv.innerHTML = '<p class="text-blue-600 loading-animation">Mengimpor data</p>';
+                    importSiswaBtn.disabled = true;
+                    importSiswaBtn.textContent = 'Mengimpor...';
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            importSiswaBtn.disabled = false;
+                            importSiswaBtn.textContent = 'Import Data';
+                            fileNameSpan.textContent = 'Tidak ada file dipilih';
+                            siswaFileInput.value = '';
+                            let reportHtml = `<div class="p-4 border rounded-md bg-gray-50"><strong>${response.message}</strong><ul>`;
+                            if (response.newCount > 0) reportHtml += `<li class="text-green-600">${response.newCount} siswa baru berhasil ditambahkan.</li>`;
+                            if (response.skippedCount > 0) reportHtml += `<li class="text-yellow-600">${response.skippedCount} data duplikat dilewati.</li>`;
+                            if (response.conflictCount > 0) {
+                                reportHtml += `<li class="text-red-600">${response.conflictCount} data konflik (NISN sudah ada dengan nama berbeda):</li>`;
+                                reportHtml += `<ul class="list-disc ml-6 text-sm">`;
+                                response.conflicts.forEach(c => {
+                                    reportHtml += `<li>NISN ${c.nisn} (${c.nama} di file) - ${c.reason}</li>`;
+                                });
+                                reportHtml += `</ul>`;
+                            }
+                            reportHtml += `</ul></div>`;
+                            importStatusDiv.innerHTML = reportHtml;
+                            
+                            if (response.newCount > 0) {
+                                loadStudentsData();
+                            }
+                        })
+                        .withFailureHandler(error => {
+                            showGlobalStatus('Error: ' + error.message, false);
+                            importSiswaBtn.disabled = false;
+                            importSiswaBtn.textContent = 'Import Data';
+                            fileNameSpan.textContent = 'Tidak ada file dipilih';
+                            siswaFileInput.value = '';
+                            importStatusDiv.innerHTML = `<p class="text-red-600">${error.message}</p>`;
+                        })
+                        .importFromExcel(userSpreadsheetId, fileData, 'Data Siswa');
+                };
+                reader.onerror = (error) => { showGlobalStatus('Gagal membaca file.', false); };
+            });
+        }
+        function loadStudentsData() {
+            const container = document.getElementById('siswaTableContainer');
+            container.innerHTML = `<p class="text-center text-gray-500 py-4">Memuat data siswa...</p>`;
+            google.script.run
+                .withSuccessHandler(students => {
+                    if (students && students.length > 0) {
+                        const table = document.createElement('table');
+                        table.className = 'min-w-full divide-y divide-gray-200';
+                        table.innerHTML = `<thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NISN</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Lengkap</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NIS</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"></tbody>`;
+                        const tbody = table.querySelector('tbody');
+                        students.forEach(s => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${s.nama}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${s.nis}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><button class="text-indigo-600 hover:text-indigo-900" data-action="edit">Edit</button><button class="text-red-600 hover:text-red-900 ml-4" data-action="delete">Hapus</button></td>`;
+                            tr.querySelector('[data-action="edit"]').addEventListener('click', () => handleEditStudent(s));
+                            tr.querySelector('[data-action="delete"]').addEventListener('click', (e) => handleDeleteStudent(s, e.target));
+                            tbody.appendChild(tr);
+                        });
+                        container.innerHTML = '';
+                        container.appendChild(table);
+                    } else {
+                        container.innerHTML = `<p class="text-center text-gray-500 py-4">Belum ada data siswa. Silakan tambahkan siswa baru.</p>`;
+                    }
+                })
+                .withFailureHandler(err => { container.innerHTML = `<p class="text-center text-red-500 py-4">Gagal memuat data: ${err.message}</p>`; })
+                .getStudents(userSpreadsheetId);
+        }
+        if (siswaForm) {
+          siswaForm.addEventListener('submit', e => {
+              e.preventDefault();
+              const studentData = Object.fromEntries(new FormData(e.target).entries());
+              const handler = studentData.studentRow ? 'updateStudent' : 'addStudent';
+              google.script.run
+                  .withSuccessHandler(response => { 
+                      showGlobalStatus(response.message, response.status === 'success'); 
+                      if (response.status === 'success') { 
+                          closeSiswaModal(); 
+                          loadStudentsData(); 
+                      } 
+                  })
+                  .withFailureHandler(err => showGlobalStatus(err.message, false))
+                  [handler](userSpreadsheetId, studentData);
+          });
+        }
+        function handleEditStudent(student) {
+            siswaForm.reset();
+            siswaModalTitle.textContent = "Edit Data Siswa";
+            studentRowInput.value = student.row;
+            document.getElementById('nama').value = student.nama;
+            document.getElementById('nisn').value = student.nisn;
+            document.getElementById('nis').value = student.nis;
+            document.getElementById('tempatLahir').value = student.tempatLahir;
+            if (student.tanggalLahir) {
+                const dateParts = student.tanggalLahir.split('/');
+                if(dateParts.length === 3) {
+                    const [day, month, year] = dateParts;
+                    document.getElementById('tanggalLahir').value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
                 }
             }
-        }).getSchoolData();
-    }
-    const schoolDataForm = document.getElementById('schoolDataForm');
-    if (schoolDataForm) {
-        schoolDataForm.addEventListener('submit', function(event) {
+            openSiswaModal();
+        }
+        function handleDeleteStudent(student, targetButton) {
+            if (targetButton.dataset.confirming) {
+                google.script.run
+                    .withSuccessHandler(response => { 
+                        showGlobalStatus(response.message, response.status === 'success'); 
+                        if (response.status === 'success') loadStudentsData(); 
+                    })
+                    .withFailureHandler(err => showGlobalStatus(err.message, false))
+                    .deleteStudent(userSpreadsheetId, student.row);
+            } else {
+                targetButton.textContent = 'Yakin?';
+                targetButton.dataset.confirming = true;
+                targetButton.classList.add('text-yellow-500', 'hover:text-yellow-700');
+                targetButton.classList.remove('text-red-600', 'hover:text-red-900');
+                setTimeout(() => {
+                    if (targetButton.dataset.confirming) {
+                       targetButton.textContent = 'Hapus';
+                       delete targetButton.dataset.confirming;
+                       targetButton.classList.remove('text-yellow-500', 'hover:text-yellow-700');
+                       targetButton.classList.add('text-red-600', 'hover:text-red-900');
+                    }
+                }, 3000);
+            }
+        }
+        const bobotUjianInput = document.getElementById('bobotUjian');
+        const bobotRaporInput = document.getElementById('bobotRapor');
+        const bobotForm = document.getElementById('bobotForm');
+        function syncBobot(source, target) {
+            source.addEventListener('input', () => {
+                const sourceVal = parseInt(source.value, 10);
+                if (!isNaN(sourceVal) && sourceVal >= 0 && sourceVal <= 100) target.value = 100 - sourceVal;
+                else if (source.value === '') target.value = '';
+                else if (sourceVal > 100) { source.value = 100; target.value = 0; }
+            });
+        }
+        if (bobotUjianInput && bobotRaporInput) {
+          syncBobot(bobotUjianInput, bobotRaporInput);
+          syncBobot(bobotRaporInput, bobotUjianInput);
+        }
+        if (bobotForm) {
+          bobotForm.addEventListener('submit', (e) => {
+              e.preventDefault();
+              const saveBtn = e.currentTarget.querySelector('button[type="submit"]');
+              saveBtn.disabled = true; saveBtn.textContent = 'Menyimpan...';
+              const bobotData = { bobotUjian: bobotUjianInput.value, bobotRapor: bobotRaporInput.value };
+              google.script.run
+                  .withSuccessHandler(response => { 
+                      showGlobalStatus(response.message, response.status === 'success'); 
+                      saveBtn.disabled = false; saveBtn.textContent = 'Simpan Bobot'; 
+                  })
+                  .withFailureHandler(err => { 
+                      showGlobalStatus('Gagal menyimpan bobot: ' + err.message, false); 
+                      saveBtn.disabled = false; saveBtn.textContent = 'Simpan Bobot'; 
+                  })
+                  .saveBobot(userSpreadsheetId, bobotData);
+          });
+        }
+        function loadBobotData() { 
+            google.script.run
+                .withSuccessHandler(data => { 
+                    if (data) { 
+                        bobotUjianInput.value = data.bobotUjian || ''; 
+                        bobotRaporInput.value = data.bobotRapor || ''; 
+                    } 
+                })
+                .getBobot(userSpreadsheetId); 
+        }
+        
+        const addMapelBtn = document.getElementById('addMapelBtn');
+        const mapelModal = document.getElementById('mapel-modal');
+        const closeMapelModalBtn = document.getElementById('closeMapelModalBtn');
+        const cancelMapelBtn = document.getElementById('cancelMapelBtn');
+        const mapelForm = document.getElementById('mapelForm');
+        const mapelModalTitle = document.getElementById('mapel-modal-title');
+        const mapelRowInput = document.getElementById('mapelRow');
+        const downloadMapelTemplateBtn = document.getElementById('downloadMapelTemplateBtn');
+        const importMapelBtn = document.getElementById('importMapelBtn');
+        const mapelFileInput = document.getElementById('mapelFileInput');
+        const mapelFileNameSpan = document.getElementById('mapelFileName');
+        const importMapelStatusDiv = document.getElementById('importMapelStatus');
+
+        const openMapelModal = () => { mapelModal.classList.remove('hidden'); setTimeout(() => mapelModal.style.opacity = '1', 10); };
+        const closeMapelModal = () => { mapelModal.style.opacity = '0'; setTimeout(() => mapelModal.classList.add('hidden'), 300); };
+        if (addMapelBtn) {
+          addMapelBtn.addEventListener('click', () => { mapelForm.reset(); mapelRowInput.value = ''; mapelModalTitle.textContent = "Tambah Mata Pelajaran"; openMapelModal(); });
+          closeMapelModalBtn.addEventListener('click', closeMapelModal);
+          cancelMapelBtn.addEventListener('click', closeMapelModal);
+        }
+        if (downloadMapelTemplateBtn) {
+            downloadMapelTemplateBtn.addEventListener('click', () => {
+                const btn = downloadMapelTemplateBtn;
+                btn.disabled = true;
+                btn.textContent = 'Membuat Template...';
+                google.script.run
+                    .withSuccessHandler(result => {
+                        btn.disabled = false;
+                        btn.textContent = 'Download Template Mapel';
+                        if (result.base64Data) {
+                            const link = document.createElement('a');
+                            link.href = `data:${result.mimeType};base64,${result.base64Data}`;
+                            link.download = result.fileName;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            showGlobalStatus('Template Mapel berhasil diunduh.', true);
+                        } else {
+                            showGlobalStatus('Gagal membuat template: ' + (result.error || 'Unknown error'), false);
+                        }
+                    })
+                    .withFailureHandler(error => {
+                        showGlobalStatus('Error: ' + error.message, false);
+                        btn.disabled = false;
+                        btn.textContent = 'Download Template Mapel';
+                    })
+                    .generateMapelTemplate();
+            });
+        }
+        if (mapelFileInput) {
+            mapelFileInput.addEventListener('change', () => {
+                const file = mapelFileInput.files[0];
+                if (file) {
+                    mapelFileNameSpan.textContent = file.name;
+                    importMapelBtn.disabled = false;
+                } else {
+                    mapelFileNameSpan.textContent = 'Tidak ada file dipilih';
+                    importMapelBtn.disabled = true;
+                }
+            });
+        }
+        if (importMapelBtn) {
+            importMapelBtn.addEventListener('click', () => {
+                const file = mapelFileInput.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    const fileData = { fileName: file.name, mimeType: file.type, content: reader.result.split(',')[1] };
+                    importMapelStatusDiv.innerHTML = '<p class="text-blue-600 loading-animation">Mengimpor data</p>';
+                    importMapelBtn.disabled = true; importMapelBtn.textContent = 'Mengimpor...';
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            importMapelStatusDiv.innerHTML = '';
+                            showGlobalStatus(response.message, response.status === 'success');
+                            if(response.status === 'success') loadMapelData();
+                            importMapelBtn.disabled = false; 
+                            importMapelBtn.textContent = 'Import Data Mapel';
+                            mapelFileNameSpan.textContent = 'Tidak ada file dipilih';
+                            mapelFileInput.value = '';
+                        })
+                        .withFailureHandler(error => {
+                            importMapelStatusDiv.innerHTML = '';
+                            showGlobalStatus('Error: ' + error.message, false);
+                            importMapelBtn.disabled = false; 
+                            importMapelBtn.textContent = 'Import Data Mapel';
+                            mapelFileNameSpan.textContent = 'Tidak ada file dipilih';
+                            mapelFileInput.value = '';
+                        })
+                        .importFromExcel(userSpreadsheetId, fileData, 'Data Mata Pelajaran');
+                };
+                reader.onerror = () => showGlobalStatus('Gagal membaca file.', false);
+            });
+        }
+        function loadMapelData() {
+            const container = document.getElementById('mapelTableContainer');
+            container.innerHTML = `<p class="text-center text-gray-500 py-4">Memuat data mapel...</p>`;
+            google.script.run
+                .withSuccessHandler(mapelList => { 
+                    if (mapelList && mapelList.length > 0) { 
+                        const table = document.createElement('table'); 
+                        table.className = 'min-w-full divide-y divide-gray-200'; 
+                        table.innerHTML = `<thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kode</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Mata Pelajaran</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jenis Ujian</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"></tbody>`; 
+                        const tbody = table.querySelector('tbody'); 
+                        mapelList.forEach(m => { 
+                            const tr = document.createElement('tr'); 
+                            tr.innerHTML = `<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${m.kode}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${m.nama}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${m.jenisUjian}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><button class="text-indigo-600 hover:text-indigo-900" data-action="edit">Edit</button><button class="text-red-600 hover:text-red-900 ml-4" data-action="delete">Hapus</button></td>`; 
+                            tr.querySelector('[data-action="edit"]').addEventListener('click', () => handleEditMapel(m)); 
+                            tr.querySelector('[data-action="delete"]').addEventListener('click', (e) => handleDeleteMapel(m, e.target)); 
+                            tbody.appendChild(tr); 
+                        }); 
+                        container.innerHTML = ''; 
+                        container.appendChild(table); 
+                    } else { 
+                        container.innerHTML = `<p class="text-center text-gray-500 py-4">Belum ada data mata pelajaran.</p>`; 
+                    } 
+                })
+                .withFailureHandler(err => { container.innerHTML = `<p class="text-center text-red-500 py-4">Gagal memuat data: ${err.message}</p>`; })
+                .getMapel(userSpreadsheetId);
+        }
+        if (mapelForm) {
+          mapelForm.addEventListener('submit', e => { 
+              e.preventDefault(); 
+              const mapelData = Object.fromEntries(new FormData(e.target).entries()); 
+              const handler = mapelData.mapelRow ? 'updateMapel' : 'addMapel'; 
+              google.script.run
+                  .withSuccessHandler(response => { 
+                      showGlobalStatus(response.message, response.status === 'success'); 
+                      if (response.status === 'success') { 
+                          closeMapelModal(); 
+                          loadMapelData(); 
+                      } 
+                  })
+                  .withFailureHandler(err => showGlobalStatus(err.message, false))
+                  [handler](userSpreadsheetId, mapelData); 
+          });
+        }
+        function handleEditMapel(mapel) {
+            mapelForm.reset(); 
+            mapelModalTitle.textContent = "Edit Mata Pelajaran"; 
+            mapelRowInput.value = mapel.row; 
+            document.getElementById('kode').value = mapel.kode; 
+            document.getElementById('namaMapel').value = mapel.nama; 
+            document.getElementById('kelompok').value = mapel.kelompok; 
+            if (mapel.jenisUjian) { 
+                const radioBtn = document.querySelector(`input[name="jenisUjian"][value="${mapel.jenisUjian}"]`); 
+                if (radioBtn) radioBtn.checked = true; 
+            } 
+            openMapelModal();
+        }
+        function handleDeleteMapel(mapel, targetButton) {
+            if (targetButton.dataset.confirming) {
+                google.script.run
+                    .withSuccessHandler(response => { 
+                        showGlobalStatus(response.message, response.status === 'success'); 
+                        if (response.status === 'success') loadMapelData(); 
+                    })
+                    .withFailureHandler(err => showGlobalStatus(err.message, false))
+                    .deleteMapel(userSpreadsheetId, mapel.row);
+            } else {
+                targetButton.textContent = 'Yakin?';
+                targetButton.dataset.confirming = true;
+                targetButton.classList.add('text-yellow-500', 'hover:text-yellow-700');
+                targetButton.classList.remove('text-red-600', 'hover:text-red-900');
+                setTimeout(() => {
+                    if (targetButton.dataset.confirming) {
+                       targetButton.textContent = 'Hapus';
+                       delete targetButton.dataset.confirming;
+                       targetButton.classList.remove('text-yellow-500', 'hover:text-yellow-700');
+                       targetButton.classList.add('text-red-600', 'hover:text-red-900');
+                    }
+                }, 3000);
+            }
+        }
+        document.getElementById('btn-show-ujian-madrasah').addEventListener('click', () => buildScoreTable('madrasah'));
+        document.getElementById('btn-show-ujian-praktek').addEventListener('click', () => buildScoreTable('praktek'));
+        function buildScoreTable(jenis) {
+            const container = document.getElementById('input-ujian-container');
+            container.innerHTML = `<div class="text-center p-8"><p class="font-bold">Memuat data...</p><p>Silakan tunggu sebentar.</p></div>`;
+            const sheetName = jenis === 'madrasah' ? 'Nilai Ujian Madrasah' : 'Nilai Ujian Praktek';
+            Promise.all([ 
+                new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getStudents(userSpreadsheetId)), 
+                new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getMapelByJenis(userSpreadsheetId, jenis)), 
+                new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getExistingNilai(userSpreadsheetId, sheetName)) 
+            ]).then(([students, mapelList, existingScores]) => {
+                if (!students || students.length === 0) { container.innerHTML = `<p class="text-center text-red-500 p-4">Data siswa tidak ditemukan. Harap isi data siswa terlebih dahulu.</p>`; return; }
+                if (!mapelList || mapelList.length === 0) { container.innerHTML = `<p class="text-center text-red-500 p-4">Tidak ada mata pelajaran yang ditandai untuk Ujian ${jenis}. Silahkan edit dan ubah Jenis Ujian pada Mata Pelajaran.</p>`; return; }
+                const tableWrapper = document.createElement('div'); tableWrapper.className = 'bg-white p-4 rounded-lg shadow-md';
+                const tableHtml = `<form id="form-nilai-${jenis}"><div class="overflow-x-auto"><table id="score-table-${jenis}" class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>${mapelList.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}<th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th><th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"></tbody></table></div><div class="mt-6 pt-4 border-t flex justify-end space-x-3"><button type="button" class="clear-scores-btn bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400">Bersihkan</button><button type="submit" class="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700">Simpan Nilai ${jenis}</button></div></form>`;
+                tableWrapper.innerHTML = tableHtml; const tbody = tableWrapper.querySelector('tbody');
+                students.forEach((s, index) => { const studentScores = existingScores[s.nisn] || {}; let rowHtml = `<tr data-nisn="${s.nisn}" data-nama="${s.nama}"><td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${index + 1}</td><td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">${s.nama}</td>`; mapelList.forEach(m => { rowHtml += `<td class="px-2 py-1"><input type="number" min="0" max="100" class="score-input p-1 border rounded-md" data-mapel-kode="${m.kode}" value="${studentScores[m.kode] || ''}"></td>`; }); rowHtml += `<td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell jumlah-nilai">0</td><td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell rata-rata-nilai">0.00</td></tr>`; tbody.innerHTML += rowHtml; });
+                container.innerHTML = ''; container.appendChild(tableWrapper);
+                const scoreTable = document.getElementById(`score-table-${jenis}`); scoreTable.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row)); scoreTable.addEventListener('input', handleScoreInput); scoreTable.addEventListener('paste', handleSmartPaste); document.getElementById(`form-nilai-${jenis}`).addEventListener('submit', (e) => handleSaveNilai(e, jenis));
+                tableWrapper.querySelector('.clear-scores-btn').addEventListener('click', (e) => {
+                    const form = e.target.closest('form');
+                    form.querySelectorAll('.score-input').forEach(input => input.value = '');
+                    form.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row));
+                });
+            }).catch(err => { container.innerHTML = `<p class="text-center text-red-500 p-4">Terjadi kesalahan saat memuat data: ${err.message}</p>`; });
+        }
+        function updateRowTotals(rowElement) { const inputs = rowElement.querySelectorAll('.score-input'); let total = 0; let count = 0; inputs.forEach(input => { const value = parseFloat(input.value); if (!isNaN(value)) { total += value; count++; } }); const average = count > 0 ? (total / count).toFixed(2) : '0.00'; rowElement.querySelector('.jumlah-nilai').textContent = total; rowElement.querySelector('.rata-rata-nilai').textContent = average; }
+        function handleScoreInput(event) { if (event.target.classList.contains('score-input')) { const row = event.target.closest('tr'); updateRowTotals(row); } }
+        function handleSmartPaste(event) {
+            if (!event.target.classList.contains('score-input')) return;
             event.preventDefault();
-            const btn = this.querySelector('button[type="submit"]');
+            const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+            const pastedRows = pastedText.split(/\r?\n/).filter(r => r).map(row => row.split('\t'));
+            const tableBody = event.target.closest('tbody');
+            if (!tableBody) return;
+            const allTableRows = Array.from(tableBody.querySelectorAll('tr'));
+            const startRowElement = event.target.closest('tr');
+            const startRowIndex = allTableRows.indexOf(startRowElement);
+            const allRowInputs = Array.from(startRowElement.querySelectorAll('.score-input'));
+            const startColIndex = allRowInputs.indexOf(event.target);
+            pastedRows.forEach((rowData, r_offset) => {
+                const currentRowIndex = startRowIndex + r_offset;
+                const targetRow = allTableRows[currentRowIndex];
+                if (targetRow) {
+                    const targetRowInputs = Array.from(targetRow.querySelectorAll('.score-input'));
+                    rowData.forEach((cellData, c_offset) => {
+                        const currentColIndex = startColIndex + c_offset;
+                        const targetInput = targetRowInputs[currentColIndex];
+                        if (targetInput) targetInput.value = cellData.trim();
+                    });
+                    updateRowTotals(targetRow);
+                }
+            });
+        }
+        function handleSaveNilai(event, jenisUjian) {
+            event.preventDefault(); const form = event.target; const saveBtn = form.querySelector('button[type="submit"]'); saveBtn.disabled = true; saveBtn.textContent = 'Menyimpan...';
+            const allRows = form.querySelectorAll('tbody tr'); const nilaiData = [];
+            allRows.forEach(row => { const studentScores = { nisn: row.dataset.nisn, nama: row.dataset.nama, scores: {} }; const inputs = row.querySelectorAll('.score-input'); inputs.forEach(input => { studentScores.scores[input.dataset.mapelKode] = input.value; }); nilaiData.push(studentScores); });
+            google.script.run
+                .withSuccessHandler(response => { 
+                    showGlobalStatus(response.message, response.status === 'success'); 
+                    saveBtn.disabled = false; 
+                    saveBtn.textContent = `Simpan Nilai ${jenisUjian}`;
+                })
+                .withFailureHandler(err => { 
+                    showGlobalStatus(`Gagal menyimpan: ${err.message}`, false); 
+                    saveBtn.disabled = false; 
+                    saveBtn.textContent = `Simpan Nilai ${jenisUjian}`;
+                })
+                .saveNilai(userSpreadsheetId, { jenis: jenisUjian, nilai: nilaiData });
+        }
+        const semesters = { MI: { k4_ganjil: 'Kelas 4 Ganjil', k4_genap: 'Kelas 4 Genap', k5_ganjil: 'Kelas 5 Ganjil', k5_genap: 'Kelas 5 Genap', k6_ganjil: 'Kelas 6 Ganjil' }, MTS: { k7_ganjil: 'Kelas 7 Ganjil', k7_genap: 'Kelas 7 Genap', k8_ganjil: 'Kelas 8 Ganjil', k8_genap: 'Kelas 8 Genap', k9_ganjil: 'Kelas 9 Ganjil' }, MA: { k10_ganjil: 'Kelas 10 Ganjil', k10_genap: 'Kelas 10 Genap', k11_ganjil: 'Kelas 11 Ganjil', k11_genap: 'Kelas 11 Genap', k12_ganjil: 'Kelas 12 Ganjil' } };
+        function initRaporPage() {
+          const container = document.getElementById('rapor-container'); container.innerHTML = '<p>Memeriksa data sekolah...</p>';
+          google.script.run
+            .withSuccessHandler(schoolData => {
+                if (!schoolData || !schoolData.jenjang) { container.innerHTML = `<div class="p-4 bg-yellow-100 text-yellow-800 rounded-lg">Harap atur <b>Jenjang Sekolah</b> di halaman <a href="#" onclick="document.querySelector('[data-page=data-sekolah]').click()" class="font-bold underline">Data Sekolah</a> terlebih dahulu.</div>`; return; }
+                const jenjang = schoolData.jenjang; const semesterList = semesters[jenjang]; let html = '';
+                for (const key in semesterList) { html += `<div class="mb-6 bg-white p-4 rounded-lg shadow-sm"><h3 class="text-xl font-bold text-gray-700">${semesterList[key]}</h3><div class="flex space-x-4 mt-3"><button onclick="buildRaporScoreTable('${key}', 'Pengetahuan')" class="bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600 text-sm">Input Nilai Pengetahuan</button><button onclick="buildRaporScoreTable('${key}', 'Keterampilan')" class="bg-teal-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-teal-600 text-sm">Input Nilai Keterampilan</button></div><div id="table-container-${key}" class="mt-4"></div></div>`; }
+                container.innerHTML = html;
+            })
+            .getSchoolData(userSpreadsheetId);
+        }
+        function buildRaporScoreTable(semesterKey, jenisNilai) {
+            const container = document.getElementById(`table-container-${semesterKey}`); container.innerHTML = `<div class="text-center p-8"><p class="font-bold">Memuat data...</p></div>`; const sheetName = `Rapor_${jenisNilai}_${semesterKey}`;
+            Promise.all([ 
+                new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getStudents(userSpreadsheetId)), 
+                new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getMapel(userSpreadsheetId)), 
+                new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getExistingNilai(userSpreadsheetId, sheetName)) 
+            ]).then(([students, mapelList, existingScores]) => {
+                 if (!students || students.length === 0) { container.innerHTML = `<p class="text-center text-red-500 p-4">Data siswa tidak ditemukan.</p>`; return; }
+                 if (!mapelList || mapelList.length === 0) { container.innerHTML = `<p class="text-center text-red-500 p-4">Data mata pelajaran tidak ditemukan.</p>`; return; }
+                 const tableWrapper = document.createElement('div'); tableWrapper.className = 'p-4 border rounded-lg'; tableWrapper.innerHTML = `<h4 class="text-lg font-semibold mb-3">Tabel Nilai ${jenisNilai}</h4><form id="form-${sheetName}"><div class="overflow-x-auto"><table id="score-table-${sheetName}" class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>${mapelList.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}<th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th><th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"></tbody></table></div><div class="mt-6 pt-4 border-t flex justify-end space-x-3"><button type="button" class="clear-scores-btn bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400">Bersihkan</button><button type="submit" class="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700">Simpan Nilai ${jenisNilai}</button></div></form>`;
+                 const tbody = tableWrapper.querySelector('tbody');
+                 students.forEach((s, index) => { const studentScores = existingScores[s.nisn] || {}; let rowHtml = `<tr data-nisn="${s.nisn}" data-nama="${s.nama}"><td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${index + 1}</td><td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">${s.nama}</td>`; mapelList.forEach(m => { rowHtml += `<td class="px-2 py-1"><input type="number" min="0" max="100" class="score-input p-1 border rounded-md" data-mapel-kode="${m.kode}" value="${studentScores[m.kode] || ''}"></td>`; }); rowHtml += `<td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell jumlah-nilai">0</td><td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell rata-rata-nilai">0.00</td></tr>`; tbody.innerHTML += rowHtml; });
+                 container.innerHTML = ''; container.appendChild(tableWrapper);
+                 const scoreTable = document.getElementById(`score-table-${sheetName}`); scoreTable.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row)); scoreTable.addEventListener('input', handleScoreInput); scoreTable.addEventListener('paste', handleSmartPaste); document.getElementById(`form-${sheetName}`).addEventListener('submit', (e) => handleSaveRapor(e, semesterKey, jenisNilai));
+                 tableWrapper.querySelector('.clear-scores-btn').addEventListener('click', (e) => {
+                    const form = e.target.closest('form');
+                    form.querySelectorAll('.score-input').forEach(input => input.value = '');
+                    form.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row));
+                });
+            });
+        }
+        function handleSaveRapor(event, semesterKey, jenisNilai) {
+            event.preventDefault(); const form = event.target; const saveBtn = form.querySelector('button[type="submit"]'); saveBtn.disabled = true; saveBtn.textContent = 'Menyimpan...';
+            const allRows = form.querySelectorAll('tbody tr'); const nilaiData = [];
+            allRows.forEach(row => { const studentScores = { nisn: row.dataset.nisn, nama: row.dataset.nama, scores: {} }; const inputs = row.querySelectorAll('.score-input'); inputs.forEach(input => { studentScores.scores[input.dataset.mapelKode] = input.value; }); nilaiData.push(studentScores); });
+            google.script.run
+                .withSuccessHandler(response => { 
+                    showGlobalStatus(response.message, response.status === 'success'); 
+                    saveBtn.disabled = false; 
+                    saveBtn.textContent = `Simpan Nilai ${jenisNilai}`;
+                })
+                .withFailureHandler(err => { 
+                    showGlobalStatus(`Gagal menyimpan: ${err.message}`, false); 
+                    saveBtn.disabled = false; 
+                    saveBtn.textContent = `Simpan Nilai ${jenisNilai}`;
+                })
+                .saveNilaiRapor(userSpreadsheetId, { semesterKey: semesterKey, jenisNilai: jenisNilai, nilai: nilaiData });
+        }
+        function initRekapitulasiPage() {
+            const loader = document.getElementById('rekap-loader');
+            const content = document.getElementById('rekap-content');
+            const setupDiv = document.getElementById('rekap-setup');
+            const displayArea = document.getElementById('rekap-display-area');
+            
+            loader.classList.remove('hidden'); 
+            content.classList.add('hidden');
+            setupDiv.classList.add('hidden');
+            displayArea.innerHTML = '';
+
+            google.script.run
+                .withSuccessHandler(sheetsExist => {
+                    if (sheetsExist) {
+                        google.script.run
+                            .withSuccessHandler(data => {
+                                rekapitulasiData = data;
+                                loader.classList.add('hidden');
+                                content.classList.remove('hidden');
+                                document.querySelector('[data-rekap="ijazah"]').click();
+                            })
+                            .getRekapitulasiData(userSpreadsheetId);
+                    } else {
+                        loader.classList.add('hidden');
+                        setupDiv.classList.remove('hidden');
+                    }
+                })
+                .checkRekapSheetsExist(userSpreadsheetId);
+        }
+        document.getElementById('createRekapSheetsBtn')?.addEventListener('click', function() {
+            const btn = this;
             btn.disabled = true;
-            btn.querySelector('span:first-child').classList.add('hidden');
-            btn.querySelector('span:last-child').classList.remove('hidden');
-            const dataObj = Object.fromEntries(new FormData(this).entries());
+            btn.textContent = 'Membuat...';
             google.script.run
                 .withSuccessHandler(response => {
                     showGlobalStatus(response.message, response.status === 'success');
-                    btn.disabled = false;
-                    btn.querySelector('span:first-child').classList.remove('hidden');
-                    btn.querySelector('span:last-child').classList.add('hidden');
+                    initRekapitulasiPage();
                 })
-                .withFailureHandler(error => {
-                    showGlobalStatus('Error: ' + error.message, false);
+                .withFailureHandler(err => {
+                    showGlobalStatus('Gagal: ' + err.message, false);
                     btn.disabled = false;
-                    btn.querySelector('span:first-child').classList.remove('hidden');
-                    btn.querySelector('span:last-child').classList.add('hidden');
+                    btn.textContent = 'Buat Sheet Rekapitulasi';
                 })
-                .saveSchoolData(dataObj);
+                .createRekapSheets(userSpreadsheetId);
         });
-    }
-
-    const addStudentBtn = document.getElementById('addStudentBtn');
-    const siswaModal = document.getElementById('siswa-modal');
-    const closeSiswaModalBtn = document.getElementById('closeSiswaModalBtn');
-    const cancelSiswaBtn = document.getElementById('cancelSiswaBtn');
-    const siswaForm = document.getElementById('siswaForm');
-    const siswaModalTitle = document.getElementById('siswa-modal-title');
-    const studentRowInput = document.getElementById('studentRow');
-    const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
-    const importSiswaBtn = document.getElementById('importSiswaBtn');
-    const siswaFileInput = document.getElementById('siswaFileInput');
-    const fileNameSpan = document.getElementById('fileName');
-    const importStatusDiv = document.getElementById('importStatus');
-    const deleteAllStudentsBtn = document.getElementById('deleteAllStudentsBtn');
-
-    const openSiswaModal = () => {
-        siswaModal.classList.remove('hidden');
-        setTimeout(() => {
-            siswaModal.style.opacity = '1';
-            siswaModal.querySelector('.modal-content').style.transform = 'scale(1)';
-        }, 10);
-    };
-    const closeSiswaModal = () => {
-        siswaModal.style.opacity = '0';
-        siswaModal.querySelector('.modal-content').style.transform = 'scale(0.95)';
-        setTimeout(() => siswaModal.classList.add('hidden'), 300);
-    };
-    if(addStudentBtn) {
-      addStudentBtn.addEventListener('click', () => {
-          siswaForm.reset();
-          studentRowInput.value = '';
-          siswaModalTitle.textContent = "Tambah Siswa Baru";
-          openSiswaModal();
-      });
-      closeSiswaModalBtn.addEventListener('click', closeSiswaModal);
-      cancelSiswaBtn.addEventListener('click', closeSiswaModal);
-    }
-    if(deleteAllStudentsBtn) {
-        deleteAllStudentsBtn.addEventListener('click', function() {
+        document.getElementById('updateRekapBtn')?.addEventListener('click', function() {
             const btn = this;
-            if (btn.dataset.confirming) {
-                btn.disabled = true;
-                btn.textContent = 'Menghapus...';
-                google.script.run
-                    .withSuccessHandler(response => {
-                        showGlobalStatus(response.message, response.status === 'success');
-                        if (response.status === 'success') {
-                            loadStudentsData();
-                        }
-                        btn.disabled = false;
-                        btn.textContent = 'Hapus Semua Siswa';
-                        delete btn.dataset.confirming;
-                    })
-                    .withFailureHandler(err => {
-                        showGlobalStatus('Error: ' + err.message, false);
-                        btn.disabled = false;
-                        btn.textContent = 'Hapus Semua Siswa';
-                        delete btn.dataset.confirming;
-                    })
-                    .deleteAllStudents();
-            } else {
-                btn.dataset.confirming = 'true';
-                btn.textContent = 'YAKIN? KLIK LAGI UNTUK HAPUS';
-                btn.classList.replace('bg-red-600', 'bg-yellow-500');
-                btn.classList.replace('hover:bg-red-700', 'hover:bg-yellow-600');
+            btn.disabled = true;
+            btn.textContent = 'Memperbarui...';
+            google.script.run
+                .withSuccessHandler(response => {
+                    showGlobalStatus(response.message, response.status === 'success');
+                    initRekapitulasiPage();
+                    btn.disabled = false;
+                    btn.textContent = 'Perbarui & Muat Ulang Data';
+                })
+                .withFailureHandler(err => {
+                    showGlobalStatus('Gagal memperbarui: ' + err.message, false);
+                    btn.disabled = false;
+                    btn.textContent = 'Perbarui & Muat Ulang Data';
+                })
+                .updateRekapitulasi(userSpreadsheetId);
+        });
+        document.querySelectorAll('.rekap-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.rekap-btn').forEach(b => b.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                const type = e.currentTarget.dataset.rekap;
+                displayRekap(type);
+            });
+        });
+        function displayRekap(type) {
+            if (!rekapitulasiData) return;
+            const { students, mapel, rekapUjian, rekapRapor, rekapIjazah } = rekapitulasiData;
+            const displayArea = document.getElementById('rekap-display-area');
+            let dataToShow, title;
+            switch(type) {
+                case 'ujian': dataToShow = rekapUjian; title = 'Rekapitulasi Nilai Ujian (Rata-rata Ujian Madrasah & Praktek)'; break;
+                case 'rapor': dataToShow = rekapRapor; title = 'Rekapitulasi Nilai Rapor (Rata-rata 5 Semester)'; break;
+                default: dataToShow = rekapIjazah; title = 'Rekapitulasi Nilai Akhir Ijazah';
+            }
+            let tableHtml = `<div class="bg-white p-4 rounded-lg shadow-md"><h3 class="text-xl font-bold mb-4">${title}</h3><div class="overflow-x-auto"><table class="min-w-full text-sm rekap-table"><thead class="bg-gray-100"><tr><th class="text-left">No</th><th class="text-left">NISN</th><th class="text-left">Nama Siswa</th>${mapel.map(m => `<th title="${m.nama}">${m.kode}</th>`).join('')}<th>Jumlah</th><th>Rata-rata</th></tr></thead><tbody>`;
+            students.forEach((student, index) => {
+                const scores = dataToShow[student.nisn] || {};
+                let total = 0; let count = 0;
+                let rowHtml = `<tr><td>${index + 1}</td><td>${student.nisn}</td><td class="text-left">${student.nama}</td>`;
                 
-                setTimeout(() => {
-                    if (btn.dataset.confirming) {
-                        btn.textContent = 'Hapus Semua Siswa';
-                        delete btn.dataset.confirming;
-                        btn.classList.replace('bg-yellow-500', 'bg-red-600');
-                        btn.classList.replace('hover:bg-yellow-600', 'hover:bg-red-700');
-                    }
-                }, 4000);
-            }
-        });
-    }
-    if (downloadTemplateBtn) {
-        downloadTemplateBtn.addEventListener('click', () => {
-            const btn = downloadTemplateBtn;
-            btn.disabled = true;
-            btn.textContent = 'Membuat Template...';
-            google.script.run
-                .withSuccessHandler(result => {
-                    btn.disabled = false;
-                    btn.textContent = 'Download Template';
-                    if (result.base64Data) {
-                        const link = document.createElement('a');
-                        link.href = `data:${result.mimeType};base64,${result.base64Data}`;
-                        link.download = result.fileName;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        showGlobalStatus('Template berhasil diunduh.', true);
-                    } else {
-                        showGlobalStatus('Gagal membuat template: ' + (result.error || 'Unknown error'), false);
-                    }
-                })
-                .withFailureHandler(error => {
-                    btn.disabled = false;
-                    btn.textContent = 'Download Template';
-                    showGlobalStatus('Error: ' + error.message, false);
-                })
-                .generateSiswaTemplate();
-        });
-    }
-    if (siswaFileInput) {
-        siswaFileInput.addEventListener('change', () => {
-            const file = siswaFileInput.files[0];
-            if (file) {
-                fileNameSpan.textContent = file.name;
-                importSiswaBtn.disabled = false;
-            } else {
-                fileNameSpan.textContent = 'Tidak ada file dipilih';
-                importSiswaBtn.disabled = true;
-            }
-        });
-    }
-    if (importSiswaBtn) {
-        importSiswaBtn.addEventListener('click', () => {
-            const file = siswaFileInput.files[0];
-            if (!file) {
-                showGlobalStatus('Silakan pilih file untuk diimpor.', false);
-                return;
-            }
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => {
-                const fileData = {
-                    fileName: file.name,
-                    mimeType: file.type,
-                    content: reader.result.split(',')[1]
-                };
-                importStatusDiv.innerHTML = '<p class="text-blue-600">Mengimpor data, harap tunggu...</p>';
-                importSiswaBtn.disabled = true;
-                importSiswaBtn.textContent = 'Mengimpor...';
-                google.script.run
-                    .withSuccessHandler(response => {
-                        importSiswaBtn.disabled = false;
-                        importSiswaBtn.textContent = 'Import Data';
-                        fileNameSpan.textContent = 'Tidak ada file dipilih';
-                        siswaFileInput.value = '';
-                        let reportHtml = `<div class="p-4 border rounded-md bg-gray-50"><strong>${response.message}</strong><ul>`;
-                        if (response.newCount > 0) reportHtml += `<li class="text-green-600">${response.newCount} siswa baru berhasil ditambahkan.</li>`;
-                        if (response.skippedCount > 0) reportHtml += `<li class="text-yellow-600">${response.skippedCount} data duplikat dilewati.</li>`;
-                        if (response.conflictCount > 0) {
-                            reportHtml += `<li class="text-red-600">${response.conflictCount} data konflik (NISN sudah ada dengan nama berbeda):</li>`;
-                            reportHtml += `<ul class="list-disc ml-6 text-sm">`;
-                            response.conflicts.forEach(c => {
-                                reportHtml += `<li>NISN ${c.nisn} (${c.nama} di file) - ${c.reason}</li>`;
-                            });
-                            reportHtml += `</ul>`;
-                        }
-                        reportHtml += `</ul></div>`;
-                        importStatusDiv.innerHTML = reportHtml;
-                        
-                        if (response.newCount > 0) {
-                            loadStudentsData();
-                        }
-                    })
-                    .withFailureHandler(error => {
-                        importStatusDiv.innerHTML = '';
-                        importSiswaBtn.disabled = false;
-                        importSiswaBtn.textContent = 'Import Data';
-                        showGlobalStatus('Error: ' + error.message, false);
-                    })
-                    .importFromExcel(fileData, 'Data Siswa');
-            };
-            reader.onerror = (error) => { showGlobalStatus('Gagal membaca file.', false); };
-        });
-    }
-    function loadStudentsData() {
-        const container = document.getElementById('siswaTableContainer');
-        container.innerHTML = `<p class="text-center text-gray-500 py-4">Memuat data siswa...</p>`;
-        google.script.run
-            .withSuccessHandler(students => {
-                if (students && students.length > 0) {
-                    const table = document.createElement('table');
-                    table.className = 'min-w-full divide-y divide-gray-200';
-                    table.innerHTML = `<thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NISN</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Lengkap</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NIS</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"></tbody>`;
-                    const tbody = table.querySelector('tbody');
-                    students.forEach(s => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${s.nama}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${s.nis}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><button class="text-indigo-600 hover:text-indigo-900" data-action="edit">Edit</button><button class="text-red-600 hover:text-red-900 ml-4" data-action="delete">Hapus</button></td>`;
-                        tr.querySelector('[data-action="edit"]').addEventListener('click', () => handleEditStudent(s));
-                        tr.querySelector('[data-action="delete"]').addEventListener('click', (e) => handleDeleteStudent(s, e.target));
-                        tbody.appendChild(tr);
+                if (type === 'ijazah') {
+                    const roundedScores = [];
+                    mapel.forEach(m => {
+                        const rawScore = scores[m.kode] || 0;
+                        const roundedScore = Math.round(rawScore);
+                        roundedScores.push(roundedScore);
+                        rowHtml += `<td class="text-center">${roundedScore}</td>`;
                     });
-                    container.innerHTML = '';
-                    container.appendChild(table);
+                    total = roundedScores.reduce((acc, val) => acc + val, 0);
+                    count = roundedScores.length;
+                    const average = count > 0 ? (total / count).toFixed(2) : '0.00';
+                    rowHtml += `<td class="text-center font-bold">${total}</td><td class="text-center font-bold">${average}</td>`;
                 } else {
-                    container.innerHTML = `<p class="text-center text-gray-500 py-4">Belum ada data siswa. Silakan tambahkan siswa baru.</p>`;
+                    mapel.forEach(m => {
+                        const rawScore = scores[m.kode] || 0;
+                        total += rawScore;
+                        count++;
+                        rowHtml += `<td class="text-center">${Math.round(rawScore)}</td>`;
+                    });
+                    const average = count > 0 ? Math.round(total / count) : 0;
+                    rowHtml += `<td class="text-center font-bold">${Math.round(total)}</td><td class="text-center font-bold">${average}</td>`;
                 }
-            })
-            .withFailureHandler(err => { container.innerHTML = `<p class="text-center text-red-500 py-4">Gagal memuat data: ${err.message}</p>`; })
-            .getStudents();
-    }
-    if (siswaForm) {
-      siswaForm.addEventListener('submit', e => {
-          e.preventDefault();
-          const studentData = Object.fromEntries(new FormData(e.target).entries());
-          const handler = studentData.studentRow ? 'updateStudent' : 'addStudent';
-          google.script.run.withSuccessHandler(response => { showGlobalStatus(response.message, response.status === 'success'); if (response.status === 'success') { closeSiswaModal(); loadStudentsData(); } }).withFailureHandler(err => showGlobalStatus(err.message, false))[handler](studentData);
-      });
-    }
-    function handleEditStudent(student) {
-        siswaForm.reset();
-        siswaModalTitle.textContent = "Edit Data Siswa";
-        studentRowInput.value = student.row;
-        document.getElementById('nama').value = student.nama;
-        document.getElementById('nisn').value = student.nisn;
-        document.getElementById('nis').value = student.nis;
-        document.getElementById('tempatLahir').value = student.tempatLahir;
-        if (student.tanggalLahir) {
-            const dateParts = student.tanggalLahir.split('/');
-            if(dateParts.length === 3) {
-                const [day, month, year] = dateParts;
-                document.getElementById('tanggalLahir').value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-            }
-        }
-        openSiswaModal();
-    }
-    function handleDeleteStudent(student, targetButton) {
-        if (targetButton.dataset.confirming) {
-            google.script.run.withSuccessHandler(response => { showGlobalStatus(response.message, response.status === 'success'); if (response.status === 'success') loadStudentsData(); }).withFailureHandler(err => showGlobalStatus(err.message, false)).deleteStudent(student.row);
-        } else {
-            targetButton.textContent = 'Yakin?';
-            targetButton.dataset.confirming = true;
-            targetButton.classList.add('text-yellow-500', 'hover:text-yellow-700');
-            targetButton.classList.remove('text-red-600', 'hover:text-red-900');
-            setTimeout(() => {
-                if (targetButton.dataset.confirming) {
-                   targetButton.textContent = 'Hapus';
-                   delete targetButton.dataset.confirming;
-                   targetButton.classList.remove('text-yellow-500', 'hover:text-yellow-700');
-                   targetButton.classList.add('text-red-600', 'hover:text-red-900');
-                }
-            }, 3000);
-        }
-    }
-    const bobotUjianInput = document.getElementById('bobotUjian');
-    const bobotRaporInput = document.getElementById('bobotRapor');
-    const bobotForm = document.getElementById('bobotForm');
-    function syncBobot(source, target) {
-        source.addEventListener('input', () => {
-            const sourceVal = parseInt(source.value, 10);
-            if (!isNaN(sourceVal) && sourceVal >= 0 && sourceVal <= 100) target.value = 100 - sourceVal;
-            else if (source.value === '') target.value = '';
-            else if (sourceVal > 100) { source.value = 100; target.value = 0; }
-        });
-    }
-    if (bobotUjianInput && bobotRaporInput) {
-      syncBobot(bobotUjianInput, bobotRaporInput);
-      syncBobot(bobotRaporInput, bobotUjianInput);
-    }
-    if (bobotForm) {
-      bobotForm.addEventListener('submit', (e) => {
-          e.preventDefault();
-          const saveBtn = e.currentTarget.querySelector('button[type="submit"]');
-          saveBtn.disabled = true; saveBtn.textContent = 'Menyimpan...';
-          const bobotData = { bobotUjian: bobotUjianInput.value, bobotRapor: bobotRaporInput.value };
-          google.script.run.withSuccessHandler(response => { showGlobalStatus(response.message, response.status === 'success'); saveBtn.disabled = false; saveBtn.textContent = 'Simpan Bobot'; }).withFailureHandler(err => { showGlobalStatus('Gagal menyimpan bobot: ' + err.message, false); saveBtn.disabled = false; saveBtn.textContent = 'Simpan Bobot'; }).saveBobot(bobotData);
-      });
-    }
-    function loadBobotData() { google.script.run.withSuccessHandler(data => { if (data) { bobotUjianInput.value = data.bobotUjian || ''; bobotRaporInput.value = data.bobotRapor || ''; } }).getBobot(); }
-    const addMapelBtn = document.getElementById('addMapelBtn');
-    const mapelModal = document.getElementById('mapel-modal');
-    const closeMapelModalBtn = document.getElementById('closeMapelModalBtn');
-    const cancelMapelBtn = document.getElementById('cancelMapelBtn');
-    const mapelForm = document.getElementById('mapelForm');
-    const mapelModalTitle = document.getElementById('mapel-modal-title');
-    const mapelRowInput = document.getElementById('mapelRow');
-    const downloadMapelTemplateBtn = document.getElementById('downloadMapelTemplateBtn');
-    const importMapelBtn = document.getElementById('importMapelBtn');
-    const mapelFileInput = document.getElementById('mapelFileInput');
-    const mapelFileNameSpan = document.getElementById('mapelFileName');
-    const importMapelStatusDiv = document.getElementById('importMapelStatus');
-
-    const openMapelModal = () => { mapelModal.classList.remove('hidden'); setTimeout(() => mapelModal.style.opacity = '1', 10); };
-    const closeMapelModal = () => { mapelModal.style.opacity = '0'; setTimeout(() => mapelModal.classList.add('hidden'), 300); };
-    if (addMapelBtn) {
-      addMapelBtn.addEventListener('click', () => { mapelForm.reset(); mapelRowInput.value = ''; mapelModalTitle.textContent = "Tambah Mata Pelajaran"; openMapelModal(); });
-      closeMapelModalBtn.addEventListener('click', closeMapelModal);
-      cancelMapelBtn.addEventListener('click', closeMapelModal);
-    }
-    if (downloadMapelTemplateBtn) {
-        downloadMapelTemplateBtn.addEventListener('click', () => {
-            const btn = downloadMapelTemplateBtn;
-            btn.disabled = true;
-            btn.textContent = 'Membuat Template...';
-            google.script.run
-                .withSuccessHandler(result => {
-                    btn.disabled = false;
-                    btn.textContent = 'Download Template Mapel';
-                    if (result.base64Data) {
-                        const link = document.createElement('a');
-                        link.href = `data:${result.mimeType};base64,${result.base64Data}`;
-                        link.download = result.fileName;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        showGlobalStatus('Template Mapel berhasil diunduh.', true);
-                    } else {
-                        showGlobalStatus('Gagal membuat template: ' + (result.error || 'Unknown error'), false);
-                    }
-                })
-                .withFailureHandler(error => {
-                    btn.disabled = false;
-                    btn.textContent = 'Download Template Mapel';
-                    showGlobalStatus('Error: ' + error.message, false);
-                })
-                .generateMapelTemplate();
-        });
-    }
-    if (mapelFileInput) {
-        mapelFileInput.addEventListener('change', () => {
-            const file = mapelFileInput.files[0];
-            if (file) {
-                mapelFileNameSpan.textContent = file.name;
-                importMapelBtn.disabled = false;
-            } else {
-                mapelFileNameSpan.textContent = 'Tidak ada file dipilih';
-                importMapelBtn.disabled = true;
-            }
-        });
-    }
-    if (importMapelBtn) {
-        importMapelBtn.addEventListener('click', () => {
-            const file = mapelFileInput.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => {
-                const fileData = { fileName: file.name, mimeType: file.type, content: reader.result.split(',')[1] };
-                importMapelStatusDiv.innerHTML = '<p class="text-blue-600">Mengimpor data, harap tunggu...</p>';
-                importMapelBtn.disabled = true; importMapelBtn.textContent = 'Mengimpor...';
-                google.script.run
-                    .withSuccessHandler(response => {
-                        importMapelStatusDiv.innerHTML = '';
-                        importMapelBtn.disabled = false; importMapelBtn.textContent = 'Import Data Mapel';
-                        mapelFileNameSpan.textContent = 'Tidak ada file dipilih';
-                        mapelFileInput.value = '';
-                        showGlobalStatus(response.message, response.status === 'success');
-                        if(response.status === 'success') loadMapelData();
-                    })
-                    .withFailureHandler(error => {
-                        importMapelStatusDiv.innerHTML = '';
-                        importMapelBtn.disabled = false; importMapelBtn.textContent = 'Import Data Mapel';
-                        showGlobalStatus('Error: ' + error.message, false);
-                    })
-                    .importFromExcel(fileData, 'Data Mata Pelajaran');
-            };
-            reader.onerror = () => showGlobalStatus('Gagal membaca file.', false);
-        });
-    }
-    function loadMapelData() {
-        const container = document.getElementById('mapelTableContainer');
-        container.innerHTML = `<p class="text-center text-gray-500 py-4">Memuat data mapel...</p>`;
-        google.script.run.withSuccessHandler(mapelList => { if (mapelList && mapelList.length > 0) { const table = document.createElement('table'); table.className = 'min-w-full divide-y divide-gray-200'; table.innerHTML = `<thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kode</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Mata Pelajaran</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jenis Ujian</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"></tbody>`; const tbody = table.querySelector('tbody'); mapelList.forEach(m => { const tr = document.createElement('tr'); tr.innerHTML = `<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${m.kode}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${m.nama}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${m.jenisUjian}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><button class="text-indigo-600 hover:text-indigo-900" data-action="edit">Edit</button><button class="text-red-600 hover:text-red-900 ml-4" data-action="delete">Hapus</button></td>`; tr.querySelector('[data-action="edit"]').addEventListener('click', () => handleEditMapel(m)); tr.querySelector('[data-action="delete"]').addEventListener('click', (e) => handleDeleteMapel(m, e.target)); tbody.appendChild(tr); }); container.innerHTML = ''; container.appendChild(table); } else { container.innerHTML = `<p class="text-center text-gray-500 py-4">Belum ada data mata pelajaran.</p>`; } }).withFailureHandler(err => { container.innerHTML = `<p class="text-center text-red-500 py-4">Gagal memuat data: ${err.message}</p>`; }).getMapel();
-    }
-    if (mapelForm) {
-      mapelForm.addEventListener('submit', e => { e.preventDefault(); const mapelData = Object.fromEntries(new FormData(e.target).entries()); const handler = mapelData.mapelRow ? 'updateMapel' : 'addMapel'; google.script.run.withSuccessHandler(response => { showGlobalStatus(response.message, response.status === 'success'); if (response.status === 'success') { closeMapelModal(); loadMapelData(); } }).withFailureHandler(err => showGlobalStatus(err.message, false))[handler](mapelData); });
-    }
-    function handleEditMapel(mapel) {
-        mapelForm.reset(); mapelModalTitle.textContent = "Edit Mata Pelajaran"; mapelRowInput.value = mapel.row; document.getElementById('kode').value = mapel.kode; document.getElementById('namaMapel').value = mapel.nama; document.getElementById('kelompok').value = mapel.kelompok; if (mapel.jenisUjian) { const radioBtn = document.querySelector(`input[name="jenisUjian"][value="${mapel.jenisUjian}"]`); if (radioBtn) radioBtn.checked = true; } openMapelModal();
-    }
-    function handleDeleteMapel(mapel, targetButton) {
-        if (targetButton.dataset.confirming) {
-            google.script.run.withSuccessHandler(response => { showGlobalStatus(response.message, response.status === 'success'); if (response.status === 'success') loadMapelData(); }).withFailureHandler(err => showGlobalStatus(err.message, false)).deleteMapel(mapel.row);
-        } else {
-            targetButton.textContent = 'Yakin?';
-            targetButton.dataset.confirming = true;
-            targetButton.classList.add('text-yellow-500', 'hover:text-yellow-700');
-            targetButton.classList.remove('text-red-600', 'hover:text-red-900');
-            setTimeout(() => {
-                if (targetButton.dataset.confirming) {
-                   targetButton.textContent = 'Hapus';
-                   delete targetButton.dataset.confirming;
-                   targetButton.classList.remove('text-yellow-500', 'hover:text-yellow-700');
-                   targetButton.classList.add('text-red-600', 'hover:text-red-900');
-                }
-            }, 3000);
-        }
-    }
-    document.getElementById('btn-show-ujian-madrasah').addEventListener('click', () => buildScoreTable('madrasah'));
-    document.getElementById('btn-show-ujian-praktek').addEventListener('click', () => buildScoreTable('praktek'));
-    function buildScoreTable(jenis) {
-        const container = document.getElementById('input-ujian-container');
-        container.innerHTML = `<div class="text-center p-8"><p class="font-bold">Memuat data...</p><p>Silakan tunggu sebentar.</p></div>`;
-        Promise.all([ new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getStudents()), new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getMapelByJenis(jenis)), new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getExistingNilai(jenis === 'madrasah' ? 'Nilai Ujian Madrasah' : 'Nilai Ujian Praktek')) ]).then(([students, mapelList, existingScores]) => {
-            if (!students || students.length === 0) { container.innerHTML = `<p class="text-center text-red-500 p-4">Data siswa tidak ditemukan. Harap isi data siswa terlebih dahulu.</p>`; return; }
-            if (!mapelList || mapelList.length === 0) { container.innerHTML = `<p class="text-center text-red-500 p-4">Tidak ada mata pelajaran yang ditandai untuk Ujian ${jenis}.</p>`; return; }
-            const tableWrapper = document.createElement('div'); tableWrapper.className = 'bg-white p-4 rounded-lg shadow-md';
-            const tableHtml = `<form id="form-nilai-${jenis}"><div class="overflow-x-auto"><table id="score-table-${jenis}" class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>${mapelList.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}<th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th><th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"></tbody></table></div><div class="mt-6 pt-4 border-t flex justify-end space-x-3"><button type="button" class="clear-scores-btn bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400">Bersihkan</button><button type="submit" class="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700">Simpan Nilai ${jenis}</button></div></form>`;
-            tableWrapper.innerHTML = tableHtml; const tbody = tableWrapper.querySelector('tbody');
-            students.forEach((s, index) => { const studentScores = existingScores[s.nisn] || {}; let rowHtml = `<tr data-nisn="${s.nisn}" data-nama="${s.nama}"><td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${index + 1}</td><td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">${s.nama}</td>`; mapelList.forEach(m => { rowHtml += `<td class="px-2 py-1"><input type="number" min="0" max="100" class="score-input p-1 border rounded-md" data-mapel-kode="${m.kode}" value="${studentScores[m.kode] || ''}"></td>`; }); rowHtml += `<td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell jumlah-nilai">0</td><td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell rata-rata-nilai">0.00</td></tr>`; tbody.innerHTML += rowHtml; });
-            container.innerHTML = ''; container.appendChild(tableWrapper);
-            const scoreTable = document.getElementById(`score-table-${jenis}`); scoreTable.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row)); scoreTable.addEventListener('input', handleScoreInput); scoreTable.addEventListener('paste', handleSmartPaste); document.getElementById(`form-nilai-${jenis}`).addEventListener('submit', (e) => handleSaveNilai(e, jenis));
-            tableWrapper.querySelector('.clear-scores-btn').addEventListener('click', (e) => {
-                const form = e.target.closest('form');
-                form.querySelectorAll('.score-input').forEach(input => input.value = '');
-                form.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row));
+                rowHtml += `</tr>`;
+                tableHtml += rowHtml;
             });
-        }).catch(err => { container.innerHTML = `<p class="text-center text-red-500 p-4">Terjadi kesalahan saat memuat data: ${err.message}</p>`; });
-    }
-    function updateRowTotals(rowElement) { const inputs = rowElement.querySelectorAll('.score-input'); let total = 0; let count = 0; inputs.forEach(input => { const value = parseFloat(input.value); if (!isNaN(value)) { total += value; count++; } }); const average = count > 0 ? (total / count).toFixed(2) : '0.00'; rowElement.querySelector('.jumlah-nilai').textContent = total; rowElement.querySelector('.rata-rata-nilai').textContent = average; }
-    function handleScoreInput(event) { if (event.target.classList.contains('score-input')) { const row = event.target.closest('tr'); updateRowTotals(row); } }
-    function handleSmartPaste(event) {
-        if (!event.target.classList.contains('score-input')) return;
-        event.preventDefault();
-        const pastedText = (event.clipboardData || window.clipboardData).getData('text');
-        const pastedRows = pastedText.split(/\r?\n/).filter(r => r).map(row => row.split('\t'));
-        const tableBody = event.target.closest('tbody');
-        if (!tableBody) return;
-        const allTableRows = Array.from(tableBody.querySelectorAll('tr'));
-        const startRowElement = event.target.closest('tr');
-        const startRowIndex = allTableRows.indexOf(startRowElement);
-        const allRowInputs = Array.from(startRowElement.querySelectorAll('.score-input'));
-        const startColIndex = allRowInputs.indexOf(event.target);
-        pastedRows.forEach((rowData, r_offset) => {
-            const currentRowIndex = startRowIndex + r_offset;
-            const targetRow = allTableRows[currentRowIndex];
-            if (targetRow) {
-                const targetRowInputs = Array.from(targetRow.querySelectorAll('.score-input'));
-                rowData.forEach((cellData, c_offset) => {
-                    const currentColIndex = startColIndex + c_offset;
-                    const targetInput = targetRowInputs[currentColIndex];
-                    if (targetInput) targetInput.value = cellData.trim();
-                });
-                updateRowTotals(targetRow);
-            }
-        });
-    }
-    function handleSaveNilai(event, jenisUjian) {
-        event.preventDefault(); const form = event.target; const saveBtn = form.querySelector('button[type="submit"]'); saveBtn.disabled = true; saveBtn.textContent = 'Menyimpan...';
-        const allRows = form.querySelectorAll('tbody tr'); const nilaiData = [];
-        allRows.forEach(row => { const studentScores = { nisn: row.dataset.nisn, nama: row.dataset.nama, scores: {} }; const inputs = row.querySelectorAll('.score-input'); inputs.forEach(input => { studentScores.scores[input.dataset.mapelKode] = input.value; }); nilaiData.push(studentScores); });
-        google.script.run.withSuccessHandler(response => { showGlobalStatus(response.message, response.status === 'success'); saveBtn.disabled = false; saveBtn.textContent = `Simpan Nilai ${jenisUjian}`; }).withFailureHandler(err => { showGlobalStatus(`Gagal menyimpan: ${err.message}`, false); saveBtn.disabled = false; saveBtn.textContent = `Simpan Nilai ${jenisUjian}`; }).saveNilai({ jenis: jenisUjian, nilai: nilaiData });
-    }
-    const semesters = { MI: { k4_ganjil: 'Kelas 4 Ganjil', k4_genap: 'Kelas 4 Genap', k5_ganjil: 'Kelas 5 Ganjil', k5_genap: 'Kelas 5 Genap', k6_ganjil: 'Kelas 6 Ganjil' }, MTS: { k7_ganjil: 'Kelas 7 Ganjil', k7_genap: 'Kelas 7 Genap', k8_ganjil: 'Kelas 8 Ganjil', k8_genap: 'Kelas 8 Genap', k9_ganjil: 'Kelas 9 Ganjil' }, MA: { k10_ganjil: 'Kelas 10 Ganjil', k10_genap: 'Kelas 10 Genap', k11_ganjil: 'Kelas 11 Ganjil', k11_genap: 'Kelas 11 Genap', k12_ganjil: 'Kelas 12 Ganjil' } };
-    function initRaporPage() {
-      const container = document.getElementById('rapor-container'); container.innerHTML = '<p>Memeriksa data sekolah...</p>';
-      google.script.run.withSuccessHandler(schoolData => {
-        if (!schoolData || !schoolData.jenjang) { container.innerHTML = `<div class="p-4 bg-yellow-100 text-yellow-800 rounded-lg">Harap atur <b>Jenjang Sekolah</b> di halaman <a href="#" onclick="document.querySelector('[data-page=data-sekolah]').click()" class="font-bold underline">Data Sekolah</a> terlebih dahulu.</div>`; return; }
-        const jenjang = schoolData.jenjang; const semesterList = semesters[jenjang]; let html = '';
-        for (const key in semesterList) { html += `<div class="mb-6 bg-white p-4 rounded-lg shadow-sm"><h3 class="text-xl font-bold text-gray-700">${semesterList[key]}</h3><div class="flex space-x-4 mt-3"><button onclick="buildRaporScoreTable('${key}', 'Pengetahuan')" class="bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600 text-sm">Input Nilai Pengetahuan</button><button onclick="buildRaporScoreTable('${key}', 'Keterampilan')" class="bg-teal-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-teal-600 text-sm">Input Nilai Keterampilan</button></div><div id="table-container-${key}" class="mt-4"></div></div>`; }
-        container.innerHTML = html;
-      }).getSchoolData();
-    }
-    function buildRaporScoreTable(semesterKey, jenisNilai) {
-        const container = document.getElementById(`table-container-${semesterKey}`); container.innerHTML = `<div class="text-center p-8"><p class="font-bold">Memuat data...</p></div>`; const sheetName = `Rapor_${jenisNilai}_${semesterKey}`;
-        Promise.all([ new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getStudents()), new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getMapel()), new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getExistingNilai(sheetName)) ]).then(([students, mapelList, existingScores]) => {
-             if (!students || students.length === 0) { container.innerHTML = `<p class="text-center text-red-500 p-4">Data siswa tidak ditemukan.</p>`; return; }
-             if (!mapelList || mapelList.length === 0) { container.innerHTML = `<p class="text-center text-red-500 p-4">Data mata pelajaran tidak ditemukan.</p>`; return; }
-             const tableWrapper = document.createElement('div'); tableWrapper.className = 'p-4 border rounded-lg'; tableWrapper.innerHTML = `<h4 class="text-lg font-semibold mb-3">Tabel Nilai ${jenisNilai}</h4><form id="form-${sheetName}"><div class="overflow-x-auto"><table id="score-table-${sheetName}" class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>${mapelList.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}<th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th><th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"></tbody></table></div><div class="mt-6 pt-4 border-t flex justify-end space-x-3"><button type="button" class="clear-scores-btn bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400">Bersihkan</button><button type="submit" class="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700">Simpan Nilai ${jenisNilai}</button></div></form>`;
-             const tbody = tableWrapper.querySelector('tbody');
-             students.forEach((s, index) => { const studentScores = existingScores[s.nisn] || {}; let rowHtml = `<tr data-nisn="${s.nisn}" data-nama="${s.nama}"><td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${index + 1}</td><td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">${s.nama}</td>`; mapelList.forEach(m => { rowHtml += `<td class="px-2 py-1"><input type="number" min="0" max="100" class="score-input p-1 border rounded-md" data-mapel-kode="${m.kode}" value="${studentScores[m.kode] || ''}"></td>`; }); rowHtml += `<td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell jumlah-nilai">0</td><td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell rata-rata-nilai">0.00</td></tr>`; tbody.innerHTML += rowHtml; });
-             container.innerHTML = ''; container.appendChild(tableWrapper);
-             const scoreTable = document.getElementById(`score-table-${sheetName}`); scoreTable.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row)); scoreTable.addEventListener('input', handleScoreInput); scoreTable.addEventListener('paste', handleSmartPaste); document.getElementById(`form-${sheetName}`).addEventListener('submit', (e) => handleSaveRapor(e, semesterKey, jenisNilai));
-             tableWrapper.querySelector('.clear-scores-btn').addEventListener('click', (e) => {
-                const form = e.target.closest('form');
-                form.querySelectorAll('.score-input').forEach(input => input.value = '');
-                form.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row));
-            });
-        });
-    }
-    function handleSaveRapor(event, semesterKey, jenisNilai) {
-        event.preventDefault(); const form = event.target; const saveBtn = form.querySelector('button[type="submit"]'); saveBtn.disabled = true; saveBtn.textContent = 'Menyimpan...';
-        const allRows = form.querySelectorAll('tbody tr'); const nilaiData = [];
-        allRows.forEach(row => { const studentScores = { nisn: row.dataset.nisn, nama: row.dataset.nama, scores: {} }; const inputs = row.querySelectorAll('.score-input'); inputs.forEach(input => { studentScores.scores[input.dataset.mapelKode] = input.value; }); nilaiData.push(studentScores); });
-        google.script.run.withSuccessHandler(response => { showGlobalStatus(response.message, response.status === 'success'); saveBtn.disabled = false; saveBtn.textContent = `Simpan Nilai ${jenisNilai}`; }).withFailureHandler(err => { showGlobalStatus(`Gagal menyimpan: ${err.message}`, false); saveBtn.disabled = false; saveBtn.textContent = `Simpan Nilai ${jenisNilai}`; }).saveNilaiRapor({ semesterKey: semesterKey, jenisNilai: jenisNilai, nilai: nilaiData });
-    }
-    function initRekapitulasiPage() {
-        const loader = document.getElementById('rekap-loader');
-        const content = document.getElementById('rekap-content');
-        const setupDiv = document.getElementById('rekap-setup');
-        const displayArea = document.getElementById('rekap-display-area');
-        
-        loader.classList.remove('hidden'); 
-        content.classList.add('hidden');
-        setupDiv.classList.add('hidden');
-        displayArea.innerHTML = '';
-
-        google.script.run.withSuccessHandler(sheetsExist => {
-            if (sheetsExist) {
-                google.script.run.withSuccessHandler(data => {
-                    rekapitulasiData = data;
-                    loader.classList.add('hidden');
-                    content.classList.remove('hidden');
-                    document.querySelector('[data-rekap="ijazah"]').click();
-                }).getRekapitulasiData();
-            } else {
-                loader.classList.add('hidden');
-                setupDiv.classList.remove('hidden');
-            }
-        }).checkRekapSheetsExist();
-    }
-    document.getElementById('createRekapSheetsBtn')?.addEventListener('click', function() {
-        const btn = this;
-        btn.disabled = true;
-        btn.textContent = 'Membuat...';
-        google.script.run
-            .withSuccessHandler(response => {
-                showGlobalStatus(response.message, response.status === 'success');
-                initRekapitulasiPage();
-            })
-            .withFailureHandler(err => {
-                showGlobalStatus('Gagal: ' + err.message, false);
-                btn.disabled = false;
-                btn.textContent = 'Buat Sheet Rekapitulasi';
-            })
-            .createRekapSheets();
-    });
-    document.getElementById('updateRekapBtn')?.addEventListener('click', function() {
-        const btn = this;
-        btn.disabled = true;
-        btn.textContent = 'Memperbarui...';
-        google.script.run
-            .withSuccessHandler(response => {
-                showGlobalStatus(response.message, response.status === 'success');
-                initRekapitulasiPage(); 
-            })
-            .withFailureHandler(err => {
-                showGlobalStatus('Gagal memperbarui: ' + err.message, false);
-            })
-            .withFinalHandler(() => {
-                btn.disabled = false;
-                btn.textContent = 'Perbarui & Muat Ulang Data';
-            })
-            .updateRekapitulasi();
-    });
-    document.querySelectorAll('.rekap-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            document.querySelectorAll('.rekap-btn').forEach(b => b.classList.remove('active'));
-            e.currentTarget.classList.add('active');
-            const type = e.currentTarget.dataset.rekap;
-            displayRekap(type);
-        });
-    });
-    function displayRekap(type) {
-        if (!rekapitulasiData) return;
-        const { students, mapel, rekapUjian, rekapRapor, rekapIjazah } = rekapitulasiData;
-        const displayArea = document.getElementById('rekap-display-area');
-        let dataToShow, title;
-        switch(type) {
-            case 'ujian': dataToShow = rekapUjian; title = 'Rekapitulasi Nilai Ujian (Rata-rata Ujian Madrasah & Praktek)'; break;
-            case 'rapor': dataToShow = rekapRapor; title = 'Rekapitulasi Nilai Rapor (Rata-rata 5 Semester)'; break;
-            default: dataToShow = rekapIjazah; title = 'Rekapitulasi Nilai Akhir Ijazah';
+            tableHtml += `</tbody></table></div></div>`;
+            displayArea.innerHTML = tableHtml;
         }
-        let tableHtml = `<div class="bg-white p-4 rounded-lg shadow-md"><h3 class="text-xl font-bold mb-4">${title}</h3><div class="overflow-x-auto"><table class="min-w-full text-sm rekap-table"><thead class="bg-gray-100"><tr><th class="text-left">No</th><th class="text-left">NISN</th><th class="text-left">Nama Siswa</th>${mapel.map(m => `<th title="${m.nama}">${m.kode}</th>`).join('')}<th>Jumlah</th><th>Rata-rata</th></tr></thead><tbody>`;
-        students.forEach((student, index) => {
-            const scores = dataToShow[student.nisn] || {};
-            let total = 0; let count = 0;
-            let rowHtml = `<tr><td>${index + 1}</td><td>${student.nisn}</td><td class="text-left">${student.nama}</td>`;
-            
-            if (type === 'ijazah') {
-                const roundedScores = [];
-                mapel.forEach(m => {
-                    const rawScore = scores[m.kode] || 0;
-                    const roundedScore = Math.round(rawScore);
-                    roundedScores.push(roundedScore);
-                    rowHtml += `<td class="text-center">${roundedScore}</td>`;
-                });
-                total = roundedScores.reduce((acc, val) => acc + val, 0);
-                count = roundedScores.length;
-                const average = count > 0 ? (total / count).toFixed(2) : '0.00';
-                rowHtml += `<td class="text-center font-bold">${total}</td><td class="text-center font-bold">${average}</td>`;
-            } else {
-                mapel.forEach(m => {
-                    const rawScore = scores[m.kode] || 0;
-                    total += rawScore;
-                    count++;
-                    rowHtml += `<td class="text-center">${Math.round(rawScore)}</td>`;
-                });
-                const average = count > 0 ? Math.round(total / count) : 0;
-                rowHtml += `<td class="text-center font-bold">${Math.round(total)}</td><td class="text-center font-bold">${average}</td>`;
-            }
-            rowHtml += `</tr>`;
-            tableHtml += rowHtml;
-        });
-        tableHtml += `</tbody></table></div></div>`;
-        displayArea.innerHTML = tableHtml;
     }
     </script>
 </body>
