@@ -43,6 +43,10 @@
             33% { content: '..'; }
             66% { content: '...'; }
         }
+        /* PERUBAHAN: Menambahkan kelas khusus untuk memastikan perataan kiri */
+        .nama-siswa-cell {
+            text-align: left;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -1018,7 +1022,8 @@
                         const tbody = table.querySelector('tbody');
                         students.forEach(s => {
                             const tr = document.createElement('tr');
-                            tr.innerHTML = `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${s.nama}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${s.nis}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><button class="text-indigo-600 hover:text-indigo-900" data-action="edit">Edit</button><button class="text-red-600 hover:text-red-900 ml-4" data-action="delete">Hapus</button></td>`;
+                            // PERUBAHAN: Menambahkan kelas 'nama-siswa-cell' pada <td> nama siswa
+                            tr.innerHTML = `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 nama-siswa-cell">${s.nama}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${s.nis}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><button class="text-indigo-600 hover:text-indigo-900" data-action="edit">Edit</button><button class="text-red-600 hover:text-red-900 ml-4" data-action="delete">Hapus</button></td>`;
                             tr.querySelector('[data-action="edit"]').addEventListener('click', () => handleEditStudent(s));
                             tr.querySelector('[data-action="delete"]').addEventListener('click', (e) => handleDeleteStudent(s, e.target));
                             tbody.appendChild(tr);
@@ -1339,7 +1344,7 @@
                         const tbody = table.querySelector('tbody'); 
                         mapelList.forEach(m => { 
                             const tr = document.createElement('tr'); 
-                            tr.innerHTML = `<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${m.kode}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${m.nama}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${m.jenisUjian}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><button class="text-indigo-600 hover:text-indigo-900" data-action="edit">Edit</button><button class="text-red-600 hover:text-red-900 ml-4" data-action="delete">Hapus</button></td>`; 
+                            tr.innerHTML = `<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${m.kode}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 nama-siswa-cell">${m.nama}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${m.jenisUjian}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><button class="text-indigo-600 hover:text-indigo-900" data-action="edit">Edit</button><button class="text-red-600 hover:text-red-900 ml-4" data-action="delete">Hapus</button></td>`; 
                             tr.querySelector('[data-action="edit"]').addEventListener('click', () => handleEditMapel(m)); 
                             tr.querySelector('[data-action="delete"]').addEventListener('click', (e) => handleDeleteMapel(m, e.target)); 
                             tbody.appendChild(tr); 
@@ -1450,7 +1455,7 @@
                 tableWrapper.className = 'bg-white p-4 rounded-lg shadow-md';
                 const tableHtml = `<form id="form-nilai-${jenis}"><div class="overflow-x-auto"><table id="score-table-${jenis}" class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>${mapelList.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}<th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th><th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"></tbody></table></div><div class="mt-6 pt-4 border-t flex justify-end space-x-3"><button type="button" class="clear-scores-btn bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400">Bersihkan</button><button type="submit" class="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700">Simpan Nilai ${jenis}</button></div></form>`;
                 tableWrapper.innerHTML = tableHtml; const tbody = tableWrapper.querySelector('tbody');
-                students.forEach((s, index) => { const studentScores = existingScores[s.nisn] || {}; let rowHtml = `<tr data-nisn="${s.nisn}" data-nama="${s.nama}"><td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${index + 1}</td><td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">${s.nama}</td>`; mapelList.forEach(m => { rowHtml += `<td class="px-2 py-1"><input type="number" min="0" max="100" class="score-input p-1 border rounded-md" data-mapel-kode="${m.kode}" value="${studentScores[m.kode] || ''}"></td>`; }); rowHtml += `<td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell jumlah-nilai">0</td><td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell rata-rata-nilai">0.00</td></tr>`; tbody.innerHTML += rowHtml; });
+                students.forEach((s, index) => { const studentScores = existingScores[s.nisn] || {}; let rowHtml = `<tr data-nisn="${s.nisn}" data-nama="${s.nama}"><td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${index + 1}</td><td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 nama-siswa-cell">${s.nama}</td>`; mapelList.forEach(m => { rowHtml += `<td class="px-2 py-1"><input type="number" min="0" max="100" class="score-input p-1 border rounded-md" data-mapel-kode="${m.kode}" value="${studentScores[m.kode] || ''}"></td>`; }); rowHtml += `<td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell jumlah-nilai">0</td><td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell rata-rata-nilai">0.00</td></tr>`; tbody.innerHTML += rowHtml; });
                 contentDiv.innerHTML = ''; 
                 contentDiv.appendChild(tableWrapper);
                 const scoreTable = document.getElementById(`score-table-${jenis}`); scoreTable.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row)); scoreTable.addEventListener('input', handleScoreInput); scoreTable.addEventListener('paste', handleSmartPaste); document.getElementById(`form-nilai-${jenis}`).addEventListener('submit', (e) => handleSaveNilai(e, jenis));
@@ -1562,19 +1567,62 @@
         });
         function displayRekap(type) {
             if (!rekapitulasiData) return;
-            const { students, mapel, rekapUjian, rekapRapor, rekapIjazah } = rekapitulasiData;
+            const { students, mapel, bobot, rekapUjian, rekapRapor, rekapIjazah } = rekapitulasiData;
             const displayArea = document.getElementById('rekap-display-area');
-            let dataToShow, title;
+            let dataToShow, title, bobotInfo = '';
+
             switch(type) {
-                case 'ujian': dataToShow = rekapUjian; title = 'Rekapitulasi Nilai Ujian (Rata-rata Ujian Madrasah & Praktek)'; break;
-                case 'rapor': dataToShow = rekapRapor; title = 'Rekapitulasi Nilai Rapor (Rata-rata 5 Semester)'; break;
-                default: dataToShow = rekapIjazah; title = 'Rekapitulasi Nilai Akhir Ijazah';
+                case 'ujian': 
+                    dataToShow = rekapUjian; 
+                    title = 'Rekapitulasi Nilai Ujian (Rata-rata Ujian Madrasah & Praktek)'; 
+                    break;
+                case 'rapor': 
+                    dataToShow = rekapRapor; 
+                    title = 'Rekapitulasi Nilai Rapor (Rata-rata 5 Semester)'; 
+                    break;
+                default: 
+                    dataToShow = rekapIjazah; 
+                    title = 'Rekapitulasi Nilai Akhir Ijazah';
+                    if (bobot) {
+                        bobotInfo = `<p class="text-sm font-normal text-gray-600">Bobot Nilai Ujian: <strong>${bobot.bobotUjian}%</strong>, Bobot Nilai Rapor: <strong>${bobot.bobotRapor}%</strong></p>`;
+                    }
             }
-            let tableHtml = `<div class="bg-white p-4 rounded-lg shadow-md"><h3 class="text-xl font-bold mb-4">${title}</h3><div class="overflow-x-auto"><table class="min-w-full text-sm rekap-table"><thead class="bg-gray-100"><tr><th class="text-left">No</th><th class="text-left">NISN</th><th class="text-left">Nama Siswa</th>${mapel.map(m => `<th title="${m.nama}">${m.kode}</th>`).join('')}<th>Jumlah</th><th>Rata-rata</th></tr></thead><tbody>`;
+
+            let tableHtml = `<div class="bg-white p-4 rounded-lg shadow-md">
+                                <div class="flex justify-between items-start flex-wrap gap-2">
+                                    <div>
+                                        <h3 class="text-xl font-bold">${title}</h3>
+                                        ${bobotInfo}
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <button onclick="exportRekap(event, '${type}', 'pdf')" class="bg-red-500 text-white text-xs font-bold py-1 px-3 rounded-lg hover:bg-red-600 transition-colors flex items-center space-x-1">
+                                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                          <span>PDF</span>
+                                        </button>
+                                        <button onclick="exportRekap(event, '${type}', 'excel')" class="bg-green-600 text-white text-xs font-bold py-1 px-3 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-1">
+                                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                          <span>Excel</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="overflow-x-auto mt-4">
+                                    <table class="min-w-full text-sm rekap-table">
+                                        <thead class="bg-gray-100">
+                                            <tr>
+                                                <th class="text-left">No</th>
+                                                <th class="text-left">NISN</th>
+                                                <th class="text-left">Nama Siswa</th>
+                                                ${mapel.map(m => `<th title="${m.nama}">${m.kode}</th>`).join('')}
+                                                <th>Jumlah</th>
+                                                <th>Rata-rata</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>`;
+            
             students.forEach((student, index) => {
                 const scores = dataToShow[student.nisn] || {};
                 let total = 0; let count = 0;
-                let rowHtml = `<tr><td>${index + 1}</td><td>${student.nisn}</td><td class="text-left">${student.nama}</td>`;
+                let rowHtml = `<tr><td>${index + 1}</td><td>${student.nisn}</td><td class="nama-siswa-cell">${student.nama}</td>`;
                 
                 if (type === 'ijazah') {
                     const roundedScores = [];
@@ -1601,8 +1649,62 @@
                 rowHtml += `</tr>`;
                 tableHtml += rowHtml;
             });
+
             tableHtml += `</tbody></table></div></div>`;
             displayArea.innerHTML = tableHtml;
+        }
+
+        /**
+         * Memulai proses ekspor rekap dan menangani status UI. (Versi Diperbaiki)
+         * @param {Event} event Event klik dari tombol.
+         * @param {string} type Jenis rekap ('ujian', 'rapor', 'ijazah').
+         * @param {string} format Format ekspor ('pdf' atau 'excel').
+         */
+        function exportRekap(event, type, format) {
+            // Untuk debugging: pastikan fungsi terpanggil.
+            console.log(`Mencoba ekspor tipe: '<span class="math-inline">\{type\}', format\: '</span>{format}'`);
+
+            const exportButton = event.target.closest('button');
+            const originalButtonContent = exportButton.innerHTML;
+
+            // Nonaktifkan tombol dan tampilkan status loading.
+            exportButton.disabled = true;
+            exportButton.innerHTML = `<span class="loading-animation">Memproses</span>`;
+
+            // Hapus pesan status global yang lama.
+            document.getElementById('globalStatusMessage').innerHTML = '';
+
+            google.script.run
+                .withSuccessHandler(result => {
+                    console.log("Respons dari server:", result);
+                    if (result.base64Data) {
+                        // Jika berhasil, buat link download.
+                        const link = document.createElement('a');
+                        link.href = `data:<span class="math-inline">\{result\.mimeType\};base64,</span>{result.base64Data}`;
+                        link.download = result.fileName;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        showGlobalStatus(`File '${result.fileName}' berhasil diunduh.`, true);
+                    } else {
+                        // Jika ada pesan error dari server.
+                        const errorMessage = result.error || 'Terjadi kesalahan tidak diketahui di server.';
+                        console.error("Ekspor gagal di server:", errorMessage);
+                        showGlobalStatus(`Gagal mengekspor: ${errorMessage}`, false);
+                    }
+                    // Kembalikan tombol ke kondisi semula.
+                    exportButton.disabled = false;
+                    exportButton.innerHTML = originalButtonContent;
+                })
+                .withFailureHandler(error => {
+                    // Untuk menangani error kritis (misal: jaringan, script berhenti).
+                    console.error("Kegagalan skrip kritis:", error);
+                    showGlobalStatus(`Error Kritis: ${error.message}. Coba refresh halaman.`, false);
+                    // Kembalikan tombol ke kondisi semula.
+                    exportButton.disabled = false;
+                    exportButton.innerHTML = originalButtonContent;
+                })
+                .exportRekapData(userSpreadsheetId, type, format);
         }
     }
 
@@ -1700,7 +1802,8 @@
             let tableHtml = `<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>${allMapel.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}<th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th><th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th></tr></thead><tbody>`;
 
             students.forEach((student, index) => {
-                tableHtml += `<tr><td class="px-3 py-2 text-sm">${index + 1}</td><td class="px-4 py-2 text-sm">${student.nisn}</td><td class="px-4 py-2 text-sm font-medium">${student.nama}</td>`;
+                // PERUBAHAN: Menambahkan kelas 'nama-siswa-cell' pada <td> nama siswa
+                tableHtml += `<tr><td class="px-3 py-2 text-sm">${index + 1}</td><td class="px-4 py-2 text-sm">${student.nisn}</td><td class="px-4 py-2 text-sm font-medium nama-siswa-cell">${student.nama}</td>`;
                 const studentScores = [];
                 allMapel.forEach(mapel => {
                     const nilaiM = parseFloat((nilaiMadrasah[student.nisn] || {})[mapel.kode]);
@@ -1775,7 +1878,8 @@
             let tableHtml = `<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>${mapelList.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}<th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th><th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th></tr></thead><tbody>`;
 
             students.forEach((student, index) => {
-                let rowHtml = `<tr data-nisn="${student.nisn}" data-nama="${student.nama}"><td class="px-3 py-2 text-sm">${index + 1}</td><td class="px-4 py-2 text-sm">${student.nisn}</td><td class="px-4 py-2 text-sm font-medium">${student.nama}</td>`;
+                // PERUBAHAN: Menambahkan kelas 'nama-siswa-cell' pada <td> nama siswa
+                let rowHtml = `<tr data-nisn="${student.nisn}" data-nama="${student.nama}"><td class="px-3 py-2 text-sm">${index + 1}</td><td class="px-4 py-2 text-sm">${student.nisn}</td><td class="px-4 py-2 text-sm font-medium nama-siswa-cell">${student.nama}</td>`;
                 mapelList.forEach(mapel => {
                     const nilaiP = parseFloat((nilaiPengetahuan[student.nisn] || {})[mapel.kode]);
                     const nilaiK = parseFloat((nilaiKeterampilan[student.nisn] || {})[mapel.kode]);
@@ -1822,7 +1926,8 @@
                 const tbody = tableWrapper.querySelector('tbody');
                 students.forEach((s, index) => { 
                     const studentScores = existingScores[s.nisn] || {}; 
-                    let rowHtml = `<tr data-nisn="${s.nisn}" data-nama="${s.nama}"><td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${index + 1}</td><td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">${s.nama}</td>`; 
+                    // PERUBAHAN: Menambahkan kelas 'nama-siswa-cell' pada <td> nama siswa
+                    let rowHtml = `<tr data-nisn="${s.nisn}" data-nama="${s.nama}"><td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${index + 1}</td><td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 nama-siswa-cell">${s.nama}</td>`; 
                     mapelList.forEach(m => { 
                         rowHtml += `<td class="px-2 py-1"><input type="number" min="0" max="100" class="score-input p-1 border rounded-md" data-mapel-kode="${m.kode}" value="${studentScores[m.kode] || ''}"></td>`; 
                     }); 
