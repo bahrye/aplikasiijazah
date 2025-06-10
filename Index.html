@@ -48,8 +48,8 @@
 <body class="bg-gray-100">
 
     <!-- Auth Container -->
-    <div id="auth-wrapper" class="gradient-bg">
-        <div class="flex items-center justify-center min-h-screen py-8 px-4">
+    <div id="auth-wrapper" class="gradient-bg flex flex-col min-h-screen">
+        <div class="flex-grow flex items-center justify-center py-8 px-4">
             <div class="w-full max-w-md">
                 <!-- Container untuk Login -->
                 <div id="login-container">
@@ -154,6 +154,11 @@
                 </div>
             </div>
         </div>
+        <footer class="text-center py-4">
+            <a href="https://wa.me/6281543276033" target="_blank" rel="noopener noreferrer" class="text-sm text-gray-500 hover:text-blue-600 transition-colors">
+              &copy; <span id="currentYearAuth"></span> Created by Syamsul Bahri
+            </a>
+        </footer>
     </div>
 
 
@@ -161,7 +166,7 @@
     <div id="app-container" class="hidden">
         <div class="flex h-screen">
             <aside class="w-64 bg-blue-800 text-white flex flex-col">
-                <div class="h-16 flex items-center justify-center text-xl font-bold border-b border-blue-700"><span>AKADEMIK</span></div>
+                <div class="h-16 flex items-center justify-center text-xl font-bold border-b border-blue-700 text-center px-2"><span id="school-name-sidebar">AKADEMIK</span></div>
                 <nav class="flex-1 px-4 py-4 space-y-2">
                     <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md active" data-page="dashboard"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg><span>Dashboard</span></a>
                     <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="data-sekolah"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg><span>Data Sekolah</span></a>
@@ -176,235 +181,242 @@
                 </div>
             </aside>
 
-            <main class="flex-1 p-6 md:p-10 overflow-y-auto">
-                <div id="page-dashboard" class="content-page">
-                     <h1 class="text-3xl font-bold text-gray-800">Selamat Datang!</h1>
-                     <p class="mt-2 text-gray-600">Pusat kendali manajemen data akademik. Pilih menu di kiri untuk memulai.</p>
-                </div>
-                <div id="page-data-sekolah" class="content-page hidden">
-                    <h1 class="text-3xl font-bold text-gray-800">Data Sekolah</h1>
-                    <p class="mt-2 text-gray-600 mb-8">Gunakan formulir ini untuk mengisi atau memperbarui informasi detail mengenai sekolah Anda.</p>
-                    <div class="bg-white p-8 rounded-lg shadow-md max-w-4xl">
-                        <form id="schoolDataForm">
-                            <div class="mb-6 pb-6 border-b">
-                              <label for="jenjang" class="block text-sm font-medium text-gray-700">Jenjang Sekolah</label>
-                              <select id="jenjang" name="jenjang" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" disabled>
-                                <option value="">-- Pilih Jenjang --</option>
-                                <option value="MI">MI (Madrasah Ibtidaiyah)</option>
-                                <option value="MTS">MTS (Madrasah Tsanawiyah)</option>
-                                <option value="MA">MA (Madrasah Aliyah)</option>
-                              </select>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                                <div>
-                                    <label for="namaSekolah" class="block text-sm font-medium text-gray-700">Nama Sekolah</label>
-                                    <input type="text" id="namaSekolah" name="namaSekolah" class="mt-1 w-full px-3 py-2 border border-gray-300 bg-gray-100 rounded-md shadow-sm" readonly>
-                                    <label for="npsn" class="block text-sm font-medium text-gray-700 mt-4">NPSN</label>
-                                    <input type="text" id="npsn" name="npsn" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                    <label for="alamat" class="block text-sm font-medium text-gray-700 mt-4">Alamat Jalan</label>
-                                    <textarea id="alamat" name="alamat" rows="3" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
-                                    <label for="kelurahan" class="block text-sm font-medium text-gray-700 mt-4">Kelurahan/Desa</label>
-                                    <input type="text" id="kelurahan" name="kelurahan" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                    <label for="kecamatan" class="block text-sm font-medium text-gray-700 mt-4">Kecamatan</label>
-                                    <input type="text" id="kecamatan" name="kecamatan" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            <main class="flex-1 p-6 md:p-10 overflow-y-auto flex flex-col">
+                <div class="flex-grow">
+                    <div id="page-dashboard" class="content-page">
+                        <h1 class="text-3xl font-bold text-gray-800">Selamat Datang!</h1>
+                        <p class="mt-2 text-gray-600">Pusat kendali manajemen data akademik. Pilih menu di kiri untuk memulai.</p>
+                    </div>
+                    <div id="page-data-sekolah" class="content-page hidden">
+                        <h1 class="text-3xl font-bold text-gray-800">Data Sekolah</h1>
+                        <p class="mt-2 text-gray-600 mb-8">Gunakan formulir ini untuk mengisi atau memperbarui informasi detail mengenai sekolah Anda.</p>
+                        <div class="bg-white p-8 rounded-lg shadow-md max-w-4xl">
+                            <form id="schoolDataForm">
+                                <div class="mb-6 pb-6 border-b">
+                                <label for="jenjang" class="block text-sm font-medium text-gray-700">Jenjang Sekolah</label>
+                                <select id="jenjang" name="jenjang" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" disabled>
+                                    <option value="">-- Pilih Jenjang --</option>
+                                    <option value="MI">MI (Madrasah Ibtidaiyah)</option>
+                                    <option value="MTS">MTS (Madrasah Tsanawiyah)</option>
+                                    <option value="MA">MA (Madrasah Aliyah)</option>
+                                </select>
                                 </div>
-                                <div>
-                                    <label for="kabupaten" class="block text-sm font-medium text-gray-700">Kabupaten/Kota</label>
-                                    <input type="text" id="kabupaten" name="kabupaten" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                    <label for="provinsi" class="block text-sm font-medium text-gray-700 mt-4">Provinsi</label>
-                                    <input type="text" id="provinsi" name="provinsi" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                    <label for="kodePos" class="block text-sm font-medium text-gray-700 mt-4">Kode Pos</label>
-                                    <input type="text" id="kodePos" name="kodePos" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                    <label for="telepon" class="block text-sm font-medium text-gray-700 mt-4">Nomor Telepon</label>
-                                    <input type="tel" id="telepon" name="telepon" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                    <label for="email-sekolah" class="block text-sm font-medium text-gray-700 mt-4">Email</label>
-                                    <input type="email" id="email-sekolah" name="email" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                    <label for="website" class="block text-sm font-medium text-gray-700 mt-4">Website</label>
-                                    <input type="url" id="website" name="website" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                </div>
-                            </div>
-                            <div class="mt-8 border-t pt-6">
-                                 <h2 class="text-lg font-medium text-gray-900">Data Kepala Sekolah</h2>
-                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mt-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                                     <div>
-                                        <label for="namaKepsek" class="block text-sm font-medium text-gray-700">Nama Kepala Sekolah</label>
-                                        <input type="text" id="namaKepsek" name="namaKepsek" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                        <label for="namaSekolah" class="block text-sm font-medium text-gray-700">Nama Sekolah</label>
+                                        <input type="text" id="namaSekolah" name="namaSekolah" class="mt-1 w-full px-3 py-2 border border-gray-300 bg-gray-100 rounded-md shadow-sm" readonly>
+                                        <label for="npsn" class="block text-sm font-medium text-gray-700 mt-4">NPSN</label>
+                                        <input type="text" id="npsn" name="npsn" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                        <label for="alamat" class="block text-sm font-medium text-gray-700 mt-4">Alamat Jalan</label>
+                                        <textarea id="alamat" name="alamat" rows="3" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+                                        <label for="kelurahan" class="block text-sm font-medium text-gray-700 mt-4">Kelurahan/Desa</label>
+                                        <input type="text" id="kelurahan" name="kelurahan" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                        <label for="kecamatan" class="block text-sm font-medium text-gray-700 mt-4">Kecamatan</label>
+                                        <input type="text" id="kecamatan" name="kecamatan" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                                     </div>
                                     <div>
-                                        <label for="nipKepsek" class="block text-sm font-medium text-gray-700">NIP Kepala Sekolah (Jika ada)</label>
-                                        <input type="text" id="nipKepsek" name="nipKepsek" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                        <label for="kabupaten" class="block text-sm font-medium text-gray-700">Kabupaten/Kota</label>
+                                        <input type="text" id="kabupaten" name="kabupaten" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                        <label for="provinsi" class="block text-sm font-medium text-gray-700 mt-4">Provinsi</label>
+                                        <input type="text" id="provinsi" name="provinsi" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                        <label for="kodePos" class="block text-sm font-medium text-gray-700 mt-4">Kode Pos</label>
+                                        <input type="text" id="kodePos" name="kodePos" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                        <label for="telepon" class="block text-sm font-medium text-gray-700 mt-4">Nomor Telepon</label>
+                                        <input type="tel" id="telepon" name="telepon" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                        <label for="email-sekolah" class="block text-sm font-medium text-gray-700 mt-4">Email</label>
+                                        <input type="email" id="email-sekolah" name="email" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                        <label for="website" class="block text-sm font-medium text-gray-700 mt-4">Website</label>
+                                        <input type="url" id="website" name="website" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                                     </div>
-                                 </div>
-                            </div>
-                            <div class="mt-8 pt-5 border-t">
-                                <button type="submit" id="schoolSubmitBtn" class="w-full md:w-auto flex justify-center py-2 px-8 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400">
-                                    <span id="schoolSubmitBtnText">Simpan Data Sekolah</span>
-                                    <span id="schoolLoadingSpinner" class="hidden loading-animation">Menyimpan</span>
-                                </button>
-                            </div>
-                        </form>
-                        <div id="schoolStatusMessage" class="mt-6 p-4 rounded-md text-center opacity-0 transition-opacity"></div>
-                    </div>
-                </div>
-                
-                <div id="page-data-siswa" class="content-page hidden">
-                    <div class="flex justify-between items-center mb-6">
-                        <div>
-                            <h1 class="text-3xl font-bold text-gray-800">Manajemen Data Siswa</h1>
-                            <p class="mt-2 text-gray-600">Tambah, lihat, edit, atau hapus data siswa di sekolah Anda.</p>
-                        </div>
-                        <div class="flex space-x-2">
-                            <button id="addStudentBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">+ Tambah Siswa</button>
-                            <button id="deleteAllStudentsBtn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">Hapus Semua Siswa</button>
-                        </div>
-                    </div>
-                    <div class="mt-8 border-t pt-6">
-                        <h2 class="text-xl font-bold text-gray-800">Import Data Siswa</h2>
-                        <p class="mt-1 text-gray-600">Unggah data siswa secara massal menggunakan template Excel.</p>
-                        <div class="mt-4 flex flex-wrap items-center gap-4">
-                            <button id="downloadTemplateBtn" class="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700">Download Template</button>
-                            <input type="file" id="siswaFileInput" class="hidden" accept=".xlsx, .xls, .csv">
-                            <label for="siswaFileInput" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg cursor-pointer hover:bg-green-700">Pilih File...</label>
-                            <span id="fileName" class="text-gray-500">Tidak ada file dipilih</span>
-                            <button id="importSiswaBtn" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Import Data</button>
-                        </div>
-                        <div id="importStatus" class="mt-4"></div>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg shadow-md mt-8">
-                        <div id="siswaTableContainer" class="overflow-x-auto"></div>
-                    </div>
-                </div>
-                
-                <div id="page-mapel" class="content-page hidden">
-                    <div class="mb-10">
-                        <h2 class="text-2xl font-bold text-gray-800">Pengaturan Bobot Nilai</h2>
-                        <p class="mt-1 text-gray-600">Atur persentase bobot antara nilai ujian dan nilai rapor. Total keduanya harus 100%.</p>
-                        <div class="mt-4 bg-white p-6 rounded-lg shadow-md max-w-xl">
-                            <form id="bobotForm">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                                    <div>
-                                        <label for="bobotUjian" class="block text-sm font-medium text-gray-700">Bobot Nilai Ujian</label>
-                                        <div class="mt-1 relative rounded-md shadow-sm">
-                                            <input type="number" id="bobotUjian" name="bobotUjian" min="0" max="100" class="w-full p-2 pr-8 border rounded-md" required>
-                                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3"><span class="text-gray-500 sm:text-sm">%</span></div>
+                                </div>
+                                <div class="mt-8 border-t pt-6">
+                                    <h2 class="text-lg font-medium text-gray-900">Data Kepala Sekolah</h2>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mt-4">
+                                        <div>
+                                            <label for="namaKepsek" class="block text-sm font-medium text-gray-700">Nama Kepala Sekolah</label>
+                                            <input type="text" id="namaKepsek" name="namaKepsek" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                                         </div>
-                                    </div>
-                                    <div>
-                                        <label for="bobotRapor" class="block text-sm font-medium text-gray-700">Bobot Nilai Rapor</label>
-                                         <div class="mt-1 relative rounded-md shadow-sm">
-                                            <input type="number" id="bobotRapor" name="bobotRapor" min="0" max="100" class="w-full p-2 pr-8 border rounded-md" required>
-                                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3"><span class="text-gray-500 sm:text-sm">%</span></div>
+                                        <div>
+                                            <label for="nipKepsek" class="block text-sm font-medium text-gray-700">NIP Kepala Sekolah (Jika ada)</label>
+                                            <input type="text" id="nipKepsek" name="nipKepsek" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                                         </div>
                                     </div>
                                 </div>
-                                 <div class="mt-6 pt-4 border-t">
-                                    <button type="submit" id="saveBobotBtn" class="bg-blue-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400">Simpan Bobot</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-10 border-t pt-8">
-                        <h2 class="text-xl font-bold text-gray-800">Opsi Impor & Manajemen Data</h2>
-                        <p class="mt-1 text-gray-600">Gunakan opsi di bawah untuk mengelola data mata pelajaran secara massal.</p>
-                        
-                        <!-- Area Import -->
-                        <div class="mt-6 p-6 bg-white rounded-lg shadow-md">
-                            <h3 class="font-semibold text-lg text-gray-800 mb-4">Impor Data Mata Pelajaran</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <!-- Import by System -->
-                                <div class="border p-4 rounded-lg">
-                                    <h4 class="font-medium text-gray-700">Otomatis dari Sistem</h4>
-                                    <p class="text-sm text-gray-500 mb-3">Impor daftar mapel standar sesuai jenjang sekolah Anda.</p>
-                                    <button id="importMapelSystemBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 w-full flex items-center justify-center disabled:bg-blue-400">
-                                      <span id="importMapelSystemBtnText">Import Mapel by System</span>
-                                      <span id="importMapelSystemSpinner" class="hidden loading-animation">Mengimpor</span>
+                                <div class="mt-8 pt-5 border-t">
+                                    <button type="submit" id="schoolSubmitBtn" class="w-full md:w-auto flex justify-center py-2 px-8 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400">
+                                        <span id="schoolSubmitBtnText">Simpan Data Sekolah</span>
+                                        <span id="schoolLoadingSpinner" class="hidden loading-animation">Menyimpan</span>
                                     </button>
                                 </div>
-                                <!-- Import from File -->
-                                <div class="border p-4 rounded-lg">
-                                    <h4 class="font-medium text-gray-700">Manual dari File</h4>
-                                    <p class="text-sm text-gray-500 mb-3">Unggah data mapel dari template Excel. Kode mapel yang sama akan dilewati.</p>
-                                    <div class="flex flex-col space-y-2">
-                                        <div class="flex space-x-2">
-                                            <button id="downloadMapelTemplateBtn" class="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700 text-sm flex-1">Download Template</button>
-                                            <label for="mapelFileInput" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg cursor-pointer hover:bg-green-700 text-sm flex-1 text-center">Pilih File</label>
-                                        </div>
-                                        <input type="file" id="mapelFileInput" class="hidden" accept=".xlsx, .xls, .csv">
-                                        <span id="mapelFileName" class="text-gray-500 text-sm text-center">Tidak ada file dipilih</span>
-                                        <button id="importMapelBtn" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed w-full">Import dari File</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div id="importMapelStatus" class="mt-4"></div>
+                            </form>
+                            <div id="schoolStatusMessage" class="mt-6 p-4 rounded-md text-center opacity-0 transition-opacity"></div>
                         </div>
-
-                        <!-- Area Manajemen -->
-                        <div class="mt-6 flex justify-between items-center bg-white p-6 rounded-lg shadow-md">
+                    </div>
+                    
+                    <div id="page-data-siswa" class="content-page hidden">
+                        <div class="flex justify-between items-center mb-6">
                             <div>
-                                <h3 class="font-semibold text-lg text-gray-800">Manajemen Data</h3>
-                                <p class="text-sm text-gray-500">Tambah manual atau hapus semua data mapel.</p>
+                                <h1 class="text-3xl font-bold text-gray-800">Manajemen Data Siswa</h1>
+                                <p class="mt-2 text-gray-600">Tambah, lihat, edit, atau hapus data siswa di sekolah Anda.</p>
                             </div>
                             <div class="flex space-x-2">
-                                <button id="addMapelBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">+ Tambah Mapel</button>
-                                <button id="deleteAllMapelBtn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">Hapus Semua Mapel</button>
+                                <button id="addStudentBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">+ Tambah Siswa</button>
+                                <button id="deleteAllStudentsBtn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">Hapus Semua Siswa</button>
+                            </div>
+                        </div>
+                        <div class="mt-8 border-t pt-6">
+                            <h2 class="text-xl font-bold text-gray-800">Import Data Siswa</h2>
+                            <p class="mt-1 text-gray-600">Unggah data siswa secara massal menggunakan template Excel.</p>
+                            <div class="mt-4 flex flex-wrap items-center gap-4">
+                                <button id="downloadTemplateBtn" class="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700">Download Template</button>
+                                <input type="file" id="siswaFileInput" class="hidden" accept=".xlsx, .xls, .csv">
+                                <label for="siswaFileInput" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg cursor-pointer hover:bg-green-700">Pilih File...</label>
+                                <span id="fileName" class="text-gray-500">Tidak ada file dipilih</span>
+                                <button id="importSiswaBtn" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Import Data</button>
+                            </div>
+                            <div id="importStatus" class="mt-4"></div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-md mt-8">
+                            <div id="siswaTableContainer" class="overflow-x-auto"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="page-mapel" class="content-page hidden">
+                        <div class="mb-10">
+                            <h2 class="text-2xl font-bold text-gray-800">Pengaturan Bobot Nilai</h2>
+                            <p class="mt-1 text-gray-600">Atur persentase bobot antara nilai ujian dan nilai rapor. Total keduanya harus 100%.</p>
+                            <div class="mt-4 bg-white p-6 rounded-lg shadow-md max-w-xl">
+                                <form id="bobotForm">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                                        <div>
+                                            <label for="bobotUjian" class="block text-sm font-medium text-gray-700">Bobot Nilai Ujian</label>
+                                            <div class="mt-1 relative rounded-md shadow-sm">
+                                                <input type="number" id="bobotUjian" name="bobotUjian" min="0" max="100" class="w-full p-2 pr-8 border rounded-md" required>
+                                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3"><span class="text-gray-500 sm:text-sm">%</span></div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label for="bobotRapor" class="block text-sm font-medium text-gray-700">Bobot Nilai Rapor</label>
+                                            <div class="mt-1 relative rounded-md shadow-sm">
+                                                <input type="number" id="bobotRapor" name="bobotRapor" min="0" max="100" class="w-full p-2 pr-8 border rounded-md" required>
+                                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3"><span class="text-gray-500 sm:text-sm">%</span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-6 pt-4 border-t">
+                                        <button type="submit" id="saveBobotBtn" class="bg-blue-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400">Simpan Bobot</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-10 border-t pt-8">
+                            <h2 class="text-xl font-bold text-gray-800">Opsi Impor & Manajemen Data</h2>
+                            <p class="mt-1 text-gray-600">Gunakan opsi di bawah untuk mengelola data mata pelajaran secara massal.</p>
+                            
+                            <!-- Area Import -->
+                            <div class="mt-6 p-6 bg-white rounded-lg shadow-md">
+                                <h3 class="font-semibold text-lg text-gray-800 mb-4">Impor Data Mata Pelajaran</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- Import by System -->
+                                    <div class="border p-4 rounded-lg">
+                                        <h4 class="font-medium text-gray-700">Otomatis dari Sistem</h4>
+                                        <p class="text-sm text-gray-500 mb-3">Impor daftar mapel standar sesuai jenjang sekolah Anda.</p>
+                                        <button id="importMapelSystemBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 w-full flex items-center justify-center disabled:bg-blue-400">
+                                        <span id="importMapelSystemBtnText">Import Mapel by System</span>
+                                        <span id="importMapelSystemSpinner" class="hidden loading-animation">Mengimpor</span>
+                                        </button>
+                                    </div>
+                                    <!-- Import from File -->
+                                    <div class="border p-4 rounded-lg">
+                                        <h4 class="font-medium text-gray-700">Manual dari File</h4>
+                                        <p class="text-sm text-gray-500 mb-3">Unggah data mapel dari template Excel. Kode mapel yang sama akan dilewati.</p>
+                                        <div class="flex flex-col space-y-2">
+                                            <div class="flex space-x-2">
+                                                <button id="downloadMapelTemplateBtn" class="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700 text-sm flex-1">Download Template</button>
+                                                <label for="mapelFileInput" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg cursor-pointer hover:bg-green-700 text-sm flex-1 text-center">Pilih File</label>
+                                            </div>
+                                            <input type="file" id="mapelFileInput" class="hidden" accept=".xlsx, .xls, .csv">
+                                            <span id="mapelFileName" class="text-gray-500 text-sm text-center">Tidak ada file dipilih</span>
+                                            <button id="importMapelBtn" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed w-full">Import dari File</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="importMapelStatus" class="mt-4"></div>
+                            </div>
+
+                            <!-- Area Manajemen -->
+                            <div class="mt-6 flex justify-between items-center bg-white p-6 rounded-lg shadow-md">
+                                <div>
+                                    <h3 class="font-semibold text-lg text-gray-800">Manajemen Data</h3>
+                                    <p class="text-sm text-gray-500">Tambah manual atau hapus semua data mapel.</p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button id="addMapelBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">+ Tambah Mapel</button>
+                                    <button id="deleteAllMapelBtn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">Hapus Semua Mapel</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Tabel Mapel -->
+                        <div class="mt-8">
+                            <h2 class="text-2xl font-bold text-gray-800">Daftar Mata Pelajaran Saat Ini</h2>
+                            <div class="bg-white p-4 rounded-lg shadow-md mt-4">
+                                <div id="mapelTableContainer" class="overflow-x-auto"></div>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Tabel Mapel -->
-                    <div class="mt-8">
-                        <h2 class="text-2xl font-bold text-gray-800">Daftar Mata Pelajaran Saat Ini</h2>
-                        <div class="bg-white p-4 rounded-lg shadow-md mt-4">
-                            <div id="mapelTableContainer" class="overflow-x-auto"></div>
-                        </div>
-                    </div>
-                </div>
 
-                
-                <div id="page-input-ujian" class="content-page hidden">
-                    <h1 class="text-3xl font-bold text-gray-800">Input Nilai Ujian</h1>
-                    <p class="mt-2 text-gray-600 mb-8">Pilih jenis ujian yang akan diinput nilainya.</p>
-                    <div class="flex space-x-4 mb-8">
-                        <button id="btn-show-ujian-madrasah" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors">Input Nilai Ujian Madrasah</button>
-                        <button id="btn-show-ujian-praktek" class="bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition-colors">Input Nilai Ujian Praktek</button>
-                    </div>
-                    <div id="input-ujian-container"></div>
-                </div>
-    
-                <div id="page-input-rapor" class="content-page hidden">
-                     <h1 class="text-3xl font-bold text-gray-800">Input Nilai Rapor</h1>
-                     <div id="rapor-container" class="mt-4"></div>
-                </div>
-                <div id="page-rekapitulasi" class="content-page hidden">
-                    <h1 class="text-3xl font-bold text-gray-800">Rekapitulasi Nilai Akhir</h1>
-                    <p class="mt-2 text-gray-600 mb-8">Lihat ringkasan nilai ujian, rapor, dan nilai akhir ijazah.</p>
                     
-                    <div id="rekap-loader" class="text-center p-8">
-                        <p class="font-bold loading-animation">Mengumpulkan dan memproses semua data nilai</p>
-                        <p>Silakan tunggu, ini mungkin memakan waktu beberapa saat.</p>
-                    </div>
-                    
-                    <div id="rekap-content" class="hidden">
-                        <div class="flex space-x-4 mb-8 border-b pb-4">
-                            <button data-rekap="ujian" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors">Rekap Nilai Ujian</button>
-                            <button data-rekap="rapor" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors">Rekap Nilai Rapor</button>
-                            <button data-rekap="ijazah" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors">Rekap Nilai Ijazah</button>
-                            <button id="updateRekapBtn" class="ml-auto bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center disabled:bg-green-400">
-                                <span id="updateRekapBtnText">Perbarui & Muat Ulang Data</span>
-                                <span id="updateRekapSpinner" class="hidden loading-animation">Memperbarui</span>
-                            </button>
+                    <div id="page-input-ujian" class="content-page hidden">
+                        <h1 class="text-3xl font-bold text-gray-800">Input Nilai Ujian</h1>
+                        <p class="mt-2 text-gray-600 mb-8">Pilih jenis ujian yang akan diinput nilainya.</p>
+                        <div class="flex space-x-4 mb-8">
+                            <button id="btn-show-ujian-madrasah" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors">Input Nilai Ujian Madrasah</button>
+                            <button id="btn-show-ujian-praktek" class="bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition-colors">Input Nilai Ujian Praktek</button>
                         </div>
-                        <div id="rekap-display-area">
-                        </div>
+                        <div id="input-ujian-container"></div>
                     </div>
-    
-                    <div id="rekap-setup" class="hidden text-center p-8 bg-yellow-100 rounded-lg">
-                        <p class="font-bold text-yellow-800">Sheet Rekapitulasi belum dibuat.</p>
-                        <p class="text-yellow-700 mt-2">Silakan klik tombol di bawah untuk membuat sheet yang diperlukan untuk menampilkan data rekapitulasi.</p>
-                        <button id="createRekapSheetsBtn" class="mt-4 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Buat Sheet Rekapitulasi</button>
+        
+                    <div id="page-input-rapor" class="content-page hidden">
+                        <h1 class="text-3xl font-bold text-gray-800">Input Nilai Rapor</h1>
+                        <div id="rapor-container" class="mt-4"></div>
+                    </div>
+                    <div id="page-rekapitulasi" class="content-page hidden">
+                        <h1 class="text-3xl font-bold text-gray-800">Rekapitulasi Nilai Akhir</h1>
+                        <p class="mt-2 text-gray-600 mb-8">Lihat ringkasan nilai ujian, rapor, dan nilai akhir ijazah.</p>
+                        
+                        <div id="rekap-loader" class="text-center p-8">
+                            <p class="font-bold loading-animation">Mengumpulkan dan memproses semua data nilai</p>
+                            <p>Silakan tunggu, ini mungkin memakan waktu beberapa saat.</p>
+                        </div>
+                        
+                        <div id="rekap-content" class="hidden">
+                            <div class="flex space-x-4 mb-8 border-b pb-4">
+                                <button data-rekap="ujian" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors">Rekap Nilai Ujian</button>
+                                <button data-rekap="rapor" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors">Rekap Nilai Rapor</button>
+                                <button data-rekap="ijazah" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors">Rekap Nilai Ijazah</button>
+                                <button id="updateRekapBtn" class="ml-auto bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center disabled:bg-green-400">
+                                    <span id="updateRekapBtnText">Perbarui & Muat Ulang Data</span>
+                                    <span id="updateRekapSpinner" class="hidden loading-animation">Memperbarui</span>
+                                </button>
+                            </div>
+                            <div id="rekap-display-area">
+                            </div>
+                        </div>
+        
+                        <div id="rekap-setup" class="hidden text-center p-8 bg-yellow-100 rounded-lg">
+                            <p class="font-bold text-yellow-800">Sheet Rekapitulasi belum dibuat.</p>
+                            <p class="text-yellow-700 mt-2">Silakan klik tombol di bawah untuk membuat sheet yang diperlukan untuk menampilkan data rekapitulasi.</p>
+                            <button id="createRekapSheetsBtn" class="mt-4 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Buat Sheet Rekapitulasi</button>
+                        </div>
                     </div>
                 </div>
+                <footer class="text-center py-4 mt-8 border-t">
+                    <a href="https://wa.me/6281543276033" target="_blank" rel="noopener noreferrer" class="text-sm text-gray-500 hover:text-blue-600 transition-colors">
+                      &copy; <span id="currentYearApp"></span> Created by Syamsul Bahri
+                    </a>
+                </footer>
             </main>
         </div>
     </div>
@@ -496,7 +508,22 @@
     let userSpreadsheetId = null;
     let inactivityTimer;
 
+    // Fungsi ini akan mengatur tahun saat ini pada elemen footer
+    function setFooterYear() {
+      const currentYear = new Date().getFullYear();
+      const yearAuthSpan = document.getElementById('currentYearAuth');
+      const yearAppSpan = document.getElementById('currentYearApp');
+      if (yearAuthSpan) {
+          yearAuthSpan.textContent = currentYear;
+      }
+      if (yearAppSpan) {
+          yearAppSpan.textContent = currentYear;
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
+        setFooterYear(); // Panggil fungsi footer di sini
+
         const loginContainer = document.getElementById('login-container');
         const signupContainer = document.getElementById('signup-container');
         const showSignupLink = document.getElementById('show-signup');
@@ -515,6 +542,10 @@
             document.getElementById('auth-wrapper').classList.add('hidden');
             document.getElementById('app-container').classList.remove('hidden');
             initializeApp(lastPage);
+        } else {
+            // Jika tidak ada sesi, pastikan auth wrapper terlihat
+            document.getElementById('auth-wrapper').classList.remove('hidden');
+            document.getElementById('app-container').classList.add('hidden');
         }
 
         showSignupLink.addEventListener('click', (e) => {
@@ -539,10 +570,12 @@
             signupForm.addEventListener('submit', handleSignup);
         }
 
-        logoutButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            logoutUser();
-        });
+        if(logoutButton) {
+            logoutButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                logoutUser();
+            });
+        }
 
         setupPasswordToggles();
     });
@@ -747,6 +780,11 @@
             google.script.run
                 .withSuccessHandler(data => {
                     if (data) {
+                        const schoolNameSidebar = document.getElementById('school-name-sidebar');
+                        if (data.namaSekolah && schoolNameSidebar) {
+                            schoolNameSidebar.textContent = data.namaSekolah.toUpperCase();
+                        }
+
                         for (const key in data) {
                             let element;
                             if (key === 'email') {
@@ -783,6 +821,9 @@
                         btn.disabled = false;
                         btnText.classList.remove('hidden');
                         btnSpinner.classList.add('hidden');
+                        if(response.status === 'success') {
+                            loadSchoolData(); // Muat ulang data sekolah untuk update sidebar
+                        }
                     })
                     .withFailureHandler(error => {
                         showGlobalStatus('Error: ' + error.message, false);
@@ -990,23 +1031,45 @@
                 .withFailureHandler(err => { container.innerHTML = `<p class="text-center text-red-500 py-4">Gagal memuat data: ${err.message}</p>`; })
                 .getStudents(userSpreadsheetId);
         }
+        
         if (siswaForm) {
           siswaForm.addEventListener('submit', e => {
               e.preventDefault();
+              const saveBtn = document.getElementById('saveSiswaBtn');
+              const originalBtnText = saveBtn.textContent;
+              
+              saveBtn.disabled = true;
+              saveBtn.textContent = 'Menyimpan';
+              saveBtn.classList.add('loading-animation');
+
               const studentData = Object.fromEntries(new FormData(e.target).entries());
               const handler = studentData.studentRow ? 'updateStudent' : 'addStudent';
+              
+              const successCallback = response => { 
+                  showGlobalStatus(response.message, response.status === 'success'); 
+                  if (response.status === 'success') { 
+                      closeSiswaModal(); 
+                      loadStudentsData(); 
+                  } 
+              };
+              
+              const failureCallback = err => {
+                  showGlobalStatus(err.message, false);
+              };
+
+              const finalCallback = () => {
+                  saveBtn.disabled = false;
+                  saveBtn.textContent = originalBtnText;
+                  saveBtn.classList.remove('loading-animation');
+              };
+              
               google.script.run
-                  .withSuccessHandler(response => { 
-                      showGlobalStatus(response.message, response.status === 'success'); 
-                      if (response.status === 'success') { 
-                          closeSiswaModal(); 
-                          loadStudentsData(); 
-                      } 
-                  })
-                  .withFailureHandler(err => showGlobalStatus(err.message, false))
+                  .withSuccessHandler(response => { successCallback(response); finalCallback(); })
+                  .withFailureHandler(error => { failureCallback(error); finalCallback(); })
                   [handler](userSpreadsheetId, studentData);
           });
         }
+        
         function handleEditStudent(student) {
             siswaForm.reset();
             siswaModalTitle.textContent = "Edit Data Siswa";
@@ -1024,6 +1087,7 @@
             }
             openSiswaModal();
         }
+
         function handleDeleteStudent(student, targetButton) {
             if (targetButton.dataset.confirming) {
                 google.script.run
@@ -1048,6 +1112,7 @@
                 }, 3000);
             }
         }
+
         const bobotUjianInput = document.getElementById('bobotUjian');
         const bobotRaporInput = document.getElementById('bobotRapor');
         const bobotForm = document.getElementById('bobotForm');
@@ -1181,7 +1246,7 @@
                         btnText.classList.remove('hidden');
                         spinner.classList.add('hidden');
                     })
-                    .importMapelFromSystem(userSpreadsheetId);
+                    .importMapelBySystem(userSpreadsheetId);
             });
         }
 
@@ -1287,23 +1352,45 @@
                 .withFailureHandler(err => { container.innerHTML = `<p class="text-center text-red-500 py-4">Gagal memuat data: ${err.message}</p>`; })
                 .getMapel(userSpreadsheetId);
         }
+
         if (mapelForm) {
           mapelForm.addEventListener('submit', e => { 
               e.preventDefault(); 
+              const saveBtn = document.getElementById('saveMapelBtn');
+              const originalBtnText = saveBtn.textContent;
+
+              saveBtn.disabled = true;
+              saveBtn.textContent = 'Menyimpan';
+              saveBtn.classList.add('loading-animation');
+
               const mapelData = Object.fromEntries(new FormData(e.target).entries()); 
               const handler = mapelData.mapelRow ? 'updateMapel' : 'addMapel'; 
+              
+              const successCallback = response => { 
+                  showGlobalStatus(response.message, response.status === 'success'); 
+                  if (response.status === 'success') { 
+                      closeMapelModal(); 
+                      loadMapelData(); 
+                  } 
+              };
+
+              const failureCallback = err => {
+                  showGlobalStatus(err.message, false);
+              };
+
+              const finalCallback = () => {
+                  saveBtn.disabled = false;
+                  saveBtn.textContent = originalBtnText;
+                  saveBtn.classList.remove('loading-animation');
+              };
+
               google.script.run
-                  .withSuccessHandler(response => { 
-                      showGlobalStatus(response.message, response.status === 'success'); 
-                      if (response.status === 'success') { 
-                          closeMapelModal(); 
-                          loadMapelData(); 
-                      } 
-                  })
-                  .withFailureHandler(err => showGlobalStatus(err.message, false))
+                  .withSuccessHandler(response => { successCallback(response); finalCallback(); })
+                  .withFailureHandler(error => { failureCallback(error); finalCallback(); })
                   [handler](userSpreadsheetId, mapelData); 
           });
         }
+
         function handleEditMapel(mapel) {
             mapelForm.reset(); 
             mapelModalTitle.textContent = "Edit Mata Pelajaran"; 
