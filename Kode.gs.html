@@ -28,6 +28,7 @@ const SHEET_MAPEL_DEFAULT = "Mapel Default"; // Sheet di Spreadsheet Induk untuk
 function doGet(e) {
   return HtmlService.createHtmlOutputFromFile('Index')
     .setTitle('Aplikasi Akademik Sekolah')
+    .setFaviconUrl("https://uploadimage.io/images/2025/06/10/Icon-Legalisir-Ijazah.png")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
@@ -205,12 +206,27 @@ function getStudents(spreadsheetId) {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
     if (!sheet || sheet.getLastRow() < 2) return [];
-    sheet.getRange("A:B").setNumberFormat('@'); // Pastikan NISN dan NIS adalah teks
+    sheet.getRange("A:B").setNumberFormat('@');
     const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, 5);
     const values = dataRange.getValues();
-    return values.map((row, index) => ({row: index + 2, nisn: row[0], nis: row[1], nama: row[2], tempatLahir: row[3], tanggalLahir: row[4] ? new Date(row[4]).toLocaleDateString('id-ID') : ''}));
+    return values.map((row, index) => {
+        let tanggalLahirStr = '';
+        // Memastikan data tanggal valid sebelum diproses
+        if (row[4] && row[4] instanceof Date) {
+             // Memformat tanggal ke YYYY-MM-DD sesuai zona waktu spreadsheet
+             tanggalLahirStr = Utilities.formatDate(row[4], Session.getScriptTimeZone(), "yyyy-MM-dd");
+        }
+        return {
+            row: index + 2, 
+            nisn: row[0], 
+            nis: row[1], 
+            nama: row[2], 
+            tempatLahir: row[3], 
+            tanggalLahir: tanggalLahirStr
+        };
+    });
   } catch (e) { 
-    Logger.log(e);
+    Logger.log(`getStudents Error: ${e}`);
     return []; 
   }
 }
@@ -226,7 +242,9 @@ function addStudent(spreadsheetId, studentData) {
     const ss = getSpreadsheet(spreadsheetId);
     let sheet = ss.getSheetByName(SHEET_DATA_SISWA);
     sheet.getRange("A:B").setNumberFormat('@');
-    const newRow = [studentData.nisn, studentData.nis, studentData.nama, studentData.tempatLahir, studentData.tanggalLahir];
+    // FIX: Mengonversi string tanggal YYYY-MM-DD menjadi objek Date di zona waktu lokal skrip
+    const tanggalLahirObject = studentData.tanggalLahir ? new Date(studentData.tanggalLahir.replace(/-/g, '/')) : '';
+    const newRow = [studentData.nisn, studentData.nis, studentData.nama, studentData.tempatLahir, tanggalLahirObject];
     sheet.appendRow(newRow);
     return { status: "success", message: `Siswa "${studentData.nama}" berhasil ditambahkan.` };
   } catch (e) { Logger.log(e); return { status: "error", message: "Gagal menambah siswa: " + e.message }; }
@@ -243,7 +261,9 @@ function updateStudent(spreadsheetId, studentData) {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
     sheet.getRange("A:B").setNumberFormat('@');
-    const rowToUpdate = [studentData.nisn, studentData.nis, studentData.nama, studentData.tempatLahir, studentData.tanggalLahir];
+    // FIX: Mengonversi string tanggal YYYY-MM-DD menjadi objek Date di zona waktu lokal skrip
+    const tanggalLahirObject = studentData.tanggalLahir ? new Date(studentData.tanggalLahir.replace(/-/g, '/')) : '';
+    const rowToUpdate = [studentData.nisn, studentData.nis, studentData.nama, studentData.tempatLahir, tanggalLahirObject];
     sheet.getRange(studentData.studentRow, 1, 1, rowToUpdate.length).setValues([rowToUpdate]);
     return { status: "success", message: `Data siswa "${studentData.nama}" berhasil diperbarui.` };
   } catch (e) { Logger.log(e); return { status: "error", message: "Gagal memperbarui data: " + e.message }; }
@@ -1194,5 +1214,31 @@ function exportRekapData(spreadsheetId, type, format, exportOptions) {
         Logger.log(`Gagal menghapus file sementara ${tempSpreadsheetFileId}: ${err.toString()}`);
       }
     }
+  }
+}
+
+/**
+ * Mengambil data agregat untuk halaman dashboard.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {object} Objek berisi data untuk dashboard.
+ */
+function getDashboardData(spreadsheetId) {
+  try {
+    // Memanggil fungsi yang sudah ada untuk mendapatkan data
+    const students = getStudents(spreadsheetId);
+    const mapel = getMapel(spreadsheetId);
+    const schoolData = getSchoolData(spreadsheetId);
+
+    // Mengembalikan objek yang berisi semua data yang diperlukan
+    return {
+      status: "success",
+      studentCount: students.length,
+      mapelCount: mapel.length,
+      schoolData: schoolData,
+      mapelList: mapel // Mengirim daftar mapel untuk diproses menjadi grafik
+    };
+  } catch (e) {
+    Logger.log(e);
+    return { status: "error", message: "Gagal mengambil data dashboard: " + e.message };
   }
 }
