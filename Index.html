@@ -303,29 +303,64 @@
                             </form>
                         </div>
                     </div>
-                    <div class="mb-10 border-t pt-6">
-                        <h2 class="text-xl font-bold text-gray-800">Import Data Mata Pelajaran</h2>
-                        <p class="mt-1 text-gray-600">Unggah data mata pelajaran secara massal menggunakan template Excel.</p>
-                        <div class="mt-4 flex flex-wrap items-center gap-4">
-                            <button id="downloadMapelTemplateBtn" class="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700">Download Template Mapel</button>
-                            <input type="file" id="mapelFileInput" class="hidden" accept=".xlsx, .xls, .csv">
-                            <label for="mapelFileInput" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg cursor-pointer hover:bg-green-700">Pilih File...</label>
-                            <span id="mapelFileName" class="text-gray-500">Tidak ada file dipilih</span>
-                            <button id="importMapelBtn" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Import Data Mapel</button>
+                    
+                    <div class="mb-10 border-t pt-8">
+                        <h2 class="text-xl font-bold text-gray-800">Opsi Impor & Manajemen Data</h2>
+                        <p class="mt-1 text-gray-600">Gunakan opsi di bawah untuk mengelola data mata pelajaran secara massal.</p>
+                        
+                        <!-- Area Import -->
+                        <div class="mt-6 p-6 bg-white rounded-lg shadow-md">
+                            <h3 class="font-semibold text-lg text-gray-800 mb-4">Impor Data Mata Pelajaran</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Import by System -->
+                                <div class="border p-4 rounded-lg">
+                                    <h4 class="font-medium text-gray-700">Otomatis dari Sistem</h4>
+                                    <p class="text-sm text-gray-500 mb-3">Impor daftar mapel standar sesuai jenjang sekolah Anda.</p>
+                                    <button id="importMapelSystemBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 w-full flex items-center justify-center disabled:bg-blue-400">
+                                      <span id="importMapelSystemBtnText">Import Mapel by System</span>
+                                      <span id="importMapelSystemSpinner" class="hidden loading-animation">Mengimpor</span>
+                                    </button>
+                                </div>
+                                <!-- Import from File -->
+                                <div class="border p-4 rounded-lg">
+                                    <h4 class="font-medium text-gray-700">Manual dari File</h4>
+                                    <p class="text-sm text-gray-500 mb-3">Unggah data mapel dari template Excel. Kode mapel yang sama akan dilewati.</p>
+                                    <div class="flex flex-col space-y-2">
+                                        <div class="flex space-x-2">
+                                            <button id="downloadMapelTemplateBtn" class="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700 text-sm flex-1">Download Template</button>
+                                            <label for="mapelFileInput" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg cursor-pointer hover:bg-green-700 text-sm flex-1 text-center">Pilih File</label>
+                                        </div>
+                                        <input type="file" id="mapelFileInput" class="hidden" accept=".xlsx, .xls, .csv">
+                                        <span id="mapelFileName" class="text-gray-500 text-sm text-center">Tidak ada file dipilih</span>
+                                        <button id="importMapelBtn" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed w-full">Import dari File</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="importMapelStatus" class="mt-4"></div>
                         </div>
-                        <div id="importMapelStatus" class="mt-4"></div>
-                    </div>
-                    <div class="flex justify-between items-center mb-6">
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-800">Manajemen Mata Pelajaran</h2>
-                            <p class="mt-1 text-gray-600">Kelola daftar mata pelajaran yang ada di sekolah Anda.</p>
+
+                        <!-- Area Manajemen -->
+                        <div class="mt-6 flex justify-between items-center bg-white p-6 rounded-lg shadow-md">
+                            <div>
+                                <h3 class="font-semibold text-lg text-gray-800">Manajemen Data</h3>
+                                <p class="text-sm text-gray-500">Tambah manual atau hapus semua data mapel.</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button id="addMapelBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">+ Tambah Mapel</button>
+                                <button id="deleteAllMapelBtn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">Hapus Semua Mapel</button>
+                            </div>
                         </div>
-                        <button id="addMapelBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">+ Tambah Mapel</button>
                     </div>
-                    <div class="bg-white p-4 rounded-lg shadow-md">
-                        <div id="mapelTableContainer" class="overflow-x-auto"></div>
+                    
+                    <!-- Tabel Mapel -->
+                    <div class="mt-8">
+                        <h2 class="text-2xl font-bold text-gray-800">Daftar Mata Pelajaran Saat Ini</h2>
+                        <div class="bg-white p-4 rounded-lg shadow-md mt-4">
+                            <div id="mapelTableContainer" class="overflow-x-auto"></div>
+                        </div>
                     </div>
                 </div>
+
                 
                 <div id="page-input-ujian" class="content-page hidden">
                     <h1 class="text-3xl font-bold text-gray-800">Input Nilai Ujian</h1>
@@ -355,7 +390,10 @@
                             <button data-rekap="ujian" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors">Rekap Nilai Ujian</button>
                             <button data-rekap="rapor" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors">Rekap Nilai Rapor</button>
                             <button data-rekap="ijazah" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors">Rekap Nilai Ijazah</button>
-                            <button id="updateRekapBtn" class="ml-auto bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Perbarui & Muat Ulang Data</button>
+                            <button id="updateRekapBtn" class="ml-auto bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center disabled:bg-green-400">
+                                <span id="updateRekapBtnText">Perbarui & Muat Ulang Data</span>
+                                <span id="updateRekapSpinner" class="hidden loading-animation">Memperbarui</span>
+                            </button>
                         </div>
                         <div id="rekap-display-area">
                         </div>
@@ -703,14 +741,6 @@
         const lastActiveLink = document.querySelector(`.nav-link[data-page="${lastPage}"]`);
         if (lastActiveLink) {
             lastActiveLink.click();
-        }
-    
-        function showGlobalStatus(message, isSuccess) {
-            const statusDiv = document.createElement('div');
-            statusDiv.className = `p-4 rounded-lg shadow-lg text-white ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`;
-            statusDiv.textContent = message;
-            document.getElementById('globalStatusMessage').appendChild(statusDiv);
-            setTimeout(() => statusDiv.remove(), 4000);
         }
     
         function loadSchoolData(){
@@ -1074,6 +1104,9 @@
         const mapelFileInput = document.getElementById('mapelFileInput');
         const mapelFileNameSpan = document.getElementById('mapelFileName');
         const importMapelStatusDiv = document.getElementById('importMapelStatus');
+        const importMapelSystemBtn = document.getElementById('importMapelSystemBtn');
+        const deleteAllMapelBtn = document.getElementById('deleteAllMapelBtn');
+
 
         const openMapelModal = () => { mapelModal.classList.remove('hidden'); setTimeout(() => mapelModal.style.opacity = '1', 10); };
         const closeMapelModal = () => { mapelModal.style.opacity = '0'; setTimeout(() => mapelModal.classList.add('hidden'), 300); };
@@ -1082,15 +1115,85 @@
           closeMapelModalBtn.addEventListener('click', closeMapelModal);
           cancelMapelBtn.addEventListener('click', closeMapelModal);
         }
+        if (deleteAllMapelBtn) {
+          deleteAllMapelBtn.addEventListener('click', function() {
+              const btn = this;
+              if (btn.dataset.confirming) {
+                  btn.disabled = true;
+                  btn.textContent = 'Menghapus...';
+                  google.script.run
+                      .withSuccessHandler(response => {
+                          showGlobalStatus(response.message, response.status === 'success');
+                          if (response.status === 'success') {
+                              loadMapelData();
+                          }
+                          btn.disabled = false;
+                          btn.textContent = 'Hapus Semua Mapel';
+                          delete btn.dataset.confirming;
+                      })
+                      .withFailureHandler(err => {
+                          showGlobalStatus('Error: ' + err.message, false);
+                          btn.disabled = false;
+                          btn.textContent = 'Hapus Semua Mapel';
+                          delete btn.dataset.confirming;
+                      })
+                      .deleteAllMapel(userSpreadsheetId);
+              } else {
+                  btn.dataset.confirming = 'true';
+                  btn.textContent = 'YAKIN? KLIK LAGI';
+                  btn.classList.replace('bg-red-600', 'bg-yellow-500');
+                  btn.classList.replace('hover:bg-red-700', 'hover:bg-yellow-600');
+                  
+                  setTimeout(() => {
+                      if (btn.dataset.confirming) {
+                          btn.textContent = 'Hapus Semua Mapel';
+                          delete btn.dataset.confirming;
+                          btn.classList.replace('bg-yellow-500', 'bg-red-600');
+                          btn.classList.replace('hover:bg-yellow-600', 'hover:bg-red-700');
+                      }
+                  }, 4000);
+              }
+          });
+        }
+        if (importMapelSystemBtn) {
+            importMapelSystemBtn.addEventListener('click', function() {
+                const btn = this;
+                const btnText = document.getElementById('importMapelSystemBtnText');
+                const spinner = document.getElementById('importMapelSystemSpinner');
+
+                btn.disabled = true;
+                btnText.classList.add('hidden');
+                spinner.classList.remove('hidden');
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        showGlobalStatus(response.message, response.status === 'success');
+                        if (response.newCount > 0 || response.status === 'success') {
+                           loadMapelData();
+                        }
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+                    })
+                    .withFailureHandler(err => {
+                        showGlobalStatus('Error: ' + err.message, false);
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+                    })
+                    .importMapelFromSystem(userSpreadsheetId);
+            });
+        }
+
         if (downloadMapelTemplateBtn) {
             downloadMapelTemplateBtn.addEventListener('click', () => {
                 const btn = downloadMapelTemplateBtn;
                 btn.disabled = true;
-                btn.textContent = 'Membuat Template...';
+                btn.textContent = 'Membuat...';
                 google.script.run
                     .withSuccessHandler(result => {
                         btn.disabled = false;
-                        btn.textContent = 'Download Template Mapel';
+                        btn.textContent = 'Download Template';
                         if (result.base64Data) {
                             const link = document.createElement('a');
                             link.href = `data:${result.mimeType};base64,${result.base64Data}`;
@@ -1106,7 +1209,7 @@
                     .withFailureHandler(error => {
                         showGlobalStatus('Error: ' + error.message, false);
                         btn.disabled = false;
-                        btn.textContent = 'Download Template Mapel';
+                        btn.textContent = 'Download Template';
                     })
                     .generateMapelTemplate();
             });
@@ -1131,25 +1234,27 @@
                 reader.readAsDataURL(file);
                 reader.onload = () => {
                     const fileData = { fileName: file.name, mimeType: file.type, content: reader.result.split(',')[1] };
-                    importMapelStatusDiv.innerHTML = '<p class="text-blue-600 loading-animation">Mengimpor data</p>';
+                    importMapelStatusDiv.innerHTML = '<p class="text-blue-600 loading-animation">Mengimpor file</p>';
                     importMapelBtn.disabled = true; importMapelBtn.textContent = 'Mengimpor...';
                     google.script.run
                         .withSuccessHandler(response => {
-                            importMapelStatusDiv.innerHTML = '';
-                            showGlobalStatus(response.message, response.status === 'success');
-                            if(response.status === 'success') loadMapelData();
                             importMapelBtn.disabled = false; 
-                            importMapelBtn.textContent = 'Import Data Mapel';
+                            importMapelBtn.textContent = 'Import dari File';
                             mapelFileNameSpan.textContent = 'Tidak ada file dipilih';
                             mapelFileInput.value = '';
+                            
+                            let reportHtml = `<div class="p-3 border rounded-md bg-gray-50 text-sm"><strong>${response.message}</strong><ul>`;
+                            if (response.newCount > 0) reportHtml += `<li class="text-green-600">${response.newCount} mapel baru berhasil ditambahkan.</li>`;
+                            if (response.skippedCount > 0) reportHtml += `<li class="text-yellow-600">${response.skippedCount} mapel duplikat dilewati.</li>`;
+                            reportHtml += `</ul></div>`;
+                            importMapelStatusDiv.innerHTML = reportHtml;
+
+                            if(response.newCount > 0) loadMapelData();
                         })
                         .withFailureHandler(error => {
-                            importMapelStatusDiv.innerHTML = '';
-                            showGlobalStatus('Error: ' + error.message, false);
+                            importMapelStatusDiv.innerHTML = `<p class="text-red-600">${error.message}</p>`;
                             importMapelBtn.disabled = false; 
-                            importMapelBtn.textContent = 'Import Data Mapel';
-                            mapelFileNameSpan.textContent = 'Tidak ada file dipilih';
-                            mapelFileInput.value = '';
+                            importMapelBtn.textContent = 'Import dari File';
                         })
                         .importFromExcel(userSpreadsheetId, fileData, 'Data Mata Pelajaran');
                 };
@@ -1262,34 +1367,6 @@
                 });
             }).catch(err => { container.innerHTML = `<p class="text-center text-red-500 p-4">Terjadi kesalahan saat memuat data: ${err.message}</p>`; });
         }
-        function updateRowTotals(rowElement) { const inputs = rowElement.querySelectorAll('.score-input'); let total = 0; let count = 0; inputs.forEach(input => { const value = parseFloat(input.value); if (!isNaN(value)) { total += value; count++; } }); const average = count > 0 ? (total / count).toFixed(2) : '0.00'; rowElement.querySelector('.jumlah-nilai').textContent = total; rowElement.querySelector('.rata-rata-nilai').textContent = average; }
-        function handleScoreInput(event) { if (event.target.classList.contains('score-input')) { const row = event.target.closest('tr'); updateRowTotals(row); } }
-        function handleSmartPaste(event) {
-            if (!event.target.classList.contains('score-input')) return;
-            event.preventDefault();
-            const pastedText = (event.clipboardData || window.clipboardData).getData('text');
-            const pastedRows = pastedText.split(/\r?\n/).filter(r => r).map(row => row.split('\t'));
-            const tableBody = event.target.closest('tbody');
-            if (!tableBody) return;
-            const allTableRows = Array.from(tableBody.querySelectorAll('tr'));
-            const startRowElement = event.target.closest('tr');
-            const startRowIndex = allTableRows.indexOf(startRowElement);
-            const allRowInputs = Array.from(startRowElement.querySelectorAll('.score-input'));
-            const startColIndex = allRowInputs.indexOf(event.target);
-            pastedRows.forEach((rowData, r_offset) => {
-                const currentRowIndex = startRowIndex + r_offset;
-                const targetRow = allTableRows[currentRowIndex];
-                if (targetRow) {
-                    const targetRowInputs = Array.from(targetRow.querySelectorAll('.score-input'));
-                    rowData.forEach((cellData, c_offset) => {
-                        const currentColIndex = startColIndex + c_offset;
-                        const targetInput = targetRowInputs[currentColIndex];
-                        if (targetInput) targetInput.value = cellData.trim();
-                    });
-                    updateRowTotals(targetRow);
-                }
-            });
-        }
         function handleSaveNilai(event, jenisUjian) {
             event.preventDefault(); const form = event.target; const saveBtn = form.querySelector('button[type="submit"]'); saveBtn.disabled = true; saveBtn.textContent = 'Menyimpan...';
             const allRows = form.querySelectorAll('tbody tr'); const nilaiData = [];
@@ -1306,56 +1383,6 @@
                     saveBtn.textContent = `Simpan Nilai ${jenisUjian}`;
                 })
                 .saveNilai(userSpreadsheetId, { jenis: jenisUjian, nilai: nilaiData });
-        }
-        const semesters = { MI: { k4_ganjil: 'Kelas 4 Ganjil', k4_genap: 'Kelas 4 Genap', k5_ganjil: 'Kelas 5 Ganjil', k5_genap: 'Kelas 5 Genap', k6_ganjil: 'Kelas 6 Ganjil' }, MTS: { k7_ganjil: 'Kelas 7 Ganjil', k7_genap: 'Kelas 7 Genap', k8_ganjil: 'Kelas 8 Ganjil', k8_genap: 'Kelas 8 Genap', k9_ganjil: 'Kelas 9 Ganjil' }, MA: { k10_ganjil: 'Kelas 10 Ganjil', k10_genap: 'Kelas 10 Genap', k11_ganjil: 'Kelas 11 Ganjil', k11_genap: 'Kelas 11 Genap', k12_ganjil: 'Kelas 12 Ganjil' } };
-        function initRaporPage() {
-          const container = document.getElementById('rapor-container'); container.innerHTML = '<p>Memeriksa data sekolah...</p>';
-          google.script.run
-            .withSuccessHandler(schoolData => {
-                if (!schoolData || !schoolData.jenjang) { container.innerHTML = `<div class="p-4 bg-yellow-100 text-yellow-800 rounded-lg">Harap atur <b>Jenjang Sekolah</b> di halaman <a href="#" onclick="document.querySelector('[data-page=data-sekolah]').click()" class="font-bold underline">Data Sekolah</a> terlebih dahulu.</div>`; return; }
-                const jenjang = schoolData.jenjang; const semesterList = semesters[jenjang]; let html = '';
-                for (const key in semesterList) { html += `<div class="mb-6 bg-white p-4 rounded-lg shadow-sm"><h3 class="text-xl font-bold text-gray-700">${semesterList[key]}</h3><div class="flex space-x-4 mt-3"><button onclick="buildRaporScoreTable('${key}', 'Pengetahuan')" class="bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600 text-sm">Input Nilai Pengetahuan</button><button onclick="buildRaporScoreTable('${key}', 'Keterampilan')" class="bg-teal-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-teal-600 text-sm">Input Nilai Keterampilan</button></div><div id="table-container-${key}" class="mt-4"></div></div>`; }
-                container.innerHTML = html;
-            })
-            .getSchoolData(userSpreadsheetId);
-        }
-        function buildRaporScoreTable(semesterKey, jenisNilai) {
-            const container = document.getElementById(`table-container-${semesterKey}`); container.innerHTML = `<div class="text-center p-8"><p class="font-bold">Memuat data...</p></div>`; const sheetName = `Rapor_${jenisNilai}_${semesterKey}`;
-            Promise.all([ 
-                new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getStudents(userSpreadsheetId)), 
-                new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getMapel(userSpreadsheetId)), 
-                new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getExistingNilai(userSpreadsheetId, sheetName)) 
-            ]).then(([students, mapelList, existingScores]) => {
-                 if (!students || students.length === 0) { container.innerHTML = `<p class="text-center text-red-500 p-4">Data siswa tidak ditemukan.</p>`; return; }
-                 if (!mapelList || mapelList.length === 0) { container.innerHTML = `<p class="text-center text-red-500 p-4">Data mata pelajaran tidak ditemukan.</p>`; return; }
-                 const tableWrapper = document.createElement('div'); tableWrapper.className = 'p-4 border rounded-lg'; tableWrapper.innerHTML = `<h4 class="text-lg font-semibold mb-3">Tabel Nilai ${jenisNilai}</h4><form id="form-${sheetName}"><div class="overflow-x-auto"><table id="score-table-${sheetName}" class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>${mapelList.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}<th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th><th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"></tbody></table></div><div class="mt-6 pt-4 border-t flex justify-end space-x-3"><button type="button" class="clear-scores-btn bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400">Bersihkan</button><button type="submit" class="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700">Simpan Nilai ${jenisNilai}</button></div></form>`;
-                 const tbody = tableWrapper.querySelector('tbody');
-                 students.forEach((s, index) => { const studentScores = existingScores[s.nisn] || {}; let rowHtml = `<tr data-nisn="${s.nisn}" data-nama="${s.nama}"><td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${index + 1}</td><td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">${s.nama}</td>`; mapelList.forEach(m => { rowHtml += `<td class="px-2 py-1"><input type="number" min="0" max="100" class="score-input p-1 border rounded-md" data-mapel-kode="${m.kode}" value="${studentScores[m.kode] || ''}"></td>`; }); rowHtml += `<td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell jumlah-nilai">0</td><td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell rata-rata-nilai">0.00</td></tr>`; tbody.innerHTML += rowHtml; });
-                 container.innerHTML = ''; container.appendChild(tableWrapper);
-                 const scoreTable = document.getElementById(`score-table-${sheetName}`); scoreTable.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row)); scoreTable.addEventListener('input', handleScoreInput); scoreTable.addEventListener('paste', handleSmartPaste); document.getElementById(`form-${sheetName}`).addEventListener('submit', (e) => handleSaveRapor(e, semesterKey, jenisNilai));
-                 tableWrapper.querySelector('.clear-scores-btn').addEventListener('click', (e) => {
-                    const form = e.target.closest('form');
-                    form.querySelectorAll('.score-input').forEach(input => input.value = '');
-                    form.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row));
-                });
-            });
-        }
-        function handleSaveRapor(event, semesterKey, jenisNilai) {
-            event.preventDefault(); const form = event.target; const saveBtn = form.querySelector('button[type="submit"]'); saveBtn.disabled = true; saveBtn.textContent = 'Menyimpan...';
-            const allRows = form.querySelectorAll('tbody tr'); const nilaiData = [];
-            allRows.forEach(row => { const studentScores = { nisn: row.dataset.nisn, nama: row.dataset.nama, scores: {} }; const inputs = row.querySelectorAll('.score-input'); inputs.forEach(input => { studentScores.scores[input.dataset.mapelKode] = input.value; }); nilaiData.push(studentScores); });
-            google.script.run
-                .withSuccessHandler(response => { 
-                    showGlobalStatus(response.message, response.status === 'success'); 
-                    saveBtn.disabled = false; 
-                    saveBtn.textContent = `Simpan Nilai ${jenisNilai}`;
-                })
-                .withFailureHandler(err => { 
-                    showGlobalStatus(`Gagal menyimpan: ${err.message}`, false); 
-                    saveBtn.disabled = false; 
-                    saveBtn.textContent = `Simpan Nilai ${jenisNilai}`;
-                })
-                .saveNilaiRapor(userSpreadsheetId, { semesterKey: semesterKey, jenisNilai: jenisNilai, nilai: nilaiData });
         }
         function initRekapitulasiPage() {
             const loader = document.getElementById('rekap-loader');
@@ -1404,19 +1431,30 @@
         });
         document.getElementById('updateRekapBtn')?.addEventListener('click', function() {
             const btn = this;
+            const btnText = document.getElementById('updateRekapBtnText');
+            const spinner = document.getElementById('updateRekapSpinner');
+
             btn.disabled = true;
-            btn.textContent = 'Memperbarui...';
+            btnText.classList.add('hidden');
+            spinner.classList.remove('hidden');
+
             google.script.run
                 .withSuccessHandler(response => {
-                    showGlobalStatus(response.message, response.status === 'success');
-                    initRekapitulasiPage();
+                    if (response.status === 'success') {
+                        showGlobalStatus(response.message, true);
+                        initRekapitulasiPage();
+                    } else {
+                        showGlobalStatus(response.message, false);
+                    }
                     btn.disabled = false;
-                    btn.textContent = 'Perbarui & Muat Ulang Data';
+                    btnText.classList.remove('hidden');
+                    spinner.classList.add('hidden');
                 })
                 .withFailureHandler(err => {
                     showGlobalStatus('Gagal memperbarui: ' + err.message, false);
                     btn.disabled = false;
-                    btn.textContent = 'Perbarui & Muat Ulang Data';
+                    btnText.classList.remove('hidden');
+                    spinner.classList.add('hidden');
                 })
                 .updateRekapitulasi(userSpreadsheetId);
         });
@@ -1472,6 +1510,169 @@
             tableHtml += `</tbody></table></div></div>`;
             displayArea.innerHTML = tableHtml;
         }
+    }
+
+    // =========================================================================================
+    // FUNGSI-FUNGSI GLOBAL (DIPINDAHKAN DARI initializeApp untuk mengatasi masalah scope)
+    // =========================================================================================
+
+    // Variabel global untuk daftar semester
+    const semesters = { 
+        MI: { k4_ganjil: 'Kelas 4 Ganjil', k4_genap: 'Kelas 4 Genap', k5_ganjil: 'Kelas 5 Ganjil', k5_genap: 'Kelas 5 Genap', k6_ganjil: 'Kelas 6 Ganjil' }, 
+        MTS: { k7_ganjil: 'Kelas 7 Ganjil', k7_genap: 'Kelas 7 Genap', k8_ganjil: 'Kelas 8 Ganjil', k8_genap: 'Kelas 8 Genap', k9_ganjil: 'Kelas 9 Ganjil' }, 
+        MA: { k10_ganjil: 'Kelas 10 Ganjil', k10_genap: 'Kelas 10 Genap', k11_ganjil: 'Kelas 11 Ganjil', k11_genap: 'Kelas 11 Genap', k12_ganjil: 'Kelas 12 Ganjil' } 
+    };
+    
+    /** Menampilkan pesan status global di pojok kanan bawah. */
+    function showGlobalStatus(message, isSuccess) {
+        const statusDiv = document.createElement('div');
+        statusDiv.className = `p-4 rounded-lg shadow-lg text-white ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`;
+        statusDiv.textContent = message;
+        document.getElementById('globalStatusMessage').appendChild(statusDiv);
+        setTimeout(() => statusDiv.remove(), 4000);
+    }
+
+    /** Menghitung ulang total dan rata-rata untuk satu baris tabel nilai. */
+    function updateRowTotals(rowElement) { 
+        const inputs = rowElement.querySelectorAll('.score-input'); 
+        let total = 0; 
+        let count = 0; 
+        inputs.forEach(input => { 
+            const value = parseFloat(input.value); 
+            if (!isNaN(value)) { 
+                total += value; 
+                count++; 
+            } 
+        }); 
+        const average = count > 0 ? (total / count).toFixed(2) : '0.00'; 
+        rowElement.querySelector('.jumlah-nilai').textContent = total; 
+        rowElement.querySelector('.rata-rata-nilai').textContent = average; 
+    }
+    
+    /** Menangani input pada kolom nilai untuk memanggil updateRowTotals. */
+    function handleScoreInput(event) { 
+        if (event.target.classList.contains('score-input')) { 
+            const row = event.target.closest('tr'); 
+            updateRowTotals(row); 
+        } 
+    }
+    
+    /** Menangani "paste" data dari Excel/Sheets ke tabel nilai. */
+    function handleSmartPaste(event) {
+        if (!event.target.classList.contains('score-input')) return;
+        event.preventDefault();
+        const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+        const pastedRows = pastedText.split(/\r?\n/).filter(r => r).map(row => row.split('\t'));
+        const tableBody = event.target.closest('tbody');
+        if (!tableBody) return;
+        const allTableRows = Array.from(tableBody.querySelectorAll('tr'));
+        const startRowElement = event.target.closest('tr');
+        const startRowIndex = allTableRows.indexOf(startRowElement);
+        const allRowInputs = Array.from(startRowElement.querySelectorAll('.score-input'));
+        const startColIndex = allRowInputs.indexOf(event.target);
+        pastedRows.forEach((rowData, r_offset) => {
+            const currentRowIndex = startRowIndex + r_offset;
+            const targetRow = allTableRows[currentRowIndex];
+            if (targetRow) {
+                const targetRowInputs = Array.from(targetRow.querySelectorAll('.score-input'));
+                rowData.forEach((cellData, c_offset) => {
+                    const currentColIndex = startColIndex + c_offset;
+                    const targetInput = targetRowInputs[currentColIndex];
+                    if (targetInput) targetInput.value = cellData.trim();
+                });
+                updateRowTotals(targetRow);
+            }
+        });
+    }
+
+    /** Memulai halaman Input Nilai Rapor dengan mengambil data jenjang sekolah. */
+    function initRaporPage() {
+        const container = document.getElementById('rapor-container'); 
+        container.innerHTML = '<p>Memeriksa data sekolah...</p>';
+        google.script.run
+        .withSuccessHandler(schoolData => {
+            if (!schoolData || !schoolData.jenjang) { 
+                container.innerHTML = `<div class="p-4 bg-yellow-100 text-yellow-800 rounded-lg">Harap atur <b>Jenjang Sekolah</b> di halaman <a href="#" onclick="document.querySelector('[data-page=data-sekolah]').click()" class="font-bold underline">Data Sekolah</a> terlebih dahulu.</div>`; 
+                return; 
+            }
+            const jenjang = schoolData.jenjang; 
+            const semesterList = semesters[jenjang]; 
+            let html = '';
+            for (const key in semesterList) { 
+                html += `<div class="mb-6 bg-white p-4 rounded-lg shadow-sm"><h3 class="text-xl font-bold text-gray-700">${semesterList[key]}</h3><div class="flex space-x-4 mt-3"><button onclick="buildRaporScoreTable('${key}', 'Pengetahuan')" class="bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600 text-sm">Input Nilai Pengetahuan</button><button onclick="buildRaporScoreTable('${key}', 'Keterampilan')" class="bg-teal-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-teal-600 text-sm">Input Nilai Keterampilan</button></div><div id="table-container-${key}" class="mt-4"></div></div>`; 
+            }
+            container.innerHTML = html;
+        })
+        .getSchoolData(userSpreadsheetId);
+    }
+    
+    /** Membuat tabel input nilai rapor berdasarkan semester dan jenis nilai. */
+    function buildRaporScoreTable(semesterKey, jenisNilai) {
+        const container = document.getElementById(`table-container-${semesterKey}`); 
+        container.innerHTML = `<div class="text-center p-8"><p class="font-bold">Memuat data...</p></div>`; 
+        const sheetName = `Rapor_${jenisNilai}_${semesterKey}`;
+        Promise.all([ 
+            new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getStudents(userSpreadsheetId)), 
+            new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getMapel(userSpreadsheetId)), 
+            new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getExistingNilai(userSpreadsheetId, sheetName)) 
+        ]).then(([students, mapelList, existingScores]) => {
+                if (!students || students.length === 0) { container.innerHTML = `<p class="text-center text-red-500 p-4">Data siswa tidak ditemukan.</p>`; return; }
+                if (!mapelList || mapelList.length === 0) { container.innerHTML = `<p class="text-center text-red-500 p-4">Data mata pelajaran tidak ditemukan.</p>`; return; }
+                const tableWrapper = document.createElement('div'); 
+                tableWrapper.className = 'p-4 border rounded-lg'; 
+                tableWrapper.innerHTML = `<h4 class="text-lg font-semibold mb-3">Tabel Nilai ${jenisNilai}</h4><form id="form-${sheetName}"><div class="overflow-x-auto"><table id="score-table-${sheetName}" class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>${mapelList.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}<th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th><th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"></tbody></table></div><div class="mt-6 pt-4 border-t flex justify-end space-x-3"><button type="button" class="clear-scores-btn bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400">Bersihkan</button><button type="submit" class="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700">Simpan Nilai ${jenisNilai}</button></div></form>`;
+                const tbody = tableWrapper.querySelector('tbody');
+                students.forEach((s, index) => { 
+                    const studentScores = existingScores[s.nisn] || {}; 
+                    let rowHtml = `<tr data-nisn="${s.nisn}" data-nama="${s.nama}"><td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${index + 1}</td><td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">${s.nama}</td>`; 
+                    mapelList.forEach(m => { 
+                        rowHtml += `<td class="px-2 py-1"><input type="number" min="0" max="100" class="score-input p-1 border rounded-md" data-mapel-kode="${m.kode}" value="${studentScores[m.kode] || ''}"></td>`; 
+                    }); 
+                    rowHtml += `<td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell jumlah-nilai">0</td><td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell rata-rata-nilai">0.00</td></tr>`; 
+                    tbody.innerHTML += rowHtml; 
+                });
+                container.innerHTML = ''; 
+                container.appendChild(tableWrapper);
+                const scoreTable = document.getElementById(`score-table-${sheetName}`); 
+                scoreTable.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row)); 
+                scoreTable.addEventListener('input', handleScoreInput); 
+                scoreTable.addEventListener('paste', handleSmartPaste); 
+                document.getElementById(`form-${sheetName}`).addEventListener('submit', (e) => handleSaveRapor(e, semesterKey, jenisNilai));
+                tableWrapper.querySelector('.clear-scores-btn').addEventListener('click', (e) => {
+                const form = e.target.closest('form');
+                form.querySelectorAll('.score-input').forEach(input => input.value = '');
+                form.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row));
+            });
+        });
+    }
+
+    /** Menyimpan data nilai rapor yang telah diinput. */
+    function handleSaveRapor(event, semesterKey, jenisNilai) {
+        event.preventDefault(); 
+        const form = event.target; 
+        const saveBtn = form.querySelector('button[type="submit"]'); 
+        saveBtn.disabled = true; 
+        saveBtn.textContent = 'Menyimpan...';
+        const allRows = form.querySelectorAll('tbody tr'); 
+        const nilaiData = [];
+        allRows.forEach(row => { 
+            const studentScores = { nisn: row.dataset.nisn, nama: row.dataset.nama, scores: {} }; 
+            const inputs = row.querySelectorAll('.score-input'); 
+            inputs.forEach(input => { studentScores.scores[input.dataset.mapelKode] = input.value; }); 
+            nilaiData.push(studentScores); 
+        });
+        google.script.run
+            .withSuccessHandler(response => { 
+                showGlobalStatus(response.message, response.status === 'success'); 
+                saveBtn.disabled = false; 
+                saveBtn.textContent = `Simpan Nilai ${jenisNilai}`;
+            })
+            .withFailureHandler(err => { 
+                showGlobalStatus(`Gagal menyimpan: ${err.message}`, false); 
+                saveBtn.disabled = false; 
+                saveBtn.textContent = `Simpan Nilai ${jenisNilai}`;
+            })
+            .saveNilaiRapor(userSpreadsheetId, { semesterKey: semesterKey, jenisNilai: jenisNilai, nilai: nilaiData });
     }
     </script>
 </body>
