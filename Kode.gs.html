@@ -2,7 +2,9 @@
 // KONFIGURASI GLOBAL
 // =================================================================
 
-// PENTING: Ganti dengan ID Spreadsheet Template yang sudah Anda buat pada Bagian 1.
+// PENTING: Ganti dengan ID Spreadsheet Template yang sudah Anda buat.
+// Anda bisa mendapatkan ID ini dari URL spreadsheet template Anda.
+// Contoh URL: https://docs.google.com/spreadsheets/d/INI_ADALAH_ID_NYA/edit
 const TEMPLATE_SPREADSHEET_ID = "14u86jJydOZu-nsTRTH_dOGIBhvLLIObLkbXsHrJ0xhM"; 
 
 // Nama-nama Sheet yang digunakan di dalam spreadsheet data setiap sekolah.
@@ -16,9 +18,13 @@ const SHEET_NILAI_UJIAN_PRAKTEK = "Nilai Ujian Praktek";
 const SHEET_REKAP_UJIAN = "Rekap Nilai Ujian";
 const SHEET_REKAP_RAPOR = "Rekap Nilai Rapor";
 const SHEET_REKAP_IJAZAH = "Rekap Nilai Ijazah";
-const SHEET_MAPEL_DEFAULT = "Mapel Default"; // Sheet baru di Spreadsheet Induk
+const SHEET_MAPEL_DEFAULT = "Mapel Default"; // Sheet di Spreadsheet Induk untuk mapel standar
 
 
+/**
+ * Fungsi utama yang dipanggil saat web app diakses.
+ * @returns {HtmlService.HtmlOutput} Output HTML untuk ditampilkan.
+ */
 function doGet(e) {
   return HtmlService.createHtmlOutputFromFile('Index')
     .setTitle('Aplikasi Akademik Sekolah')
@@ -37,12 +43,12 @@ function doGet(e) {
 function registerUser(userData) {
   try {
     if (TEMPLATE_SPREADSHEET_ID === "GANTI_DENGAN_ID_TEMPLATE_ANDA") {
-      throw new Error("ID Spreadsheet Template belum diatur di dalam Kode.gs. Harap periksa Bagian 1 dari instruksi.");
+      throw new Error("ID Spreadsheet Template belum diatur di dalam Kode.gs. Harap periksa instruksi.");
     }
 
     const { email, password, namaSekolah, jenjang } = userData;
     const lock = LockService.getScriptLock();
-    lock.waitLock(30000); // Tunggu hingga 30 detik jika ada proses lain
+    lock.waitLock(30000); // Tunggu hingga 30 detik
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     let userSheet = ss.getSheetByName(SHEET_PENGGUNA);
@@ -144,9 +150,15 @@ function getSpreadsheet(spreadsheetId) {
 
 
 // =================================================================
-// SEMUA FUNGSI MANAJEMEN DATA TELAH DIPERBARUI
+// FUNGSI MANAJEMEN DATA SEKOLAH, SISWA, MAPEL, DLL.
 // =================================================================
 
+/**
+ * Menyimpan data sekolah ke dalam sheet 'Data Sekolah'.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {object} dataObj Objek berisi data sekolah.
+ * @returns {{status: string, message: string}} Status penyimpanan.
+ */
 function saveSchoolData(spreadsheetId, dataObj) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
@@ -165,6 +177,11 @@ function saveSchoolData(spreadsheetId, dataObj) {
   }
 }
 
+/**
+ * Mengambil data sekolah dari sheet 'Data Sekolah'.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {object|null} Objek data sekolah atau null jika gagal.
+ */
 function getSchoolData(spreadsheetId) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
@@ -178,12 +195,17 @@ function getSchoolData(spreadsheetId) {
   }
 }
 
+/**
+ * Mengambil daftar siswa dari sheet 'Data Siswa'.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {Array<object>} Array objek data siswa.
+ */
 function getStudents(spreadsheetId) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
     if (!sheet || sheet.getLastRow() < 2) return [];
-    sheet.getRange("A:B").setNumberFormat('@');
+    sheet.getRange("A:B").setNumberFormat('@'); // Pastikan NISN dan NIS adalah teks
     const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, 5);
     const values = dataRange.getValues();
     return values.map((row, index) => ({row: index + 2, nisn: row[0], nis: row[1], nama: row[2], tempatLahir: row[3], tanggalLahir: row[4] ? new Date(row[4]).toLocaleDateString('id-ID') : ''}));
@@ -192,6 +214,13 @@ function getStudents(spreadsheetId) {
     return []; 
   }
 }
+
+/**
+ * Menambahkan siswa baru ke sheet 'Data Siswa'.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {object} studentData Objek data siswa baru.
+ * @returns {{status: string, message: string}} Status penambahan.
+ */
 function addStudent(spreadsheetId, studentData) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
@@ -202,6 +231,13 @@ function addStudent(spreadsheetId, studentData) {
     return { status: "success", message: `Siswa "${studentData.nama}" berhasil ditambahkan.` };
   } catch (e) { Logger.log(e); return { status: "error", message: "Gagal menambah siswa: " + e.message }; }
 }
+
+/**
+ * Memperbarui data siswa di sheet 'Data Siswa'.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {object} studentData Objek data siswa yang akan diupdate.
+ * @returns {{status: string, message: string}} Status pembaruan.
+ */
 function updateStudent(spreadsheetId, studentData) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
@@ -212,6 +248,13 @@ function updateStudent(spreadsheetId, studentData) {
     return { status: "success", message: `Data siswa "${studentData.nama}" berhasil diperbarui.` };
   } catch (e) { Logger.log(e); return { status: "error", message: "Gagal memperbarui data: " + e.message }; }
 }
+
+/**
+ * Menghapus data siswa dari sheet 'Data Siswa'.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {number} rowNumber Nomor baris yang akan dihapus.
+ * @returns {{status: string, message: string}} Status penghapusan.
+ */
 function deleteStudent(spreadsheetId, rowNumber) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
@@ -220,6 +263,12 @@ function deleteStudent(spreadsheetId, rowNumber) {
     return { status: "success", message: "Data siswa berhasil dihapus." };
   } catch (e) { Logger.log(e); return { status: "error", message: "Gagal menghapus data: " + e.message }; }
 }
+
+/**
+ * Menghapus semua data siswa dari sheet 'Data Siswa'.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {{status: string, message: string}} Status penghapusan.
+ */
 function deleteAllStudents(spreadsheetId) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
@@ -234,6 +283,10 @@ function deleteAllStudents(spreadsheetId) {
   }
 }
 
+/**
+ * Menghasilkan template Excel untuk impor data siswa.
+ * @returns {object} Objek berisi data file template.
+ */
 function generateSiswaTemplate() {
   let tempFile;
   try {
@@ -272,6 +325,14 @@ function generateSiswaTemplate() {
     }
   }
 }
+
+/**
+ * Mengimpor data dari file Excel ke sheet yang ditentukan.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {object} fileData Data file yang diunggah.
+ * @param {string} sheetName Nama sheet tujuan.
+ * @returns {object} Hasil proses impor.
+ */
 function importFromExcel(spreadsheetId, fileData, sheetName) {
   let tempFile;
   try {
@@ -389,7 +450,11 @@ function importFromExcel(spreadsheetId, fileData, sheetName) {
   }
 }
 
-
+/**
+ * Mengambil daftar mata pelajaran dari sheet 'Data Mata Pelajaran'.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {Array<object>} Array objek data mata pelajaran.
+ */
 function getMapel(spreadsheetId) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
@@ -400,6 +465,13 @@ function getMapel(spreadsheetId) {
     return values.map((row, index) => ({ row: index + 2, kode: row[0], nama: row[1], kelompok: row[2], jenisUjian: row[3] || '' }));
   } catch (e) { Logger.log(e); return []; }
 }
+
+/**
+ * Menambahkan mata pelajaran baru.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {object} mapelData Data mata pelajaran baru.
+ * @returns {{status: string, message: string}} Status penambahan.
+ */
 function addMapel(spreadsheetId, mapelData) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
@@ -409,6 +481,13 @@ function addMapel(spreadsheetId, mapelData) {
     return { status: "success", message: `Mata Pelajaran "${mapelData.nama}" berhasil ditambahkan.` };
   } catch (e) { Logger.log(e); return { status: "error", message: "Gagal menambah mapel: " + e.message }; }
 }
+
+/**
+ * Memperbarui data mata pelajaran.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {object} mapelData Data mata pelajaran yang akan diupdate.
+ * @returns {{status: string, message: string}} Status pembaruan.
+ */
 function updateMapel(spreadsheetId, mapelData) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
@@ -418,6 +497,13 @@ function updateMapel(spreadsheetId, mapelData) {
     return { status: "success", message: `Mata Pelajaran "${mapelData.nama}" berhasil diperbarui.` };
   } catch (e) { Logger.log(e); return { status: "error", message: "Gagal memperbarui data mapel: " + e.message }; }
 }
+
+/**
+ * Menghapus mata pelajaran.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {number} rowNumber Nomor baris yang akan dihapus.
+ * @returns {{status: string, message: string}} Status penghapusan.
+ */
 function deleteMapel(spreadsheetId, rowNumber) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
@@ -426,6 +512,12 @@ function deleteMapel(spreadsheetId, rowNumber) {
     return { status: "success", message: "Mata pelajaran berhasil dihapus." };
   } catch (e) { Logger.log(e); return { status: "error", message: "Gagal menghapus mapel: " + e.message }; }
 }
+
+/**
+ * Menghapus semua mata pelajaran.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {{status: string, message: string}} Status penghapusan.
+ */
 function deleteAllMapel(spreadsheetId) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
@@ -439,6 +531,11 @@ function deleteAllMapel(spreadsheetId) {
     return { status: "error", message: "Gagal menghapus data mata pelajaran: " + e.message };
   }
 }
+
+/**
+ * Menghasilkan template Excel untuk impor data mata pelajaran.
+ * @returns {object} Objek berisi data file template.
+ */
 function generateMapelTemplate() {
     let tempFile;
     try {
@@ -475,6 +572,12 @@ function generateMapelTemplate() {
         }
     }
 }
+
+/**
+ * Mengimpor daftar mata pelajaran standar berdasarkan jenjang sekolah.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {object} Hasil proses impor.
+ */
 function importMapelBySystem(spreadsheetId) {
   try {
     const userSs = getSpreadsheet(spreadsheetId);
@@ -525,6 +628,12 @@ function importMapelBySystem(spreadsheetId) {
   }
 }
 
+/**
+ * Menyimpan data bobot nilai.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {object} bobotData Objek berisi bobot nilai.
+ * @returns {{status: string, message: string}} Status penyimpanan.
+ */
 function saveBobot(spreadsheetId, bobotData) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
@@ -535,6 +644,12 @@ function saveBobot(spreadsheetId, bobotData) {
     return { status: "success", message: "Bobot nilai berhasil disimpan." };
   } catch (e) { Logger.log(e); return { status: "error", message: "Gagal menyimpan bobot nilai: " + e.message }; }
 }
+
+/**
+ * Mengambil data bobot nilai, atau mengaturnya ke default jika belum ada.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {object} Objek berisi bobot nilai.
+ */
 function getBobot(spreadsheetId) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
@@ -560,24 +675,51 @@ function getBobot(spreadsheetId) {
   }
 }
 
+/**
+ * Mengambil daftar mapel berdasarkan jenis ujian.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {string} jenis Jenis ujian ('madrasah' atau 'praktek').
+ * @returns {Array<object>} Array objek data mata pelajaran.
+ */
 function getMapelByJenis(spreadsheetId, jenis) {
   const allMapel = getMapel(spreadsheetId);
   if (jenis === 'madrasah') return allMapel.filter(m => m.jenisUjian === 'Ujian Madrasah' || m.jenisUjian === 'Keduanya');
   if (jenis === 'praktek') return allMapel.filter(m => m.jenisUjian === 'Ujian Praktek' || m.jenisUjian === 'Keduanya');
   return [];
 }
+
+/**
+ * Menyimpan data nilai ujian.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {object} data Objek berisi jenis dan data nilai.
+ * @returns {object} Status penyimpanan.
+ */
 function saveNilai(spreadsheetId, data) {
   const { jenis, nilai } = data;
   const sheetName = jenis === 'madrasah' ? SHEET_NILAI_UJIAN_MADRASAH : SHEET_NILAI_UJIAN_PRAKTEK;
   const mapelList = getMapelByJenis(spreadsheetId, jenis);
   return processAndSaveScores(spreadsheetId, sheetName, mapelList, nilai);
 }
+
+/**
+ * Menyimpan data nilai rapor.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {object} data Objek berisi semester, jenis, dan data nilai.
+ * @returns {object} Status penyimpanan.
+ */
 function saveNilaiRapor(spreadsheetId, data) {
   const { semesterKey, jenisNilai, nilai } = data;
   const sheetName = `Rapor_${jenisNilai}_${semesterKey}`;
   const mapelList = getMapel(spreadsheetId);
   return processAndSaveScores(spreadsheetId, sheetName, mapelList, nilai);
 }
+
+/**
+ * Mengambil data nilai yang sudah ada dari sebuah sheet.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {string} sheetName Nama sheet nilai.
+ * @returns {object} Objek berisi nilai yang sudah ada, dengan NISN sebagai key.
+ */
 function getExistingNilai(spreadsheetId, sheetName) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
@@ -600,6 +742,15 @@ function getExistingNilai(spreadsheetId, sheetName) {
     return existingScores;
   } catch(e) { Logger.log(e); return {}; }
 }
+
+/**
+ * Memproses dan menyimpan data nilai ke sheet yang ditentukan.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {string} sheetName Nama sheet tujuan.
+ * @param {Array<object>} mapelList Daftar mata pelajaran.
+ * @param {Array<object>} nilai Daftar nilai.
+ * @returns {{status: string, message: string}} Status penyimpanan.
+ */
 function processAndSaveScores(spreadsheetId, sheetName, mapelList, nilai) {
   const ss = getSpreadsheet(spreadsheetId);
   let sheet = ss.getSheetByName(sheetName);
@@ -622,6 +773,16 @@ function processAndSaveScores(spreadsheetId, sheetName, mapelList, nilai) {
   } catch (e) { Logger.log(e); return { status: 'error', message: `Gagal menyimpan data: ${e.message}` }; }
 }
 
+// =================================================================
+// FUNGSI REKAPITULASI NILAI
+// =================================================================
+
+/**
+ * Mengambil data dari sebuah sheet dan mengubahnya menjadi objek dengan NISN sebagai key.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {string} sheetName Nama sheet.
+ * @returns {object} Data sheet dalam bentuk objek.
+ */
 function getSheetDataAsObject(spreadsheetId, sheetName) {
     try {
         const ss = getSpreadsheet(spreadsheetId);
@@ -639,6 +800,7 @@ function getSheetDataAsObject(spreadsheetId, sheetName) {
             if (nisn) {
                 dataObj[nisn] = {};
                 headers.forEach((header, index) => {
+                    // Mulai dari kolom ke-3 (setelah NISN dan Nama)
                     if (index > 1) dataObj[nisn][header] = row[index];
                 });
             }
@@ -650,6 +812,11 @@ function getSheetDataAsObject(spreadsheetId, sheetName) {
     }
 }
 
+/**
+ * Memperbarui semua data di sheet rekapitulasi.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {{status: string, message: string}} Status pembaruan.
+ */
 function updateRekapitulasi(spreadsheetId) {
   try {
     const students = getStudents(spreadsheetId);
@@ -667,7 +834,6 @@ function updateRekapitulasi(spreadsheetId) {
       return {status: 'error', message: 'Jenjang sekolah belum diatur di menu Data Sekolah.'};
     }
 
-    // --- OPTIMISASI: Baca semua sheet yang diperlukan sekaligus ---
     const semesterKeys = {
       MI: ['k4_ganjil', 'k4_genap', 'k5_ganjil', 'k5_genap', 'k6_ganjil'],
       MTS: ['k7_ganjil', 'k7_genap', 'k8_ganjil', 'k8_genap', 'k9_ganjil'],
@@ -681,7 +847,6 @@ function updateRekapitulasi(spreadsheetId) {
         sheetsToRead.push(`Rapor_Keterampilan_${smKey}`);
     });
     
-    // Tampung semua data dari berbagai sheet ke dalam satu objek
     const allData = {};
     sheetsToRead.forEach(sheetName => {
         allData[sheetName] = getSheetDataAsObject(spreadsheetId, sheetName);
@@ -689,7 +854,6 @@ function updateRekapitulasi(spreadsheetId) {
 
     const nilaiUjianMadrasah = allData[SHEET_NILAI_UJIAN_MADRASAH] || {};
     const nilaiUjianPraktek = allData[SHEET_NILAI_UJIAN_PRAKTEK] || {};
-    // --- AKHIR OPTIMISASI ---
     
     const rekapUjian = {};
     const rekapRapor = {};
@@ -703,7 +867,6 @@ function updateRekapitulasi(spreadsheetId) {
 
         mapel.forEach(m => {
             const kode = m.kode;
-            // Ambil nilai Ujian dari data yang sudah ditampung
             const nilaiUM = parseFloat( (nilaiUjianMadrasah[nisn] || {})[kode] );
             const nilaiUP = parseFloat( (nilaiUjianPraktek[nisn] || {})[kode] );
 
@@ -716,7 +879,6 @@ function updateRekapitulasi(spreadsheetId) {
             let totalNilaiRapor = 0;
             let semesterCount = 0;
             
-            // Ambil nilai Rapor dari data yang sudah ditampung
             semestersForJenjang.forEach(smKey => {
                 const sheetNameP = `Rapor_Pengetahuan_${smKey}`;
                 const sheetNameK = `Rapor_Keterampilan_${smKey}`;
@@ -757,6 +919,14 @@ function updateRekapitulasi(spreadsheetId) {
   }
 }
 
+/**
+ * Menyimpan data rekapitulasi ke sheet yang ditentukan.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {string} sheetName Nama sheet rekap.
+ * @param {Array<object>} students Daftar siswa.
+ * @param {Array<object>} mapel Daftar mata pelajaran.
+ * @param {object} data Data rekapitulasi.
+ */
 function saveRekapSheet(spreadsheetId, sheetName, students, mapel, data) {
     const ss = getSpreadsheet(spreadsheetId);
     let sheet = ss.getSheetByName(sheetName);
@@ -783,18 +953,30 @@ function saveRekapSheet(spreadsheetId, sheetName, students, mapel, data) {
     }
 }
 
+/**
+ * Mengambil semua data rekapitulasi untuk ditampilkan.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {object} Objek berisi semua data rekapitulasi.
+ */
 function getRekapitulasiData(spreadsheetId) {
   const students = getStudents(spreadsheetId);
   const mapel = getMapel(spreadsheetId);
+  const bobot = getBobot(spreadsheetId); // Tambahkan baris ini
   return {
     students,
     mapel,
+    bobot, // Tambahkan properti ini
     rekapUjian: getSheetDataAsObject(spreadsheetId, SHEET_REKAP_UJIAN),
     rekapRapor: getSheetDataAsObject(spreadsheetId, SHEET_REKAP_RAPOR),
     rekapIjazah: getSheetDataAsObject(spreadsheetId, SHEET_REKAP_IJAZAH),
   };
 }
 
+/**
+ * Memeriksa apakah sheet rekapitulasi sudah ada.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {boolean} True jika semua sheet ada.
+ */
 function checkRekapSheetsExist(spreadsheetId) {
   const ss = getSpreadsheet(spreadsheetId);
   const sheetUjian = ss.getSheetByName(SHEET_REKAP_UJIAN);
@@ -803,6 +985,11 @@ function checkRekapSheetsExist(spreadsheetId) {
   return !!(sheetUjian && sheetRapor && sheetIjazah);
 }
 
+/**
+ * Membuat sheet rekapitulasi jika belum ada.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {{status: string, message: string}} Status pembuatan.
+ */
 function createRekapSheets(spreadsheetId) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
@@ -816,15 +1003,148 @@ function createRekapSheets(spreadsheetId) {
   }
 }
 
-// Fungsi ini akan mengatur tahun saat ini pada elemen footer
-function setFooterYear() {
-  const currentYear = new Date().getFullYear();
-  const yearAuthSpan = document.getElementById('currentYearAuth');
-  const yearAppSpan = document.getElementById('currentYearApp');
-  if (yearAuthSpan) {
-      yearAuthSpan.textContent = currentYear;
-  }
-  if (yearAppSpan) {
-      yearAppSpan.textContent = currentYear;
+/**
+ * Mengekspor data rekapitulasi ke format PDF atau Excel. (Versi Diperbaiki)
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {string} type Jenis rekap ('ujian', 'rapor', 'ijazah').
+ * @param {string} format Format ekspor ('pdf' atau 'excel').
+ * @returns {object} Objek berisi data file yang telah di-encode base64.
+ */
+function exportRekapData(spreadsheetId, type, format) {
+  let tempSpreadsheetFileId = null; // Gunakan ID untuk mengelola file sementara
+  try {
+    // 1. Tentukan nama sheet dan judul laporan
+    let sheetName;
+    let reportTitle;
+    switch (type) {
+      case 'ujian':
+        sheetName = SHEET_REKAP_UJIAN;
+        reportTitle = "Rekapitulasi Nilai Ujian";
+        break;
+      case 'rapor':
+        sheetName = SHEET_REKAP_RAPOR;
+        reportTitle = "Rekapitulasi Nilai Rapor";
+        break;
+      case 'ijazah':
+        sheetName = SHEET_REKAP_IJAZAH;
+        reportTitle = "Rekapitulasi Nilai Akhir Ijazah";
+        break;
+      default:
+        throw new Error("Jenis rekap tidak valid.");
+    }
+
+    // 2. Ambil data yang diperlukan
+    const { students, mapel, bobot, rekapUjian, rekapRapor, rekapIjazah } = getRekapitulasiData(spreadsheetId);
+    if (!students || students.length === 0) {
+        throw new Error("Tidak ada data siswa untuk diekspor.");
+    }
+    const dataToProcess = type === 'ujian' ? rekapUjian : (type === 'rapor' ? rekapRapor : rekapIjazah);
+
+    // 3. Bangun data yang akan dicetak dari awal agar konsisten
+    const printableData = [];
+    const headers = ["No", "NISN", "Nama Siswa", ...mapel.map(m => m.kode), "Jumlah", "Rata-rata"];
+    printableData.push(headers);
+    
+    students.forEach((student, index) => {
+        const nisn = student.nisn;
+        const studentScores = dataToProcess[nisn] || {};
+        let total = 0;
+        
+        const rowData = [index + 1, nisn, student.nama];
+        
+        mapel.forEach(m => {
+            const score = parseFloat(studentScores[m.kode] || 0);
+            rowData.push(Math.round(score));
+            total += score;
+        });
+
+        const average = mapel.length > 0 ? (total / mapel.length) : 0;
+        
+        rowData.push(Math.round(total));
+        rowData.push(average.toFixed(2));
+        
+        printableData.push(rowData);
+    });
+    
+    // 4. Buat dan format spreadsheet sementara
+    const tempSpreadsheetName = `Cetak_${reportTitle.replace(/ /g, "_")}_${new Date().getTime()}`;
+    const tempSpreadsheet = SpreadsheetApp.create(tempSpreadsheetName);
+    tempSpreadsheetFileId = tempSpreadsheet.getId();
+    const tempSheet = tempSpreadsheet.getSheets()[0];
+    tempSheet.setName("Rekapitulasi");
+
+    // Header laporan
+    const schoolData = getSchoolData(spreadsheetId);
+    let currentRow = 1;
+    const numColumns = printableData[0].length; 
+    tempSheet.getRange(currentRow, 1, 1, numColumns).merge().setValue(schoolData.namaSekolah || "Nama Sekolah").setFontWeight("bold").setFontSize(14).setHorizontalAlignment("center");
+    currentRow++;
+    tempSheet.getRange(currentRow, 1, 1, numColumns).merge().setValue(reportTitle).setFontWeight("bold").setFontSize(12).setHorizontalAlignment("center");
+    currentRow++;
+
+    if (type === 'ijazah' && bobot) {
+      const bobotText = `Bobot Nilai Ujian: ${bobot.bobotUjian}% | Bobot Nilai Rapor: ${bobot.bobotRapor}%`;
+      tempSheet.getRange(currentRow, 1, 1, numColumns).merge().setValue(bobotText).setFontSize(9).setHorizontalAlignment("center");
+      currentRow++;
+    }
+    currentRow++;
+
+    // Tulis dan format data tabel
+    tempSheet.getRange(currentRow, 1, printableData.length, numColumns).setValues(printableData);
+    const tableRange = tempSheet.getRange(currentRow, 1, printableData.length, numColumns);
+    tableRange.setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
+    tempSheet.getRange(currentRow, 1, 1, numColumns).setFontWeight("bold").setBackground("#d9d9d9");
+    tempSheet.getRange(currentRow + 1, 1, printableData.length -1, numColumns).setFontWeight("normal"); // Reset font weight for data rows
+    tempSheet.getRange(currentRow, 1, printableData.length, 1).setHorizontalAlignment("center");
+    tempSheet.getRange(currentRow, 2, printableData.length, 1).setHorizontalAlignment("center");
+    tempSheet.getRange(currentRow, 3, printableData.length, 1).setHorizontalAlignment("left");
+    if (numColumns > 5) {
+        tempSheet.getRange(currentRow, 4, printableData.length, numColumns - 5).setHorizontalAlignment("center");
+    }
+    tempSheet.getRange(currentRow, numColumns - 1, printableData.length, 2).setHorizontalAlignment("center").setFontWeight("bold");
+
+    for (let i = 1; i <= numColumns; i++) {
+        tempSheet.autoResizeColumn(i);
+    }
+    tempSheet.setColumnWidth(3, 250);
+
+    SpreadsheetApp.flush(); 
+
+    // 5. Ekspor file
+    const exportUrl = `https://docs.google.com/spreadsheets/d/${tempSpreadsheetFileId}/export`;
+    const token = ScriptApp.getOAuthToken();
+    const fetchOptions = { headers: { Authorization: `Bearer ${token}` }, muteHttpExceptions: true };
+    let blob, fileName, mimeType;
+
+    if (format === 'excel') {
+      fileName = `${reportTitle.replace(/ /g, "_")}.xlsx`;
+      mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      const url = `${exportUrl}?format=xlsx`;
+      blob = UrlFetchApp.fetch(url, fetchOptions).getBlob().setName(fileName);
+    } else { // PDF
+      fileName = `${reportTitle.replace(/ /g, "_")}.pdf`;
+      mimeType = 'application/pdf';
+      const pdfOptions = `?exportFormat=pdf&format=pdf&size=A4&portrait=false&fitw=true&sheetnames=false&printtitle=false&gridlines=true&gid=${tempSheet.getSheetId()}`;
+      const url = `${exportUrl}${pdfOptions}`;
+      blob = UrlFetchApp.fetch(url, fetchOptions).getBlob().setName(fileName);
+    }
+    
+    if (blob.getBytes().length === 0) throw new Error("Gagal membuat file ekspor.");
+    
+    // 6. Kembalikan data file ke client-side
+    return {
+      fileName: fileName,
+      mimeType: mimeType,
+      base64Data: Utilities.base64Encode(blob.getBytes())
+    };
+
+  } catch (e) {
+    Logger.log(`Export Error: ${e.toString()}\nStack: ${e.stack}`);
+    return { error: e.toString() };
+  } finally {
+    // 7. Hapus file sementara
+    if (tempSpreadsheetFileId) {
+      DriveApp.getFileById(tempSpreadsheetFileId).setTrashed(true);
+    }
   }
 }
