@@ -815,3 +815,16 @@ function createRekapSheets(spreadsheetId) {
     return { status: "error", message: "Gagal membuat sheet rekapitulasi: " + e.message };
   }
 }
+
+// Fungsi ini akan mengatur tahun saat ini pada elemen footer
+function setFooterYear() {
+  const currentYear = new Date().getFullYear();
+  const yearAuthSpan = document.getElementById('currentYearAuth');
+  const yearAppSpan = document.getElementById('currentYearApp');
+  if (yearAuthSpan) {
+      yearAuthSpan.textContent = currentYear;
+  }
+  if (yearAppSpan) {
+      yearAppSpan.textContent = currentYear;
+  }
+}
