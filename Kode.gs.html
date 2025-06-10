@@ -986,128 +986,172 @@ function checkRekapSheetsExist(spreadsheetId) {
 }
 
 /**
- * Membuat sheet rekapitulasi jika belum ada.
- * @param {string} spreadsheetId ID spreadsheet target.
- * @returns {{status: string, message: string}} Status pembuatan.
- */
-function createRekapSheets(spreadsheetId) {
-  try {
-    const ss = getSpreadsheet(spreadsheetId);
-    if (!ss.getSheetByName(SHEET_REKAP_UJIAN)) ss.insertSheet(SHEET_REKAP_UJIAN);
-    if (!ss.getSheetByName(SHEET_REKAP_RAPOR)) ss.insertSheet(SHEET_REKAP_RAPOR);
-    if (!ss.getSheetByName(SHEET_REKAP_IJAZAH)) ss.insertSheet(SHEET_REKAP_IJAZAH);
-    return { status: "success", message: "Sheet rekapitulasi berhasil dibuat." };
-  } catch(e) {
-    Logger.log(e);
-    return { status: "error", message: "Gagal membuat sheet rekapitulasi: " + e.message };
-  }
-}
-
-/**
- * Mengekspor data rekapitulasi ke format PDF atau Excel. (Versi Diperbaiki)
+ * Mengekspor data rekapitulasi ke format PDF atau Excel dengan layout kustom presisi. (Versi Final 2.6 - Penyesuaian Akhir)
  * @param {string} spreadsheetId ID spreadsheet target.
  * @param {string} type Jenis rekap ('ujian', 'rapor', 'ijazah').
  * @param {string} format Format ekspor ('pdf' atau 'excel').
+ * @param {object} exportOptions Objek berisi data dari form modal.
  * @returns {object} Objek berisi data file yang telah di-encode base64.
  */
-function exportRekapData(spreadsheetId, type, format) {
-  let tempSpreadsheetFileId = null; // Gunakan ID untuk mengelola file sementara
+function exportRekapData(spreadsheetId, type, format, exportOptions) {
+  let tempSpreadsheetFileId = null;
   try {
-    // 1. Tentukan nama sheet dan judul laporan
-    let sheetName;
+    // 1. Tentukan Judul Laporan
     let reportTitle;
     switch (type) {
-      case 'ujian':
-        sheetName = SHEET_REKAP_UJIAN;
-        reportTitle = "Rekapitulasi Nilai Ujian";
-        break;
-      case 'rapor':
-        sheetName = SHEET_REKAP_RAPOR;
-        reportTitle = "Rekapitulasi Nilai Rapor";
-        break;
-      case 'ijazah':
-        sheetName = SHEET_REKAP_IJAZAH;
-        reportTitle = "Rekapitulasi Nilai Akhir Ijazah";
-        break;
-      default:
-        throw new Error("Jenis rekap tidak valid.");
+      case 'ijazah': reportTitle = "REKAPITULASI NILAI IJAZAH"; break;
+      case 'rapor': reportTitle = "REKAPITULASI NILAI RAPOR"; break;
+      case 'ujian': reportTitle = "REKAPITULASI NILAI UJIAN"; break;
+      default: throw new Error("Jenis rekap tidak valid.");
     }
 
     // 2. Ambil data yang diperlukan
-    const { students, mapel, bobot, rekapUjian, rekapRapor, rekapIjazah } = getRekapitulasiData(spreadsheetId);
-    if (!students || students.length === 0) {
-        throw new Error("Tidak ada data siswa untuk diekspor.");
-    }
-    const dataToProcess = type === 'ujian' ? rekapUjian : (type === 'rapor' ? rekapRapor : rekapIjazah);
-
-    // 3. Bangun data yang akan dicetak dari awal agar konsisten
-    const printableData = [];
-    const headers = ["No", "NISN", "Nama Siswa", ...mapel.map(m => m.kode), "Jumlah", "Rata-rata"];
-    printableData.push(headers);
+    const { students, mapel } = getRekapitulasiData(spreadsheetId);
+    if (!students || students.length === 0) throw new Error("Tidak ada data siswa untuk diekspor.");
     
+    const sheetName = `Rekap Nilai ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+    const dataToProcess = getSheetDataAsObject(spreadsheetId, sheetName);
+
+    // 3. Bangun data tabel
+    const tableBodyData = [];
     students.forEach((student, index) => {
         const nisn = student.nisn;
         const studentScores = dataToProcess[nisn] || {};
         let total = 0;
         
-        const rowData = [index + 1, nisn, student.nama];
+        const rowData = [index + 1, `'${nisn}`, student.nama.toUpperCase()];
         
         mapel.forEach(m => {
             const score = parseFloat(studentScores[m.kode] || 0);
             rowData.push(Math.round(score));
             total += score;
         });
-
         const average = mapel.length > 0 ? (total / mapel.length) : 0;
         
         rowData.push(Math.round(total));
-        rowData.push(average.toFixed(2));
-        
-        printableData.push(rowData);
+        rowData.push(average.toFixed(2).replace('.', ','));
+        tableBodyData.push(rowData);
     });
     
-    // 4. Buat dan format spreadsheet sementara
+    // 4. Buat spreadsheet sementara
     const tempSpreadsheetName = `Cetak_${reportTitle.replace(/ /g, "_")}_${new Date().getTime()}`;
     const tempSpreadsheet = SpreadsheetApp.create(tempSpreadsheetName);
     tempSpreadsheetFileId = tempSpreadsheet.getId();
     const tempSheet = tempSpreadsheet.getSheets()[0];
     tempSheet.setName("Rekapitulasi");
 
-    // Header laporan
+    // --- PEMFORMATAN KUSTOM ---
     const schoolData = getSchoolData(spreadsheetId);
     let currentRow = 1;
-    const numColumns = printableData[0].length; 
-    tempSheet.getRange(currentRow, 1, 1, numColumns).merge().setValue(schoolData.namaSekolah || "Nama Sekolah").setFontWeight("bold").setFontSize(14).setHorizontalAlignment("center");
+    const numMapel = mapel.length;
+    const numColumns = numMapel + 5;
+
+    // Header Laporan
+    tempSheet.getRange(currentRow, 1, 1, numColumns).merge().setValue(reportTitle).setFontSize(16);
     currentRow++;
-    tempSheet.getRange(currentRow, 1, 1, numColumns).merge().setValue(reportTitle).setFontWeight("bold").setFontSize(12).setHorizontalAlignment("center");
+    tempSheet.getRange(currentRow, 1, 1, numColumns).merge().setValue((schoolData.namaSekolah || "NAMA SEKOLAH").toUpperCase()).setFontSize(16);
     currentRow++;
+    tempSheet.getRange(currentRow, 1, 1, numColumns).merge().setValue(`Tahun Ajaran ${exportOptions.tahunAjaran || ""}`).setFontSize(14);
+    currentRow += 2;
 
-    if (type === 'ijazah' && bobot) {
-      const bobotText = `Bobot Nilai Ujian: ${bobot.bobotUjian}% | Bobot Nilai Rapor: ${bobot.bobotRapor}%`;
-      tempSheet.getRange(currentRow, 1, 1, numColumns).merge().setValue(bobotText).setFontSize(9).setHorizontalAlignment("center");
-      currentRow++;
+    // --- HEADER TABEL (STRUKTUR 2 BARIS) ---
+    const tableStartRow = currentRow;
+    // Baris 1: "MATA PELAJARAN"
+    tempSheet.getRange(tableStartRow, 4, 1, numMapel).merge().setValue("MATA PELAJARAN");
+    
+    // Baris 2: Kode Mapel
+    const mapelHeaders = mapel.map(m => m.kode);
+    tempSheet.getRange(tableStartRow + 1, 4, 1, numMapel).setValues([mapelHeaders]);
+    
+    // Header Tetap
+    tempSheet.getRange(tableStartRow, 1).setValue("No.");
+    tempSheet.getRange(tableStartRow, 2).setValue("NISN");
+    tempSheet.getRange(tableStartRow, 3).setValue("Nama Siswa");
+    tempSheet.getRange(tableStartRow, 4 + numMapel).setValue("Jumlah");
+    tempSheet.getRange(tableStartRow, 5 + numMapel).setValue("Rata-Rata");
+
+    // Merge Vertikal
+    tempSheet.getRange(tableStartRow, 1, 2, 1).merge();
+    tempSheet.getRange(tableStartRow, 2, 2, 1).merge();
+    tempSheet.getRange(tableStartRow, 3, 2, 1).merge();
+    tempSheet.getRange(tableStartRow, 4 + numMapel, 2, 1).merge();
+    tempSheet.getRange(tableStartRow, 5 + numMapel, 2, 1).merge();
+    
+    // Tulis Body Tabel
+    tempSheet.getRange(tableStartRow + 2, 1, tableBodyData.length, numColumns).setValues(tableBodyData);
+
+    // --- APLIKASI FORMAT ---
+    // Seluruh Area
+    const fullRange = tempSheet.getRange(1, 1, tempSheet.getLastRow() + 5, numColumns);
+    fullRange.setFontFamily("Arial").setVerticalAlignment("middle");
+
+    // Header Laporan
+    tempSheet.getRange(1, 1, 3, 1).setFontWeight("bold").setHorizontalAlignment("center");
+
+    // Header Tabel
+    const tableHeaderRange = tempSheet.getRange(tableStartRow, 1, 2, numColumns);
+    tableHeaderRange.setFontWeight("bold").setFontSize(12).setHorizontalAlignment("center").setBackground("#ffff00");
+    
+    // Body Tabel
+    tempSheet.getRange(tableStartRow + 2, 1, tableBodyData.length, numColumns).setFontSize(12);
+    tempSheet.getRange(tableStartRow + 2, 1, tableBodyData.length, 1).setHorizontalAlignment("center");
+    tempSheet.getRange(tableStartRow + 2, 2, tableBodyData.length, 1).setNumberFormat("@").setHorizontalAlignment("center");
+    tempSheet.getRange(tableStartRow + 2, 3, tableBodyData.length, 1).setHorizontalAlignment("left");
+    tempSheet.getRange(tableStartRow + 2, 4, tableBodyData.length, numMapel + 2).setHorizontalAlignment("center");
+
+    // Border
+    tempSheet.getRange(tableStartRow, 1, tableBodyData.length + 2, numColumns).setBorder(true, true, true, true, true, true);
+    
+    // --- LOGIKA LEBAR KOLOM YANG DISEMPURNAKAN ---
+    // Atur Lebar Kolom Tetap
+    tempSheet.setColumnWidth(1, 40);
+    tempSheet.setColumnWidth(2, 100);
+    tempSheet.setColumnWidth(3, 220);
+    tempSheet.setColumnWidth(4 + numMapel, 80);
+    tempSheet.setColumnWidth(5 + numMapel, 80);
+    
+    // Tentukan lebar kolom mapel agar seragam dan pas
+    const pixelPerChar = 7.5; 
+    let maxMapelWidth = 0;
+    mapel.forEach(m => {
+        let width = m.kode.length * pixelPerChar + 10;
+        if (width > maxMapelWidth) {
+            maxMapelWidth = width;
+        }
+    });
+    // Terapkan lebar maksimum ke semua kolom mapel
+    if (maxMapelWidth > 0) {
+        for (let i = 4; i <= 3 + numMapel; i++) {
+            tempSheet.setColumnWidth(i, Math.round(maxMapelWidth));
+        }
     }
-    currentRow++;
+    // --- AKHIR LOGIKA LEBAR KOLOM ---
 
-    // Tulis dan format data tabel
-    tempSheet.getRange(currentRow, 1, printableData.length, numColumns).setValues(printableData);
-    const tableRange = tempSheet.getRange(currentRow, 1, printableData.length, numColumns);
-    tableRange.setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
-    tempSheet.getRange(currentRow, 1, 1, numColumns).setFontWeight("bold").setBackground("#d9d9d9");
-    tempSheet.getRange(currentRow + 1, 1, printableData.length -1, numColumns).setFontWeight("normal"); // Reset font weight for data rows
-    tempSheet.getRange(currentRow, 1, printableData.length, 1).setHorizontalAlignment("center");
-    tempSheet.getRange(currentRow, 2, printableData.length, 1).setHorizontalAlignment("center");
-    tempSheet.getRange(currentRow, 3, printableData.length, 1).setHorizontalAlignment("left");
-    if (numColumns > 5) {
-        tempSheet.getRange(currentRow, 4, printableData.length, numColumns - 5).setHorizontalAlignment("center");
-    }
-    tempSheet.getRange(currentRow, numColumns - 1, printableData.length, 2).setHorizontalAlignment("center").setFontWeight("bold");
-
-    for (let i = 1; i <= numColumns; i++) {
-        tempSheet.autoResizeColumn(i);
-    }
-    tempSheet.setColumnWidth(3, 250);
-
+    // Blok Tanda Tangan
+    const signatureBlockStartRow = tableStartRow + tableBodyData.length + 3;
+    const signatureColumnStart = numColumns - 3;
+    const formatDateToIndonesian = (dateString) => {
+      if (!dateString) return "";
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(date);
+    };
+    
+    let ttdRow = signatureBlockStartRow;
+    const ttdDate = formatDateToIndonesian(exportOptions.tanggalTTD);
+    
+    tempSheet.getRange(ttdRow, signatureColumnStart, 1, 4).merge().setValue(`${exportOptions.tempatTTD || "Tempat"}, ${ttdDate}`);
+    ttdRow++;
+    tempSheet.getRange(ttdRow, signatureColumnStart, 1, 4).merge().setValue(exportOptions.tipeKamad || "Kepala Madrasah");
+    ttdRow += 3;
+    tempSheet.getRange(ttdRow, signatureColumnStart, 1, 4).merge().setValue(schoolData.namaKepsek || "Nama Kepala").setFontWeight("bold").setFontLine('underline');
+    ttdRow++;
+    const nipRange = tempSheet.getRange(ttdRow, signatureColumnStart, 1, 4).merge();
+    nipRange.setNumberFormat("@");
+    nipRange.setValue(schoolData.nipKepsek ? `NIP. ${schoolData.nipKepsek}` : "NIP. -");
+    
+    // Samakan ukuran font seluruh blok ttd
+    tempSheet.getRange(signatureBlockStartRow, signatureColumnStart, 5, 4).setFontSize(12).setHorizontalAlignment("left");
+    
     SpreadsheetApp.flush(); 
 
     // 5. Ekspor file
@@ -1124,14 +1168,14 @@ function exportRekapData(spreadsheetId, type, format) {
     } else { // PDF
       fileName = `${reportTitle.replace(/ /g, "_")}.pdf`;
       mimeType = 'application/pdf';
-      const pdfOptions = `?exportFormat=pdf&format=pdf&size=A4&portrait=false&fitw=true&sheetnames=false&printtitle=false&gridlines=true&gid=${tempSheet.getSheetId()}`;
+      const pdfOptions = `?exportFormat=pdf&format=pdf&size=A4&portrait=false&fitw=true&sheetnames=false&printtitle=false&gridlines=false&gid=${tempSheet.getSheetId()}`;
       const url = `${exportUrl}${pdfOptions}`;
       blob = UrlFetchApp.fetch(url, fetchOptions).getBlob().setName(fileName);
     }
     
-    if (blob.getBytes().length === 0) throw new Error("Gagal membuat file ekspor.");
+    if (!blob || blob.getBytes().length === 0) throw new Error("Gagal membuat file ekspor. Blob kosong.");
     
-    // 6. Kembalikan data file ke client-side
+    // 6. Kembalikan data file
     return {
       fileName: fileName,
       mimeType: mimeType,
@@ -1144,7 +1188,11 @@ function exportRekapData(spreadsheetId, type, format) {
   } finally {
     // 7. Hapus file sementara
     if (tempSpreadsheetFileId) {
-      DriveApp.getFileById(tempSpreadsheetFileId).setTrashed(true);
+      try {
+        DriveApp.getFileById(tempSpreadsheetFileId).setTrashed(true);
+      } catch (err) {
+        Logger.log(`Gagal menghapus file sementara ${tempSpreadsheetFileId}: ${err.toString()}`);
+      }
     }
   }
 }
