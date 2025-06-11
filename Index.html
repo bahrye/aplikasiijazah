@@ -47,6 +47,38 @@
         .nama-siswa-cell {
             text-align: left;
         }
+        /* CSS untuk Notifikasi Pop-up di Atas Tengah */
+        #globalStatusMessage {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 90%;
+            max-width: 500px;
+            pointer-events: none; /* Agar tidak menghalangi klik */
+        }
+
+        .toast-notification {
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            color: white;
+            font-weight: 500;
+            text-align: center;
+            animation: fadeInOut 4s ease-in-out forwards;
+            opacity: 0;
+            pointer-events: auto; /* Aktifkan kembali pointer */
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; transform: translateY(-20px); }
+            10%, 90% { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -105,8 +137,7 @@
                         <form id="signupForm">
                              <div id="signup-message" class="mb-4 text-center text-sm h-auto"></div>
                             <div class="space-y-4">
-                                <!-- Data Diri Awal -->
-                                <div id="initial-fields">
+                                <div id="initial-fields" class="space-y-4">
                                     <div>
                                         <label for="signup-namasekolah" class="text-sm font-medium text-gray-700 block mb-2">Nama Sekolah</label>
                                         <input type="text" id="signup-namasekolah" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm" placeholder="Contoh: MI Al-Hidayah" required>
@@ -151,12 +182,10 @@
                                         </button>
                                     </div>
                                 </div>
-                                <!-- Bagian untuk OTP (awalnya disembunyikan) -->
                                 <div id="otp-section" class="hidden">
                                     <label for="signup-otp" class="text-sm font-medium text-gray-700 block mb-2">Kode OTP</label>
                                     <input type="text" id="signup-otp" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm" placeholder="Masukkan 6 digit kode dari email" required>
                                 </div>
-                                <!-- Tombol Daftar Final (awalnya disembunyikan) -->
                                 <div id="final-signup-button-container" class="hidden">
                                     <button type="submit" id="signupButton" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-transform transform hover:scale-105 shadow-lg">
                                         <span id="signupButtonText">Daftar</span>
@@ -611,7 +640,7 @@
         </div>
     </div>
 
-    <div id="globalStatusMessage" class="fixed bottom-5 right-5 z-50"></div>
+    <div id="globalStatusMessage"></div>
 
     <!-- Tambahkan library Chart.js di dalam <head> -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -773,11 +802,30 @@
         }
 
         function logoutUser() {
+            // Hapus semua data sesi
             userSpreadsheetId = null;
             sessionStorage.clear();
             localStorage.removeItem('exportOptions');
             clearTimeout(inactivityTimer);
-            window.location.reload();
+
+            // Alihkan tampilan secara manual, tanpa memuat ulang halaman
+            document.getElementById('app-container').classList.add('hidden');
+            document.getElementById('auth-wrapper').classList.remove('hidden');
+
+            // Opsional: Bersihkan form login dan tampilkan pesan logout
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.reset();
+            }
+            const errorMessageDiv = document.getElementById('login-error-message');
+            if (errorMessageDiv) {
+                errorMessageDiv.textContent = '';
+            }
+            const loginInfoMessageDiv = document.getElementById('login-info-message');
+            if (loginInfoMessageDiv) {
+                loginInfoMessageDiv.textContent = "Anda telah berhasil logout.";
+                loginInfoMessageDiv.className = "mb-4 text-center text-sm p-3 bg-blue-100 text-blue-800 rounded-lg";
+            }
         }
 
         function resetInactivityTimer() {
@@ -823,8 +871,30 @@
                 })
                 .checkLogin(email, password);
         }
+
+        function validatePassword(password) {
+            const errors = [];
+
+            if (password.length < 8) {
+                errors.push("Password minimal harus 8 karakter.");
+            }
+            if (!/[A-Z]/.test(password)) {
+                errors.push("Harus memiliki setidaknya 1 huruf besar (A-Z).");
+            }
+            if (!/[a-z]/.test(password)) {
+                errors.push("Harus memiliki setidaknya 1 huruf kecil (a-z).");
+            }
+            if (!/[0-9]/.test(password)) {
+                errors.push("Harus memiliki setidaknya 1 angka (0-9).");
+            }
+            // Pengecekan untuk karakter spesial
+            if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(password)) {
+                errors.push("Harus memiliki setidaknya 1 karakter spesial (cth: !@#$).");
+            }
+            
+            return errors;
+        }
         
-        // --- [BARU] Fungsi untuk menangani permintaan OTP ---
         function handleRequestOtp() {
             const email = document.getElementById('signup-email').value;
             const password = document.getElementById('signup-password').value;
@@ -837,19 +907,34 @@
             const requestOtpSpinner = document.getElementById('requestOtpSpinner');
             const messageDiv = document.getElementById('signup-message');
 
-            messageDiv.textContent = '';
+            messageDiv.innerHTML = ''; // Bersihkan pesan sebelumnya
             messageDiv.classList.remove('text-red-600', 'text-green-600');
 
-            // Validasi awal
-            if (!email || !password || !namaSekolah || !jenjang) {
+            // Validasi awal (apakah semua field terisi)
+            if (!email || !password || !namaSekolah || !jenjang || !confirmPassword) {
                 messageDiv.textContent = 'Semua field wajib diisi.';
                 messageDiv.classList.add('text-red-600');
                 return;
             }
+
+            // Validasi kecocokan kata sandi
             if (password !== confirmPassword) {
                 messageDiv.textContent = 'Kata sandi dan konfirmasi kata sandi tidak cocok.';
                 messageDiv.classList.add('text-red-600');
                 return;
+            }
+
+            // BARU: Validasi kekuatan kata sandi
+            const passwordErrors = validatePassword(password);
+            if (passwordErrors.length > 0) {
+                let errorHtml = '<strong class="block text-center">Password belum memenuhi syarat:</strong><ul class="list-disc list-inside text-left mt-1 text-sm">';
+                passwordErrors.forEach(error => {
+                    errorHtml += `<li>${error}</li>`;
+                });
+                errorHtml += '</ul>';
+                messageDiv.innerHTML = errorHtml;
+                messageDiv.classList.add('text-red-600');
+                return; // Hentikan proses jika password tidak valid
             }
 
             // Tampilkan loading
@@ -1260,6 +1345,17 @@
                                 importSiswaBtn.textContent = 'Import Data';
                                 fileNameSpan.textContent = 'Tidak ada file dipilih';
                                 siswaFileInput.value = '';
+
+                                // Tampilkan notifikasi pop-up
+                                if (response.status === 'partial' || response.status === 'success') {
+                                    let successMsg = `<strong>Proses impor siswa selesai.</strong>`;
+                                    if(response.newCount > 0) {
+                                        successMsg += `<br>${response.newCount} siswa baru berhasil ditambahkan.`
+                                    }
+                                    showGlobalStatus(successMsg, true);
+                                }
+
+                                // Tetap tampilkan laporan detail di bawah tombol
                                 let reportHtml = `<div class="p-4 border rounded-md bg-gray-50"><strong>${response.message}</strong><ul>`;
                                 if (response.newCount > 0) reportHtml += `<li class="text-green-600">${response.newCount} siswa baru berhasil ditambahkan.</li>`;
                                 if (response.skippedCount > 0) reportHtml += `<li class="text-yellow-600">${response.skippedCount} data duplikat dilewati.</li>`;
@@ -1267,12 +1363,17 @@
                                     reportHtml += `<li class="text-red-600">${response.conflictCount} data konflik (NISN sudah ada dengan nama berbeda):</li>`;
                                     reportHtml += `<ul class="list-disc ml-6 text-sm">`;
                                     response.conflicts.forEach(c => {
-                                        reportHtml += `<li>NISN ${c.nisn} (${c.nama} di file) - ${c.reason}</li>`;
+                                        reportHtml += `<li>NISN <span class="math-inline">\{c\.nisn\} \(</span>{c.nama} di file) - ${c.reason}</li>`;
                                     });
                                     reportHtml += `</ul>`;
                                 }
                                 reportHtml += `</ul></div>`;
                                 importStatusDiv.innerHTML = reportHtml;
+
+                                // BARU: Sembunyikan laporan detail setelah 10 detik
+                                setTimeout(() => {
+                                    importStatusDiv.innerHTML = '';
+                                }, 10000);
 
                                 if (response.newCount > 0) {
                                     loadStudentsData();
@@ -1617,11 +1718,27 @@
                                 mapelFileNameSpan.textContent = 'Tidak ada file dipilih';
                                 mapelFileInput.value = '';
 
+                                // Tampilkan notifikasi pop-up
+                                if (response.status === 'success') {
+                                    let mainMessage = response.message.split('.')[0] + '.';
+                                    let successMsg = `<strong>${mainMessage}</strong>`;
+                                    if(response.newCount > 0) {
+                                        successMsg += `<br>${response.newCount} mapel baru berhasil ditambahkan.`
+                                    }
+                                    showGlobalStatus(successMsg, true);
+                                }
+
+                                // Tetap tampilkan laporan detail di bawah tombol
                                 let reportHtml = `<div class="p-3 border rounded-md bg-gray-50 text-sm"><strong>${response.message}</strong><ul>`;
                                 if (response.newCount > 0) reportHtml += `<li class="text-green-600">${response.newCount} mapel baru berhasil ditambahkan.</li>`;
                                 if (response.skippedCount > 0) reportHtml += `<li class="text-yellow-600">${response.skippedCount} mapel duplikat dilewati.</li>`;
                                 reportHtml += `</ul></div>`;
                                 importMapelStatusDiv.innerHTML = reportHtml;
+
+                                // BARU: Sembunyikan laporan detail setelah 10 detik
+                                setTimeout(() => {
+                                    importMapelStatusDiv.innerHTML = '';
+                                }, 10000);
 
                                 if (response.newCount > 0) loadMapelData();
                             })
@@ -1770,7 +1887,7 @@
                         const studentScores = existingScores[s.nisn] || {};
                         let rowHtml = `<tr data-nisn="${s.nisn}" data-nama="${s.nama.toUpperCase()}"><td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${index + 1}</td><td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 nama-siswa-cell">${s.nama.toUpperCase()}</td>`;
                         mapelList.forEach(m => {
-                            rowHtml += `<td class="px-2 py-1"><input type="number" min="0" max="100" class="score-input p-1 border rounded-md" data-mapel-kode="${m.kode}" value="${studentScores[m.kode] || ''}"></td>`;
+                            rowHtml += `<td class="px-2 py-1"><input type="number" min="0" max="100" class="score-input p-1 border rounded-md" data-mapel-kode="${m.kode}" value="${studentScores[m.kode] ?? ''}"></td>`;
                         });
                         rowHtml += `<td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell jumlah-nilai">0</td><td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell rata-rata-nilai">0.00</td></tr>`;
                         tbody.innerHTML += rowHtml;
@@ -1869,32 +1986,44 @@
                     const tableWrapper = document.createElement('div');
                     tableWrapper.className = 'bg-white p-4 rounded-lg shadow-md';
                     let tableHtml = `<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>${allMapel.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}<th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th><th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th></tr></thead><tbody>`;
+                    
                     students.forEach((student, index) => {
                         tableHtml += `<tr><td class="px-3 py-2 text-sm">${index + 1}</td><td class="px-4 py-2 text-sm">${student.nisn}</td><td class="px-4 py-2 text-sm font-medium nama-siswa-cell">${student.nama.toUpperCase()}</td>`;
+                        
                         const studentScores = [];
                         allMapel.forEach(mapel => {
                             const nilaiM = parseFloat((nilaiMadrasah[student.nisn] || {})[mapel.kode]);
                             const nilaiP = parseFloat((nilaiPraktek[student.nisn] || {})[mapel.kode]);
-                            let avgScore = 0;
-                            if (!isNaN(nilaiM) && !isNaN(nilaiP)) {
+                            
+                            let avgScore = null; // Default ke null jika tidak ada nilai
+                            const hasM = !isNaN(nilaiM);
+                            const hasP = !isNaN(nilaiP);
+
+                            if (hasM && hasP) {
                                 avgScore = (nilaiM + nilaiP) / 2;
-                            } else if (!isNaN(nilaiM)) {
+                            } else if (hasM) {
                                 avgScore = nilaiM;
-                            } else if (!isNaN(nilaiP)) {
+                            } else if (hasP) {
                                 avgScore = nilaiP;
                             }
+
                             studentScores.push(avgScore);
-                            tableHtml += `<td class="px-2 py-1 text-center average-score-cell">${Math.round(avgScore) || '-'}</td>`;
+                            tableHtml += `<td class="px-2 py-1 text-center average-score-cell">${avgScore !== null ? Math.round(avgScore) : '-'}</td>`;
                         });
-                        const total = studentScores.reduce((sum, score) => sum + score, 0);
-                        const count = studentScores.filter(s => s > 0).length;
+
+                        const validScores = studentScores.filter(s => s !== null);
+                        const total = validScores.reduce((sum, score) => sum + score, 0);
+                        const count = validScores.length;
                         const average = count > 0 ? (total / count).toFixed(2) : "0.00";
+
                         tableHtml += `<td class="px-4 py-2 text-center font-bold">${Math.round(total)}</td><td class="px-4 py-2 text-center font-bold">${average}</td></tr>`;
                     });
+
                     tableHtml += `</tbody></table></div>`;
                     tableWrapper.innerHTML = tableHtml;
                     container.querySelector('div').innerHTML = '';
                     container.querySelector('div').appendChild(tableWrapper);
+
                 }).catch(err => {
                     container.innerHTML = `<p class="text-red-500">Gagal memuat data rata-rata: ${err.message}</p>`;
                 });
@@ -1915,15 +2044,21 @@
                 google.script.run
                     .withSuccessHandler(sheetsExist => {
                         if (sheetsExist) {
+                            // Panggil fungsi baru yang sudah dioptimasi
                             google.script.run
-                                .withSuccessHandler(data => {
-                                    rekapitulasiData = data;
-                                    loader.classList.add('hidden');
-                                    content.classList.remove('hidden');
-                                    const activeBtn = document.querySelector('.rekap-btn.active') || document.querySelector('[data-rekap="ijazah"]');
-                                    activeBtn.click();
+                                .withSuccessHandler(response => {
+                                    if (response.status === 'success') {
+                                        rekapitulasiData = response.data; // Ambil data dari properti 'data'
+                                        loader.classList.add('hidden');
+                                        content.classList.remove('hidden');
+                                        const activeBtn = document.querySelector('.rekap-btn.active') || document.querySelector('[data-rekap="ijazah"]');
+                                        activeBtn.click();
+                                    } else {
+                                        loader.classList.add('hidden');
+                                        showGlobalStatus('Error: ' + response.message, false);
+                                    }
                                 })
-                                .getRekapitulasiData(userSpreadsheetId);
+                                .getRekapitulasiData_Optimized(userSpreadsheetId); // Panggil fungsi baru
                         } else {
                             loader.classList.add('hidden');
                             setupDiv.classList.remove('hidden');
@@ -2156,7 +2291,7 @@
                     const studentScores = existingScores[s.nisn] || {};
                     let rowHtml = `<tr data-nisn="${s.nisn}" data-nama="${s.nama.toUpperCase()}"><td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${index + 1}</td><td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 nama-siswa-cell">${s.nama.toUpperCase()}</td>`;
                     mapelList.forEach(m => {
-                        rowHtml += `<td class="px-2 py-1"><input type="number" min="0" max="100" class="score-input p-1 border rounded-md" data-mapel-kode="${m.kode}" value="${studentScores[m.kode] || ''}"></td>`;
+                        rowHtml += `<td class="px-2 py-1"><input type="number" min="0" max="100" class="score-input p-1 border rounded-md" data-mapel-kode="${m.kode}" value="${studentScores[m.kode] ?? ''}"></td>`;
                     });
                     rowHtml += `<td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell jumlah-nilai">0</td><td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell rata-rata-nilai">0.00</td></tr>`;
                     tbody.innerHTML += rowHtml;
@@ -2192,20 +2327,28 @@
                 const tableWrapper = document.createElement('div');
                 tableWrapper.className = 'p-4 border rounded-lg';
                 let tableHtml = `<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>${mapelList.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}<th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th><th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th></tr></thead><tbody>`;
+                
                 students.forEach((student, index) => {
                     let rowHtml = `<tr data-nisn="${student.nisn}" data-nama="${student.nama.toUpperCase()}"><td class="px-3 py-2 text-sm">${index + 1}</td><td class="px-4 py-2 text-sm">${student.nisn}</td><td class="px-4 py-2 text-sm font-medium nama-siswa-cell">${student.nama.toUpperCase()}</td>`;
+                        
                     mapelList.forEach(mapel => {
                         const nilaiP = parseFloat((nilaiPengetahuan[student.nisn] || {})[mapel.kode]);
                         const nilaiK = parseFloat((nilaiKeterampilan[student.nisn] || {})[mapel.kode]);
-                        let avgScore = 0;
-                        if (!isNaN(nilaiP) && !isNaN(nilaiK)) avgScore = (nilaiP + nilaiK) / 2;
-                        else if (!isNaN(nilaiP)) avgScore = nilaiP;
-                        else if (!isNaN(nilaiK)) avgScore = nilaiK;
-                        rowHtml += `<td class="px-2 py-1 text-center average-score-cell">${Math.round(avgScore) || '-'}</td>`;
+                            
+                        let avgScore = null; // Default ke null jika tidak ada nilai
+                        const hasP = !isNaN(nilaiP);
+                        const hasK = !isNaN(nilaiK);
+
+                        if (hasP && hasK) avgScore = (nilaiP + nilaiK) / 2;
+                        else if (hasP) avgScore = nilaiP;
+                        else if (hasK) avgScore = nilaiK;
+                            
+                        rowHtml += `<td class="px-2 py-1 text-center average-score-cell">${avgScore !== null ? Math.round(avgScore) : '-'}</td>`;
                     });
                     rowHtml += `<td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell jumlah-nilai">0</td><td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell rata-rata-nilai">0.00</td></tr>`;
                     tableHtml += rowHtml;
                 });
+
                 tableHtml += `</tbody></table></div>`;
                 tableWrapper.innerHTML = tableHtml;
                 container.innerHTML = `<h4 class="text-lg font-semibold mb-3">Tabel Rata-Rata Nilai</h4>`;
@@ -2224,10 +2367,13 @@
 
         function showGlobalStatus(message, isSuccess) {
             const statusDiv = document.createElement('div');
-            statusDiv.className = `p-4 rounded-lg shadow-lg text-white ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`;
-            statusDiv.textContent = message;
+            statusDiv.className = `toast-notification ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`;
+            statusDiv.innerHTML = message; // innerHTML agar bisa menampilkan format tebal
             document.getElementById('globalStatusMessage').appendChild(statusDiv);
-            setTimeout(() => statusDiv.remove(), 4000);
+
+            setTimeout(() => {
+                statusDiv.remove();
+            }, 4000); // Disesuaikan dengan durasi animasi CSS
         }
 
         function updateRowTotals(rowElement) {
