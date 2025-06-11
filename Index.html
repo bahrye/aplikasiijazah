@@ -120,7 +120,10 @@
                             </div>
                         </form>
                         <div id="login-error-message" class="mt-4 text-center text-red-600 text-sm h-4"></div>
-                         <p class="text-center text-sm text-gray-600 mt-6">
+                        <div class="text-center text-sm mt-4">
+                            <a href="#" id="forgot-password-link" class="text-gray-500 hover:text-blue-600">Lupa Password?</a>
+                        </div>
+                        <p class="text-center text-sm text-gray-600 mt-6">
                             Belum punya akun? 
                             <a href="#" id="show-signup" class="font-medium text-blue-600 hover:text-blue-500">Daftar sekarang</a>
                         </p>
@@ -270,6 +273,48 @@
                             <h2 class="text-xl font-bold text-gray-800 mb-4">Distribusi Jenis Ujian Mata Pelajaran</h2>
                             <div class="h-80">
                                 <canvas id="mapelChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6 mt-8">
+                            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                                <h2 class="text-xl font-bold text-gray-800 mb-4">Rata-rata Nilai Ujian per Mapel</h2>
+                                <div class="h-96">
+                                    <canvas id="ujianAverageChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                                <h2 class="text-xl font-bold text-gray-800 mb-4">Rata-rata Nilai Rapor per Mapel</h2>
+                                <div class="h-96">
+                                    <canvas id="raporAverageChart"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                                <h2 class="text-xl font-bold text-gray-800 mb-4">Rata-rata Nilai Ijazah per Mapel</h2>
+                                <div class="h-96">
+                                    <canvas id="ijazahAverageChart"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                                <div class="mb-4">
+                                    <h2 class="text-xl font-bold text-gray-800">Distribusi Rata-rata Nilai Ujian Siswa</h2>
+                                    <p class="text-sm text-gray-500">(Silahkan Perbarui Rekapitulasi Untuk Mendapatkan Grafik Terbaru)</p>
+                                </div>
+                                <div class="h-96">
+                                    <canvas id="examScoreDistributionChart"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                                <div class="mb-4">
+                                    <h2 class="text-xl font-bold text-gray-800">Peringkat Siswa Berdasarkan Rata-rata Nilai Ijazah</h2>
+                                    <p class="text-sm text-gray-500">(Silahkan Perbarui Rekapitulasi Untuk Mendapatkan Grafik Terbaru)</p>
+                                </div> 
+                                <div class="h-96">
+                                    <canvas id="ijazahRankingChart"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -640,6 +685,45 @@
         </div>
     </div>
 
+    <div id="forgot-password-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-md p-6 transform scale-95">
+            <div class="flex justify-between items-center border-b pb-3 mb-5">
+                <h2 class="text-2xl font-bold text-gray-800">Reset Password</h2>
+                <button id="closeForgotPasswordModalBtn" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <form id="forgotPasswordForm">
+                <div id="fp-step-1" class="space-y-4">
+                    <p class="text-sm text-gray-600">Masukkan alamat email Anda yang terdaftar untuk menerima kode verifikasi (OTP).</p>
+                    <div>
+                        <label for="fp-email" class="block text-sm font-medium text-gray-700">Alamat Email</label>
+                        <input type="email" id="fp-email" name="fp-email" class="mt-1 w-full p-2 border rounded-md" required>
+                    </div>
+                    <button type="button" id="fp-send-otp-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700">
+                        <span class="btn-text">Kirim Kode OTP</span>
+                        <span class="btn-spinner hidden loading-animation">Mengirim</span>
+                    </button>
+                </div>
+
+                <div id="fp-step-2" class="space-y-4 hidden">
+                    <p class="text-sm text-gray-600">Kode OTP telah dikirim. Silakan cek email Anda dan masukkan kode serta password baru Anda.</p>
+                    <div>
+                        <label for="fp-otp" class="block text-sm font-medium text-gray-700">Kode OTP (6 digit)</label>
+                        <input type="text" id="fp-otp" name="fp-otp" class="mt-1 w-full p-2 border rounded-md" required>
+                    </div>
+                    <div>
+                        <label for="fp-new-password" class="block text-sm font-medium text-gray-700">Password Baru</label>
+                        <input type="password" id="fp-new-password" name="fp-new-password" class="mt-1 w-full p-2 border rounded-md" required>
+                    </div>
+                    <button type="submit" id="fp-reset-btn" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700">
+                        <span class="btn-text">Reset Password</span>
+                        <span class="btn-spinner hidden loading-animation">Memproses</span>
+                    </button>
+                </div>
+            </form>
+            <div id="fp-status-message" class="mt-4 text-center text-sm"></div>
+        </div>
+    </div>
+
     <div id="globalStatusMessage"></div>
 
     <!-- Tambahkan library Chart.js di dalam <head> -->
@@ -650,6 +734,12 @@
         let userSpreadsheetId = null;
         let inactivityTimer;
         let mapelChartInstance = null; // Untuk menyimpan instance grafik
+        // [BARU] Tambahkan variabel untuk grafik rata-rata
+        let ujianChartInstance = null;
+        let raporChartInstance = null;
+        let ijazahChartInstance = null;
+        let examScoreShareChartInstance = null; // Nama variabel diubah
+        let ijazahRankingChartInstance = null; // [BARU]
 
         // Fungsi ini akan mengatur tahun saat ini pada elemen footer
         function setFooterYear() {
@@ -784,6 +874,138 @@
 
             if (generatePdfBtn) generatePdfBtn.addEventListener('click', (e) => handleExport(e, 'pdf'));
             if (generateExcelBtn) generateExcelBtn.addEventListener('click', (e) => handleExport(e, 'excel'));
+
+            // --- [BARU] Event listener dan fungsi untuk Lupa Password ---
+            const forgotPasswordLink = document.getElementById('forgot-password-link');
+            const forgotPasswordModal = document.getElementById('forgot-password-modal');
+            const closeForgotPasswordModalBtn = document.getElementById('closeForgotPasswordModalBtn');
+            const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+            const fpStep1 = document.getElementById('fp-step-1');
+            const fpStep2 = document.getElementById('fp-step-2');
+            const fpSendOtpBtn = document.getElementById('fp-send-otp-btn');
+            const fpResetBtn = document.getElementById('fp-reset-btn');
+            const fpStatusMessage = document.getElementById('fp-status-message');
+
+            const openForgotPasswordModal = () => {
+                forgotPasswordModal.classList.remove('hidden');
+                setTimeout(() => {
+                    forgotPasswordModal.querySelector('.modal-content').style.transform = 'scale(1)';
+                }, 10);
+            };
+
+            const closeForgotPasswordModal = () => {
+                forgotPasswordModal.querySelector('.modal-content').style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    forgotPasswordModal.classList.add('hidden');
+                    // Reset form ke step 1 saat ditutup
+                    fpStep1.classList.remove('hidden');
+                    fpStep2.classList.add('hidden');
+                    forgotPasswordForm.reset();
+                    fpStatusMessage.innerHTML = '';
+                }, 300);
+            };
+
+            if (forgotPasswordLink) forgotPasswordLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                openForgotPasswordModal();
+            });
+
+            if (closeForgotPasswordModalBtn) closeForgotPasswordModalBtn.addEventListener('click', closeForgotPasswordModal);
+
+            // Tombol untuk mengirim OTP
+            if (fpSendOtpBtn) fpSendOtpBtn.addEventListener('click', function() {
+                const email = document.getElementById('fp-email').value;
+                if (!email) {
+                    fpStatusMessage.textContent = 'Email tidak boleh kosong.';
+                    fpStatusMessage.className = 'mt-4 text-center text-sm text-red-600';
+                    return;
+                }
+                
+                const btn = this;
+                const btnText = btn.querySelector('.btn-text');
+                const spinner = btn.querySelector('.btn-spinner');
+
+                btn.disabled = true;
+                btnText.classList.add('hidden');
+                spinner.classList.remove('hidden');
+                fpStatusMessage.innerHTML = '';
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+
+                        if (response.status === 'success') {
+                            fpStatusMessage.textContent = response.message;
+                            fpStatusMessage.className = 'mt-4 text-center text-sm text-green-600';
+                            fpStep1.classList.add('hidden');
+                            fpStep2.classList.remove('hidden');
+                        } else {
+                            fpStatusMessage.textContent = response.message;
+                            fpStatusMessage.className = 'mt-4 text-center text-sm text-red-600';
+                        }
+                    })
+                    .withFailureHandler(error => {
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+                        fpStatusMessage.textContent = 'Error: ' + error.message;
+                        fpStatusMessage.className = 'mt-4 text-center text-sm text-red-600';
+                    })
+                    .sendPasswordResetOtp(email);
+            });
+
+            // Tombol untuk submit OTP dan password baru
+            if (forgotPasswordForm) forgotPasswordForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = document.getElementById('fp-email').value;
+                const otp = document.getElementById('fp-otp').value;
+                const newPassword = document.getElementById('fp-new-password').value;
+
+                if (!otp || !newPassword) {
+                    fpStatusMessage.textContent = 'OTP dan Password Baru tidak boleh kosong.';
+                    fpStatusMessage.className = 'mt-4 text-center text-sm text-red-600';
+                    return;
+                }
+
+                const btn = fpResetBtn;
+                const btnText = btn.querySelector('.btn-text');
+                const spinner = btn.querySelector('.btn-spinner');
+
+                btn.disabled = true;
+                btnText.classList.add('hidden');
+                spinner.classList.remove('hidden');
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+
+                        if (response.status === 'success') {
+                            fpStatusMessage.textContent = response.message + ' Anda akan dialihkan ke halaman login.';
+                            fpStatusMessage.className = 'mt-4 text-center text-sm text-green-600';
+                            setTimeout(() => {
+                                closeForgotPasswordModal();
+                                const loginInfoMessageDiv = document.getElementById('login-info-message');
+                                loginInfoMessageDiv.textContent = "Password berhasil direset. Silakan login dengan password baru Anda.";
+                                loginInfoMessageDiv.className = "mb-4 text-center text-sm p-3 bg-green-100 text-green-800 rounded-lg";
+                            }, 3000);
+                        } else {
+                            fpStatusMessage.textContent = response.message;
+                            fpStatusMessage.className = 'mt-4 text-center text-sm text-red-600';
+                        }
+                    })
+                    .withFailureHandler(error => {
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+                        fpStatusMessage.textContent = 'Error: ' + error.message;
+                        fpStatusMessage.className = 'mt-4 text-center text-sm text-red-600';
+                    })
+                    .resetPasswordWithOtp(email, otp, newPassword);
+            });
         });
 
         function setupPasswordToggles() {
@@ -1051,16 +1273,56 @@
             document.getElementById('studentCount').textContent = '...';
             document.getElementById('mapelCount').textContent = '...';
 
+            // Helper function untuk membuat grafik batang horizontal
+            const createAverageChart = (canvasId, chartInstance, chartData, chartLabel) => {
+                if (chartInstance) {
+                    chartInstance.destroy();
+                }
+                if (!chartData || !chartData.labels || !chartData.data) return null;
+
+                const ctx = document.getElementById(canvasId).getContext('2d');
+                return new Chart(ctx, {
+                    type: 'bar', // Menggunakan grafik batang
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [{
+                            label: chartLabel,
+                            data: chartData.data,
+                            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y', // Membuat grafik menjadi horizontal
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) { if (value % 1 === 0) { return value; } } // Tampilkan hanya integer
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false // Sembunyikan legenda karena sudah ada di judul
+                            }
+                        }
+                    }
+                });
+            };
+
             google.script.run
                 .withSuccessHandler(response => {
                     if (response && response.status === 'success') {
+                        // --- Kode untuk kartu statistik (tidak berubah) ---
                         document.getElementById('studentCount').textContent = response.studentCount || 0;
                         document.getElementById('mapelCount').textContent = response.mapelCount || 0;
 
-                        let madrasahCount = 0;
-                        let praktekCount = 0;
-                        let keduanyaCount = 0;
-
+                        // --- Kode untuk grafik distribusi jenis ujian (tidak berubah) ---
+                        let madrasahCount = 0, praktekCount = 0, keduanyaCount = 0;
                         if (response.mapelList && response.mapelList.length > 0) {
                             response.mapelList.forEach(mapel => {
                                 if (mapel.jenisUjian === 'Ujian Madrasah') madrasahCount++;
@@ -1068,7 +1330,6 @@
                                 else if (mapel.jenisUjian === 'Keduanya') keduanyaCount++;
                             });
                         }
-
                         const ctx = document.getElementById('mapelChart').getContext('2d');
                         if (mapelChartInstance) {
                             mapelChartInstance.destroy();
@@ -1093,6 +1354,115 @@
                             }
                         });
 
+                        // --- [BARU] Kode untuk membuat grafik rata-rata nilai ---
+                        if (response.subjectAverages) {
+                            ujianChartInstance = createAverageChart('ujianAverageChart', ujianChartInstance, response.subjectAverages.ujian, 'Rata-rata Nilai Ujian');
+                            raporChartInstance = createAverageChart('raporAverageChart', raporChartInstance, response.subjectAverages.rapor, 'Rata-rata Nilai Rapor');
+                            ijazahChartInstance = createAverageChart('ijazahAverageChart', ijazahChartInstance, response.subjectAverages.ijazah, 'Rata-rata Nilai Ijazah');
+                        }
+
+                        // --- [DIUBAH] Kode untuk grafik distribusi nilai ujian per siswa (Pie Chart) ---
+                        if (response.examScoreShare) {
+                            // [BARU] Urutkan data dari skor tertinggi ke terendah sebelum ditampilkan
+                            response.examScoreShare.sort((a, b) => b.skor - a.skor);
+
+                            // Ekstrak nama dan skor SETELAH diurutkan, lalu tambahkan nomor peringkat
+                            const studentLabels = response.examScoreShare.map((s, index) => `${index + 1}. ${s.nama}`);
+                            const studentScores = response.examScoreShare.map(s => s.skor);
+
+                            const ctxPie = document.getElementById('examScoreDistributionChart').getContext('2d');
+                            if (examScoreShareChartInstance) {
+                                examScoreShareChartInstance.destroy();
+                            }
+                            examScoreShareChartInstance = new Chart(ctxPie, {
+                                type: 'pie',
+                                data: {
+                                    labels: studentLabels, // Label sudah berisi nomor peringkat
+                                    datasets: [{
+                                        data: studentScores,
+                                        backgroundColor: [
+                                            'rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)',
+                                            'rgba(255, 206, 86, 0.7)', 'rgba(75, 192, 192, 0.7)',
+                                            'rgba(153, 102, 255, 0.7)', 'rgba(255, 159, 64, 0.7)',
+                                            'rgba(199, 199, 199, 0.7)', 'rgba(83, 109, 254, 0.7)',
+                                            'rgba(0, 200, 83, 0.7)', 'rgba(244, 67, 54, 0.7)',
+                                            'rgba(156, 39, 176, 0.7)', 'rgba(3, 169, 244, 0.7)'
+                                        ],
+                                        borderWidth: 1
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: {
+                                            position: 'right',
+                                            labels: {
+                                              boxWidth: 12,
+                                              font: {
+                                                  size: 10
+                                              }
+                                            }
+                                        },
+                                        tooltip: {
+                                            callbacks: {
+                                                label: function(context) {
+                                                    let label = context.label || '';
+                                                    if (label) {
+                                                        label += ': ';
+                                                    }
+                                                    if (context.raw !== null) {
+                                                        label += 'Rata-rata ' + context.raw.toFixed(2);
+                                                    }
+                                                    return label;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+
+                        // --- [DIUBAH] Kode untuk grafik peringkat siswa berdasarkan nilai rata-rata ijazah (Bar Chart) ---
+                        if (response.ijazahRanking) {
+                            // [PERBAIKAN] Ubah dari pembulatan menjadi format 2 angka di belakang koma
+                            const peringkatData = response.ijazahRanking.map(item => parseFloat(item.nilai.toFixed(2)));
+                            const namaSiswa = response.ijazahRanking.map(item => item.nama);
+                            
+                            const ctxRanking = document.getElementById('ijazahRankingChart').getContext('2d');
+                            if (ijazahRankingChartInstance) {
+                                ijazahRankingChartInstance.destroy();
+                            }
+                            ijazahRankingChartInstance = new Chart(ctxRanking, {
+                                type: 'bar',
+                                data: {
+                                    labels: namaSiswa,
+                                    datasets: [{
+                                        label: 'Rata-rata Nilai Ijazah',
+                                        data: peringkatData, // Data sekarang dalam format 2 angka di belakang koma
+                                        backgroundColor: 'rgba(255, 159, 64, 0.7)',
+                                        borderColor: 'rgba(255, 159, 64, 1)',
+                                        borderWidth: 1
+                                    }]
+                                },
+                                options: {
+                                    indexAxis: 'y',
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    scales: {
+                                        x: {
+                                            beginAtZero: true
+                                            // [PERBAIKAN] Hapus callback ticks agar sumbu-X bisa menampilkan desimal jika perlu
+                                        }
+                                    },
+                                    plugins: {
+                                        legend: {
+                                            display: false
+                                        }
+                                    }
+                                }
+                            });
+                        }
                     } else {
                         showGlobalStatus(response ? response.message : 'Gagal memuat data dashboard.', false);
                     }
@@ -2151,12 +2521,21 @@
                         let rowHtml = `<tr><td>${index + 1}</td><td>${student.nisn}</td><td class="nama-siswa-cell">${student.nama.toUpperCase()}</td>`;
 
                         mapel.forEach(m => {
+                            // [PERBAIKAN] Logika diubah di sini
                             const rawScore = parseFloat(scores[m.kode] || 0);
-                            total += rawScore;
-                            rowHtml += `<td class="text-center">${Math.round(rawScore)}</td>`;
+                            const roundedScore = Math.round(rawScore); // 1. Bulatkan nilai mapel
+                            
+                            total += roundedScore; // 2. Jumlahkan nilai yang SUDAH DIBULATKAN
+                            
+                            rowHtml += `<td class="text-center">${roundedScore}</td>`; // 3. Tampilkan nilai yang sudah dibulatkan
                         });
+
+                        // Rata-rata sekarang dihitung dari total nilai yang sudah dibulatkan
                         const average = mapel.length > 0 ? (total / mapel.length).toFixed(2).replace('.', ',') : '0,00';
-                        rowHtml += `<td class="text-center font-bold">${Math.round(total)}</td><td class="text-center font-bold">${average}</td>`;
+                        
+                        // Total tidak perlu dibulatkan lagi karena sudah merupakan hasil penjumlahan bilangan bulat
+                        rowHtml += `<td class="text-center font-bold">${total}</td><td class="text-center font-bold">${average}</td>`;
+                        
                         rowHtml += `</tr>`;
                         tableHtml += rowHtml;
                     });
