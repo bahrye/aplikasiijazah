@@ -37,33 +37,45 @@ function doGet(e) {
 // =================================================================
 
 /**
- * [BARU] Membuat dan menyimpan OTP sementara.
+ * [MODIFIKASI] Membuat dan menyimpan OTP sementara menggunakan kunci cache yang konsisten.
  * @param {string} email Email tujuan untuk OTP.
  * @returns {string} OTP yang dibuat.
  */
 function generateAndStoreOtp(email) {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  // Simpan OTP dengan CacheService, valid selama 10 menit
   const cache = CacheService.getScriptCache();
-  cache.put(email, otp, 600); // 600 detik = 10 menit
+  // [PERBAIKAN] Gunakan email lowercase sebagai kunci cache untuk konsistensi
+  const cacheKey = email.toLowerCase();
+  cache.put(cacheKey, otp, 600); // 600 detik = 10 menit
   return otp;
 }
 
 /**
- * [BARU] Memvalidasi OTP yang dimasukkan pengguna.
+ * [MODIFIKASI] Memvalidasi OTP yang dimasukkan pengguna dengan logging tambahan.
  * @param {string} email Email yang diverifikasi.
  * @param {string} otp Kode OTP dari pengguna.
  * @returns {boolean} True jika valid, false jika tidak.
  */
 function verifyOtp(email, otp) {
   const cache = CacheService.getScriptCache();
-  const storedOtp = cache.get(email);
-  return storedOtp != null && storedOtp == otp;
+  // [PERBAIKAN] Gunakan email lowercase untuk mengambil dari cache
+  const cacheKey = email.toLowerCase();
+  const storedOtp = cache.get(cacheKey);
+
+  // [DEBUG] Tambahkan logging untuk membantu melacak masalah di masa depan
+  Logger.log(`Verifikasi OTP untuk email: ${email} (key: ${cacheKey})`);
+  Logger.log(`OTP dari pengguna: "${otp}" (tipe: ${typeof otp})`);
+  Logger.log(`OTP dari cache: "${storedOtp}" (tipe: ${typeof storedOtp})`);
+  
+  // Perbandingan ketat antara OTP yang disimpan (string) dan yang dimasukkan (string)
+  const isValid = storedOtp != null && storedOtp === otp.toString();
+  Logger.log(`Hasil validasi: ${isValid}`);
+  
+  return isValid;
 }
 
 /**
- * [BARU] Mengirim email verifikasi berisi OTP ke pengguna.
- * Dipanggil dari frontend sebelum form registrasi lengkap disubmit.
+ * [MODIFIKASI] Mengirim email verifikasi, menggunakan email yang sudah dinormalisasi.
  * @param {string} email Email calon pengguna.
  * @returns {{status: string, message: string}} Hasil proses pengiriman.
  */
@@ -72,6 +84,7 @@ function sendVerificationEmail(email) {
     if (!email) {
       return { status: "error", message: "Email tidak boleh kosong." };
     }
+    const normalizedEmail = email.toLowerCase(); // [PERBAIKAN] Normalisasi email
 
     const lock = LockService.getScriptLock();
     lock.waitLock(30000);
@@ -82,7 +95,8 @@ function sendVerificationEmail(email) {
     if (userSheet.getLastRow() > 1) {
         const dataRange = userSheet.getRange(2, 2, userSheet.getLastRow() - 1, 1);
         const existingEmails = dataRange.getValues().flat();
-        if (existingEmails.some(existingEmail => existingEmail.toLowerCase() === email.toLowerCase())) {
+        // [PERBAIKAN] Bandingkan dengan email yang sudah dinormalisasi
+        if (existingEmails.some(existingEmail => existingEmail.toLowerCase() === normalizedEmail)) {
           lock.releaseLock();
           return { status: "error", message: "Email sudah terdaftar. Silakan gunakan email lain." };
         }
@@ -90,7 +104,8 @@ function sendVerificationEmail(email) {
     
     lock.releaseLock();
 
-    const otp = generateAndStoreOtp(email);
+    // [PERBAIKAN] Gunakan email yang sudah dinormalisasi untuk generate OTP
+    const otp = generateAndStoreOtp(normalizedEmail);
     const subject = "Kode Verifikasi Pendaftaran Akun";
     const body = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6;">
@@ -106,7 +121,7 @@ function sendVerificationEmail(email) {
     `;
 
     MailApp.sendEmail({
-      to: email,
+      to: email, // Kirim ke email asli, bukan yang lowercase
       subject: subject,
       htmlBody: body
     });
@@ -130,7 +145,7 @@ function registerUser(userData, otp) {
   try {
     const { email, password, namaSekolah, jenjang } = userData;
 
-    // Langkah 1: Verifikasi OTP
+    // Langkah 1: Verifikasi OTP menggunakan email yang sudah dinormalisasi
     if (!verifyOtp(email, otp)) {
       return { status: "error", message: "Kode OTP salah atau telah kedaluwarsa." };
     }
@@ -174,8 +189,8 @@ function registerUser(userData, otp) {
     const userId = Utilities.getUuid();
     userSheet.appendRow([userId, email, password, namaSekolah, jenjang, newSpreadsheetId]);
     
-    // Hapus OTP dari cache setelah berhasil digunakan
-    CacheService.getScriptCache().remove(email);
+    // [PERBAIKAN] Hapus OTP dari cache menggunakan kunci yang benar (lowercase email)
+    CacheService.getScriptCache().remove(email.toLowerCase());
     
     lock.releaseLock();
     return { status: "success", message: "Pendaftaran berhasil! Akun dan database sekolah Anda telah dibuat." };
