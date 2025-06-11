@@ -33,21 +33,113 @@ function doGet(e) {
 }
 
 // =================================================================
-// FUNGSI AUTENTIKASI DAN MANAJEMEN AKUN
+// FUNGSI AUTENTIKASI DAN MANAJEMEN AKUN (DENGAN OTP)
 // =================================================================
 
 /**
- * Mendaftarkan pengguna baru, membuat spreadsheet data khusus untuknya.
+ * [BARU] Membuat dan menyimpan OTP sementara.
+ * @param {string} email Email tujuan untuk OTP.
+ * @returns {string} OTP yang dibuat.
+ */
+function generateAndStoreOtp(email) {
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  // Simpan OTP dengan CacheService, valid selama 10 menit
+  const cache = CacheService.getScriptCache();
+  cache.put(email, otp, 600); // 600 detik = 10 menit
+  return otp;
+}
+
+/**
+ * [BARU] Memvalidasi OTP yang dimasukkan pengguna.
+ * @param {string} email Email yang diverifikasi.
+ * @param {string} otp Kode OTP dari pengguna.
+ * @returns {boolean} True jika valid, false jika tidak.
+ */
+function verifyOtp(email, otp) {
+  const cache = CacheService.getScriptCache();
+  const storedOtp = cache.get(email);
+  return storedOtp != null && storedOtp == otp;
+}
+
+/**
+ * [BARU] Mengirim email verifikasi berisi OTP ke pengguna.
+ * Dipanggil dari frontend sebelum form registrasi lengkap disubmit.
+ * @param {string} email Email calon pengguna.
+ * @returns {{status: string, message: string}} Hasil proses pengiriman.
+ */
+function sendVerificationEmail(email) {
+  try {
+    if (!email) {
+      return { status: "error", message: "Email tidak boleh kosong." };
+    }
+
+    const lock = LockService.getScriptLock();
+    lock.waitLock(30000);
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
+
+    if (userSheet.getLastRow() > 1) {
+        const dataRange = userSheet.getRange(2, 2, userSheet.getLastRow() - 1, 1);
+        const existingEmails = dataRange.getValues().flat();
+        if (existingEmails.some(existingEmail => existingEmail.toLowerCase() === email.toLowerCase())) {
+          lock.releaseLock();
+          return { status: "error", message: "Email sudah terdaftar. Silakan gunakan email lain." };
+        }
+    }
+    
+    lock.releaseLock();
+
+    const otp = generateAndStoreOtp(email);
+    const subject = "Kode Verifikasi Pendaftaran Akun";
+    const body = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <h2>Verifikasi Akun Anda</h2>
+        <p>Terima kasih telah mendaftar. Silakan gunakan kode verifikasi di bawah ini untuk menyelesaikan proses pendaftaran Anda:</p>
+        <p style="font-size: 24px; font-weight: bold; letter-spacing: 5px; background-color: #f0f0f0; padding: 10px 20px; border-radius: 5px; display: inline-block;">${otp}</p>
+        <p>Kode ini hanya berlaku selama 10 menit.</p>
+        <p>Jika Anda tidak merasa mendaftar, abaikan email ini.</p>
+        <br>
+        <p>Terima kasih,</p>
+        <p>Tim Aplikasi Pengolahan Nilai Ijazah</p>
+      </div>
+    `;
+
+    MailApp.sendEmail({
+      to: email,
+      subject: subject,
+      htmlBody: body
+    });
+
+    return { status: "success", message: "Kode OTP telah dikirim ke email Anda. Silakan periksa kotak masuk atau folder spam." };
+
+  } catch (error) {
+    Logger.log(`sendVerificationEmail Error: ${error.toString()}`);
+    return { status: "error", message: "Gagal mengirim email verifikasi: " + error.message };
+  }
+}
+
+
+/**
+ * [MODIFIKASI] Mendaftarkan pengguna baru setelah verifikasi OTP berhasil.
  * @param {{email: string, password: string, namaSekolah: string, jenjang: string}} userData Objek berisi data pengguna baru.
+ * @param {string} otp Kode OTP yang dimasukkan pengguna.
  * @returns {{status: string, message: string}} Objek status hasil pendaftaran.
  */
-function registerUser(userData) {
+function registerUser(userData, otp) {
   try {
+    const { email, password, namaSekolah, jenjang } = userData;
+
+    // Langkah 1: Verifikasi OTP
+    if (!verifyOtp(email, otp)) {
+      return { status: "error", message: "Kode OTP salah atau telah kedaluwarsa." };
+    }
+    
+    // Langkah 2: Lanjutkan proses registrasi yang sudah ada
     if (TEMPLATE_SPREADSHEET_ID === "GANTI_DENGAN_ID_TEMPLATE_ANDA") {
       throw new Error("ID Spreadsheet Template belum diatur di dalam Kode.gs. Harap periksa instruksi.");
     }
 
-    const { email, password, namaSekolah, jenjang } = userData;
     const lock = LockService.getScriptLock();
     lock.waitLock(30000); // Tunggu hingga 30 detik
 
@@ -61,9 +153,7 @@ function registerUser(userData) {
     if (userSheet.getLastRow() > 1) {
         const dataRange = userSheet.getRange(2, 2, userSheet.getLastRow() - 1, 1);
         const existingEmails = dataRange.getValues().flat();
-        const emailExists = existingEmails.some(existingEmail => existingEmail.toLowerCase() === email.toLowerCase());
-
-        if (emailExists) {
+        if (existingEmails.some(existingEmail => existingEmail.toLowerCase() === email.toLowerCase())) {
           lock.releaseLock();
           return { status: "error", message: "Email sudah terdaftar." };
         }
@@ -83,6 +173,9 @@ function registerUser(userData) {
 
     const userId = Utilities.getUuid();
     userSheet.appendRow([userId, email, password, namaSekolah, jenjang, newSpreadsheetId]);
+    
+    // Hapus OTP dari cache setelah berhasil digunakan
+    CacheService.getScriptCache().remove(email);
     
     lock.releaseLock();
     return { status: "success", message: "Pendaftaran berhasil! Akun dan database sekolah Anda telah dibuat." };
@@ -132,6 +225,9 @@ function checkLogin(email, password) {
     return { status: "error", message: "Kesalahan Server: " + error.message };
   }
 }
+
+// ... (Sisa fungsi-fungsi lain seperti getSpreadsheet, saveSchoolData, dll. tetap sama) ...
+// (PASTIKAN ANDA MENYALIN SEMUA FUNGSI LAINNYA YANG ADA DI FILE ASLI ANDA)
 
 // =================================================================
 // FUNGSI UTILITAS UMUM
@@ -213,7 +309,7 @@ function getStudents(spreadsheetId) {
         let tanggalLahirStr = '';
         // Memastikan data tanggal valid sebelum diproses
         if (row[4] && row[4] instanceof Date) {
-             // Memformat tanggal ke YYYY-MM-DD sesuai zona waktu spreadsheet
+             // Memformat tanggal ke format yyyy-MM-DD sesuai zona waktu spreadsheet
              tanggalLahirStr = Utilities.formatDate(row[4], Session.getScriptTimeZone(), "yyyy-MM-dd");
         }
         return {
@@ -242,7 +338,7 @@ function addStudent(spreadsheetId, studentData) {
     const ss = getSpreadsheet(spreadsheetId);
     let sheet = ss.getSheetByName(SHEET_DATA_SISWA);
     sheet.getRange("A:B").setNumberFormat('@');
-    // FIX: Mengonversi string tanggal YYYY-MM-DD menjadi objek Date di zona waktu lokal skrip
+    // FIX: Mengonversi string tanggal yyyy-MM-DD menjadi objek Date di zona waktu lokal skrip
     const tanggalLahirObject = studentData.tanggalLahir ? new Date(studentData.tanggalLahir.replace(/-/g, '/')) : '';
     const newRow = [studentData.nisn, studentData.nis, studentData.nama, studentData.tempatLahir, tanggalLahirObject];
     sheet.appendRow(newRow);
@@ -261,7 +357,7 @@ function updateStudent(spreadsheetId, studentData) {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
     sheet.getRange("A:B").setNumberFormat('@');
-    // FIX: Mengonversi string tanggal YYYY-MM-DD menjadi objek Date di zona waktu lokal skrip
+    // FIX: Mengonversi string tanggal yyyy-MM-DD menjadi objek Date di zona waktu lokal skrip
     const tanggalLahirObject = studentData.tanggalLahir ? new Date(studentData.tanggalLahir.replace(/-/g, '/')) : '';
     const rowToUpdate = [studentData.nisn, studentData.nis, studentData.nama, studentData.tempatLahir, tanggalLahirObject];
     sheet.getRange(studentData.studentRow, 1, 1, rowToUpdate.length).setValues([rowToUpdate]);
