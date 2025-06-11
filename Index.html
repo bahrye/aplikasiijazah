@@ -120,7 +120,10 @@
                             </div>
                         </form>
                         <div id="login-error-message" class="mt-4 text-center text-red-600 text-sm h-4"></div>
-                         <p class="text-center text-sm text-gray-600 mt-6">
+                        <div class="text-center text-sm mt-4">
+                            <a href="#" id="forgot-password-link" class="text-gray-500 hover:text-blue-600">Lupa Password?</a>
+                        </div>
+                        <p class="text-center text-sm text-gray-600 mt-6">
                             Belum punya akun? 
                             <a href="#" id="show-signup" class="font-medium text-blue-600 hover:text-blue-500">Daftar sekarang</a>
                         </p>
@@ -682,6 +685,51 @@
         </div>
     </div>
 
+    <div id="forgot-password-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-md p-6 transform scale-95">
+            <div class="flex justify-between items-center border-b pb-3 mb-5">
+                <h2 class="text-2xl font-bold text-gray-800">Reset Password</h2>
+                <button id="closeForgotPasswordModalBtn" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <form id="forgotPasswordForm">
+                <div id="fp-step-1" class="space-y-4">
+                    <p class="text-sm text-gray-600">Masukkan alamat email Anda yang terdaftar untuk menerima kode verifikasi (OTP).</p>
+                    <div>
+                        <label for="fp-email" class="block text-sm font-medium text-gray-700">Alamat Email</label>
+                        <input type="email" id="fp-email" name="fp-email" class="mt-1 w-full p-2 border rounded-md" required>
+                    </div>
+                    <button type="button" id="fp-send-otp-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700">
+                        <span class="btn-text">Kirim Kode OTP</span>
+                        <span class="btn-spinner hidden loading-animation">Mengirim</span>
+                    </button>
+                </div>
+
+                <div id="fp-step-2" class="space-y-4 hidden">
+                    <p class="text-sm text-gray-600">Kode OTP telah dikirim. Silakan cek email Anda dan masukkan kode serta password baru Anda.</p>
+                    <div>
+                        <label for="fp-otp" class="block text-sm font-medium text-gray-700">Kode OTP (6 digit)</label>
+                        <input type="text" id="fp-otp" name="fp-otp" class="mt-1 w-full p-2 border rounded-md" required>
+                    </div>
+                    <div>
+                        <label for="fp-new-password" class="block text-sm font-medium text-gray-700">Password Baru</label>
+                        <div class="relative mt-1">
+                            <input type="password" id="fp-new-password" name="fp-new-password" class="w-full p-2 pr-10 border rounded-md" required>
+                            <button type="button" data-toggle-password="fp-new-password" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600">
+                                <svg class="eye-icon h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                <svg class="eye-slash-icon h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" id="fp-reset-btn" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700">
+                        <span class="btn-text">Reset Password</span>
+                        <span class="btn-spinner hidden loading-animation">Memproses</span>
+                    </button>
+                </div>
+            </form>
+            <div id="fp-status-message" class="mt-4 text-center text-sm"></div>
+        </div>
+    </div>
+
     <div id="globalStatusMessage"></div>
 
     <!-- Tambahkan library Chart.js di dalam <head> -->
@@ -832,6 +880,138 @@
 
             if (generatePdfBtn) generatePdfBtn.addEventListener('click', (e) => handleExport(e, 'pdf'));
             if (generateExcelBtn) generateExcelBtn.addEventListener('click', (e) => handleExport(e, 'excel'));
+
+            // --- [BARU] Event listener dan fungsi untuk Lupa Password ---
+            const forgotPasswordLink = document.getElementById('forgot-password-link');
+            const forgotPasswordModal = document.getElementById('forgot-password-modal');
+            const closeForgotPasswordModalBtn = document.getElementById('closeForgotPasswordModalBtn');
+            const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+            const fpStep1 = document.getElementById('fp-step-1');
+            const fpStep2 = document.getElementById('fp-step-2');
+            const fpSendOtpBtn = document.getElementById('fp-send-otp-btn');
+            const fpResetBtn = document.getElementById('fp-reset-btn');
+            const fpStatusMessage = document.getElementById('fp-status-message');
+
+            const openForgotPasswordModal = () => {
+                forgotPasswordModal.classList.remove('hidden');
+                setTimeout(() => {
+                    forgotPasswordModal.querySelector('.modal-content').style.transform = 'scale(1)';
+                }, 10);
+            };
+
+            const closeForgotPasswordModal = () => {
+                forgotPasswordModal.querySelector('.modal-content').style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    forgotPasswordModal.classList.add('hidden');
+                    // Reset form ke step 1 saat ditutup
+                    fpStep1.classList.remove('hidden');
+                    fpStep2.classList.add('hidden');
+                    forgotPasswordForm.reset();
+                    fpStatusMessage.innerHTML = '';
+                }, 300);
+            };
+
+            if (forgotPasswordLink) forgotPasswordLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                openForgotPasswordModal();
+            });
+
+            if (closeForgotPasswordModalBtn) closeForgotPasswordModalBtn.addEventListener('click', closeForgotPasswordModal);
+
+            // Tombol untuk mengirim OTP
+            if (fpSendOtpBtn) fpSendOtpBtn.addEventListener('click', function() {
+                const email = document.getElementById('fp-email').value;
+                if (!email) {
+                    fpStatusMessage.textContent = 'Email tidak boleh kosong.';
+                    fpStatusMessage.className = 'mt-4 text-center text-sm text-red-600';
+                    return;
+                }
+                
+                const btn = this;
+                const btnText = btn.querySelector('.btn-text');
+                const spinner = btn.querySelector('.btn-spinner');
+
+                btn.disabled = true;
+                btnText.classList.add('hidden');
+                spinner.classList.remove('hidden');
+                fpStatusMessage.innerHTML = '';
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+
+                        if (response.status === 'success') {
+                            fpStatusMessage.textContent = response.message;
+                            fpStatusMessage.className = 'mt-4 text-center text-sm text-green-600';
+                            fpStep1.classList.add('hidden');
+                            fpStep2.classList.remove('hidden');
+                        } else {
+                            fpStatusMessage.textContent = response.message;
+                            fpStatusMessage.className = 'mt-4 text-center text-sm text-red-600';
+                        }
+                    })
+                    .withFailureHandler(error => {
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+                        fpStatusMessage.textContent = 'Error: ' + error.message;
+                        fpStatusMessage.className = 'mt-4 text-center text-sm text-red-600';
+                    })
+                    .sendPasswordResetOtp(email);
+            });
+
+            // Tombol untuk submit OTP dan password baru
+            if (forgotPasswordForm) forgotPasswordForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = document.getElementById('fp-email').value;
+                const otp = document.getElementById('fp-otp').value;
+                const newPassword = document.getElementById('fp-new-password').value;
+
+                if (!otp || !newPassword) {
+                    fpStatusMessage.textContent = 'OTP dan Password Baru tidak boleh kosong.';
+                    fpStatusMessage.className = 'mt-4 text-center text-sm text-red-600';
+                    return;
+                }
+
+                const btn = fpResetBtn;
+                const btnText = btn.querySelector('.btn-text');
+                const spinner = btn.querySelector('.btn-spinner');
+
+                btn.disabled = true;
+                btnText.classList.add('hidden');
+                spinner.classList.remove('hidden');
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+
+                        if (response.status === 'success') {
+                            fpStatusMessage.textContent = response.message + ' Anda akan dialihkan ke halaman login.';
+                            fpStatusMessage.className = 'mt-4 text-center text-sm text-green-600';
+                            setTimeout(() => {
+                                closeForgotPasswordModal();
+                                const loginInfoMessageDiv = document.getElementById('login-info-message');
+                                loginInfoMessageDiv.textContent = "Password berhasil direset. Silakan login dengan password baru Anda.";
+                                loginInfoMessageDiv.className = "mb-4 text-center text-sm p-3 bg-green-100 text-green-800 rounded-lg";
+                            }, 3000);
+                        } else {
+                            fpStatusMessage.textContent = response.message;
+                            fpStatusMessage.className = 'mt-4 text-center text-sm text-red-600';
+                        }
+                    })
+                    .withFailureHandler(error => {
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+                        fpStatusMessage.textContent = 'Error: ' + error.message;
+                        fpStatusMessage.className = 'mt-4 text-center text-sm text-red-600';
+                    })
+                    .resetPasswordWithOtp(email, otp, newPassword);
+            });
         });
 
         function setupPasswordToggles() {
