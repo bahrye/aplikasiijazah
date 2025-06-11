@@ -624,6 +624,8 @@
             const loginForm = document.getElementById('loginForm');
             const signupForm = document.getElementById('signupForm');
             const logoutButton = document.getElementById('logoutButton');
+            const showSignupBtn = document.getElementById('show-signup');
+            const showLoginBtn = document.getElementById('show-login');
 
             // Check for existing session on page load
             const storedId = sessionStorage.getItem('userSpreadsheetId');
@@ -646,6 +648,23 @@
                 e.preventDefault();
                 logoutUser();
             });
+
+            // --- [PERBAIKAN] Event listener untuk beralih antara form login dan signup ---
+            if (showSignupBtn) {
+                showSignupBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.getElementById('login-container').classList.add('hidden');
+                    document.getElementById('signup-container').classList.remove('hidden');
+                });
+            }
+            if (showLoginBtn) {
+                showLoginBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.getElementById('signup-container').classList.add('hidden');
+                    document.getElementById('login-container').classList.remove('hidden');
+                });
+            }
+            
             setupPasswordToggles();
 
 
@@ -657,8 +676,10 @@
             const generateExcelBtn = document.getElementById('generateExcelBtn');
 
             const closeExportModal = () => {
-                exportModal.querySelector('.modal-content').style.transform = 'scale(0.95)';
-                setTimeout(() => exportModal.classList.add('hidden'), 300);
+                if(exportModal) {
+                  exportModal.querySelector('.modal-content').style.transform = 'scale(0.95)';
+                  setTimeout(() => exportModal.classList.add('hidden'), 300);
+                }
             };
 
             if (closeExportModalBtn) closeExportModalBtn.addEventListener('click', closeExportModal);
@@ -688,7 +709,7 @@
 
                 google.script.run
                     .withSuccessHandler(result => {
-                        if (result.base64Data) {
+                        if (result && result.base64Data) {
                             const link = document.createElement('a');
                             link.href = `data:${result.mimeType};base64,${result.base64Data}`;
                             link.download = result.fileName;
@@ -698,7 +719,7 @@
                             showGlobalStatus(`File '${result.fileName}' berhasil diunduh.`, true);
                             closeExportModal();
                         } else {
-                            const errorMessage = result.error || 'Terjadi kesalahan tidak diketahui di server.';
+                            const errorMessage = result ? result.error : 'Terjadi kesalahan tidak diketahui di server.';
                             showGlobalStatus(`Gagal mengekspor: ${errorMessage}`, false);
                         }
                         exportButton.disabled = false;
@@ -766,14 +787,14 @@
                     loginButtonText.classList.remove('hidden');
                     loginSpinner.classList.add('hidden');
 
-                    if (response.status === 'success') {
+                    if (response && response.status === 'success') {
                         userSpreadsheetId = response.spreadsheetId;
                         sessionStorage.setItem('userSpreadsheetId', userSpreadsheetId);
                         document.getElementById('auth-wrapper').classList.add('hidden');
                         document.getElementById('app-container').classList.remove('hidden');
                         initializeApp('dashboard');
                     } else {
-                        errorMessageDiv.textContent = response.message || 'Login gagal.';
+                        errorMessageDiv.textContent = response ? response.message : 'Login gagal karena respons tidak valid.';
                     }
                 })
                 .withFailureHandler(error => {
@@ -785,8 +806,9 @@
                 .checkLogin(email, password);
         }
 
+        // --- [PERBAIKAN] Fungsi signup dibuat lebih tangguh (robust) ---
         function handleSignup(event) {
-            event.preventDefault();
+            event.preventDefault(); // Mencegah form submit dan refresh halaman
             const namaSekolah = document.getElementById('signup-namasekolah').value;
             const jenjang = document.getElementById('signup-jenjang').value;
             const email = document.getElementById('signup-email').value;
@@ -829,7 +851,9 @@
                     signupButton.disabled = false;
                     signupButtonText.classList.remove('hidden');
                     signupSpinner.classList.add('hidden');
-                    if (response.status === 'success') {
+                    
+                    // Memeriksa apakah 'response' dan 'response.status' ada sebelum digunakan
+                    if (response && response.status === 'success') {
                         document.getElementById('signupForm').reset();
                         document.getElementById('signup-container').classList.add('hidden');
                         document.getElementById('login-container').classList.remove('hidden');
@@ -837,7 +861,8 @@
                         loginInfoMessageDiv.textContent = "Pendaftaran berhasil! Silakan masuk dengan akun yang baru Anda buat.";
                         loginInfoMessageDiv.className = "mb-4 text-center text-sm p-3 bg-green-100 text-green-800 rounded-lg";
                     } else {
-                        messageDiv.textContent = response.message;
+                        // Menangani kasus error dari server atau respons yang tidak terduga
+                        messageDiv.textContent = response ? response.message : 'Gagal mendaftar karena respons tidak valid dari server.';
                         messageDiv.classList.add('text-red-600');
                     }
                 })
@@ -851,38 +876,31 @@
                 .registerUser(userData);
         }
 
-        // FUNGSI BARU UNTUK MEMUAT DATA DASHBOARD
         function loadDashboardData() {
             document.getElementById('studentCount').textContent = '...';
             document.getElementById('mapelCount').textContent = '...';
 
             google.script.run
                 .withSuccessHandler(response => {
-                    if (response.status === 'success') {
+                    if (response && response.status === 'success') {
                         document.getElementById('studentCount').textContent = response.studentCount || 0;
                         document.getElementById('mapelCount').textContent = response.mapelCount || 0;
 
-                        // Proses data untuk grafik
                         let madrasahCount = 0;
                         let praktekCount = 0;
                         let keduanyaCount = 0;
 
                         if (response.mapelList && response.mapelList.length > 0) {
                             response.mapelList.forEach(mapel => {
-                                if (mapel.jenisUjian === 'Ujian Madrasah') {
-                                    madrasahCount++;
-                                } else if (mapel.jenisUjian === 'Ujian Praktek') {
-                                    praktekCount++;
-                                } else if (mapel.jenisUjian === 'Keduanya') {
-                                    keduanyaCount++;
-                                }
+                                if (mapel.jenisUjian === 'Ujian Madrasah') madrasahCount++;
+                                else if (mapel.jenisUjian === 'Ujian Praktek') praktekCount++;
+                                else if (mapel.jenisUjian === 'Keduanya') keduanyaCount++;
                             });
                         }
 
-                        // Render Grafik
                         const ctx = document.getElementById('mapelChart').getContext('2d');
                         if (mapelChartInstance) {
-                            mapelChartInstance.destroy(); // Hancurkan grafik lama jika ada
+                            mapelChartInstance.destroy();
                         }
                         mapelChartInstance = new Chart(ctx, {
                             type: 'bar',
@@ -891,40 +909,21 @@
                                 datasets: [{
                                     label: 'Jumlah Mapel',
                                     data: [madrasahCount, praktekCount, keduanyaCount],
-                                    backgroundColor: [
-                                        'rgba(59, 130, 246, 0.7)',
-                                        'rgba(16, 185, 129, 0.7)',
-                                        'rgba(249, 115, 22, 0.7)'
-                                    ],
-                                    borderColor: [
-                                        'rgba(59, 130, 246, 1)',
-                                        'rgba(16, 185, 129, 1)',
-                                        'rgba(249, 115, 22, 1)'
-                                    ],
+                                    backgroundColor: ['rgba(59, 130, 246, 0.7)', 'rgba(16, 185, 129, 0.7)', 'rgba(249, 115, 22, 0.7)'],
+                                    borderColor: ['rgba(59, 130, 246, 1)', 'rgba(16, 185, 129, 1)', 'rgba(249, 115, 22, 1)'],
                                     borderWidth: 1
                                 }]
                             },
                             options: {
                                 responsive: true,
                                 maintainAspectRatio: false,
-                                scales: {
-                                    y: {
-                                        beginAtZero: true,
-                                        ticks: {
-                                            stepSize: 1
-                                        }
-                                    }
-                                },
-                                plugins: {
-                                    legend: {
-                                        display: false
-                                    }
-                                }
+                                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+                                plugins: { legend: { display: false } }
                             }
                         });
 
                     } else {
-                        showGlobalStatus(response.message, false);
+                        showGlobalStatus(response ? response.message : 'Gagal memuat data dashboard.', false);
                     }
                 })
                 .withFailureHandler(error => {
@@ -933,7 +932,6 @@
                 .getDashboardData(userSpreadsheetId);
         }
 
-
         function initializeApp(lastPage = 'dashboard') {
             if (!userSpreadsheetId) {
                 alert("Error: Sesi tidak valid. Silakan login ulang.");
@@ -941,7 +939,7 @@
                 return;
             }
 
-            window.onload = resetInactivityTimer;
+            resetInactivityTimer();
             document.onmousemove = resetInactivityTimer;
             document.onmousedown = resetInactivityTimer;
             document.ontouchstart = resetInactivityTimer;
@@ -967,38 +965,26 @@
                     navLinks.forEach(l => l.classList.remove('active'));
                     e.currentTarget.classList.add('active');
 
-                    // PERUBAHAN: Memanggil fungsi yang sesuai untuk setiap halaman
                     if (targetPageId === 'dashboard') loadDashboardData();
                     if (targetPageId === 'data-siswa') loadStudentsData();
-                    if (targetPageId === 'mapel') {
-                        loadMapelData();
-                        loadBobotData();
-                    }
+                    if (targetPageId === 'mapel') { loadMapelData(); loadBobotData(); }
                     if (targetPageId === 'input-ujian') document.getElementById('input-ujian-container').innerHTML = '';
                     if (targetPageId === 'input-rapor') initRaporPage();
                     if (targetPageId === 'rekapitulasi') initRekapitulasiPage();
                 });
             });
             
-            // PERUBAHAN: Menambahkan event listener untuk kartu dashboard
-            const studentCard = document.getElementById('student-card');
-            if (studentCard) {
-                studentCard.addEventListener('click', () => {
-                    document.querySelector('.nav-link[data-page="data-siswa"]').click();
-                });
-            }
-            const mapelCard = document.getElementById('mapel-card');
-            if (mapelCard) {
-                mapelCard.addEventListener('click', () => {
-                    document.querySelector('.nav-link[data-page="mapel"]').click();
-                });
-            }
+            document.getElementById('student-card')?.addEventListener('click', () => {
+                document.querySelector('.nav-link[data-page="data-siswa"]').click();
+            });
+            document.getElementById('mapel-card')?.addEventListener('click', () => {
+                document.querySelector('.nav-link[data-page="mapel"]').click();
+            });
 
             const lastActiveLink = document.querySelector(`.nav-link[data-page="${lastPage}"]`);
             if (lastActiveLink) {
                 lastActiveLink.click();
             } else {
-                // Default to dashboard if last page is invalid
                 document.querySelector('.nav-link[data-page="dashboard"]').click();
             }
 
@@ -1017,39 +1003,36 @@
                     .getSchoolData(userSpreadsheetId);
             }
 
-            const schoolDataForm = document.getElementById('schoolDataForm');
-            if (schoolDataForm) {
-                schoolDataForm.addEventListener('submit', function(event) {
-                    event.preventDefault();
-                    const btn = this.querySelector('button[type="submit"]');
-                    const btnText = btn.querySelector('#schoolSubmitBtnText');
-                    const btnSpinner = btn.querySelector('#schoolLoadingSpinner');
+            document.getElementById('schoolDataForm')?.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const btn = this.querySelector('button[type="submit"]');
+                const btnText = btn.querySelector('#schoolSubmitBtnText');
+                const btnSpinner = btn.querySelector('#schoolLoadingSpinner');
 
-                    btn.disabled = true;
-                    btnText.classList.add('hidden');
-                    btnSpinner.classList.remove('hidden');
+                btn.disabled = true;
+                btnText.classList.add('hidden');
+                btnSpinner.classList.remove('hidden');
 
-                    const dataObj = Object.fromEntries(new FormData(this).entries());
-                    dataObj.jenjang = document.getElementById('jenjang').value;
-                    dataObj.namaSekolah = document.getElementById('namaSekolah').value;
+                const dataObj = Object.fromEntries(new FormData(this).entries());
+                dataObj.jenjang = document.getElementById('jenjang').value;
+                dataObj.namaSekolah = document.getElementById('namaSekolah').value;
 
-                    google.script.run
-                        .withSuccessHandler(response => {
-                            showGlobalStatus(response.message, response.status === 'success');
-                            btn.disabled = false;
-                            btnText.classList.remove('hidden');
-                            btnSpinner.classList.add('hidden');
-                            if (response.status === 'success') loadSchoolData();
-                        })
-                        .withFailureHandler(error => {
-                            showGlobalStatus('Error: ' + error.message, false);
-                            btn.disabled = false;
-                            btnText.classList.remove('hidden');
-                            btnSpinner.classList.add('hidden');
-                        })
-                        .saveSchoolData(userSpreadsheetId, dataObj);
-                });
-            }
+                google.script.run
+                    .withSuccessHandler(response => {
+                        showGlobalStatus(response.message, response.status === 'success');
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        btnSpinner.classList.add('hidden');
+                        if (response.status === 'success') loadSchoolData();
+                    })
+                    .withFailureHandler(error => {
+                        showGlobalStatus('Error: ' + error.message, false);
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        btnSpinner.classList.add('hidden');
+                    })
+                    .saveSchoolData(userSpreadsheetId, dataObj);
+            });
 
             // --- DATA SISWA FUNCTIONS ---
             const addStudentBtn = document.getElementById('addStudentBtn');
@@ -1903,27 +1886,13 @@
             });
 
             function displayRekap(type, rekapData) {
-                const {
-                    students,
-                    mapel,
-                    bobot,
-                    rekapUjian,
-                    rekapRapor,
-                    rekapIjazah
-                } = rekapData;
+                const { students, mapel, bobot, rekapUjian, rekapRapor, rekapIjazah } = rekapData;
                 const displayArea = document.getElementById('rekap-display-area');
-                let dataToShow, title = 'Rekapitulasi Nilai',
-                    bobotInfo = '';
+                let dataToShow, title = 'Rekapitulasi Nilai', bobotInfo = '';
 
                 switch (type) {
-                    case 'ujian':
-                        dataToShow = rekapUjian;
-                        title = 'Rekapitulasi Nilai Ujian';
-                        break;
-                    case 'rapor':
-                        dataToShow = rekapRapor;
-                        title = 'Rekapitulasi Nilai Rapor';
-                        break;
+                    case 'ujian': dataToShow = rekapUjian; title = 'Rekapitulasi Nilai Ujian'; break;
+                    case 'rapor': dataToShow = rekapRapor; title = 'Rekapitulasi Nilai Rapor'; break;
                     case 'ijazah':
                     default:
                         dataToShow = rekapIjazah;
@@ -1934,32 +1903,25 @@
                 }
 
                 let tableHtml = `<div class="bg-white p-4 rounded-lg shadow-md">
-                                        <div class="flex justify-between items-start flex-wrap gap-2">
-                                            <div>
-                                                <h3 class="text-xl font-bold">${title}</h3>
-                                                ${bobotInfo}
-                                            </div>
-                                            <div class="flex space-x-2">
-                                                <button id="showExportModalButton" data-rekap-type="${type}" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 w-48">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 btn-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
-                                                    <span class="btn-text">Pengaturan & Ekspor</span>
-                                                    <span class="btn-spinner hidden loading-animation">Memuat...</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div class="overflow-x-auto mt-4">
-                                            <table class="min-w-full text-sm rekap-table">
-                                                <thead class="bg-gray-100">
-                                                    <tr>
-                                                        <th class="text-left">No</th>
-                                                        <th class="text-left">NISN</th>
-                                                        <th class="text-left">Nama Siswa</th>
-                                                        ${mapel.map(m => `<th title="${m.nama}">${m.kode}</th>`).join('')}
-                                                        <th>Jumlah</th>
-                                                        <th>Rata-rata</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>`;
+                    <div class="flex justify-between items-start flex-wrap gap-2">
+                        <div><h3 class="text-xl font-bold">${title}</h3>${bobotInfo}</div>
+                        <div class="flex space-x-2">
+                            <button id="showExportModalButton" data-rekap-type="${type}" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 w-48">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 btn-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                                <span class="btn-text">Pengaturan & Ekspor</span>
+                                <span class="btn-spinner hidden loading-animation">Memuat...</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto mt-4"><table class="min-w-full text-sm rekap-table">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="text-left">No</th><th class="text-left">NISN</th><th class="text-left">Nama Siswa</th>
+                                ${mapel.map(m => `<th title="${m.nama}">${m.kode}</th>`).join('')}
+                                <th>Jumlah</th><th>Rata-rata</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
 
                 if (students && students.length > 0) {
                     students.forEach((student, index) => {
@@ -1974,7 +1936,6 @@
                         });
                         const average = mapel.length > 0 ? (total / mapel.length).toFixed(2).replace('.', ',') : '0,00';
                         rowHtml += `<td class="text-center font-bold">${Math.round(total)}</td><td class="text-center font-bold">${average}</td>`;
-
                         rowHtml += `</tr>`;
                         tableHtml += rowHtml;
                     });
@@ -1983,92 +1944,77 @@
                 tableHtml += `</tbody></table></div></div>`;
                 displayArea.innerHTML = tableHtml;
 
-                const showExportModalButton = document.getElementById('showExportModalButton');
-                if (showExportModalButton) {
-                    showExportModalButton.addEventListener('click', function() {
-                        const btn = this;
-                        const btnIcon = btn.querySelector('.btn-icon');
-                        const btnText = btn.querySelector('.btn-text');
-                        const spinner = btn.querySelector('.btn-spinner');
+                document.getElementById('showExportModalButton')?.addEventListener('click', function() {
+                    const btn = this;
+                    const btnIcon = btn.querySelector('.btn-icon');
+                    const btnText = btn.querySelector('.btn-text');
+                    const spinner = btn.querySelector('.btn-spinner');
 
-                        btn.disabled = true;
-                        btnIcon.classList.add('hidden');
-                        btnText.textContent = '';
-                        spinner.classList.remove('hidden');
+                    btn.disabled = true;
+                    btnIcon.classList.add('hidden');
+                    btnText.textContent = '';
+                    spinner.classList.remove('hidden');
 
-                        const rekapType = this.dataset.rekapType;
-                        document.getElementById('exportForm').dataset.rekapType = rekapType;
-                        const savedOptions = JSON.parse(localStorage.getItem('exportOptions'));
+                    const rekapType = this.dataset.rekapType;
+                    document.getElementById('exportForm').dataset.rekapType = rekapType;
+                    const savedOptions = JSON.parse(localStorage.getItem('exportOptions'));
 
-                        google.script.run
-                            .withSuccessHandler(schoolData => {
-                                btn.disabled = false;
-                                btnIcon.classList.remove('hidden');
-                                btnText.textContent = 'Pengaturan & Ekspor';
-                                spinner.classList.add('hidden');
+                    google.script.run
+                        .withSuccessHandler(schoolData => {
+                            btn.disabled = false;
+                            btnIcon.classList.remove('hidden');
+                            btnText.textContent = 'Pengaturan & Ekspor';
+                            spinner.classList.add('hidden');
 
-                                document.getElementById('exportNamaSekolah').value = schoolData.namaSekolah || '';
-                                document.getElementById('exportNamaKamad').value = schoolData.namaKepsek || '';
-                                document.getElementById('exportNip').value = schoolData.nipKepsek || '';
+                            document.getElementById('exportNamaSekolah').value = schoolData.namaSekolah || '';
+                            document.getElementById('exportNamaKamad').value = schoolData.namaKepsek || '';
+                            document.getElementById('exportNip').value = schoolData.nipKepsek || '';
 
-                                const tahunAjaranSelect = document.getElementById('exportTahunAjaran');
-                                tahunAjaranSelect.innerHTML = '';
-                                const currentYear = new Date().getFullYear();
-                                const years = [
-                                    `${currentYear - 2}/${currentYear - 1}`, `${currentYear - 1}/${currentYear}`,
-                                    `${currentYear}/${currentYear + 1}`, `${currentYear + 1}/${currentYear + 2}`,
-                                    `${currentYear + 2}/${currentYear + 3}`
-                                ];
-                                years.forEach(year => {
-                                    const option = document.createElement('option');
-                                    option.value = year;
-                                    option.textContent = year;
-                                    tahunAjaranSelect.appendChild(option);
-                                });
+                            const tahunAjaranSelect = document.getElementById('exportTahunAjaran');
+                            tahunAjaranSelect.innerHTML = '';
+                            const currentYear = new Date().getFullYear();
+                            const years = [`${currentYear - 2}/${currentYear - 1}`, `${currentYear - 1}/${currentYear}`, `${currentYear}/${currentYear + 1}`, `${currentYear + 1}/${currentYear + 2}`, `${currentYear + 2}/${currentYear + 3}`];
+                            years.forEach(year => {
+                                const option = document.createElement('option');
+                                option.value = year;
+                                option.textContent = year;
+                                tahunAjaranSelect.appendChild(option);
+                            });
 
-                                if (savedOptions) {
-                                    tahunAjaranSelect.value = savedOptions.tahunAjaran || years[2];
-                                    document.getElementById('exportTempatTTD').value = savedOptions.tempatTTD || '';
-                                    document.getElementById('exportTanggalTTD').value = savedOptions.tanggalTTD || new Date().toISOString().split('T')[0];
-                                    document.getElementById('exportTipeKamad').value = savedOptions.tipeKamad || 'Kepala Madrasah';
-                                } else {
-                                    tahunAjaranSelect.value = years[2];
-                                    document.getElementById('exportTanggalTTD').valueAsDate = new Date();
-                                }
+                            if (savedOptions) {
+                                tahunAjaranSelect.value = savedOptions.tahunAjaran || years[2];
+                                document.getElementById('exportTempatTTD').value = savedOptions.tempatTTD || '';
+                                document.getElementById('exportTanggalTTD').value = savedOptions.tanggalTTD || new Date().toISOString().split('T')[0];
+                                document.getElementById('exportTipeKamad').value = savedOptions.tipeKamad || 'Kepala Madrasah';
+                            } else {
+                                tahunAjaranSelect.value = years[2];
+                                document.getElementById('exportTanggalTTD').valueAsDate = new Date();
+                            }
 
-                                document.getElementById('export-modal').classList.remove('hidden');
-                            })
-                            .withFailureHandler(error => {
-                                btn.disabled = false;
-                                btnIcon.classList.remove('hidden');
-                                btnText.textContent = 'Pengaturan & Ekspor';
-                                spinner.classList.add('hidden');
-                                showGlobalStatus('Gagal memuat pengaturan: ' + error.message, false);
-                            })
-                            .getSchoolData(userSpreadsheetId);
-                    });
-                }
+                            document.getElementById('export-modal').classList.remove('hidden');
+                        })
+                        .withFailureHandler(error => {
+                            btn.disabled = false;
+                            btnIcon.classList.remove('hidden');
+                            btnText.textContent = 'Pengaturan & Ekspor';
+                            spinner.classList.add('hidden');
+                            showGlobalStatus('Gagal memuat pengaturan: ' + error.message, false);
+                        })
+                        .getSchoolData(userSpreadsheetId);
+                });
             }
         }
 
         // --- GLOBAL HELPER FUNCTIONS ---
-        // PERBAIKAN: Fungsi-fungsi ini sekarang berada di lingkup global
-
-        function formatIndonesianDate(dateString) { // dateString is 'yyyy-MM-dd'
+        function formatIndonesianDate(dateString) {
             if (!dateString || dateString.indexOf('-') === -1) return dateString;
             try {
                 const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
                 const parts = dateString.split('-');
-                const year = parseInt(parts[0], 10);
-                const month = parseInt(parts[1], 10) - 1;
-                const day = parseInt(parts[2], 10);
-                
-                // This creates a date in the local timezone, avoiding UTC shifts
-                const date = new Date(year, month, day);
-
+                const date = new Date(parts[0], parts[1] - 1, parts[2]);
                 return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
             } catch (e) {
-                return dateString; // Return original string if parsing fails
+                return dateString;
             }
         }
         
@@ -2081,13 +2027,8 @@
             const allRows = form.querySelectorAll('tbody tr');
             const nilaiData = [];
             allRows.forEach(row => {
-                const studentScores = {
-                    nisn: row.dataset.nisn,
-                    nama: row.dataset.nama,
-                    scores: {}
-                };
-                const inputs = row.querySelectorAll('.score-input');
-                inputs.forEach(input => {
+                const studentScores = { nisn: row.dataset.nisn, nama: row.dataset.nama, scores: {} };
+                row.querySelectorAll('.score-input').forEach(input => {
                     studentScores.scores[input.dataset.mapelKode] = input.value;
                 });
                 nilaiData.push(studentScores);
@@ -2103,11 +2044,7 @@
                     saveBtn.disabled = false;
                     saveBtn.textContent = `Simpan Nilai ${jenisNilai}`;
                 })
-                .saveNilaiRapor(userSpreadsheetId, {
-                    semesterKey: semesterKey,
-                    jenisNilai: jenisNilai,
-                    nilai: nilaiData
-                });
+                .saveNilaiRapor(userSpreadsheetId, { semesterKey, jenisNilai, nilai: nilaiData });
         }
 
         function buildRaporScoreTable(semesterKey, jenisNilai) {
@@ -2120,12 +2057,10 @@
                 new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getExistingNilai(userSpreadsheetId, sheetName))
             ]).then(([students, mapelList, existingScores]) => {
                 if (!students || students.length === 0) {
-                    container.innerHTML = `<p class="text-center text-red-500 p-4">Data siswa tidak ditemukan.</p>`;
-                    return;
+                    container.innerHTML = `<p class="text-center text-red-500 p-4">Data siswa tidak ditemukan.</p>`; return;
                 }
                 if (!mapelList || mapelList.length === 0) {
-                    container.innerHTML = `<p class="text-center text-red-500 p-4">Data mata pelajaran tidak ditemukan.</p>`;
-                    return;
+                    container.innerHTML = `<p class="text-center text-red-500 p-4">Data mata pelajaran tidak ditemukan.</p>`; return;
                 }
                 const tableWrapper = document.createElement('div');
                 tableWrapper.className = 'p-4 border rounded-lg';
@@ -2166,14 +2101,8 @@
                 new Promise(resolve => google.script.run.withSuccessHandler(resolve).getExistingNilai(userSpreadsheetId, sheetNameP)),
                 new Promise(resolve => google.script.run.withSuccessHandler(resolve).getExistingNilai(userSpreadsheetId, sheetNameK))
             ]).then(([students, mapelList, nilaiPengetahuan, nilaiKeterampilan]) => {
-                if (!students || students.length === 0) {
-                    container.innerHTML = `<p class="text-red-500">Data siswa tidak ditemukan.</p>`;
-                    return;
-                }
-                if (!mapelList || mapelList.length === 0) {
-                    container.innerHTML = `<p class="text-red-500">Data mata pelajaran tidak ditemukan.</p>`;
-                    return;
-                }
+                if (!students || students.length === 0) { container.innerHTML = `<p class="text-red-500">Data siswa tidak ditemukan.</p>`; return; }
+                if (!mapelList || mapelList.length === 0) { container.innerHTML = `<p class="text-red-500">Data mata pelajaran tidak ditemukan.</p>`; return; }
                 const tableWrapper = document.createElement('div');
                 tableWrapper.className = 'p-4 border rounded-lg';
                 let tableHtml = `<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>${mapelList.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}<th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th><th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th></tr></thead><tbody>`;
@@ -2183,13 +2112,9 @@
                         const nilaiP = parseFloat((nilaiPengetahuan[student.nisn] || {})[mapel.kode]);
                         const nilaiK = parseFloat((nilaiKeterampilan[student.nisn] || {})[mapel.kode]);
                         let avgScore = 0;
-                        if (!isNaN(nilaiP) && !isNaN(nilaiK)) {
-                            avgScore = (nilaiP + nilaiK) / 2;
-                        } else if (!isNaN(nilaiP)) {
-                            avgScore = nilaiP;
-                        } else if (!isNaN(nilaiK)) {
-                            avgScore = nilaiK;
-                        }
+                        if (!isNaN(nilaiP) && !isNaN(nilaiK)) avgScore = (nilaiP + nilaiK) / 2;
+                        else if (!isNaN(nilaiP)) avgScore = nilaiP;
+                        else if (!isNaN(nilaiK)) avgScore = nilaiK;
                         rowHtml += `<td class="px-2 py-1 text-center average-score-cell">${Math.round(avgScore) || '-'}</td>`;
                     });
                     rowHtml += `<td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell jumlah-nilai">0</td><td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell rata-rata-nilai">0.00</td></tr>`;
@@ -2206,27 +2131,9 @@
         }
 
         const semesters = {
-            MI: {
-                k4_ganjil: 'Kelas 4 Ganjil',
-                k4_genap: 'Kelas 4 Genap',
-                k5_ganjil: 'Kelas 5 Ganjil',
-                k5_genap: 'Kelas 5 Genap',
-                k6_ganjil: 'Kelas 6 Ganjil'
-            },
-            MTS: {
-                k7_ganjil: 'Kelas 7 Ganjil',
-                k7_genap: 'Kelas 7 Genap',
-                k8_ganjil: 'Kelas 8 Ganjil',
-                k8_genap: 'Kelas 8 Genap',
-                k9_ganjil: 'Kelas 9 Ganjil'
-            },
-            MA: {
-                k10_ganjil: 'Kelas 10 Ganjil',
-                k10_genap: 'Kelas 10 Genap',
-                k11_ganjil: 'Kelas 11 Ganjil',
-                k11_genap: 'Kelas 11 Genap',
-                k12_ganjil: 'Kelas 12 Ganjil'
-            }
+            MI: { k4_ganjil: 'Kelas 4 Ganjil', k4_genap: 'Kelas 4 Genap', k5_ganjil: 'Kelas 5 Ganjil', k5_genap: 'Kelas 5 Genap', k6_ganjil: 'Kelas 6 Ganjil' },
+            MTS: { k7_ganjil: 'Kelas 7 Ganjil', k7_genap: 'Kelas 7 Genap', k8_ganjil: 'Kelas 8 Ganjil', k8_genap: 'Kelas 8 Genap', k9_ganjil: 'Kelas 9 Ganjil' },
+            MA: { k10_ganjil: 'Kelas 10 Ganjil', k10_genap: 'Kelas 10 Genap', k11_ganjil: 'Kelas 11 Ganjil', k11_genap: 'Kelas 11 Genap', k12_ganjil: 'Kelas 12 Ganjil' }
         };
 
         function showGlobalStatus(message, isSuccess) {
@@ -2243,10 +2150,7 @@
             let count = 0;
             inputs.forEach(input => {
                 const value = parseFloat(input.value || input.textContent);
-                if (!isNaN(value)) {
-                    total += value;
-                    count++;
-                }
+                if (!isNaN(value)) { total += value; count++; }
             });
             const average = count > 0 ? (total / count).toFixed(2) : '0.00';
             const totalCell = rowElement.querySelector('.jumlah-nilai');
@@ -2257,8 +2161,7 @@
 
         function handleScoreInput(event) {
             if (event.target.classList.contains('score-input')) {
-                const row = event.target.closest('tr');
-                updateRowTotals(row);
+                updateRowTotals(event.target.closest('tr'));
             }
         }
 
@@ -2275,13 +2178,11 @@
             const allRowInputs = Array.from(startRowElement.querySelectorAll('.score-input'));
             const startColIndex = allRowInputs.indexOf(event.target);
             pastedRows.forEach((rowData, r_offset) => {
-                const currentRowIndex = startRowIndex + r_offset;
-                const targetRow = allTableRows[currentRowIndex];
+                const targetRow = allTableRows[startRowIndex + r_offset];
                 if (targetRow) {
                     const targetRowInputs = Array.from(targetRow.querySelectorAll('.score-input'));
                     rowData.forEach((cellData, c_offset) => {
-                        const currentColIndex = startColIndex + c_offset;
-                        const targetInput = targetRowInputs[currentColIndex];
+                        const targetInput = targetRowInputs[startColIndex + c_offset];
                         if (targetInput) targetInput.value = cellData.trim();
                     });
                     updateRowTotals(targetRow);
