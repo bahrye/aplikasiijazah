@@ -33,6 +33,70 @@ function doGet(e) {
 }
 
 // =================================================================
+// FUNGSI KEAMANAN (PASSWORD HASHING) - [BARU]
+// =================================================================
+
+/**
+ * [BARU] Menghasilkan string acak untuk digunakan sebagai salt.
+ * @returns {string} Salt yang dihasilkan.
+ */
+function generateSalt() {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+
+/**
+ * [BARU & DIPERBAIKI] Menghasilkan hash dari password dan salt menggunakan SHA-256.
+ * @param {string} password Password teks biasa.
+ * @param {string} salt Salt yang akan digunakan.
+ * @returns {string} Hash dalam format heksadesimal.
+ */
+function hashPassword(password, salt) {
+  const saltedPassword = password + salt;
+  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, saltedPassword, Utilities.Charset.UTF_8);
+  
+  let hexString = '';
+  for (let i = 0; i < digest.length; i++) {
+    // --- PERBAIKAN ---
+    // Ubah 'const' menjadi 'let' agar nilainya bisa dimodifikasi.
+    let byte = digest[i]; 
+    if (byte < 0) {
+      byte += 256;
+    }
+    // --- AKHIR PERBAIKAN ---
+    
+    let hex = byte.toString(16); // 'hex' bisa tetap 'let' atau 'const'
+    if (hex.length === 1) {
+      hexString += '0';
+    }
+    hexString += hex;
+  }
+  return hexString;
+}
+
+/**
+ * [BARU] Memverifikasi password teks biasa terhadap format 'salt:hash' yang tersimpan.
+ * @param {string} plainPassword Password yang dimasukkan pengguna saat login.
+ * @param {string} saltAndHash String yang tersimpan di database ('salt:hash').
+ * @returns {boolean} True jika password cocok, false jika tidak.
+ */
+function verifyPassword(plainPassword, saltAndHash) {
+  try {
+    const parts = saltAndHash.split(':');
+    if (parts.length !== 2) {
+      // Ini bukan format hash yang kita harapkan, anggap saja tidak valid.
+      return false;
+    }
+    const salt = parts[0];
+    const storedHash = parts[1];
+    const newHash = hashPassword(plainPassword, salt);
+    return newHash === storedHash;
+  } catch (e) {
+    Logger.log("Error during password verification: " + e.message);
+    return false;
+  }
+}
+
+// =================================================================
 // FUNGSI AUTENTIKASI DAN MANAJEMEN AKUN (DENGAN OTP)
 // =================================================================
 
@@ -137,30 +201,29 @@ function sendVerificationEmail(email) {
 
 /**
  * [MODIFIKASI] Mendaftarkan pengguna baru setelah verifikasi OTP berhasil.
+ * Password kini di-hash sebelum disimpan.
  * @param {{email: string, password: string, namaSekolah: string, jenjang: string}} userData Objek berisi data pengguna baru.
  * @param {string} otp Kode OTP yang dimasukkan pengguna.
  * @returns {{status: string, message: string}} Objek status pendaftaran.
  */
 function registerUser(userData, otp) {
   try {
+    // Di sini, 'password' dideklarasikan sebagai const dan nilainya tidak akan diubah.
     const { email, password, namaSekolah, jenjang } = userData;
 
-    // Langkah 1: Verifikasi OTP menggunakan email yang sudah dinormalisasi
     if (!verifyOtp(email, otp)) {
       return { status: "error", message: "Kode OTP salah atau telah kedaluwarsa." };
     }
     
-    // Langkah 2: Lanjutkan proses registrasi yang sudah ada
     if (TEMPLATE_SPREADSHEET_ID === "GANTI_DENGAN_ID_TEMPLATE_ANDA") {
       throw new Error("ID Spreadsheet Template belum diatur di dalam Kode.gs. Harap periksa instruksi.");
     }
 
     const lock = LockService.getScriptLock();
-    lock.waitLock(30000); // Tunggu hingga 30 detik
+    lock.waitLock(30000);
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     let userSheet = ss.getSheetByName(SHEET_PENGGUNA);
-
     if (!userSheet) {
       throw new Error(`Sheet '${SHEET_PENGGUNA}' tidak ditemukan di spreadsheet induk.`);
     }
@@ -187,9 +250,18 @@ function registerUser(userData, otp) {
     }
 
     const userId = Utilities.getUuid();
-    userSheet.appendRow([userId, email, password, namaSekolah, jenjang, newSpreadsheetId]);
     
-    // [PERBAIKAN] Hapus OTP dari cache menggunakan kunci yang benar (lowercase email)
+    // --- POLA YANG BENAR ---
+    // Buat variabel BARU untuk menampung hasil hash.
+    // Variabel 'password' dari userData tidak diubah sama sekali.
+    const salt = generateSalt();
+    const hashedPassword = hashPassword(password, salt);
+    const storedPasswordString = `${salt}:${hashedPassword}`; 
+    // --- Akhir Pola yang Benar ---
+
+    // Gunakan variabel baru ('storedPasswordString') saat menyimpan ke sheet.
+    userSheet.appendRow([userId, email, storedPasswordString, namaSekolah, jenjang, newSpreadsheetId]);
+    
     CacheService.getScriptCache().remove(email.toLowerCase());
     
     lock.releaseLock();
@@ -197,12 +269,15 @@ function registerUser(userData, otp) {
 
   } catch (error) {
     Logger.log(error);
-    return { status: "error", message: "Gagal mendaftar: " + error.message };
+    // Tambahkan error.stack untuk detail lebih lanjut jika masih gagal
+    return { status: "error", message: "Gagal mendaftar: " + error.message + " Stack: " + error.stack };
   }
 }
 
 /**
- * Memeriksa kredensial login dan mengembalikan spreadsheetId jika berhasil.
+ * [MODIFIKASI] Memeriksa kredensial login. Mendukung password plaintext (lama)
+ * dan password hashed (baru). Secara otomatis meng-upgrade password plaintext
+ * menjadi hashed jika login berhasil.
  * @param {string} email Email pengguna.
  * @param {string} password Password pengguna.
  * @returns {{status: string, message: string, spreadsheetId?: string}} Objek status login.
@@ -221,23 +296,150 @@ function checkLogin(email, password) {
     }
 
     const users = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 6).getValues();
-    const userFound = users.find(userRow => userRow[1].toLowerCase() === email.toLowerCase());
+    
+    // Gunakan findIndex untuk mendapatkan baris spreadsheet yang benar untuk diupdate nanti
+    const userIndex = users.findIndex(userRow => userRow[1].toLowerCase() === email.toLowerCase());
 
-    if (!userFound) {
+    if (userIndex === -1) {
       return { status: "error", message: "Email tidak terdaftar." };
     }
 
-    const storedPassword = userFound[2];
-    if (storedPassword.toString() !== password.toString()) {
-      return { status: "error", message: "Password salah." };
+    const userRow = users[userIndex];
+    const storedPassword = userRow[2].toString(); // Kolom password adalah index 2
+    const spreadsheetId = userRow[5]; // Kolom ID spreadsheet adalah index 5
+
+    let passwordIsValid = false;
+
+    // Cek apakah password tersimpan dalam format baru (mengandung ':') atau lama (plaintext)
+    if (storedPassword.includes(':')) {
+      // --- Ini adalah akun baru/sudah di-upgrade dengan password hashed ---
+      passwordIsValid = verifyPassword(password, storedPassword);
+    } else {
+      // --- Ini adalah akun lama dengan password plaintext ---
+      passwordIsValid = (storedPassword === password);
+      
+      if (passwordIsValid) {
+        // Jika login BERHASIL, upgrade password mereka ke format hash
+        try {
+          const salt = generateSalt();
+          const newHashedPassword = hashPassword(password, salt);
+          const newStoredPasswordString = `${salt}:${newHashedPassword}`;
+          
+          // Update spreadsheet. userIndex adalah 0-based, data sheet dimulai dari baris 2
+          const rowToUpdate = userIndex + 2; 
+          // Kolom password adalah kolom ke-3 (C)
+          userSheet.getRange(rowToUpdate, 3).setValue(newStoredPasswordString);
+          Logger.log(`Password for ${email} successfully upgraded to hashed format.`);
+        } catch (e) {
+            Logger.log(`Failed to upgrade password for ${email}. Error: ${e.message}`);
+            // Gagal upgrade tidak menghentikan login, hanya dicatat.
+        }
+      }
     }
-    
-    const spreadsheetId = userFound[5];
-    return { status: "success", message: "Login berhasil.", spreadsheetId: spreadsheetId };
+
+    if (passwordIsValid) {
+        return { status: "success", message: "Login berhasil.", spreadsheetId: spreadsheetId };
+    } else {
+        return { status: "error", message: "Password salah." };
+    }
 
   } catch (error) {
     Logger.log(error);
     return { status: "error", message: "Kesalahan Server: " + error.message };
+  }
+}
+
+/**
+ * [BARU] Mengirimkan OTP untuk reset password.
+ * @param {string} email Email pengguna yang terdaftar.
+ * @returns {{status: string, message: string}} Hasil proses pengiriman.
+ */
+function sendPasswordResetOtp(email) {
+  try {
+    if (!email) {
+      return { status: "error", message: "Email tidak boleh kosong." };
+    }
+    const normalizedEmail = email.toLowerCase();
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
+    const users = userSheet.getRange(2, 2, userSheet.getLastRow() - 1, 1).getValues().flat();
+
+    // Cek apakah email terdaftar
+    const emailExists = users.some(existingEmail => existingEmail.toLowerCase() === normalizedEmail);
+    if (!emailExists) {
+      return { status: "error", message: "Email tidak terdaftar di sistem kami." };
+    }
+
+    const otp = generateAndStoreOtp(normalizedEmail); // Menggunakan kembali fungsi OTP yang sudah ada
+    const subject = "Kode Verifikasi Reset Password";
+    const body = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <h2>Reset Password Anda</h2>
+        <p>Kami menerima permintaan untuk mereset password akun Anda. Gunakan kode di bawah ini untuk melanjutkan:</p>
+        <p style="font-size: 24px; font-weight: bold; letter-spacing: 5px; background-color: #f0f0f0; padding: 10px 20px; border-radius: 5px; display: inline-block;">${otp}</p>
+        <p>Kode ini hanya berlaku selama 10 menit.</p>
+        <p>Jika Anda tidak merasa meminta reset password, abaikan email ini.</p>
+      </div>
+    `;
+
+    MailApp.sendEmail({
+      to: email,
+      subject: subject,
+      htmlBody: body
+    });
+
+    return { status: "success", message: "Kode OTP telah dikirim ke email Anda." };
+
+  } catch (error) {
+    Logger.log(`sendPasswordResetOtp Error: ${error.toString()}`);
+    return { status: "error", message: "Gagal mengirim email verifikasi: " + error.message };
+  }
+}
+
+
+/**
+ * [BARU] Memverifikasi OTP dan mereset password pengguna.
+ * @param {string} email Email pengguna.
+ * @param {string} otp Kode OTP yang dimasukkan.
+ * @param {string} newPassword Password baru yang akan diatur.
+ * @returns {{status: string, message: string}} Hasil proses reset.
+ */
+function resetPasswordWithOtp(email, otp, newPassword) {
+  try {
+    // 1. Verifikasi OTP
+    if (!verifyOtp(email, otp)) {
+      return { status: "error", message: "Kode OTP salah atau telah kedaluwarsa." };
+    }
+
+    // 2. Hash password baru
+    const salt = generateSalt();
+    const hashedPassword = hashPassword(newPassword, salt);
+    const newStoredPasswordString = `${salt}:${hashedPassword}`;
+
+    // 3. Temukan dan perbarui password di spreadsheet
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
+    const data = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 3).getValues(); // Ambil ID, email, password
+
+    const userIndex = data.findIndex(row => row[1].toLowerCase() === email.toLowerCase());
+
+    if (userIndex === -1) {
+      return { status: "error", message: "Terjadi kesalahan: Pengguna tidak ditemukan." };
+    }
+
+    // Update password di baris yang benar (baris spreadsheet = index array + 2)
+    const rowToUpdate = userIndex + 2;
+    userSheet.getRange(rowToUpdate, 3).setValue(newStoredPasswordString); // Kolom password (C) adalah kolom ke-3
+
+    // Hapus OTP dari cache setelah berhasil digunakan
+    CacheService.getScriptCache().remove(email.toLowerCase());
+
+    return { status: "success", message: "Password Anda telah berhasil direset." };
+
+  } catch (error) {
+    Logger.log(`resetPasswordWithOtp Error: ${error.toString()}`);
+    return { status: "error", message: "Gagal mereset password: " + error.message };
   }
 }
 
@@ -1099,7 +1301,8 @@ function updateRekapitulasi(spreadsheetId) {
 }
 
 /**
- * Menyimpan data rekapitulasi ke sheet yang ditentukan.
+ * [FINAL & DIPERBAIKI] Menyimpan data rekapitulasi ke sheet yang ditentukan.
+ * Rata-rata kini dihitung dari nilai per mapel yang sudah dibulatkan agar konsisten.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @param {string} sheetName Nama sheet rekap.
  * @param {Array<object>} students Daftar siswa.
@@ -1113,19 +1316,40 @@ function saveRekapSheet(spreadsheetId, sheetName, students, mapel, data) {
         sheet = ss.insertSheet(sheetName);
     }
     sheet.clear();
-    const headers = ["NISN", "Nama Lengkap", ...mapel.map(m => m.kode)];
+
+    const headers = ["NISN", "Nama Lengkap", ...mapel.map(m => m.kode), "Jumlah", "Rata-rata"];
     sheet.appendRow(headers);
-    sheet.getRange("A1:Z1").setFontWeight("bold");
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
     sheet.getRange("A:A").setNumberFormat("@");
 
     const rows = students.map(student => {
         const nisn = student.nisn.toString().trim();
-        const rowData = [nisn, student.nama];
+        // [PERBAIKAN] Nama kolom diubah menjadi "Nama Lengkap" agar konsisten
+        const rowData = [nisn, student.nama]; 
+        
+        // [PERBAIKAN] Logika perhitungan diubah agar menjumlahkan nilai yang sudah dibulatkan
+        let roundedTotal = 0;
+        let count = 0;
+
         mapel.forEach(m => {
-            const score = (data[nisn] || {})[m.kode];
-            // Jika skor ada (termasuk 0), masukkan. Jika tidak, masukkan string kosong.
-            rowData.push(score !== undefined && score !== null ? score : '');
+            const rawScore = (data[nisn] || {})[m.kode];
+            const numericScore = parseFloat(rawScore);
+
+            if (!isNaN(numericScore)) {
+              // Jumlahkan nilai yang SUDAH DIBULATKAN
+              roundedTotal += Math.round(numericScore);
+              count++;
+            }
+            // Tetap simpan nilai asli di kolom per mapel
+            rowData.push(rawScore !== undefined && rawScore !== null ? rawScore : '');
         });
+
+        // Hitung rata-rata dari total nilai yang sudah dibulatkan
+        const averageOfRounded = count > 0 ? roundedTotal / count : 0;
+        
+        rowData.push(roundedTotal); // Simpan Jumlah dari nilai bulat
+        rowData.push(averageOfRounded); // Simpan Rata-rata dari nilai bulat
+
         return rowData;
     });
 
@@ -1458,24 +1682,169 @@ function exportRekapData(spreadsheetId, type, format, exportOptions) {
 }
 
 /**
+ * [BARU] Menghitung rata-rata skor untuk setiap mata pelajaran dari sheet rekap.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {object} Objek berisi data rata-rata untuk setiap jenis rekap.
+ */
+function getSubjectAverageScores(spreadsheetId) {
+  try {
+    const mapel = getMapel(spreadsheetId);
+    if (!mapel || mapel.length === 0) return {};
+
+    const ss = getSpreadsheet(spreadsheetId);
+    const labels = mapel.map(m => m.kode);
+
+    // Helper function untuk memproses satu sheet
+    const calculateAveragesForSheet = (sheetName) => {
+      const sheet = ss.getSheetByName(sheetName);
+      const averages = {};
+      labels.forEach(l => averages[l] = 0); // Inisialisasi semua rata-rata ke 0
+
+      if (!sheet || sheet.getLastRow() < 2) {
+        return labels.map(() => 0); // Kembalikan array nol jika sheet kosong
+      }
+
+      const data = sheet.getDataRange().getValues();
+      const headers = data.shift();
+      const studentCount = data.length;
+      if (studentCount === 0) return labels.map(() => 0);
+
+      // Hitung total untuk setiap kolom
+      const totals = new Array(headers.length).fill(0);
+      data.forEach(row => {
+        for (let i = 2; i < headers.length; i++) { // Mulai dari kolom ke-3 (setelah NISN dan Nama)
+          const value = parseFloat(row[i]);
+          if (!isNaN(value)) {
+            totals[i] += value;
+          }
+        }
+      });
+
+      // Hitung rata-rata
+      headers.forEach((header, i) => {
+        if (averages.hasOwnProperty(header)) {
+          averages[header] = totals[i] / studentCount;
+        }
+      });
+      
+      return labels.map(label => Math.round(averages[label] || 0));
+    };
+
+    return {
+      ujian: { labels, data: calculateAveragesForSheet(SHEET_REKAP_UJIAN) },
+      rapor: { labels, data: calculateAveragesForSheet(SHEET_REKAP_RAPOR) },
+      ijazah: { labels, data: calculateAveragesForSheet(SHEET_REKAP_IJAZAH) }
+    };
+
+  } catch (e) {
+    Logger.log("Error in getSubjectAverageScores: " + e.message);
+    return {};
+  }
+}
+
+
+/**
+ * [DIUBAH & DIPERBAIKI] Mengambil data nilai rata-rata ujian untuk setiap siswa.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {Array<Object>} Array objek berisi nama dan skor rata-rata ujian setiap siswa.
+ */
+function getExamScoreShare(spreadsheetId) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    const rekapUjianSheet = ss.getSheetByName(SHEET_REKAP_UJIAN);
+
+    if (!rekapUjianSheet || rekapUjianSheet.getLastRow() < 2) {
+      return [{ nama: 'Belum Ada Data', skor: 1 }];
+    }
+
+    const dataRange = rekapUjianSheet.getRange(2, 1, rekapUjianSheet.getLastRow() - 1, rekapUjianSheet.getLastColumn()).getValues();
+    const headers = rekapUjianSheet.getRange(1, 1, 1, rekapUjianSheet.getLastColumn()).getValues()[0];
+
+    // [PERBAIKAN] Mencari header "Nama Lengkap" dan "Rata-rata"
+    const namaIndex = headers.indexOf("Nama Lengkap");
+    const skorIndex = headers.indexOf("Rata-rata");
+
+    if (namaIndex === -1 || skorIndex === -1) {
+       return [{ nama: 'Kolom Tidak Ditemukan', skor: 1 }];
+    }
+
+    const studentScores = dataRange.map(row => {
+      return {
+        nama: row[namaIndex],
+        skor: parseFloat(row[skorIndex]) || 0
+      };
+    });
+
+    return studentScores;
+
+  } catch (e) {
+    Logger.log("Error in getExamScoreShare: " + e.message);
+    return [{ nama: 'Gagal Memuat', skor: 1 }];
+  }
+}
+
+/**
+ * [DIPERBAIKI] Mendapatkan peringkat siswa berdasarkan nilai rata-rata ijazah.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {array} Array objek berisi nama siswa dan rata-rata nilai ijazah, diurutkan berdasarkan peringkat.
+ */
+function getIjazahRanking(spreadsheetId) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    const rekapIjazahSheet = ss.getSheetByName(SHEET_REKAP_IJAZAH);
+
+    if (!rekapIjazahSheet || rekapIjazahSheet.getLastRow() < 2) {
+      return [];
+    }
+
+    const dataRange = rekapIjazahSheet.getDataRange().getValues();
+    const headers = dataRange.shift();
+    
+    // [PERBAIKAN] Mencari header "Nama Lengkap" dan "Rata-rata"
+    const namaKolomIndex = headers.indexOf('Nama Lengkap');
+    const nilaiKolomIndex = headers.indexOf('Rata-rata');
+
+    if (namaKolomIndex === -1 || nilaiKolomIndex === -1) {
+      return [];
+    }
+
+    const studentRanks = dataRange.map(row => ({
+      nama: row[namaKolomIndex],
+      nilai: parseFloat(row[nilaiKolomIndex]) || 0
+    }));
+
+    studentRanks.sort((a, b) => b.nilai - a.nilai);
+    return studentRanks;
+
+  } catch (e) {
+    Logger.log("Error in getIjazahRanking: " + e.message);
+    return [];
+  }
+}
+
+/**
  * Mengambil data agregat untuk halaman dashboard.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @returns {object} Objek berisi data untuk dashboard.
  */
 function getDashboardData(spreadsheetId) {
   try {
-    // Memanggil fungsi yang sudah ada untuk mendapatkan data
     const students = getStudents(spreadsheetId);
     const mapel = getMapel(spreadsheetId);
     const schoolData = getSchoolData(spreadsheetId);
+    const subjectAverages = getSubjectAverageScores(spreadsheetId);
+    const examScoreShare = getExamScoreShare(spreadsheetId);
+    const ijazahRanking = getIjazahRanking(spreadsheetId); // [BARU]
 
-    // Mengembalikan objek yang berisi semua data yang diperlukan
     return {
       status: "success",
       studentCount: students.length,
       mapelCount: mapel.length,
       schoolData: schoolData,
-      mapelList: mapel // Mengirim daftar mapel untuk diproses menjadi grafik
+      mapelList: mapel,
+      subjectAverages: subjectAverages,
+      examScoreShare: examScoreShare,
+      ijazahRanking: ijazahRanking // [BARU]
     };
   } catch (e) {
     Logger.log(e);
