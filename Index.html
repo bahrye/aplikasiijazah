@@ -44,7 +44,6 @@
             33% { content: '..'; }
             66% { content: '...'; }
         }
-        /* PERUBAHAN: Menambahkan kelas khusus untuk memastikan perataan kiri */
         .nama-siswa-cell {
             text-align: left;
         }
@@ -104,45 +103,61 @@
                             <p class="text-gray-500 mt-2">Isi form di bawah untuk mendaftar.</p>
                         </div>
                         <form id="signupForm">
+                             <div id="signup-message" class="mb-4 text-center text-sm h-auto"></div>
                             <div class="space-y-4">
-                                <div>
-                                    <label for="signup-namasekolah" class="text-sm font-medium text-gray-700 block mb-2">Nama Sekolah</label>
-                                    <input type="text" id="signup-namasekolah" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm" placeholder="Contoh: MI Al-Hidayah" required>
-                                </div>
-                                <div>
-                                  <label for="signup-jenjang" class="text-sm font-medium text-gray-700 block mb-2">Jenjang Sekolah</label>
-                                  <select id="signup-jenjang" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white" required>
-                                    <option value="" disabled selected>-- Pilih Jenjang --</option>
-                                    <option value="MI">MI (Madrasah Ibtidaiyah)</option>
-                                    <option value="MTS">MTS (Madrasah Tsanawiyah)</option>
-                                    <option value="MA">MA (Madrasah Aliyah)</option>
-                                  </select>
-                                </div>
-                                <div>
-                                    <label for="signup-email" class="text-sm font-medium text-gray-700 block mb-2">Alamat Email</label>
-                                    <input type="email" id="signup-email" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm" placeholder="nama@email.com" required>
-                                </div>
-                                <div>
-                                    <label for="signup-password" class="text-sm font-medium text-gray-700 block mb-2">Kata Sandi</label>
-                                    <div class="relative">
-                                        <input type="password" id="signup-password" class="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg shadow-sm" placeholder="••••••••" required>
-                                        <button type="button" data-toggle-password="signup-password" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600">
-                                            <svg class="eye-icon h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                            <svg class="eye-slash-icon h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                                <!-- Data Diri Awal -->
+                                <div id="initial-fields">
+                                    <div>
+                                        <label for="signup-namasekolah" class="text-sm font-medium text-gray-700 block mb-2">Nama Sekolah</label>
+                                        <input type="text" id="signup-namasekolah" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm" placeholder="Contoh: MI Al-Hidayah" required>
+                                    </div>
+                                    <div>
+                                      <label for="signup-jenjang" class="text-sm font-medium text-gray-700 block mb-2">Jenjang Sekolah</label>
+                                      <select id="signup-jenjang" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white" required>
+                                        <option value="" disabled selected>-- Pilih Jenjang --</option>
+                                        <option value="MI">MI (Madrasah Ibtidaiyah)</option>
+                                        <option value="MTS">MTS (Madrasah Tsanawiyah)</option>
+                                        <option value="MA">MA (Madrasah Aliyah)</option>
+                                      </select>
+                                    </div>
+                                    <div>
+                                        <label for="signup-email" class="text-sm font-medium text-gray-700 block mb-2">Alamat Email</label>
+                                        <input type="email" id="signup-email" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm" placeholder="nama@email.com" required>
+                                    </div>
+                                    <div>
+                                        <label for="signup-password" class="text-sm font-medium text-gray-700 block mb-2">Kata Sandi</label>
+                                        <div class="relative">
+                                            <input type="password" id="signup-password" class="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg shadow-sm" placeholder="••••••••" required>
+                                            <button type="button" data-toggle-password="signup-password" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600">
+                                                <svg class="eye-icon h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                                <svg class="eye-slash-icon h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label for="confirm-password" class="text-sm font-medium text-gray-700 block mb-2">Konfirmasi Kata Sandi</label>
+                                        <div class="relative">
+                                            <input type="password" id="confirm-password" class="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg shadow-sm" placeholder="••••••••" required>
+                                            <button type="button" data-toggle-password="confirm-password" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600">
+                                                <svg class="eye-icon h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                                <svg class="eye-slash-icon h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="pt-2">
+                                        <button type="button" id="requestOtpButton" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:scale-105 shadow-lg">
+                                            <span id="requestOtpButtonText">Kirim Kode Verifikasi</span>
+                                            <span id="requestOtpSpinner" class="hidden loading-animation">Mengirim</span>
                                         </button>
                                     </div>
                                 </div>
-                                <div>
-                                    <label for="confirm-password" class="text-sm font-medium text-gray-700 block mb-2">Konfirmasi Kata Sandi</label>
-                                    <div class="relative">
-                                        <input type="password" id="confirm-password" class="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg shadow-sm" placeholder="••••••••" required>
-                                        <button type="button" data-toggle-password="confirm-password" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600">
-                                            <svg class="eye-icon h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                            <svg class="eye-slash-icon h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
-                                        </button>
-                                    </div>
+                                <!-- Bagian untuk OTP (awalnya disembunyikan) -->
+                                <div id="otp-section" class="hidden">
+                                    <label for="signup-otp" class="text-sm font-medium text-gray-700 block mb-2">Kode OTP</label>
+                                    <input type="text" id="signup-otp" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm" placeholder="Masukkan 6 digit kode dari email" required>
                                 </div>
-                                <div>
+                                <!-- Tombol Daftar Final (awalnya disembunyikan) -->
+                                <div id="final-signup-button-container" class="hidden">
                                     <button type="submit" id="signupButton" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-transform transform hover:scale-105 shadow-lg">
                                         <span id="signupButtonText">Daftar</span>
                                         <span id="signupSpinner" class="hidden loading-animation">Memproses</span>
@@ -150,7 +165,6 @@
                                 </div>
                             </div>
                         </form>
-                        <div id="signup-message" class="mt-4 text-center text-sm h-4"></div>
                         <p class="text-center text-sm text-gray-600 mt-6">
                             Sudah punya akun? 
                             <a href="#" id="show-login" class="font-medium text-blue-600 hover:text-blue-500">Masuk di sini</a>
@@ -165,7 +179,6 @@
             </a>
         </footer>
     </div>
-
 
     <!-- Container untuk Aplikasi Utama (awalnya disembunyikan) -->
     <div id="app-container" class="hidden">
@@ -626,6 +639,7 @@
             const logoutButton = document.getElementById('logoutButton');
             const showSignupBtn = document.getElementById('show-signup');
             const showLoginBtn = document.getElementById('show-login');
+            const requestOtpButton = document.getElementById('requestOtpButton'); // Tombol baru
 
             // Check for existing session on page load
             const storedId = sessionStorage.getItem('userSpreadsheetId');
@@ -643,13 +657,17 @@
 
             // --- Event listener untuk Login, Signup, Logout ---
             if (loginForm) loginForm.addEventListener('submit', handleLogin);
+            // Event listener submit sekarang akan memanggil fungsi handleSignup yang sudah dimodifikasi
             if (signupForm) signupForm.addEventListener('submit', handleSignup);
+            // Event listener BARU untuk tombol permintaan OTP
+            if (requestOtpButton) requestOtpButton.addEventListener('click', handleRequestOtp);
+
             if (logoutButton) logoutButton.addEventListener('click', (e) => {
                 e.preventDefault();
                 logoutUser();
             });
 
-            // --- [PERBAIKAN] Event listener untuk beralih antara form login dan signup ---
+            // Event listener untuk beralih antara form login dan signup
             if (showSignupBtn) {
                 showSignupBtn.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -805,15 +823,83 @@
                 })
                 .checkLogin(email, password);
         }
+        
+        // --- [BARU] Fungsi untuk menangani permintaan OTP ---
+        function handleRequestOtp() {
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const namaSekolah = document.getElementById('signup-namasekolah').value;
+            const jenjang = document.getElementById('signup-jenjang').value;
 
-        // --- [PERBAIKAN] Fungsi signup dibuat lebih tangguh (robust) ---
+            const requestOtpButton = document.getElementById('requestOtpButton');
+            const requestOtpBtnText = document.getElementById('requestOtpButtonText');
+            const requestOtpSpinner = document.getElementById('requestOtpSpinner');
+            const messageDiv = document.getElementById('signup-message');
+
+            messageDiv.textContent = '';
+            messageDiv.classList.remove('text-red-600', 'text-green-600');
+
+            // Validasi awal
+            if (!email || !password || !namaSekolah || !jenjang) {
+                messageDiv.textContent = 'Semua field wajib diisi.';
+                messageDiv.classList.add('text-red-600');
+                return;
+            }
+            if (password !== confirmPassword) {
+                messageDiv.textContent = 'Kata sandi dan konfirmasi kata sandi tidak cocok.';
+                messageDiv.classList.add('text-red-600');
+                return;
+            }
+
+            // Tampilkan loading
+            requestOtpButton.disabled = true;
+            requestOtpBtnText.classList.add('hidden');
+            requestOtpSpinner.classList.remove('hidden');
+
+            google.script.run
+                .withSuccessHandler(response => {
+                    requestOtpButton.disabled = false;
+                    requestOtpBtnText.classList.remove('hidden');
+                    requestOtpSpinner.classList.add('hidden');
+
+                    if (response.status === 'success') {
+                        messageDiv.textContent = response.message;
+                        messageDiv.classList.add('text-green-600');
+
+                        // Sembunyikan field awal dan tombol minta OTP
+                        document.getElementById('initial-fields').querySelectorAll('input, select').forEach(el => el.disabled = true);
+                        requestOtpButton.classList.add('hidden');
+
+                        // Tampilkan field OTP dan tombol daftar final
+                        document.getElementById('otp-section').classList.remove('hidden');
+                        document.getElementById('final-signup-button-container').classList.remove('hidden');
+
+                    } else {
+                        messageDiv.textContent = response.message;
+                        messageDiv.classList.add('text-red-600');
+                    }
+                })
+                .withFailureHandler(error => {
+                    messageDiv.textContent = 'Terjadi kesalahan: ' + error.message;
+                    messageDiv.classList.add('text-red-600');
+                    requestOtpButton.disabled = false;
+                    requestOtpBtnText.classList.remove('hidden');
+                    requestOtpSpinner.classList.add('hidden');
+                })
+                .sendVerificationEmail(email);
+        }
+
+
+        // --- [MODIFIKASI] Fungsi signup sekarang menangani submit final dengan OTP ---
         function handleSignup(event) {
-            event.preventDefault(); // Mencegah form submit dan refresh halaman
+            event.preventDefault(); 
             const namaSekolah = document.getElementById('signup-namasekolah').value;
             const jenjang = document.getElementById('signup-jenjang').value;
             const email = document.getElementById('signup-email').value;
             const password = document.getElementById('signup-password').value;
-            const confirmPassword = document.getElementById('confirm-password').value;
+            // [PERBAIKAN] Ambil kode OTP dan hapus spasi di awal/akhir menggunakan .trim()
+            const otp = document.getElementById('signup-otp').value.trim(); 
 
             const signupButton = document.getElementById('signupButton');
             const signupButtonText = document.getElementById('signupButtonText');
@@ -822,15 +908,9 @@
 
             messageDiv.textContent = '';
             messageDiv.classList.remove('text-red-600', 'text-green-600');
-
-            if (!namaSekolah || !jenjang) {
-                messageDiv.textContent = 'Nama Sekolah dan Jenjang wajib diisi.';
-                messageDiv.classList.add('text-red-600');
-                return;
-            }
-
-            if (password !== confirmPassword) {
-                messageDiv.textContent = 'Kata sandi tidak cocok.';
+            
+            if (!otp) {
+                messageDiv.textContent = 'Kode OTP wajib diisi.';
                 messageDiv.classList.add('text-red-600');
                 return;
             }
@@ -846,22 +926,28 @@
                 jenjang: jenjang
             };
 
+            // Memanggil fungsi `registerUser` yang sudah dimodifikasi di backend dengan menyertakan OTP
             google.script.run
                 .withSuccessHandler(response => {
                     signupButton.disabled = false;
                     signupButtonText.classList.remove('hidden');
                     signupSpinner.classList.add('hidden');
                     
-                    // Memeriksa apakah 'response' dan 'response.status' ada sebelum digunakan
                     if (response && response.status === 'success') {
+                        // Reset dan alihkan ke halaman login
                         document.getElementById('signupForm').reset();
+                        document.getElementById('initial-fields').querySelectorAll('input, select').forEach(el => el.disabled = false);
+                        document.getElementById('requestOtpButton').classList.remove('hidden');
+                        document.getElementById('otp-section').classList.add('hidden');
+                        document.getElementById('final-signup-button-container').classList.add('hidden');
+
                         document.getElementById('signup-container').classList.add('hidden');
                         document.getElementById('login-container').classList.remove('hidden');
+                        
                         const loginInfoMessageDiv = document.getElementById('login-info-message');
                         loginInfoMessageDiv.textContent = "Pendaftaran berhasil! Silakan masuk dengan akun yang baru Anda buat.";
                         loginInfoMessageDiv.className = "mb-4 text-center text-sm p-3 bg-green-100 text-green-800 rounded-lg";
                     } else {
-                        // Menangani kasus error dari server atau respons yang tidak terduga
                         messageDiv.textContent = response ? response.message : 'Gagal mendaftar karena respons tidak valid dari server.';
                         messageDiv.classList.add('text-red-600');
                     }
@@ -873,7 +959,7 @@
                     signupButtonText.classList.remove('hidden');
                     signupSpinner.classList.add('hidden');
                 })
-                .registerUser(userData);
+                .registerUser(userData, otp); // Parameter OTP ditambahkan di sini
         }
 
         function loadDashboardData() {
