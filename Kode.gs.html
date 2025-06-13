@@ -338,7 +338,7 @@ function checkLogin(email, password) {
     }
 
     if (passwordIsValid) {
-        return { status: "success", message: "Login berhasil.", spreadsheetId: spreadsheetId };
+        return { status: "success", message: "Login berhasil.", spreadsheetId: spreadsheetId, email: userRow[1] };
     } else {
         return { status: "error", message: "Password salah." };
     }
@@ -440,6 +440,53 @@ function resetPasswordWithOtp(email, otp, newPassword) {
   } catch (error) {
     Logger.log(`resetPasswordWithOtp Error: ${error.toString()}`);
     return { status: "error", message: "Gagal mereset password: " + error.message };
+  }
+}
+
+/**
+ * [BARU] Mengubah password pengguna yang sedang login.
+ * @param {string} email Email pengguna yang terdaftar.
+ * @param {string} currentPassword Password saat ini yang dimasukkan pengguna.
+ * @param {string} newPassword Password baru yang akan diatur.
+ * @returns {{status: string, message: string}} Hasil proses perubahan password.
+ */
+function changeUserPassword(email, currentPassword, newPassword) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
+    if (!userSheet) {
+      throw new Error(`Sheet '${SHEET_PENGGUNA}' tidak ditemukan.`);
+    }
+
+    const data = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 3).getValues(); // Ambil ID, email, password
+    const userIndex = data.findIndex(row => row[1].toLowerCase() === email.toLowerCase());
+
+    if (userIndex === -1) {
+      return { status: "error", message: "Terjadi kesalahan: Pengguna tidak ditemukan." };
+    }
+
+    const storedPasswordString = data[userIndex][2].toString();
+
+    // 1. Verifikasi password saat ini
+    const isCurrentPasswordValid = verifyPassword(currentPassword, storedPasswordString);
+    if (!isCurrentPasswordValid) {
+      return { status: "error", message: "Password Anda saat ini salah. Silakan coba lagi." };
+    }
+
+    // 2. Hash password baru
+    const salt = generateSalt();
+    const hashedPassword = hashPassword(newPassword, salt);
+    const newStoredPasswordString = `${salt}:${hashedPassword}`;
+
+    // 3. Perbarui password di spreadsheet
+    const rowToUpdate = userIndex + 2; // Baris spreadsheet = index array + 2
+    userSheet.getRange(rowToUpdate, 3).setValue(newStoredPasswordString); // Kolom password (C) adalah kolom ke-3
+
+    return { status: "success", message: "Password Anda telah berhasil diubah." };
+
+  } catch (error) {
+    Logger.log(`changeUserPassword Error: ${error.toString()}`);
+    return { status: "error", message: "Gagal mengubah password: " + error.message };
   }
 }
 
