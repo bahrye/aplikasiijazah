@@ -27,8 +27,8 @@ const SHEET_MAPEL_DEFAULT = "Mapel Default"; // Sheet di Spreadsheet Induk untuk
  */
 function doGet(e) {
   return HtmlService.createHtmlOutputFromFile('Index')
-    .setTitle('Aplikasi Akademik Sekolah')
-    .setFaviconUrl("https://uploadimage.io/images/2025/06/10/Icon-Legalisir-Ijazah.png")
+    .setTitle('Aplikasi Pengolahan Nilai Ijazah by Syamsul Bahri')
+    .setFaviconUrl("https://uploadimage.io/images/2025/06/12/appbySyamsulBahri.png")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
@@ -523,8 +523,10 @@ function toProperCase(str) {
 // FUNGSI MANAJEMEN DATA SEKOLAH, SISWA, MAPEL, DLL.
 // =================================================================
 
+// File: Kode.gs
+
 /**
- * Menyimpan data sekolah ke dalam sheet 'Data Sekolah'.
+ * [MODIFIKASI] Menyimpan data sekolah ke dalam sheet 'Data Sekolah', termasuk NSM.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @param {object} dataObj Objek berisi data sekolah.
  * @returns {{status: string, message: string}} Status penyimpanan.
@@ -533,15 +535,25 @@ function saveSchoolData(spreadsheetId, dataObj) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
     let sheet = ss.getSheetByName(SHEET_DATA_SEKOLAH);
-    // [MODIFIKASI] Set format kolom Kode Pos (I) dan Telepon (J) ke Plain Text
-    sheet.getRange("I:J").setNumberFormat('@');
     
+    // [MODIFIKASI] Set format kolom NSM (D), Kode Pos (J), dan Telepon (K) ke Plain Text
+    sheet.getRange("D:D").setNumberFormat('@');
+    sheet.getRange("J:K").setNumberFormat('@'); // Indeks kolom bergeser
+    sheet.getRange("O:O").setNumberFormat('@'); // <-- TAMBAHKAN BARIS INI UNTUK NIP KEPSEK
+    
+    // [MODIFIKASI] Tambahkan dataObj.nsm ke dalam array
     const schoolDataRow = [
-        dataObj.jenjang||"", dataObj.namaSekolah||"", dataObj.npsn||"", dataObj.alamat||"", 
-        dataObj.kelurahan||"", dataObj.kecamatan||"", dataObj.kabupaten||"", dataObj.provinsi||"", 
-        dataObj.kodePos||"", dataObj.telepon||"", dataObj.email||"", dataObj.website||"", 
-        dataObj.namaKepsek||"", dataObj.nipKepsek||""
+        dataObj.jenjang||"", dataObj.namaSekolah||"", dataObj.npsn||"", dataObj.nsm||"", // NSM ditambahkan di sini
+        dataObj.alamat||"", dataObj.kelurahan||"", dataObj.kecamatan||"", dataObj.kabupaten||"", 
+        dataObj.provinsi||"", dataObj.kodePos||"", dataObj.telepon||"", dataObj.email||"", 
+        dataObj.website||"", dataObj.namaKepsek||"", dataObj.nipKepsek||""
     ];
+    // [MODIFIKASI] Pastikan header "NSM" ada jika belum ada
+    if (sheet.getRange("D1").getValue() !== "NSM") {
+      sheet.insertColumnAfter(3); // Sisipkan kolom baru setelah kolom C (NPSN)
+      sheet.getRange("D1").setValue("NSM").setFontWeight("bold");
+    }
+
     sheet.getRange(2, 1, 1, schoolDataRow.length).setValues([schoolDataRow]);
     return { status: "success", message: "Data sekolah berhasil diperbarui." };
   } catch (error) {
@@ -550,8 +562,10 @@ function saveSchoolData(spreadsheetId, dataObj) {
   }
 }
 
+// File: Kode.gs
+
 /**
- * Mengambil data sekolah dari sheet 'Data Sekolah'.
+ * [MODIFIKASI] Mengambil data sekolah dari sheet 'Data Sekolah', termasuk NSM.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @returns {object|null} Objek data sekolah atau null jika gagal.
  */
@@ -560,10 +574,33 @@ function getSchoolData(spreadsheetId) {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SEKOLAH);
     if (!sheet || sheet.getLastRow() < 2) return null;
-    // [MODIFIKASI] Set format kolom Kode Pos dan Telepon ke Plain Text saat mengambil data
-    sheet.getRange("I:J").setNumberFormat('@');
-    const values = sheet.getRange("A2:N2").getValues()[0];
-    return {jenjang:values[0], namaSekolah:values[1], npsn:values[2], alamat:values[3], kelurahan:values[4], kecamatan:values[5], kabupaten:values[6], provinsi:values[7], kodePos:values[8], telepon:values[9], email:values[10], website:values[11], namaKepsek:values[12], nipKepsek:values[13]};
+
+    // [MODIFIKASI] Set format kolom NSM, Kode Pos, dan Telepon ke Plain Text saat mengambil data
+    sheet.getRange("D:D").setNumberFormat('@');
+    sheet.getRange("J:K").setNumberFormat('@'); // Indeks kolom bergeser
+    sheet.getRange("O:O").setNumberFormat('@'); // <-- TAMBAHKAN BARIS INI UNTUK NIP KEPSEK
+
+    // [MODIFIKASI] Ubah jangkauan pengambilan data dari A2:N2 menjadi A2:O2
+    const values = sheet.getRange("A2:O2").getValues()[0];
+    
+    // [MODIFIKASI] Tambahkan 'nsm' dan sesuaikan indeks kolom lainnya
+    return {
+        jenjang:values[0], 
+        namaSekolah:values[1], 
+        npsn:values[2], 
+        nsm:values[3], // NSM ada di indeks 3
+        alamat:values[4], 
+        kelurahan:values[5], 
+        kecamatan:values[6], 
+        kabupaten:values[7], 
+        provinsi:values[8], 
+        kodePos:values[9], 
+        telepon:values[10], 
+        email:values[11], 
+        website:values[12], 
+        namaKepsek:values[13], 
+        nipKepsek:values[14]
+    };
   } catch (error) {
     Logger.log(error);
     return null;
@@ -571,7 +608,8 @@ function getSchoolData(spreadsheetId) {
 }
 
 /**
- * Mengambil daftar siswa dari sheet 'Data Siswa'.
+ * [MODIFIKASI & PERBAIKAN FINAL] Mengambil daftar siswa dari sheet 'Data Siswa'.
+ * Memastikan semua data yang relevan dibaca sebagai Teks (String) untuk mencegah error.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @returns {Array<object>} Array objek data siswa.
  */
@@ -580,84 +618,156 @@ function getStudents(spreadsheetId) {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
     if (!sheet || sheet.getLastRow() < 2) return [];
-    // [MODIFIKASI] Pastikan kolom NISN (A) dan NIS (B) berformat teks
-    sheet.getRange("A:B").setNumberFormat('@');
-    const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, 5);
+
+    // Format kolom yang rawan salah interpretasi menjadi Teks
+    sheet.getRange("A:B").setNumberFormat('@'); // NISN & NIS
+    sheet.getRange("E:E").setNumberFormat('@'); // <-- TAMBAHAN: Paksa Tempat Lahir menjadi Teks
+    sheet.getRange("H:H").setNumberFormat('@'); // Telepon
+
+    const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, 11);
     const values = dataRange.getValues();
+
     return values.map((row, index) => {
-        let tanggalLahirStr = '';
-        if (row[4] && row[4] instanceof Date) {
-             tanggalLahirStr = Utilities.formatDate(row[4], Session.getScriptTimeZone(), "yyyy-MM-dd");
-        }
-        return {
-            row: index + 2, 
-            nisn: row[0], 
-            nis: row[1], 
-            nama: row[2], 
-            tempatLahir: row[3], 
-            tanggalLahir: tanggalLahirStr
-        };
+      let tanggalLahirStr = '';
+      // Cek apakah kolom tanggal lahir (indeks 5) adalah objek Date yang valid
+      if (row[5] && row[5] instanceof Date && !isNaN(row[5])) {
+        tanggalLahirStr = Utilities.formatDate(row[5], Session.getScriptTimeZone(), "yyyy-MM-dd");
+      }
+
+      return {
+        row: index + 2,
+        nisn: String(row[0] || ''),
+        nis: String(row[1] || ''),
+        nama: String(row[2] || ''),
+        jenisKelamin: String(row[3] || ''),
+        tempatLahir: String(row[4] || ''), // Selalu baca sebagai string
+        tanggalLahir: tanggalLahirStr,
+        alamat: String(row[6] || ''),
+        telepon: String(row[7] || ''),
+        emailSiswa: String(row[8] || ''),
+        tahunMasuk: String(row[9] || ''),
+        tahunLulus: String(row[10] || '')
+      };
     });
-  } catch (e) { 
+  } catch (e) {
     Logger.log(`getStudents Error: ${e}`);
-    return []; 
+    return [];
   }
 }
 
 /**
- * Menambahkan siswa baru ke sheet 'Data Siswa'.
+ * [MODIFIKASI] Menambahkan siswa baru atau mendeteksi konflik jika NISN sudah ada.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @param {object} studentData Objek data siswa baru.
- * @returns {{status: string, message: string}} Status penambahan.
+ * @returns {{status: string, message: string, oldData?: object, newData?: object}} Status penambahan.
  */
 function addStudent(spreadsheetId, studentData) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
-    let sheet = ss.getSheetByName(SHEET_DATA_SISWA);
+    const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
     
-    // Tentukan baris kosong berikutnya
+    // Cek apakah ada data siswa
+    if (sheet.getLastRow() > 1) {
+      const allStudents = getStudents(spreadsheetId); // Menggunakan fungsi yang sudah ada
+      const existingStudent = allStudents.find(s => s.nisn.toString() === studentData.nisn.toString());
+
+      if (existingStudent) {
+        // NISN ditemukan, sekarang cek apakah ada perbedaan data
+        const isIdentical = areStudentsIdentical(existingStudent, studentData);
+
+        if (isIdentical) {
+          return { status: "duplicate", message: "Data siswa dengan NISN ini sudah ada dan semua datanya identik." };
+        } else {
+          // Data berbeda, kirim balik data lama dan data baru untuk konfirmasi
+          return {
+            status: "conflict",
+            message: "NISN ini sudah terdaftar dengan data yang berbeda.",
+            oldData: existingStudent, // Mengandung 'row' untuk proses update
+            newData: studentData
+          };
+        }
+      }
+    }
+
+    // Jika tidak ada konflik, tambahkan siswa baru seperti biasa
     const nextRow = sheet.getLastRow() + 1;
-    
-    // Atur format Teks untuk sel NISN dan NIS di baris baru SEBELUM memasukkan data
     sheet.getRange(nextRow, 1, 1, 2).setNumberFormat('@');
-    
-    // Siapkan data yang akan dimasukkan
     const tanggalLahirObject = studentData.tanggalLahir ? new Date(studentData.tanggalLahir.replace(/-/g, '/')) : '';
-    const newRowData = [studentData.nisn, studentData.nis, studentData.nama, toProperCase(studentData.tempatLahir), tanggalLahirObject];
-    
-    // Masukkan data ke baris yang sudah diformat
+    // Atur format Teks untuk NISN, NIS, dan Telepon
+    sheet.getRange(nextRow, 1, 1, 2).setNumberFormat('@');
+    sheet.getRange(nextRow, 8, 1, 1).setNumberFormat('@');
+
+    const newRowData = [
+        studentData.nisn, 
+        studentData.nis, 
+        studentData.nama, 
+        studentData.jenisKelamin, // <-- DATA BARU
+        toProperCase(studentData.tempatLahir), 
+        tanggalLahirObject,
+        studentData.alamat,
+        studentData.telepon,
+        studentData.emailSiswa,
+        studentData.tahunMasuk,
+        studentData.tahunLulus
+    ];
     sheet.getRange(nextRow, 1, 1, newRowData.length).setValues([newRowData]);
     
     return { status: "success", message: `Siswa "${studentData.nama}" berhasil ditambahkan.` };
+
   } catch (e) { 
     Logger.log(e); 
-    return { status: "error", message: "Gagal menambah siswa: " + e.message }; 
+    return { status: "error", message: "Gagal memproses data siswa: " + e.message }; 
   }
 }
 
+
 /**
- * Memperbarui data siswa di sheet 'Data Siswa'.
+ * [MODIFIKASI] Memperbarui data siswa dengan tambahan validasi duplikasi NISN.
  * @param {string} spreadsheetId ID spreadsheet target.
- * @param {object} studentData Objek data siswa yang akan diupdate.
+ * @param {object} studentData Objek data siswa yang akan diupdate, termasuk studentRow.
  * @returns {{status: string, message: string}} Status pembaruan.
  */
 function updateStudent(spreadsheetId, studentData) {
   try {
+    const allStudents = getStudents(spreadsheetId);
+    const duplicateStudent = allStudents.find(s =>
+      s.nisn.toString().trim() === studentData.nisn.toString().trim() &&
+      s.row != studentData.studentRow
+    );
+
+    if (duplicateStudent) {
+      return { status: "error", message: `Gagal: NISN "${studentData.nisn}" sudah digunakan oleh siswa lain (${duplicateStudent.nama}).` };
+    }
+
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
-    const rowToUpdate = [studentData.nisn, studentData.nis, studentData.nama, toProperCase(studentData.tempatLahir), studentData.tanggalLahir ? new Date(studentData.tanggalLahir.replace(/-/g, '/')) : ''];
+    
+    // [PERIKSA ULANG] Susunan array ini harus cocok persis dengan urutan kolom di sheet
+    const rowToUpdate = [
+      studentData.nisn,
+      studentData.nis,
+      studentData.nama,
+      studentData.jenisKelamin,
+      toProperCase(studentData.tempatLahir),
+      studentData.tanggalLahir ? new Date(studentData.tanggalLahir.replace(/-/g, '/')) : '',
+      studentData.alamat,
+      studentData.telepon,
+      studentData.emailSiswa,
+      studentData.tahunMasuk,
+      studentData.tahunLulus
+    ];
+
     const targetRange = sheet.getRange(studentData.studentRow, 1, 1, rowToUpdate.length);
 
-    // Atur format Teks pada sel NISN dan NIS yang akan diupdate
     sheet.getRange(studentData.studentRow, 1, 1, 2).setNumberFormat('@');
+    sheet.getRange(studentData.studentRow, 8, 1, 1).setNumberFormat('@');
 
-    // Kemudian perbarui nilainya
     targetRange.setValues([rowToUpdate]);
-    
+
     return { status: "success", message: `Data siswa "${studentData.nama}" berhasil diperbarui.` };
-  } catch (e) { 
-    Logger.log(e); 
-    return { status: "error", message: "Gagal memperbarui data: " + e.message }; 
+  } catch (e) {
+    Logger.log(e);
+    return { status: "error", message: "Gagal memperbarui data: " + e.message };
   }
 }
 
@@ -707,13 +817,23 @@ function generateSiswaTemplate() {
     tempFile = DriveApp.getFileById(ss.getId());
     
     const sheet = ss.getSheets()[0];
-    const headers = ["NISN", "NIS", "Nama Lengkap", "Tempat Lahir", "Tanggal Lahir (Format:YYYY-MM-DD)"];
+    const headers = [
+      "NISN", "NIS (2 digit tahun masuk, 4 digit no. urut)", "Nama Lengkap", "Jenis Kelamin (L/P)", 
+      "Tempat Lahir", "Tanggal Lahir (Format: YYYY-MM-DD)",
+      "Alamat Lengkap Siswa", "Nomor Telepon", "Email", "Tahun Masuk", "Tahun Lulus"
+    ];
     sheet.appendRow(headers);
-    sheet.getRange("A1:E1").setFontWeight("bold").setBackground("#d9ead3");
-    // [MODIFIKASI] Set format kolom A & B ke teks di template
-    sheet.getRange("A:B").setNumberFormat("@");
-    sheet.setColumnWidths(1, 5, 150);
-    sheet.getRange("E:E").setNumberFormat("yyyy-mm-dd");
+    sheet.getRange("A1:K1").setFontWeight("bold").setBackground("#d9ead3"); // Ubah E1 menjadi J1
+    
+    // Set format kolom ke teks
+    sheet.getRange("A:B").setNumberFormat("@"); // NISN & NIS
+    sheet.getRange("H:H").setNumberFormat("@"); // Nomor Telepon
+    
+    sheet.setColumnWidths(1, 5, 150); // Kolom A-E
+    sheet.setColumnWidth(7, 250); // Kolom G (Alamat)
+    sheet.setColumnWidths(8, 4, 150); // Kolom G-J
+    
+    sheet.getRange("F:F").setNumberFormat("yyyy-mm-dd");
 
     SpreadsheetApp.flush();
 
@@ -740,131 +860,158 @@ function generateSiswaTemplate() {
 }
 
 /**
- * Mengimpor data dari file Excel ke sheet yang ditentukan.
+ * [MODIFIKASI FINAL & DIPERBAIKI] Mengimpor data dari file Excel, dengan logika untuk menambah, memperkaya, atau mendeteksi konflik.
+ * Memperbaiki kesalahan indeks kolom setelah penambahan "Jenis Kelamin".
  * @param {string} spreadsheetId ID spreadsheet target.
  * @param {object} fileData Data file yang diunggah.
  * @param {string} sheetName Nama sheet tujuan.
- * @returns {object} Hasil proses impor.
+ * @returns {object} Hasil proses impor yang detail.
  */
 function importFromExcel(spreadsheetId, fileData, sheetName) {
   let tempFile;
   try {
     const decoded = Utilities.base64Decode(fileData.content, Utilities.Charset.UTF_8);
     const blob = Utilities.newBlob(decoded, fileData.mimeType, fileData.fileName);
-    
-    const tempSpreadsheetFile = Drive.Files.insert({title: `temp_import_${new Date().getTime()}`}, blob, {convert: true});
+
+    const tempSpreadsheetFile = Drive.Files.insert({
+      title: `temp_import_${new Date().getTime()}`
+    }, blob, {
+      convert: true
+    });
     tempFile = DriveApp.getFileById(tempSpreadsheetFile.id);
     const importSheet = SpreadsheetApp.openById(tempFile.getId()).getSheets()[0];
     const data = importSheet.getDataRange().getValues();
-    
+
     if (data.length <= 1) throw new Error("File kosong atau hanya berisi header.");
     data.shift(); // Hapus header
 
     const targetSpreadsheet = getSpreadsheet(spreadsheetId);
     let targetSheet = targetSpreadsheet.getSheetByName(sheetName);
-    
+
     if (sheetName === SHEET_DATA_SISWA) {
-        targetSheet.getRange("A:B").setNumberFormat("@"); // Pastikan format sebelum memproses
-        const existingStudents = getStudents(spreadsheetId);
-        const existingNisnMap = new Map();
-        existingStudents.forEach(s => {
-            if(s.nisn) existingNisnMap.set(s.nisn.toString().trim(), s);
-        });
+      targetSheet.getRange("A:B").setNumberFormat("@"); // Pastikan format sebelum memproses
+      const existingStudents = getStudents(spreadsheetId);
+      const existingNisnMap = new Map();
+      existingStudents.forEach(s => {
+        if (s.nisn) existingNisnMap.set(s.nisn.toString().trim(), s);
+      });
 
-        const newStudents = [];
-        const skippedDuplicates = [];
-        const conflicts = [];
-        const processedNisns = new Set(); 
+      const newStudents = [];
+      const enrichedStudents = [];
+      const conflicts = [];
+      const skippedDuplicates = [];
+      const processedNisns = new Set();
 
-        data.forEach((row) => {
-            const nisn = (row[0] || '').toString().trim();
-            const nama = (row[2] || '').toString().trim();
-            if (!nisn || !nama) return; 
-            if (processedNisns.has(nisn)) {
-                skippedDuplicates.push({nisn, nama, reason: 'Duplikat di dalam file import.'});
-                return;
-            }
-            processedNisns.add(nisn);
-            if (existingNisnMap.has(nisn)) {
-                const existingStudent = existingNisnMap.get(nisn);
-                if (existingStudent.nama.trim().toLowerCase() === nama.toLowerCase()) {
-                    skippedDuplicates.push({nisn, nama, reason: 'Data sudah ada.'});
-                } else {
-                    conflicts.push({nisn, nama, reason: `NISN sudah terdaftar dengan nama: ${existingStudent.nama}`});
+      data.forEach((row) => {
+        const nisn = (row[0] || '').toString().trim();
+        const namaFromFile = (row[2] || '').toString().trim();
+        if (!nisn || !namaFromFile) return;
+        if (processedNisns.has(nisn)) {
+          skippedDuplicates.push({
+            nisn,
+            nama: namaFromFile,
+            reason: 'Duplikat di dalam file import.'
+          });
+          return;
+        }
+        processedNisns.add(nisn);
+
+        if (existingNisnMap.has(nisn)) {
+          const existingStudent = existingNisnMap.get(nisn);
+
+          // [PERBAIKAN] Mengambil data dari file Excel dengan indeks kolom yang benar
+          const newData = {
+            nisn: nisn,
+            nis: row[1] || '',
+            nama: namaFromFile,
+            jenisKelamin: row[3] || '', // Indeks 3 adalah Jenis Kelamin
+            tempatLahir: toProperCase(row[4] || ''), // Indeks 4 adalah Tempat Lahir
+            tanggalLahir: row[5] ? Utilities.formatDate(new Date(row[5]), Session.getScriptTimeZone(), "yyyy-MM-dd") : '', // Indeks 5 adalah Tanggal Lahir
+            alamat: row[6] || '',
+            telepon: row[7] || '',
+            emailSiswa: row[8] || '',
+            tahunMasuk: row[9] || '',
+            tahunLulus: row[10] || ''
+          };
+
+          const isIdentical = areStudentsIdentical(existingStudent, newData);
+
+          if (!isIdentical) { // Jika TIDAK identik, maka terjadi konflik
+            conflicts.push({
+              nisn: nisn,
+              rowToUpdate: existingStudent.row,
+              oldData: existingStudent, // Kirim semua data lama
+              newData: newData // Kirim semua data baru
+            });
+          } else {
+            // Logika untuk memperkaya data (enrich)
+            // (Kode ini sudah benar dan tidak perlu diubah)
+            let isEnriched = false;
+            const finalData = { ...existingStudent };
+            
+            Object.keys(newData).forEach(key => {
+                if (!finalData[key] && newData[key]) {
+                    finalData[key] = newData[key];
+                    isEnriched = true;
                 }
+            });
+
+            if (isEnriched) {
+              enrichedStudents.push({ ...finalData, studentRow: existingStudent.row });
             } else {
-                // [MODIFIKASI] Terapkan Proper Case pada Tempat Lahir (kolom ke-4, index 3)
-                if (row[3]) {
-                  row[3] = toProperCase(row[3]);
-                }
-                newStudents.push(row);
+              skippedDuplicates.push({
+                nisn,
+                nama: namaFromFile,
+                reason: 'Data sudah ada dan identik.'
+              });
             }
-        });
-        
-        if (newStudents.length > 0) {
-          targetSheet.getRange(targetSheet.getLastRow() + 1, 1, newStudents.length, newStudents[0].length).setValues(newStudents);
+          }
+        } else {
+          // Jika NISN belum ada, ini adalah siswa baru
+          // [PERBAIKAN] Terapkan toProperCase pada kolom Tempat Lahir (indeks 4)
+          if (row[4]) {
+            row[4] = toProperCase(row[4]);
+          }
+          newStudents.push(row);
         }
+      });
 
-        return {
-          status: "partial",
-          message: "Proses impor siswa selesai.",
-          newCount: newStudents.length,
-          skippedCount: skippedDuplicates.length,
-          conflictCount: conflicts.length,
-          conflicts: conflicts
-        };
-    } else if (sheetName === SHEET_MAPEL) {
-        // ... (logika impor mapel tidak diubah)
-        const existingMapel = getMapel(spreadsheetId);
-        const existingMapelCodes = new Set(existingMapel.map(m => m.kode.toString().trim()));
+      // Lakukan penambahan dan update otomatis di backend
+      if (newStudents.length > 0) {
+        targetSheet.getRange(targetSheet.getLastRow() + 1, 1, newStudents.length, newStudents[0].length).setValues(newStudents);
+      }
+      if (enrichedStudents.length > 0) {
+        batchUpdateStudents(spreadsheetId, enrichedStudents);
+      }
 
-        const newMapel = [];
-        let skippedCount = 0;
-        
-        data.forEach(row => {
-            const kode = (row[0] || '').toString().trim();
-            if (!kode) return;
-
-            if (existingMapelCodes.has(kode)) {
-                skippedCount++;
-            } else {
-                newMapel.push(row);
-                existingMapelCodes.add(kode);
-            }
-        });
-
-        if (newMapel.length > 0) {
-            targetSheet.getRange(targetSheet.getLastRow() + 1, 1, newMapel.length, newMapel[0].length).setValues(newMapel);
-        }
-
-        let message = `${newMapel.length} mapel baru berhasil diimpor.`;
-        if (skippedCount > 0) {
-          message += ` ${skippedCount} mapel dilewati karena kode sudah ada.`
-        }
-
-        return {
-            status: "success",
-            message: message,
-            newCount: newMapel.length,
-            skippedCount: skippedCount
-        };
-
-    } else { 
-        // Logika umum untuk sheet lain
-        const rowsToAppend = data.filter(row => row.some(cell => cell.toString().trim() !== ""));
-        if (rowsToAppend.length > 0) {
-          targetSheet.getRange(targetSheet.getLastRow() + 1, 1, rowsToAppend.length, rowsToAppend[0].length).setValues(rowsToAppend);
-        }
-        return { status: "success", message: `${rowsToAppend.length} data berhasil diimpor ke sheet ${sheetName}.` };
+      return {
+        status: "partial",
+        message: "Proses impor siswa selesai.",
+        newCount: newStudents.length,
+        enrichedCount: enrichedStudents.length,
+        skippedCount: skippedDuplicates.length,
+        conflictCount: conflicts.length,
+        conflicts: conflicts
+      };
+    } else {
+      // Logika untuk sheet lain (tidak diubah)
+      const rowsToAppend = data.filter(row => row.some(cell => cell.toString().trim() !== ""));
+      if (rowsToAppend.length > 0) {
+        targetSheet.getRange(targetSheet.getLastRow() + 1, 1, rowsToAppend.length, rowsToAppend[0].length).setValues(rowsToAppend);
+      }
+      return { status: "success", message: `${rowsToAppend.length} data berhasil diimpor ke sheet ${sheetName}.` };
     }
 
   } catch (e) {
     Logger.log(e);
-    return { status: "error", message: `Gagal mengimpor data: ${e.toString()}` };
+    return {
+      status: "error",
+      message: `Gagal mengimpor data: ${e.toString()}`
+    };
   } finally {
-      if (tempFile) {
-          tempFile.setTrashed(true);
-      }
+    if (tempFile) {
+      tempFile.setTrashed(true);
+    }
   }
 }
 
@@ -884,20 +1031,71 @@ function getMapel(spreadsheetId) {
   } catch (e) { Logger.log(e); return []; }
 }
 
+// HAPUS fungsi addMapel(spreadsheetId, mapelData) yang lama.
+
 /**
- * Menambahkan mata pelajaran baru.
+ * [MODIFIKASI] Menambahkan beberapa mata pelajaran sekaligus (input massal)
+ * dengan validasi duplikasi kode yang efisien.
  * @param {string} spreadsheetId ID spreadsheet target.
- * @param {object} mapelData Data mata pelajaran baru.
+ * @param {Array<object>} mapelArray Array objek data mata pelajaran baru.
  * @returns {{status: string, message: string}} Status penambahan.
  */
-function addMapel(spreadsheetId, mapelData) {
-  try {
-    const ss = getSpreadsheet(spreadsheetId);
-    let sheet = ss.getSheetByName(SHEET_MAPEL);
-    const newRow = [mapelData.kode, mapelData.nama, mapelData.kelompok, mapelData.jenisUjian];
-    sheet.appendRow(newRow);
-    return { status: "success", message: `Mata Pelajaran "${mapelData.nama}" berhasil ditambahkan.` };
-  } catch (e) { Logger.log(e); return { status: "error", message: "Gagal menambah mapel: " + e.message }; }
+function addMultipleMapel(spreadsheetId, mapelArray) {
+    try {
+        const ss = getSpreadsheet(spreadsheetId);
+        const sheet = ss.getSheetByName(SHEET_MAPEL);
+
+        // 1. Ambil semua kode mapel yang ada dalam satu kali panggilan
+        const existingMapel = getMapel(spreadsheetId);
+        const existingCodes = new Set(existingMapel.map(m => m.kode.toString().trim().toLowerCase()));
+        
+        const rowsToAppend = [];
+        const codesInThisBatch = new Set();
+        let skippedCount = 0;
+
+        // 2. Loop melalui data baru dari frontend
+        for (const mapelData of mapelArray) {
+            const newCode = (mapelData.kode || '').toString().trim().toLowerCase();
+            const newName = (mapelData.nama || '').toString().trim();
+
+            // Lakukan validasi
+            if (!newCode || !newName) {
+                // Lewati baris yang tidak lengkap
+                skippedCount++;
+                continue;
+            }
+
+            // Cek duplikasi dengan data yang sudah ada DI SHEET dan DI DALAM BATCH ini
+            if (existingCodes.has(newCode) || codesInThisBatch.has(newCode)) {
+                skippedCount++;
+                continue;
+            }
+
+            // Atur nilai default untuk Jenis Ujian jika kosong
+            const jenisUjian = mapelData.jenisUjian || 'Ujian Madrasah';
+            
+            // Tambahkan ke daftar yang akan disimpan
+            rowsToAppend.push([mapelData.kode, newName, mapelData.kelompok, jenisUjian]);
+            codesInThisBatch.add(newCode); // Catat kode ini agar tidak ada duplikat dalam satu kali simpan
+        }
+        
+        // 3. Simpan semua baris baru dalam satu operasi (jika ada)
+        if (rowsToAppend.length > 0) {
+            sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAppend.length, rowsToAppend[0].length).setValues(rowsToAppend);
+        }
+
+        // 4. Buat pesan laporan
+        let message = `${rowsToAppend.length} mata pelajaran berhasil ditambahkan.`;
+        if (skippedCount > 0) {
+            message += ` ${skippedCount} mapel dilewati karena tidak lengkap atau kode duplikat.`;
+        }
+
+        return { status: "success", message: message };
+
+    } catch (e) {
+        Logger.log(e);
+        return { status: "error", message: "Gagal menambah mapel secara massal: " + e.message };
+    }
 }
 
 /**
@@ -948,47 +1146,6 @@ function deleteAllMapel(spreadsheetId) {
     Logger.log(e);
     return { status: "error", message: "Gagal menghapus data mata pelajaran: " + e.message };
   }
-}
-
-/**
- * Menghasilkan template Excel untuk impor data mata pelajaran.
- * @returns {object} Objek berisi data file template.
- */
-function generateMapelTemplate() {
-    let tempFile;
-    try {
-        const templateName = `Template_Import_Mapel_${new Date().getTime()}`;
-        const ss = SpreadsheetApp.create(templateName);
-        tempFile = DriveApp.getFileById(ss.getId());
-        
-        const sheet = ss.getSheets()[0];
-        const headers = ["Kode Mapel", "Nama Mata Pelajaran", "Kelompok (Umum/Peminatan/Muatan Lokal)", "Jenis Ujian (Ujian Madrasah/Ujian Praktek/Keduanya)"];
-        sheet.appendRow(headers);
-        sheet.getRange("A1:D1").setFontWeight("bold").setBackground("#d9ead3");
-        sheet.setColumnWidths(1, 4, 200);
-
-        SpreadsheetApp.flush();
-
-        const url = `https://www.googleapis.com/drive/v3/files/${ss.getId()}/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`;
-        const response = UrlFetchApp.fetch(url, {
-        headers: { Authorization: `Bearer ${ScriptApp.getOAuthToken()}` },
-        muteHttpExceptions: true
-        });
-
-        const blob = response.getBlob();
-        return {
-        fileName: 'Template_Import_Mapel.xlsx',
-        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        base64Data: Utilities.base64Encode(blob.getBytes())
-        };
-    } catch (e) {
-        Logger.log(e);
-        return { error: e.toString() };
-    } finally {
-        if (tempFile) {
-        tempFile.setTrashed(true);
-        }
-    }
 }
 
 /**
@@ -1517,7 +1674,7 @@ function checkRekapSheetsExist(spreadsheetId) {
 }
 
 /**
- * Mengekspor data rekapitulasi ke format PDF atau Excel dengan layout kustom presisi. (Versi Final 2.6 - Penyesuaian Akhir)
+ * Mengekspor data rekapitulasi ke format PDF atau Excel dengan layout kustom presisi.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @param {string} type Jenis rekap ('ujian', 'rapor', 'ijazah').
  * @param {string} format Format ekspor ('pdf' atau 'excel').
@@ -1532,7 +1689,7 @@ function exportRekapData(spreadsheetId, type, format, exportOptions) {
     switch (type) {
       case 'ijazah': reportTitle = "REKAPITULASI NILAI IJAZAH"; break;
       case 'rapor': reportTitle = "REKAPITULASI NILAI RAPOR"; break;
-      case 'ujian': reportTitle = "REKAPITULASI NILAI UJIAN"; break;
+      case 'ujian': reportTitle = "REKAPITULASI NILAI UJIAN"; break; // [MODIFIKASI] Judul untuk jenis 'ujian'
       default: throw new Error("Jenis rekap tidak valid.");
     }
 
@@ -1548,19 +1705,27 @@ function exportRekapData(spreadsheetId, type, format, exportOptions) {
     students.forEach((student, index) => {
         const nisn = student.nisn;
         const studentScores = dataToProcess[nisn] || {};
-        let total = 0;
         
         const rowData = [index + 1, `'${nisn}`, student.nama.toUpperCase()];
         
+        let total = 0;
         mapel.forEach(m => {
             const score = parseFloat(studentScores[m.kode] || 0);
-            rowData.push(Math.round(score));
-            total += score;
+            const roundedScore = Math.round(score);
+            rowData.push(roundedScore);
+            total += roundedScore; // Menjumlahkan nilai yang sudah dibulatkan
         });
+
         const average = mapel.length > 0 ? (total / mapel.length) : 0;
         
-        rowData.push(Math.round(total));
+        rowData.push(total);
         rowData.push(average.toFixed(2).replace('.', ','));
+
+        // [MODIFIKASI] Tambahkan kolom pembulatan HANYA untuk tipe 'ujian'
+        if (type === 'ujian') {
+            rowData.push(Math.round(average));
+        }
+        
         tableBodyData.push(rowData);
     });
     
@@ -1575,7 +1740,12 @@ function exportRekapData(spreadsheetId, type, format, exportOptions) {
     const schoolData = getSchoolData(spreadsheetId);
     let currentRow = 1;
     const numMapel = mapel.length;
-    const numColumns = numMapel + 5;
+
+    // [MODIFIKASI] Sesuaikan jumlah total kolom jika tipenya 'ujian'
+    let numColumns = numMapel + 5; // Kolom default: No, NISN, Nama, Jumlah, Rata-Rata
+    if (type === 'ujian') {
+      numColumns++; // Tambah 1 untuk kolom Pembulatan
+    }
 
     // Header Laporan
     tempSheet.getRange(currentRow, 1, 1, numColumns).merge().setValue(reportTitle).setFontSize(16);
@@ -1587,10 +1757,7 @@ function exportRekapData(spreadsheetId, type, format, exportOptions) {
 
     // --- HEADER TABEL (STRUKTUR 2 BARIS) ---
     const tableStartRow = currentRow;
-    // Baris 1: "MATA PELAJARAN"
     tempSheet.getRange(tableStartRow, 4, 1, numMapel).merge().setValue("MATA PELAJARAN");
-    
-    // Baris 2: Kode Mapel
     const mapelHeaders = mapel.map(m => m.kode);
     tempSheet.getRange(tableStartRow + 1, 4, 1, numMapel).setValues([mapelHeaders]);
     
@@ -1598,63 +1765,58 @@ function exportRekapData(spreadsheetId, type, format, exportOptions) {
     tempSheet.getRange(tableStartRow, 1).setValue("No.");
     tempSheet.getRange(tableStartRow, 2).setValue("NISN");
     tempSheet.getRange(tableStartRow, 3).setValue("Nama Siswa");
-    tempSheet.getRange(tableStartRow, 4 + numMapel).setValue("Jumlah");
-    tempSheet.getRange(tableStartRow, 5 + numMapel).setValue("Rata-Rata");
+    const jumlahCol = 4 + numMapel;
+    const rataRataCol = 5 + numMapel;
+    tempSheet.getRange(tableStartRow, jumlahCol).setValue("Jumlah");
+    tempSheet.getRange(tableStartRow, rataRataCol).setValue("Rata-Rata");
 
     // Merge Vertikal
     tempSheet.getRange(tableStartRow, 1, 2, 1).merge();
     tempSheet.getRange(tableStartRow, 2, 2, 1).merge();
     tempSheet.getRange(tableStartRow, 3, 2, 1).merge();
-    tempSheet.getRange(tableStartRow, 4 + numMapel, 2, 1).merge();
-    tempSheet.getRange(tableStartRow, 5 + numMapel, 2, 1).merge();
+    tempSheet.getRange(tableStartRow, jumlahCol, 2, 1).merge();
+    tempSheet.getRange(tableStartRow, rataRataCol, 2, 1).merge();
+    
+    // [MODIFIKASI] Tambahkan header "Pembulatan" jika tipenya 'ujian'
+    if (type === 'ujian') {
+      const pembulatanCol = 6 + numMapel;
+      tempSheet.getRange(tableStartRow, pembulatanCol).setValue("Pembulatan");
+      tempSheet.getRange(tableStartRow, pembulatanCol, 2, 1).merge();
+    }
     
     // Tulis Body Tabel
-    tempSheet.getRange(tableStartRow + 2, 1, tableBodyData.length, numColumns).setValues(tableBodyData);
+    if (tableBodyData.length > 0) {
+        tempSheet.getRange(tableStartRow + 2, 1, tableBodyData.length, numColumns).setValues(tableBodyData);
+    }
 
     // --- APLIKASI FORMAT ---
-    // Seluruh Area
+    // (Kode format lainnya tidak berubah)
     const fullRange = tempSheet.getRange(1, 1, tempSheet.getLastRow() + 5, numColumns);
     fullRange.setFontFamily("Arial").setVerticalAlignment("middle");
-
-    // Header Laporan
     tempSheet.getRange(1, 1, 3, 1).setFontWeight("bold").setHorizontalAlignment("center");
-
-    // Header Tabel
     const tableHeaderRange = tempSheet.getRange(tableStartRow, 1, 2, numColumns);
     tableHeaderRange.setFontWeight("bold").setFontSize(12).setHorizontalAlignment("center").setBackground("#ffff00");
-    
-    // Body Tabel
-    tempSheet.getRange(tableStartRow + 2, 1, tableBodyData.length, numColumns).setFontSize(12);
-    tempSheet.getRange(tableStartRow + 2, 1, tableBodyData.length, 1).setHorizontalAlignment("center");
-    tempSheet.getRange(tableStartRow + 2, 2, tableBodyData.length, 1).setNumberFormat("@").setHorizontalAlignment("center");
-    tempSheet.getRange(tableStartRow + 2, 3, tableBodyData.length, 1).setHorizontalAlignment("left");
-    tempSheet.getRange(tableStartRow + 2, 4, tableBodyData.length, numMapel + 2).setHorizontalAlignment("center");
-
-    // Border
+    if (tableBodyData.length > 0) {
+        tempSheet.getRange(tableStartRow + 2, 1, tableBodyData.length, numColumns).setFontSize(12);
+        tempSheet.getRange(tableStartRow + 2, 1, tableBodyData.length, 1).setHorizontalAlignment("center");
+        tempSheet.getRange(tableStartRow + 2, 2, tableBodyData.length, 1).setNumberFormat("@").setHorizontalAlignment("center");
+        tempSheet.getRange(tableStartRow + 2, 3, tableBodyData.length, 1).setHorizontalAlignment("left");
+        tempSheet.getRange(tableStartRow + 2, 4, tableBodyData.length, numColumns - 3).setHorizontalAlignment("center");
+    }
     tempSheet.getRange(tableStartRow, 1, tableBodyData.length + 2, numColumns).setBorder(true, true, true, true, true, true);
     
-    // --- LOGIKA LEBAR KOLOM YANG DISEMPURNAKAN ---
-    // Atur Lebar Kolom Tetap
+    // --- Atur Lebar Kolom ---
     tempSheet.setColumnWidth(1, 40);
     tempSheet.setColumnWidth(2, 100);
     tempSheet.setColumnWidth(3, 220);
-    tempSheet.setColumnWidth(4 + numMapel, 80);
-    tempSheet.setColumnWidth(5 + numMapel, 80);
-    
-    // Tentukan lebar kolom mapel agar seragam dan pas
-    const pixelPerChar = 7.5; 
-    let maxMapelWidth = 0;
-    mapel.forEach(m => {
-        let width = m.kode.length * pixelPerChar + 10;
-        if (width > maxMapelWidth) {
-            maxMapelWidth = width;
-        }
-    });
-    // Terapkan lebar maksimum ke semua kolom mapel
-    if (maxMapelWidth > 0) {
-        for (let i = 4; i <= 3 + numMapel; i++) {
-            tempSheet.setColumnWidth(i, Math.round(maxMapelWidth));
-        }
+    for (let i = 4; i <= 3 + numMapel; i++) {
+        tempSheet.setColumnWidth(i, 60); // Lebar seragam untuk kolom mapel
+    }
+    tempSheet.setColumnWidth(jumlahCol, 80);
+    tempSheet.setColumnWidth(rataRataCol, 80);
+    // [MODIFIKASI] Atur lebar kolom "Pembulatan"
+    if (type === 'ujian') {
+      tempSheet.setColumnWidth(6 + numMapel, 90);
     }
     // --- AKHIR LOGIKA LEBAR KOLOM ---
 
@@ -1717,13 +1879,8 @@ function exportRekapData(spreadsheetId, type, format, exportOptions) {
     Logger.log(`Export Error: ${e.toString()}\nStack: ${e.stack}`);
     return { error: e.toString() };
   } finally {
-    // 7. Hapus file sementara
     if (tempSpreadsheetFileId) {
-      try {
-        DriveApp.getFileById(tempSpreadsheetFileId).setTrashed(true);
-      } catch (err) {
-        Logger.log(`Gagal menghapus file sementara ${tempSpreadsheetFileId}: ${err.toString()}`);
-      }
+      DriveApp.getFileById(tempSpreadsheetFileId).setTrashed(true);
     }
   }
 }
@@ -1897,4 +2054,152 @@ function getDashboardData(spreadsheetId) {
     Logger.log(e);
     return { status: "error", message: "Gagal mengambil data dashboard: " + e.message };
   }
+}
+
+/**
+ * [PERBAIKAN FINAL] Memperbarui data beberapa siswa sekaligus setelah konfirmasi konflik impor.
+ * Menggunakan struktur data 11 kolom yang benar.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {Array<object>} studentsToUpdate Array objek siswa yang akan diupdate.
+ * @returns {{status: string, message: string}} Status pembaruan.
+ */
+function batchUpdateStudents(spreadsheetId, studentsToUpdate) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
+    let updatedCount = 0;
+
+    studentsToUpdate.forEach(studentData => {
+      // [PERBAIKAN] Susun ulang array agar cocok dengan struktur 11 kolom yang baru
+      const rowToUpdate = [
+        studentData.nisn,
+        studentData.nis,
+        studentData.nama,
+        studentData.jenisKelamin, // <-- Ditambahkan
+        toProperCase(studentData.tempatLahir),
+        studentData.tanggalLahir ? new Date(studentData.tanggalLahir.replace(/-/g, '/')) : '',
+        studentData.alamat,      // <-- Ditambahkan
+        studentData.telepon,     // <-- Ditambahkan
+        studentData.emailSiswa,  // <-- Ditambahkan
+        studentData.tahunMasuk,  // <-- Ditambahkan
+        studentData.tahunLulus   // <-- Ditambahkan
+      ];
+
+      const targetRange = sheet.getRange(studentData.studentRow, 1, 1, rowToUpdate.length);
+      
+      // Sesuaikan format nomor untuk kolom yang benar
+      sheet.getRange(studentData.studentRow, 1, 1, 2).setNumberFormat('@'); // NISN, NIS
+      sheet.getRange(studentData.studentRow, 8, 1, 1).setNumberFormat('@'); // Telepon di kolom H
+
+      targetRange.setValues([rowToUpdate]);
+      updatedCount++;
+    });
+
+    return { status: "success", message: `${updatedCount} data siswa berhasil diperbarui.` };
+  } catch (e) {
+    Logger.log(e);
+    return { status: "error", message: "Gagal memperbarui data siswa secara massal: " + e.message };
+  }
+}
+
+// ===== [BARU] FUNGSI UNTUK MENGHAPUS SEMUA NILAI UJIAN =====
+/**
+ * Menghapus semua konten dari sheet Nilai Ujian Madrasah dan Praktek.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {{status: string, message: string}} Status penghapusan.
+ */
+function deleteAllUjianScores(spreadsheetId) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheetNames = [SHEET_NILAI_UJIAN_MADRASAH, SHEET_NILAI_UJIAN_PRAKTEK];
+    let clearedCount = 0;
+
+    sheetNames.forEach(name => {
+      const sheet = ss.getSheetByName(name);
+      if (sheet && sheet.getLastRow() > 1) {
+        sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
+        clearedCount++;
+      }
+    });
+
+    if (clearedCount === 0) {
+      return { status: "info", message: "Tidak ada data nilai ujian untuk dihapus." };
+    }
+    
+    return { status: "success", message: "Semua data nilai Ujian Madrasah & Praktek telah berhasil dihapus." };
+  } catch (e) {
+    Logger.log(e);
+    return { status: "error", message: "Gagal menghapus data nilai ujian: " + e.message };
+  }
+}
+
+
+// ===== [BARU] FUNGSI UNTUK MENGHAPUS SEMUA NILAI RAPOR PER SEMESTER =====
+/**
+ * Menghapus semua konten nilai rapor (Pengetahuan & Keterampilan) untuk semester tertentu.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {string} semesterKey Kunci semester, cth: 'k10_ganjil'.
+ * @returns {{status: string, message: string}} Status penghapusan.
+ */
+function deleteAllRaporScoresBySemester(spreadsheetId, semesterKey) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheetNames = [
+      `Rapor_Pengetahuan_${semesterKey}`,
+      `Rapor_Keterampilan_${semesterKey}`
+    ];
+    let clearedCount = 0;
+
+    sheetNames.forEach(name => {
+      const sheet = ss.getSheetByName(name);
+      if (sheet && sheet.getLastRow() > 1) {
+        sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
+        clearedCount++;
+      }
+    });
+    
+    if (clearedCount === 0) {
+      return { status: "info", message: "Tidak ada data nilai rapor untuk semester ini yang bisa dihapus." };
+    }
+
+    return { status: "success", message: `Semua data nilai rapor untuk semester ini telah berhasil dihapus.` };
+  } catch (e) {
+    Logger.log(e);
+    return { status: "error", message: "Gagal menghapus data rapor semester: " + e.message };
+  }
+}
+
+/**
+ * [BARU] Membandingkan dua objek data siswa untuk melihat apakah identik di semua kolom.
+ * @param {object} studentA Objek data siswa pertama.
+ * @param {object} studentB Objek data siswa kedua.
+ * @returns {boolean} True jika identik, false jika ada perbedaan.
+ */
+function areStudentsIdentical(studentA, studentB) {
+  // Daftar semua kunci yang ingin dibandingkan
+  const keysToCompare = [
+    'nisn', 'nis', 'nama', 'jenisKelamin', 'tempatLahir', 'tanggalLahir',
+    'alamat', 'telepon', 'emailSiswa', 'tahunMasuk', 'tahunLulus'
+  ];
+
+  for (const key of keysToCompare) {
+    // Menggunakan (objek[key] || '') untuk menangani nilai null/undefined sebagai string kosong
+    // Ini memastikan perbandingan yang konsisten.
+    const valueA = (studentA[key] || '').toString().trim();
+    const valueB = (studentB[key] || '').toString().trim();
+
+    // Khusus untuk tempat lahir, kita bandingkan dalam format Proper Case
+    if (key === 'tempatLahir') {
+      if (toProperCase(valueA) !== toProperCase(valueB)) {
+        return false; // Jika berbeda, langsung kembalikan false
+      }
+    } else {
+      if (valueA !== valueB) {
+        return false; // Jika ada satu saja perbedaan, mereka tidak identik
+      }
+    }
+  }
+
+  // Jika loop selesai tanpa menemukan perbedaan, berarti mereka identik
+  return true;
 }
