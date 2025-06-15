@@ -190,6 +190,12 @@
             height: 1rem;
             width: 1rem;
         }
+
+        /* [BARU] Tambahkan kode ini */
+        .rekap-btn:not(.active):hover {
+            background-color: #3b82f6; /* Warna biru yang sama dengan nav-link */
+            color: white;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -333,6 +339,12 @@
                 <nav class="flex-1 px-4 py-4 space-y-2 overflow-y-auto custom-scrollbar">
                     <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md active" data-page="dashboard"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg><span>Dashboard</span></a>
                     <div class="border-t border-blue-700 my-2"></div>
+                    <a href="#" id="nav-manajemen-akun" class="nav-link flex items-center space-x-3 p-2 rounded-md hidden" data-page="manajemen-akun">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197m0 0A4 4 0 019 9.754a4 4 0 014.541-3.333a4 4 0 014.541 3.333M15 21a6 6 0 00-9-5.197" />
+                        </svg>
+                        <span>Manajemen Akun</span>
+                    </a>
                     <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="data-sekolah"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg><span>Data Sekolah</span></a>
                     <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="data-siswa">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -401,6 +413,17 @@
                                     <p id="mapelCount" class="text-3xl font-bold text-gray-800">0</p>
                                 </div>
                             </div>
+                            <a id="hubungi-admin-card" href="https://wa.me/qr/FMVS3NLDIRUAA1" target="_blank" rel="noopener noreferrer" class="bg-white p-6 rounded-2xl shadow-lg flex items-center space-x-4 transition-transform transform hover:scale-105 cursor-pointer">
+                                <div class="bg-green-100 p-4 rounded-full">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.487 5.235 3.487 8.413 0 6.557-5.338 11.892-11.894 11.892-1.99 0-3.903-.52-5.586-1.456l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 4.315 1.731 6.086l.06.094-1.105 4.023 4.13-1.082.092.055z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-lg font-bold text-gray-800">Hubungi Admin!</p>
+                                    <p class="text-sm text-gray-500 mt-1">Jika ada saran atau menemukan masalah, klik di sini.</p>
+                                </div>
+                            </a>
                         </div>
 
                         <!-- Grafik -->
@@ -434,7 +457,7 @@
 
                             <div class="bg-white p-6 rounded-2xl shadow-lg">
                                 <div class="mb-4">
-                                    <h2 class="text-xl font-bold text-gray-800">Distribusi Rata-rata Nilai Ujian Siswa</h2>
+                                    <h2 class="text-xl font-bold text-gray-800">Peringkat Siswa Berdasarkan Rata-rata Nilai Ujian Siswa</h2>
                                     <p class="text-sm text-gray-500">(Silahkan Perbarui Rekapitulasi Untuk Mendapatkan Grafik Terbaru)</p>
                                 </div>
                                 <div id="examScoreScrollContainer" class="h-96 w-full" style="overflow-x: auto; overflow-y: hidden;">
@@ -524,6 +547,77 @@
                             <div id="schoolStatusMessage" class="mt-6 p-4 rounded-md text-center opacity-0 transition-opacity"></div>
                         </div>
                     </div>
+
+                    <div id="page-manajemen-akun" class="content-page hidden">
+                        <h1 class="text-3xl font-bold text-gray-800">Manajemen Akun Pengguna</h1>
+                        <p class="mt-2 text-gray-600 mb-8">Kelola semua akun yang terdaftar di sistem.</p>
+                        <div class="bg-white p-4 rounded-lg shadow-md mt-8">
+                            <div id="userManagementTableContainer" class="overflow-x-auto">
+                                </div>
+                        </div>
+                    </div>
+
+                    <!-- Letakkan ini di dalam <main> -->
+                    <div id="page-superadmin-dashboard" class="content-page hidden">
+                        <h1 class="text-3xl font-bold text-gray-800 mb-2">Dashboard Superadmin</h1>
+                        <p class="text-gray-600 mb-8">Ringkasan data seluruh sistem.</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <!-- Kartu Total Akun (dapat diklik) -->
+                            <div id="sa-card-total-akun" class="bg-white p-6 rounded-2xl shadow-lg flex items-center space-x-4 transition-transform transform hover:scale-105 cursor-pointer">
+                                <div class="bg-blue-100 p-4 rounded-full">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.653-.125-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.653.125-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Jumlah Seluruh Akun</p>
+                                    <p id="sa-total-akun" class="text-3xl font-bold text-gray-800">...</p>
+                                </div>
+                            </div>
+
+                            <!-- Kartu Total Siswa -->
+                            <div class="bg-white p-6 rounded-2xl shadow-lg flex items-center space-x-4">
+                                <div class="bg-purple-100 p-4 rounded-full">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197m0 0A4 4 0 019 9.754a4 4 0 014.541-3.333a4 4 0 014.541 3.333M15 21a6 6 0 00-9-5.197" /></svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Jumlah Seluruh Siswa</p>
+                                    <p id="sa-total-siswa" class="text-3xl font-bold text-gray-800">...</p>
+                                </div>
+                            </div>
+
+                            <!-- Kartu Akun Aktif -->
+                            <div class="bg-white p-6 rounded-2xl shadow-lg flex items-center space-x-4">
+                                <div class="bg-green-100 p-4 rounded-full">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Akun Aktif</p>
+                                    <p id="sa-akun-aktif" class="text-3xl font-bold text-gray-800">...</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Kartu Akun Nonaktif -->
+                            <div class="bg-white p-6 rounded-2xl shadow-lg flex items-center space-x-4">
+                                <div class="bg-red-100 p-4 rounded-full">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Akun Nonaktif</p>
+                                    <p id="sa-akun-nonaktif" class="text-3xl font-bold text-gray-800">...</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-6 rounded-2xl shadow-lg col-span-1 md:col-span-2">
+                                <h3 class="text-lg font-bold text-gray-800">Pengaturan Batas Default Siswa</h3>
+                                <p class="text-sm text-gray-500 mt-1">Atur batas jumlah siswa default untuk setiap akun baru yang mendaftar.</p>
+                                <div class="mt-4 flex items-center space-x-4">
+                                    <input type="number" id="default-limit-input" class="w-full max-w-xs p-2 border border-gray-300 rounded-md shadow-sm">
+                                    <button id="save-default-limit-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Simpan</button>
+                                </div>
+                                <div id="default-limit-status" class="text-sm mt-2"></div>
+                            </div>
+                        </div>
+                    </div>
                     
                     <div id="page-data-siswa" class="content-page hidden">
                         <div class="flex justify-between items-center mb-6">
@@ -549,6 +643,10 @@
                             </div>
                             <div id="importStatus" class="mt-4"></div>
                         </div>
+                        <!-- [TAMBAHAN] Letakkan div baru ini di sini -->
+                        <div id="student-quota-info" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+                            <!-- Konten kuota akan diisi oleh JavaScript -->
+                        </div>
                         <div class="mt-8 pt-6 border-t">
                             <label for="searchSiswaInput" class="block text-sm font-medium text-gray-700">Cari Siswa (berdasarkan Nama atau NISN)</label>
                             <div class="relative mt-1 rounded-md shadow-sm">
@@ -566,56 +664,55 @@
                     </div>
                     
                     <div id="page-mapel" class="content-page hidden">
-                        <div class="mb-10">
-                            <h2 class="text-2xl font-bold text-gray-800">Pengaturan Bobot Nilai</h2>
-                            <p class="mt-1 text-gray-600">Atur persentase bobot antara nilai ujian dan nilai rapor. Total keduanya harus 100%.</p>
-                            <div class="mt-4 bg-white p-6 rounded-lg shadow-md max-w-xl">
-                                <form id="bobotForm">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                                        <div>
-                                            <label for="bobotUjian" class="block text-sm font-medium text-gray-700">Bobot Nilai Ujian</label>
-                                            <div class="mt-1 relative rounded-md shadow-sm">
-                                                <input type="number" id="bobotUjian" name="bobotUjian" min="0" max="100" class="w-full p-2 pr-8 border rounded-md" required>
-                                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3"><span class="text-gray-500 sm:text-sm">%</span></div>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label for="bobotRapor" class="block text-sm font-medium text-gray-700">Bobot Nilai Rapor</label>
-                                            <div class="mt-1 relative rounded-md shadow-sm">
-                                                <input type="number" id="bobotRapor" name="bobotRapor" min="0" max="100" class="w-full p-2 pr-8 border rounded-md" required>
-                                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3"><span class="text-gray-500 sm:text-sm">%</span></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="mt-6 pt-4 border-t">
-                                        <button type="submit" id="saveBobotBtn" class="bg-blue-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400">Simpan Bobot</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-10 border-t pt-8">
-                            <h2 class="text-xl font-bold text-gray-800">Opsi Impor & Manajemen Data</h2>
-                            <p class="mt-1 text-gray-600">Gunakan opsi di bawah untuk mengelola data mata pelajaran secara massal.</p>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
                             
-                            <!-- Area Import -->
-                            <div class="mt-6 p-6 bg-white rounded-lg shadow-md">
-                                <h3 class="font-semibold text-lg text-gray-800 mb-4">Impor Data Mata Pelajaran</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div class="border p-4 rounded-lg md:col-span-2">
-                                        <h4 class="font-medium text-gray-700">Otomatis dari Sistem</h4>
-                                        <p class="text-sm text-gray-500 mb-3">Impor daftar mata pelajaran standar sesuai dengan jenjang sekolah Anda (MI, MTS, atau MA). Kode mata pelajaran yang sudah ada akan dilewati secara otomatis.</p>
-                                        <button id="importMapelSystemBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 w-full flex items-center justify-center disabled:bg-blue-400">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800">Pengaturan Bobot Nilai</h2>
+                                <p class="mt-1 text-gray-600">Atur persentase bobot antara nilai ujian dan nilai rapor. Total keduanya harus 100%.</p>
+                                <div class="mt-4 bg-white p-6 rounded-lg shadow-md">
+                                    <form id="bobotForm">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                                            <div>
+                                                <label for="bobotUjian" class="block text-sm font-medium text-gray-700">Bobot Nilai Ujian</label>
+                                                <div class="mt-1 relative rounded-md shadow-sm">
+                                                    <input type="number" id="bobotUjian" name="bobotUjian" min="0" max="100" class="w-full p-2 pr-8 border rounded-md" required>
+                                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3"><span class="text-gray-500 sm:text-sm">%</span></div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label for="bobotRapor" class="block text-sm font-medium text-gray-700">Bobot Nilai Rapor</label>
+                                                <div class="mt-1 relative rounded-md shadow-sm">
+                                                    <input type="number" id="bobotRapor" name="bobotRapor" min="0" max="100" class="w-full p-2 pr-8 border rounded-md" required>
+                                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3"><span class="text-gray-500 sm:text-sm">%</span></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-6 pt-4 border-t">
+                                            <button type="submit" id="saveBobotBtn" class="bg-blue-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400">Simpan Bobot</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800">Impor Mata Pelajaran</h2>
+                                <p class="mt-1 text-gray-600">Impor mapel standar sesuai jenjang sekolah Anda.</p>
+                                <div class="mt-4 p-6 bg-white rounded-lg shadow-md">
+                                    <h3 class="font-semibold text-lg text-gray-800">Otomatis dari Sistem</h3>
+                                    <p class="text-sm text-gray-500 mb-3">Impor daftar mata pelajaran standar sesuai dengan jenjang sekolah Anda (MI, MTS, atau MA). Kode mata pelajaran yang sudah ada akan dilewati secara otomatis.</p>
+                                    <button id="importMapelSystemBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 w-full flex items-center justify-center disabled:bg-blue-400">
                                         <span id="importMapelSystemBtnText">Import Mapel by System</span>
                                         <span id="importMapelSystemSpinner" class="hidden loading-animation">Mengimpor</span>
-                                        </button>
-                                    </div>
+                                    </button>
+                                    <div id="importMapelStatus" class="mt-4"></div>
                                 </div>
-                                <div id="importMapelStatus" class="mt-4"></div>
                             </div>
 
-                            <!-- Area Manajemen -->
-                            <div class="mt-6 flex justify-between items-center bg-white p-6 rounded-lg shadow-md">
+                        </div>
+
+                        <div class="border-t pt-8">
+                            
+                            <div class="mb-8 flex justify-between items-center bg-white p-6 rounded-lg shadow-md">
                                 <div>
                                     <h3 class="font-semibold text-lg text-gray-800">Manajemen Data</h3>
                                     <p class="text-sm text-gray-500">Tambah manual atau hapus semua data mapel.</p>
@@ -625,17 +722,26 @@
                                     <button id="deleteAllMapelBtn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">Hapus Semua Mapel</button>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- Tabel Mapel -->
-                        <div class="mt-8">
-                            <h2 class="text-2xl font-bold text-gray-800">Daftar Mata Pelajaran Saat Ini</h2>
-                            <div class="bg-white p-4 rounded-lg shadow-md mt-4">
-                                <div id="mapelTableContainer" class="overflow-x-auto"></div>
+                            
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800">Daftar Mata Pelajaran Saat Ini</h2>
+                                <div class="mb-6">
+                                    <label for="searchMapelInput" class="block text-sm font-medium text-gray-700">Cari Mata Pelajaran</label>
+                                    <div class="relative mt-1 rounded-md shadow-sm">
+                                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <input type="text" id="searchMapelInput" class="block w-full rounded-md border-gray-300 pl-10 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="Ketik kode atau nama mapel untuk mencari...">
+                                    </div>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg shadow-md mt-4">
+                                    <div id="mapelTableContainer" class="overflow-x-auto"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
-
                     
                     <div id="page-input-ujian" class="content-page hidden">
                         <h1 class="text-3xl font-bold text-gray-800">Input Nilai Ujian</h1>
@@ -664,9 +770,9 @@
                         
                         <div id="rekap-content" class="hidden">
                             <div class="flex space-x-4 mb-8 border-b pb-4">
-                                <button data-rekap="ujian" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors">Rekap Nilai Ujian</button>
-                                <button data-rekap="rapor" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors">Rekap Nilai Rapor</button>
-                                <button data-rekap="ijazah" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors">Rekap Nilai Ijazah</button>
+                                <button data-rekap="ujian" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg transition-colors">Rekap Nilai Ujian</button>
+                                <button data-rekap="rapor" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg transition-colors">Rekap Nilai Rapor</button>
+                                <button data-rekap="ijazah" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg transition-colors">Rekap Nilai Ijazah</button>
                                 <button id="updateRekapBtn" class="ml-auto bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center disabled:bg-green-400">
                                     <span id="updateRekapBtnText">Perbarui & Muat Ulang Data</span>
                                     <span id="updateRekapSpinner" class="hidden loading-animation">Memperbarui</span>
@@ -764,6 +870,7 @@
                         <div>
                             <label for="nisn" class="block text-sm font-medium text-gray-700">NISN</label>
                             <input type="text" id="nisn" name="nisn" class="mt-1 w-full p-2 border rounded-md" required>
+                            <div id="nisn-error-msg" class="text-red-600 text-sm mt-1 h-4"></div>
                         </div>
                         
                         <div>
@@ -1121,6 +1228,40 @@
         </div>
     </div>
 
+    <div id="edit-user-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-lg transform scale-95">
+            <div class="flex justify-between items-center border-b p-6">
+                <h2 id="edit-user-modal-title" class="text-2xl font-bold text-gray-800">Edit Akun Pengguna</h2>
+                <button id="closeEditUserModalBtn" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <form id="editUserForm" class="p-6">
+                <input type="hidden" id="edit-user-row">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Email (Tidak bisa diubah)</label>
+                        <input type="email" id="edit-user-email" class="mt-1 w-full p-2 border rounded-md bg-gray-100" readonly>
+                    </div>
+                    <div>
+                        <label for="edit-user-namasekolah" class="block text-sm font-medium text-gray-700">Nama Sekolah</label>
+                        <input type="text" id="edit-user-namasekolah" class="mt-1 w-full p-2 border rounded-md" required>
+                    </div>
+                    <div>
+                        <label for="edit-user-jenjang" class="block text-sm font-medium text-gray-700">Jenjang</label>
+                        <select id="edit-user-jenjang" class="mt-1 w-full p-2 border rounded-md bg-white" required>
+                            <option value="MI">MI</option>
+                            <option value="MTS">MTS</option>
+                            <option value="MA">MA</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t flex justify-end">
+                    <button type="button" id="cancelEditUserBtn" class="bg-gray-300 text-gray-700 py-2 px-4 rounded-md mr-3">Batal</button>
+                    <button type="submit" id="saveEditUserBtn" class="bg-blue-600 text-white py-2 px-4 rounded-md">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div id="data-viewer-tooltip" class="hidden absolute z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm"></div>
     <div id="globalStatusMessage"></div>
 
@@ -1143,6 +1284,7 @@
         let currentImportConflicts = [];
         // Variabel global untuk menyimpan data siswa yang sudah diproses
         let processedStudents = [];
+        let allMapelData = [];
 
         // Fungsi ini akan mengatur tahun saat ini pada elemen footer
         function setFooterYear() {
@@ -1163,16 +1305,24 @@
             const showLoginBtn = document.getElementById('show-login');
             const requestOtpButton = document.getElementById('requestOtpButton'); // Tombol baru
 
-            // Check for existing session on page load
-            const storedId = sessionStorage.getItem('userSpreadsheetId');
-            const lastPage = sessionStorage.getItem('lastActivePage') || 'dashboard';
+            // Logika pengecekan sesi saat halaman dimuat
+            const storedSpreadsheetId = sessionStorage.getItem('userSpreadsheetId');
+            const storedRole = sessionStorage.getItem('userRole');
 
-            if (storedId) {
-                userSpreadsheetId = storedId;
+            if (storedRole === 'Superadmin') {
+                // Jika peran yang tersimpan adalah Superadmin, langsung inisialisasi UI Superadmin
+                document.getElementById('auth-wrapper').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                initializeSuperadminApp();
+            } else if (storedSpreadsheetId) {
+                // Jika ada spreadsheetId, berarti ini pengguna biasa, inisialisasi UI normal
+                userSpreadsheetId = storedSpreadsheetId;
+                const lastPage = sessionStorage.getItem('lastActivePage') || 'dashboard';
                 document.getElementById('auth-wrapper').classList.add('hidden');
                 document.getElementById('app-container').classList.remove('hidden');
                 initializeApp(lastPage);
             } else {
+                // Jika tidak ada keduanya, tampilkan halaman login
                 document.getElementById('auth-wrapper').classList.remove('hidden');
                 document.getElementById('app-container').classList.add('hidden');
             }
@@ -1527,24 +1677,26 @@
                     loginSpinner.classList.add('hidden');
 
                     if (response && response.status === 'success') {
-                        userSpreadsheetId = response.spreadsheetId;
-                        sessionStorage.setItem('userSpreadsheetId', userSpreadsheetId);
-                        sessionStorage.setItem('userEmail', response.email); 
+                        // Simpan data sesi dasar
+                        sessionStorage.setItem('userEmail', response.email);
+                        sessionStorage.setItem('userRole', response.role);
+
                         document.getElementById('auth-wrapper').classList.add('hidden');
                         document.getElementById('app-container').classList.remove('hidden');
-                        initializeApp('dashboard');
 
-                        // =======================================================
-                        // [TAMBAHAN] PANGGIL FUNGSI TUR DI SINI
-                        // =======================================================
-                        // Cek apakah pengguna sudah pernah menyelesaikan tur
-                        if (!localStorage.getItem('hasCompletedAppTour')) {
-                            // Beri jeda sedikit agar transisi halaman selesai
-                            setTimeout(initializeAndStartTour, 500); 
+                        // === LOGIKA PEMILIHAN TAMPILAN ===
+                        if (response.role === 'Superadmin') {
+                            // Jika Superadmin, panggil fungsi inisialisasi khusus superadmin
+                            initializeSuperadminApp();
+                        } else {
+                            // Jika pengguna biasa, simpan spreadsheetId dan panggil inisialisasi normal
+                            userSpreadsheetId = response.spreadsheetId;
+                            sessionStorage.setItem('userSpreadsheetId', userSpreadsheetId);
+                            initializeApp('dashboard');
                         }
-                        // =======================================================
+
                     } else {
-                        errorMessageDiv.textContent = response ? response.message : 'Login gagal karena respons tidak valid.';
+                        errorMessageDiv.textContent = response ? response.message : 'Login gagal.';
                     }
                 })
                 .withFailureHandler(error => {
@@ -1986,46 +2138,65 @@
 
         function initializeApp(lastPage = 'dashboard') {
             if (!userSpreadsheetId) {
-                alert("Error: Sesi tidak valid. Silakan login ulang.");
+                alert("Error: Sesi pengguna tidak valid. Silakan login ulang.");
                 logoutUser();
                 return;
             }
 
+            // Reset timer logout otomatis
             resetInactivityTimer();
-            document.onmousemove = resetInactivityTimer;
-            document.onmousedown = resetInactivityTimer;
-            document.ontouchstart = resetInactivityTimer;
-            document.onclick = resetInactivityTimer;
-            document.onkeydown = resetInactivityTimer;
-            document.addEventListener('scroll', resetInactivityTimer, true);
+            ['mousemove', 'mousedown', 'touchstart', 'click', 'keydown', 'scroll'].forEach(event => {
+                document.addEventListener(event, resetInactivityTimer, true);
+            });
 
-            let rekapitulasiData = null;
+            // 1. Tampilkan SEMUA menu untuk pengguna biasa
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('hidden');
+            });
+            
+            // 2. Sembunyikan menu khusus Superadmin
+            const manajemenAkunNav = document.getElementById('nav-manajemen-akun');
+            if (manajemenAkunNav) manajemenAkunNav.classList.add('hidden');
+
+            // Sisa dari fungsi ini sama seperti sebelumnya...
+            loadSchoolData();
+            setupCompletenessCheck();
+            
             const navLinks = document.querySelectorAll('.nav-link');
             const contentPages = document.querySelectorAll('.content-page');
 
-            loadSchoolData();
-            setupCompletenessCheck();
-
             navLinks.forEach(link => {
-                link.addEventListener('click', e => {
+                // Hapus event listener lama agar tidak menumpuk
+                const newLink = link.cloneNode(true);
+                link.parentNode.replaceChild(newLink, link);
+                
+                newLink.addEventListener('click', e => {
                     e.preventDefault();
-                    if (e.currentTarget.id === 'logoutButton') return;
+                    if (e.currentTarget.id === 'logoutButton' || e.currentTarget.id === 'nav-manajemen-akun') return;
 
                     const targetPageId = e.currentTarget.dataset.page;
                     sessionStorage.setItem('lastActivePage', targetPageId);
                     contentPages.forEach(p => p.classList.add('hidden'));
                     document.getElementById('page-' + targetPageId)?.classList.remove('hidden');
-                    navLinks.forEach(l => l.classList.remove('active'));
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
                     e.currentTarget.classList.add('active');
 
+                    // Logika pemuatan data per halaman (tidak berubah)
                     if (targetPageId === 'dashboard') loadDashboardData();
                     if (targetPageId === 'data-siswa') loadStudentsData();
                     if (targetPageId === 'mapel') { loadMapelData(); loadBobotData(); }
                     if (targetPageId === 'input-ujian') document.getElementById('input-ujian-container').innerHTML = '';
                     if (targetPageId === 'input-rapor') initRaporPage();
                     if (targetPageId === 'rekapitulasi') initRekapitulasiPage();
+                    if (targetPageId === 'ubah-password') { /* fungsi ubah password sudah ada di listener terpisah */ }
                 });
             });
+
+            // Event listener untuk tombol Logout
+            document.getElementById('logoutButton').onclick = (e) => {
+                e.preventDefault();
+                logoutUser();
+            };
             
             document.getElementById('student-card')?.addEventListener('click', () => {
                 document.querySelector('.nav-link[data-page="data-siswa"]').click();
@@ -2035,7 +2206,7 @@
             });
 
             const lastActiveLink = document.querySelector(`.nav-link[data-page="${lastPage}"]`);
-            if (lastActiveLink) {
+            if (lastActiveLink && lastActiveLink.id !== 'nav-manajemen-akun') {
                 lastActiveLink.click();
             } else {
                 document.querySelector('.nav-link[data-page="dashboard"]').click();
@@ -2131,6 +2302,11 @@
                     siswaForm.reset();
                     studentRowInput.value = '';
                     siswaModalTitle.textContent = "Tambah Siswa Baru";
+                    
+                    // [TAMBAHAN] Hapus pesan error lama dan pasang listener baru
+                    document.getElementById('nisn-error-msg').textContent = '';
+                    setupRealtimeNisnCheck();
+
                     openSiswaModal();
                 });
                 closeSiswaModalBtn.addEventListener('click', closeSiswaModal);
@@ -2223,6 +2399,19 @@
                     }
                 });
             }
+            /**
+             * =======================================================================
+             * INSTRUKSI:
+             * Ganti seluruh event listener untuk 'importSiswaBtn' di file Index.html Anda
+             * dengan kode di bawah ini.
+             * * Perubahan ini akan:
+             * 1. Selalu menampilkan notifikasi pop-up ringkas di pojok atas.
+             * 2. Hanya menampilkan laporan detail di bawah jika ada KONFLIK data.
+             * 3. Tidak menampilkan rincian hasil impor jika semuanya sukses.
+             * =======================================================================
+             */
+
+            // Ganti seluruh blok 'if (importSiswaBtn)' Anda dengan ini.
             if (importSiswaBtn) {
                 importSiswaBtn.addEventListener('click', () => {
                     const file = siswaFileInput.files[0];
@@ -2238,170 +2427,170 @@
                             mimeType: file.type,
                             content: reader.result.split(',')[1]
                         };
-                        importStatusDiv.innerHTML = '<p class="text-blue-600 loading-animation">Mengimpor data</p>';
+                        const importStatusDiv = document.getElementById('importStatus');
+                        importStatusDiv.innerHTML = '<p class="text-blue-600 loading-animation">Mengimpor data, mohon tunggu...</p>';
                         importSiswaBtn.disabled = true;
                         importSiswaBtn.textContent = 'Mengimpor...';
+                        
                         google.script.run
                             .withSuccessHandler(response => {
-                                importSiswaBtn.disabled = true;
+                                // Reset tombol dan input file ke keadaan semula
+                                importSiswaBtn.disabled = false;
                                 importSiswaBtn.textContent = 'Import Data';
-                                
-                                const fileNameSpan = document.getElementById('fileName');
-                                fileNameSpan.textContent = 'Tidak ada file dipilih';
+                                document.getElementById('fileName').textContent = 'Tidak ada file dipilih';
                                 siswaFileInput.value = '';
 
-                                const importStatusDiv = document.getElementById('importStatus');
-                                
-                                // [MODIFIKASI] Tampilkan notifikasi pop-up global terlebih dahulu
+                                // 1. Tampilkan notifikasi ringkasan global (pop-up) untuk setiap hasil
                                 if (response.status !== 'error') {
-                                    const summaryMessage = `Impor Selesai: ${response.newCount || 0} baru, ${response.enrichedCount || 0} diperkaya, ${response.conflictCount || 0} konflik.`;
+                                    const summaryMessage = `Impor Selesai: <strong>${response.newCount || 0}</strong> baru, <strong>${response.enrichedCount || 0}</strong> diperkaya, <strong>${response.conflictCount || 0}</strong> konflik.`;
                                     showGlobalStatus(summaryMessage, true);
                                 } else {
                                     showGlobalStatus(response.message, false);
+                                    importStatusDiv.innerHTML = `<p class="p-4 bg-red-100 text-red-700 rounded-md">${response.message}</p>`;
+                                    return;
                                 }
 
-                                // Bangun dan tampilkan laporan detail di bawah tombol impor
-                                let reportHtml = `<div class="p-4 border rounded-md bg-gray-50 mt-4">`;
-
-                                if (response.status === 'error') {
-                                    reportHtml += `<p class="text-red-600 font-bold">${response.message}</p>`;
-                                } else {
-                                    reportHtml += `<strong class="text-lg">Rincian Hasil Impor:</strong><ul class="list-disc list-inside mt-2 space-y-1">`;
-                                    if (response.newCount > 0) reportHtml += `<li class="text-green-700">${response.newCount} siswa baru berhasil ditambahkan.</li>`;
-                                    if (response.enrichedCount > 0) reportHtml += `<li class="text-blue-700">${response.enrichedCount} data siswa berhasil diperkaya (data kosong telah diisi otomatis).</li>`;
-                                    if (response.skippedCount > 0) reportHtml += `<li class="text-yellow-700">${response.skippedCount} data duplikat (data identik atau duplikat di file) dilewati.</li>`;
-                                    
-                                    if (response.conflictCount > 0) {
-                                        currentImportConflicts = response.conflicts;
-                                        reportHtml += `<li class="text-red-700">${response.conflictCount} data terdeteksi memiliki NISN yang sama namun data berbeda (konflik).</li></ul>`;
-                                        
-                                        // Kode untuk menampilkan tabel konflik (tidak diubah, sudah bagus)
-                                        reportHtml += `<div id="conflict-section" class="mt-4 border-t pt-4">
-                                            <h4 class="font-bold text-lg">Tinjau Konflik Data</h4>
-                                            <div class="my-2"><input type="checkbox" id="selectAllConflicts" class="mr-2"><label for="selectAllConflicts">Pilih Semua</label></div>
+                                // 2. Hanya bangun dan tampilkan laporan detail jika ada konflik
+                                if (response.conflictCount > 0) {
+                                    currentImportConflicts = response.conflicts;
+                                    let reportHtml = `
+                                        <div class="p-4 border rounded-md bg-gray-50 mt-4">
+                                            <h4 class="font-bold text-lg text-yellow-800">Tinjau Konflik Data</h4>
+                                            <p class="text-sm text-gray-600 mb-2">Ditemukan ${response.conflictCount} data dengan NISN yang sama namun isinya berbeda. Pilih data yang ingin Anda perbarui dengan versi dari file impor.</p>
+                                            <div class="my-2"><input type="checkbox" id="selectAllConflicts" class="mr-2 h-4 w-4 align-middle"><label for="selectAllConflicts" class="align-middle">Pilih Semua</label></div>
                                             <div class="max-h-60 overflow-y-auto border rounded-md">
                                                 <table class="min-w-full text-sm">
-                                                    <thead class="bg-gray-200 sticky top-0"><tr><th class="p-2">Pilih</th><th class="p-2 text-left">NISN (Klik untuk Detail)</th><th class="p-2 text-left">Nama Lama</th><th class="p-2 text-left">Nama Baru</th></tr></thead>
-                                                    <tbody>`;
-                                        currentImportConflicts.forEach((c, index) => {
-                                            reportHtml += `<tr class="border-b" data-conflict-index="${index}">
-                                                <td class="p-2 text-center"><input type="checkbox" class="conflict-checkbox"></td>
+                                                    <thead class="bg-gray-200 sticky top-0">
+                                                        <tr>
+                                                            <th class="p-2">Pilih</th>
+                                                            <th class="p-2 text-left">NISN (Klik Detail)</th>
+                                                            <th class="p-2 text-left">Nama Lama</th>
+                                                            <th class="p-2 text-left">Nama Baru</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                    `;
+                                    currentImportConflicts.forEach((c, index) => {
+                                        reportHtml += `
+                                            <tr class="border-b" data-conflict-index="${index}">
+                                                <td class="p-2 text-center"><input type="checkbox" class="conflict-checkbox h-4 w-4"></td>
                                                 <td class="p-2 font-mono"><a href="#" class="text-blue-600 hover:underline conflict-detail-link" data-index="${index}">${c.nisn}</a></td>
                                                 <td class="p-2">${c.oldData.nama}</td>
-                                                <td class="p-2 text-green-700">${c.newData.nama}</td>
-                                            </tr>`;
-                                        });
-                                        reportHtml += `</tbody></table></div>
-                                            <div class="mt-4 flex space-x-3">
-                                                <button id="updateSelectedBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Update yang Dipilih</button>
-                                                <button id="updateAllBtn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg">Update Semua Konflik</button>
-                                                <button id="cancelImportUpdateBtn" class="bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">Batal & Tutup</button>
+                                                <td class="p-2 text-green-700 font-medium">${c.newData.nama}</td>
+                                            </tr>
+                                        `;
+                                    });
+                                    reportHtml += `
+                                                    </tbody>
+                                                </table>
                                             </div>
-                                        </div>`;
-                                    } else {
-                                        reportHtml += `</ul>`;
-                                    }
+                                            <div class="mt-4 flex flex-wrap gap-3">
+                                                <button id="updateSelectedBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Update yang Dipilih</button>
+                                                <button id="updateAllBtn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Update Semua Konflik</button>
+                                                <button id="cancelImportUpdateBtn" class="bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600">Batal & Tutup</button>
+                                            </div>
+                                        </div>
+                                    `;
+                                    importStatusDiv.innerHTML = reportHtml;
+                                    setupConflictResolutionListeners(response);
+                                } else {
+                                    // Jika tidak ada konflik, pastikan area laporan detail kosong
+                                    importStatusDiv.innerHTML = '';
                                 }
-                                reportHtml += `</div>`;
-                                importStatusDiv.innerHTML = reportHtml; // Tampilkan laporan
 
-                                // [MODIFIKASI] Kode yang menghilangkan pesan secara otomatis dihapus agar laporan tetap terlihat.
-
-                                // Muat ulang data siswa jika ada data baru atau diperkaya
+                                // 3. Muat ulang tabel siswa jika ada data yang ditambahkan atau diperkaya
                                 if (response.newCount > 0 || response.enrichedCount > 0) {
                                     loadStudentsData();
-                                }
-
-                                // Pasang event listener untuk fungsionalitas di dalam laporan (jika ada konflik)
-                                if (response.conflictCount > 0) {
-                                    setupConflictDetailListeners();
-                                    // (kode event listener untuk tombol update dan batal tidak perlu diubah)
-                                    document.getElementById('selectAllConflicts').onchange = (e) => {
-                                        document.querySelectorAll('.conflict-checkbox').forEach(cb => cb.checked = e.target.checked);
-                                    };
-
-                                    const handleBatchUpdate = (selectedIndices) => {
-                                        if (selectedIndices.length === 0) {
-                                            showGlobalStatus("Tidak ada data yang dipilih untuk diupdate.", false);
-                                            return;
-                                        }
-
-                                        const studentsToUpdate = selectedIndices.map(index => {
-                                            const conflict = response.conflicts[index];
-                                            return { ...conflict.newData, studentRow: conflict.rowToUpdate };
-                                        });
-
-                                        showGlobalStatus(`Mengupdate ${studentsToUpdate.length} data...`, true);
-                                        google.script.run
-                                            .withSuccessHandler(res => {
-                                                showGlobalStatus(res.message, res.status === 'success');
-                                                const importStatusDiv = document.getElementById('importStatus');
-                                                importStatusDiv.innerHTML = `<p class="p-4 bg-green-100 text-green-800 rounded-md">${res.message}. Halaman data siswa akan dimuat ulang.</p>`;
-                                                setTimeout(loadStudentsData, 1500);
-                                                // [MODIFIKASI] Sembunyikan pesan sukses setelah 5 detik
-                                                setTimeout(() => {
-                                                    if (importStatusDiv) {
-                                                        // Buat efek menghilang (fade out) sebelum menghapus
-                                                        importStatusDiv.style.transition = 'opacity 0.5s ease';
-                                                        importStatusDiv.style.opacity = '0';
-                                                        setTimeout(() => {
-                                                            importStatusDiv.innerHTML = '';
-                                                            importStatusDiv.style.opacity = '1'; // Reset opacity untuk penggunaan berikutnya
-                                                        }, 500); // Hapus setelah transisi selesai
-                                                    }
-                                                }, 8000); // Pesan akan hilang setelah 5 detik
-                                            })
-                                            .withFailureHandler(err => showGlobalStatus("Gagal update massal: " + err.message, false))
-                                            .batchUpdateStudents(userSpreadsheetId, studentsToUpdate);
-                                    };
-                                    
-                                    document.getElementById('updateSelectedBtn').onclick = () => {
-                                        const selectedIndices = [];
-                                        document.querySelectorAll('.conflict-checkbox:checked').forEach(cb => {
-                                            const index = cb.closest('tr').dataset.conflictIndex;
-                                            selectedIndices.push(parseInt(index));
-                                        });
-                                        handleBatchUpdate(selectedIndices);
-                                    };
-
-                                    document.getElementById('updateAllBtn').onclick = () => {
-                                        const allIndices = response.conflicts.map((_, index) => index);
-                                        handleBatchUpdate(allIndices);
-                                    };
-
-                                    // [BARU] Event listener untuk tombol batal
-                                    document.getElementById('cancelImportUpdateBtn').onclick = () => {
-                                        document.getElementById('importStatus').innerHTML = ''; // Cukup kosongkan div status
-                                        showGlobalStatus("Proses update dari file dibatalkan.", true);
-                                    };
                                 }
                             })
                             .withFailureHandler(error => {
                                 showGlobalStatus('Error: ' + error.message, false);
-                                // [MODIFIKASI] Tombol kembali nonaktif jika terjadi error
-                                importSiswaBtn.disabled = true; 
+                                importSiswaBtn.disabled = false;
                                 importSiswaBtn.textContent = 'Import Data';
-                                fileNameSpan.textContent = 'Tidak ada file dipilih';
+                                document.getElementById('fileName').textContent = 'Tidak ada file dipilih';
                                 siswaFileInput.value = '';
-                                importStatusDiv.innerHTML = `<p class="text-red-600">${error.message}</p>`;
+                                importStatusDiv.innerHTML = `<p class="p-4 bg-red-100 text-red-700 rounded-md">${error.message}</p>`;
                             })
-                            .importFromExcel(userSpreadsheetId, fileData, 'Data Siswa');
+                            .importFromExcel(userSpreadsheetId, fileData, 'Data Siswa', sessionStorage.getItem('userEmail'));
                     };
-                    reader.onerror = (error) => {
+                    reader.onerror = () => {
                         showGlobalStatus('Gagal membaca file.', false);
                     };
                 });
+            }
+
+            /**
+             * [BARU] Fungsi helper untuk memasang semua event listener pada UI penyelesaian konflik.
+             * Ini membuat kode lebih rapi dan terorganisir.
+             * @param {object} response - Objek respons dari server yang berisi data konflik.
+             */
+            function setupConflictResolutionListeners(response) {
+                document.getElementById('selectAllConflicts').onchange = (e) => {
+                    document.querySelectorAll('.conflict-checkbox').forEach(cb => cb.checked = e.target.checked);
+                };
+
+                const handleBatchUpdate = (selectedIndices) => {
+                    if (selectedIndices.length === 0) {
+                        showGlobalStatus("Tidak ada data yang dipilih untuk diupdate.", false);
+                        return;
+                    }
+                    const studentsToUpdate = selectedIndices.map(index => {
+                        const conflict = response.conflicts[index];
+                        return { ...conflict.newData, studentRow: conflict.rowToUpdate };
+                    });
+                    showGlobalStatus(`Mengupdate ${studentsToUpdate.length} data...`, true);
+                    google.script.run
+                        .withSuccessHandler(res => {
+                            showGlobalStatus(res.message, res.status === 'success');
+                            const importStatusDiv = document.getElementById('importStatus');
+                            importStatusDiv.innerHTML = `<p class="p-4 bg-green-100 text-green-800 rounded-md">${res.message}. Memuat ulang data siswa...</p>`;
+                            setTimeout(() => {
+                                loadStudentsData();
+                                importStatusDiv.innerHTML = '';
+                            }, 2000);
+                        })
+                        .withFailureHandler(err => showGlobalStatus("Gagal update massal: " + err.message, false))
+                        .batchUpdateStudents(userSpreadsheetId, studentsToUpdate);
+                };
+
+                document.getElementById('updateSelectedBtn').onclick = () => {
+                    const selectedIndices = [];
+                    document.querySelectorAll('.conflict-checkbox:checked').forEach(cb => {
+                        const index = cb.closest('tr').dataset.conflictIndex;
+                        selectedIndices.push(parseInt(index));
+                    });
+                    handleBatchUpdate(selectedIndices);
+                };
+
+                document.getElementById('updateAllBtn').onclick = () => {
+                    const allIndices = response.conflicts.map((_, index) => index);
+                    handleBatchUpdate(allIndices);
+                };
+
+                document.getElementById('cancelImportUpdateBtn').onclick = () => {
+                    document.getElementById('importStatus').innerHTML = '';
+                    showGlobalStatus("Proses update dari file dibatalkan.", true);
+                };
+
+                setupConflictDetailListeners();
             }
 
 
             if (siswaForm) {
                 siswaForm.addEventListener('submit', e => {
                     e.preventDefault();
+
+                    // Validasi frontend: Jangan submit jika ada error NISN
+                    if (document.getElementById('nisn-error-msg').textContent) {
+                        showGlobalStatus('Form belum valid. Periksa kembali pesan error yang ada.', false);
+                        return;
+                    }
+
                     const saveBtn = document.getElementById('saveSiswaBtn');
                     const originalBtnText = saveBtn.textContent;
 
                     saveBtn.disabled = true;
-                    saveBtn.textContent = 'Menyimpan';
+                    saveBtn.textContent = 'Menyimpan...';
                     saveBtn.classList.add('loading-animation');
 
                     const studentData = Object.fromEntries(new FormData(e.target).entries());
@@ -2409,18 +2598,21 @@
 
                     google.script.run
                         .withSuccessHandler(response => {
-                            showGlobalStatus(response.message, response.status === 'success');
+                            // Logika notifikasi yang sudah diperbaiki (hanya satu notifikasi per aksi)
                             if (response.status === 'success') {
+                                showGlobalStatus(response.message, true);
                                 closeSiswaModal();
                                 loadStudentsData();
                             } else if (response.status === 'conflict') {
-                                // JIKA ADA KONFLIK, TAMPILKAN MODAL KONFIRMASI
-                                closeSiswaModal(); // Tutup modal tambah/edit dulu
+                                showGlobalStatus(response.message, false);
+                                closeSiswaModal();
                                 displayConflictModal(response.oldData, response.newData);
                             } else {
-                                // Untuk status 'error' atau 'duplicate'
+                                // Ini menangani semua kasus error lainnya (seperti kuota penuh, duplikat, dll)
                                 showGlobalStatus(response.message, false);
                             }
+                            
+                            // Kembalikan tombol ke keadaan normal
                             saveBtn.disabled = false;
                             saveBtn.textContent = originalBtnText;
                             saveBtn.classList.remove('loading-animation');
@@ -2430,7 +2622,9 @@
                             saveBtn.disabled = false;
                             saveBtn.textContent = originalBtnText;
                             saveBtn.classList.remove('loading-animation');
-                        })[handler](userSpreadsheetId, studentData);
+                        })
+                        // [PERBAIKAN SINTAKS] Menghapus tanda titik '.' yang salah sebelum [handler]
+                        [handler](userSpreadsheetId, studentData, sessionStorage.getItem('userEmail'));
                 });
             }
 
@@ -2475,140 +2669,146 @@
                 };
             }
 
-          /**
-           * [FINAL] Fungsi untuk mengambil data siswa dari server.
-           * Tugasnya kini hanya mengambil data, menyimpannya ke variabel global,
-           * dan memanggil fungsi renderSiswaTable untuk menampilkannya.
-           */
-          function loadStudentsData() {
+            /**
+             * [MODIFIKASI] Fungsi untuk mengambil data siswa dari server.
+             * Kini juga memanggil fungsi untuk menampilkan kuota.
+             */
+            function loadStudentsData() {
               const container = document.getElementById('siswaTableContainer');
               container.innerHTML = `<p class="text-center text-gray-500 py-4">Memuat data siswa...</p>`;
-              
+
+              // [TAMBAHAN] Panggil fungsi untuk memuat info kuota setiap kali halaman data siswa dibuka
+              loadAndDisplayStudentQuota();
+
               google.script.run
                   .withSuccessHandler(students => {
-                      // Simpan data asli ke variabel global untuk digunakan oleh fitur pencarian
                       allStudentsData = students || []; 
-                      // Panggil fungsi render untuk menampilkan semua data saat pertama kali dimuat
                       renderSiswaTable(allStudentsData); 
                   })
                   .withFailureHandler(err => {
                       container.innerHTML = `<p class="text-center text-red-500 py-4">Gagal memuat data: ${err.message}</p>`;
                   })
                   .getStudents(userSpreadsheetId);
-          }
+            }
 
-          /**
-          * [FINAL] Fungsi untuk menampilkan data siswa ke dalam tabel HTML.
-          * Fungsi ini bisa dipanggil berulang kali untuk menampilkan data lengkap atau data hasil filter.
-          * @param {Array<object>} studentsToRender - Array data siswa yang ingin ditampilkan.
-          */
-          function renderSiswaTable(studentsToRender) {
-              const container = document.getElementById('siswaTableContainer');
-              container.innerHTML = ''; // Selalu kosongkan kontainer sebelum menampilkan data baru
+            /**
+            * [FINAL] Fungsi untuk menampilkan data siswa ke dalam tabel HTML.
+            * Fungsi ini bisa dipanggil berulang kali untuk menampilkan data lengkap atau data hasil filter.
+            * @param {Array<object>} studentsToRender - Array data siswa yang ingin ditampilkan.
+            */
+            function renderSiswaTable(studentsToRender) {
+                const container = document.getElementById('siswaTableContainer');
+                container.innerHTML = ''; // Selalu kosongkan kontainer sebelum menampilkan data baru
 
-              if (studentsToRender && studentsToRender.length > 0) {
-                  const table = document.createElement('table');
-                  table.className = 'min-w-full divide-y divide-gray-200';
-                  table.innerHTML = `<thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NISN</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Lengkap</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TEMPAT, TANGGAL LAHIR</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"></tbody>`;
-                  
-                  const tbody = table.querySelector('tbody');
-                  studentsToRender.forEach(s => {
-                      const tr = document.createElement('tr');
+                if (studentsToRender && studentsToRender.length > 0) {
+                    const table = document.createElement('table');
+                    table.className = 'min-w-full divide-y divide-gray-200';
+                    table.innerHTML = `<thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NISN</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Lengkap</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TEMPAT, TANGGAL LAHIR</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"></tbody>`;
+                    
+                    const tbody = table.querySelector('tbody');
+                    studentsToRender.forEach(s => {
+                        const tr = document.createElement('tr');
 
-                      // 1. Format tanggal lahir dengan fungsi baru yang lebih tangguh
-                      const formattedDate = formatIndonesianDate(s.tanggalLahir);
+                        // 1. Format tanggal lahir dengan fungsi baru yang lebih tangguh
+                        const formattedDate = formatIndonesianDate(s.tanggalLahir);
 
-                      // 2. Siapkan variabel tempat dan tanggal secara terpisah
-                      const tempat = toProperCase(s.tempatLahir || '');
-                      const tanggal = formattedDate || '';
+                        // 2. Siapkan variabel tempat dan tanggal secara terpisah
+                        const tempat = toProperCase(s.tempatLahir || '');
+                        const tanggal = formattedDate || '';
 
-                      // 3. Gabungkan keduanya dengan logika yang jelas
-                      let ttl = ''; // TTL: Tempat, Tanggal Lahir
-                      if (tempat && tanggal) {
-                          ttl = `${tempat}, ${tanggal}`;
-                      } else if (tempat) {
-                          ttl = tempat;
-                      } else if (tanggal) {
-                          ttl = tanggal;
-                      } else {
-                          // Jika keduanya kosong, tampilkan placeholder
-                          ttl = `<em class="text-gray-400">(data kosong)</em>`;
-                      }
-                      
-                      // 4. Masukkan hasil `ttl` yang sudah bersih ke dalam tabel
-                      tr.innerHTML = `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 nama-siswa-cell">${s.nama.toUpperCase()}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ttl}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><button class="text-indigo-600 hover:text-indigo-900" data-action="edit">Edit</button><button class="text-red-600 hover:text-red-900 ml-4" data-action="delete">Hapus</button></td>`;
-                      
-                      // Pasang event listener
-                      tr.querySelector('[data-action="edit"]').addEventListener('click', () => handleEditStudent(s));
-                      tr.querySelector('[data-action="delete"]').addEventListener('click', (e) => handleDeleteStudent(s, e.target));
-                      
-                      tbody.appendChild(tr);
-                  });
-                  
-                  container.appendChild(table);
-              } else {
-                  // Tampilkan pesan ini jika tidak ada siswa sama sekali ATAU tidak ada hasil pencarian
-                  container.innerHTML = `<p class="text-center text-gray-500 py-4">Belum ada data siswa atau data tidak ditemukan.</p>`;
-              }
-          }
+                        // 3. Gabungkan keduanya dengan logika yang jelas
+                        let ttl = ''; // TTL: Tempat, Tanggal Lahir
+                        if (tempat && tanggal) {
+                            ttl = `${tempat}, ${tanggal}`;
+                        } else if (tempat) {
+                            ttl = tempat;
+                        } else if (tanggal) {
+                            ttl = tanggal;
+                        } else {
+                            // Jika keduanya kosong, tampilkan placeholder
+                            ttl = `<em class="text-gray-400">(data kosong)</em>`;
+                        }
+                        
+                        // 4. Masukkan hasil `ttl` yang sudah bersih ke dalam tabel
+                        tr.innerHTML = `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 nama-siswa-cell">${s.nama.toUpperCase()}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ttl}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><button class="text-indigo-600 hover:text-indigo-900" data-action="edit">Edit</button><button class="text-red-600 hover:text-red-900 ml-4" data-action="delete">Hapus</button></td>`;
+                        
+                        // Pasang event listener
+                        tr.querySelector('[data-action="edit"]').addEventListener('click', () => handleEditStudent(s));
+                        tr.querySelector('[data-action="delete"]').addEventListener('click', (e) => handleDeleteStudent(s, e.target));
+                        
+                        tbody.appendChild(tr);
+                    });
+                    
+                    container.appendChild(table);
+                } else {
+                    // Tampilkan pesan ini jika tidak ada siswa sama sekali ATAU tidak ada hasil pencarian
+                    container.innerHTML = `<p class="text-center text-gray-500 py-4">Belum ada data siswa atau data tidak ditemukan.</p>`;
+                }
+            }
 
-          /**
-          * [FINAL] Fungsi untuk menyiapkan modal saat tombol 'Edit' diklik.
-          * @param {object} student Objek data siswa yang akan diedit.
-          */
-          function handleEditStudent(student) {
-              const siswaModalTitle = document.getElementById('siswa-modal-title');
-              const studentRowInput = document.getElementById('studentRow');
+            /**
+             * [MODIFIKASI] Menyiapkan modal saat tombol 'Edit' diklik.
+             * Kini juga membersihkan pesan error NISN lama sebelum menampilkan modal.
+             * @param {object} student Objek data siswa yang akan diedit.
+             */
+            function handleEditStudent(student) {
+                const siswaModalTitle = document.getElementById('siswa-modal-title');
+                const studentRowInput = document.getElementById('studentRow');
+                const siswaForm = document.getElementById('siswaForm');
 
-              siswaModalTitle.textContent = "Edit Data Siswa";
-              studentRowInput.value = student.row;
-              
-              document.getElementById('nama').value = student.nama;
-              document.getElementById('nisn').value = student.nisn;
-              document.getElementById('nis').value = student.nis;
-              document.getElementById('jenisKelamin').value = student.jenisKelamin;
-              document.getElementById('tempatLahir').value = toProperCase(student.tempatLahir);
-              document.getElementById('tanggalLahir').value = student.tanggalLahir;
-              // [PERBAIKAN] Menggunakan ID yang sudah unik
-              document.getElementById('alamatSiswa').value = student.alamat || '';
-              document.getElementById('teleponSiswa').value = student.telepon || '';
-              document.getElementById('emailSiswa').value = student.emailSiswa || '';
-              document.getElementById('tahunMasuk').value = student.tahunMasuk || '';
-              document.getElementById('tahunLulus').value = student.tahunLulus || '';
+                // Kosongkan form dan pesan error sebelumnya
+                siswaForm.reset(); 
+                document.getElementById('nisn-error-msg').textContent = ''; // <-- [PERBAIKAN] Baris ini ditambahkan
 
-              openSiswaModal();
-          }
+                siswaModalTitle.textContent = "Edit Data Siswa";
+                studentRowInput.value = student.row;
+                
+                // Isi semua field dengan data siswa yang akan diedit
+                document.getElementById('nama').value = student.nama;
+                document.getElementById('nisn').value = student.nisn;
+                document.getElementById('nis').value = student.nis;
+                document.getElementById('jenisKelamin').value = student.jenisKelamin;
+                document.getElementById('tempatLahir').value = toProperCase(student.tempatLahir);
+                document.getElementById('tanggalLahir').value = student.tanggalLahir;
+                document.getElementById('alamatSiswa').value = student.alamat || '';
+                document.getElementById('teleponSiswa').value = student.telepon || '';
+                document.getElementById('emailSiswa').value = student.emailSiswa || '';
+                document.getElementById('tahunMasuk').value = student.tahunMasuk || '';
+                document.getElementById('tahunLulus').value = student.tahunLulus || '';
 
-          /**
-          * [FINAL] Fungsi untuk menangani penghapusan data siswa.
-          * @param {object} student - Objek data siswa yang akan dihapus.
-          * @param {HTMLElement} targetButton - Elemen tombol hapus yang diklik.
-          */
-          function handleDeleteStudent(student, targetButton) {
-              if (targetButton.dataset.confirming) {
-                  google.script.run
-                      .withSuccessHandler(response => {
-                          showGlobalStatus(response.message, response.status === 'success');
-                          if (response.status === 'success') loadStudentsData();
-                      })
-                      .withFailureHandler(err => showGlobalStatus(err.message, false))
-                      .deleteStudent(userSpreadsheetId, student.row);
-              } else {
-                  targetButton.textContent = 'Yakin?';
-                  targetButton.dataset.confirming = true;
-                  targetButton.classList.add('text-yellow-500', 'hover:text-yellow-700');
-                  targetButton.classList.remove('text-red-600', 'hover:text-red-900');
-                  
-                  setTimeout(() => {
-                      if (targetButton.dataset.confirming) {
-                          targetButton.textContent = 'Hapus';
-                          delete targetButton.dataset.confirming;
-                          targetButton.classList.remove('text-yellow-500', 'hover:text-yellow-700');
-                          targetButton.classList.add('text-red-600', 'hover:text-red-900');
-                      }
-                  }, 3000);
-              }
-          }
+                openSiswaModal();
+            }
+
+            /**
+            * [FINAL] Fungsi untuk menangani penghapusan data siswa.
+            * @param {object} student - Objek data siswa yang akan dihapus.
+            * @param {HTMLElement} targetButton - Elemen tombol hapus yang diklik.
+            */
+            function handleDeleteStudent(student, targetButton) {
+                if (targetButton.dataset.confirming) {
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            showGlobalStatus(response.message, response.status === 'success');
+                            if (response.status === 'success') loadStudentsData();
+                        })
+                        .withFailureHandler(err => showGlobalStatus(err.message, false))
+                        .deleteStudent(userSpreadsheetId, student.row);
+                } else {
+                    targetButton.textContent = 'Yakin?';
+                    targetButton.dataset.confirming = true;
+                    targetButton.classList.add('text-yellow-500', 'hover:text-yellow-700');
+                    targetButton.classList.remove('text-red-600', 'hover:text-red-900');
+                    
+                    setTimeout(() => {
+                        if (targetButton.dataset.confirming) {
+                            targetButton.textContent = 'Hapus';
+                            delete targetButton.dataset.confirming;
+                            targetButton.classList.remove('text-yellow-500', 'hover:text-yellow-700');
+                            targetButton.classList.add('text-red-600', 'hover:text-red-900');
+                        }
+                    }, 3000);
+                }
+            }
 
             // --- MAPEL & BOBOT FUNCTIONS ---
             const bobotUjianInput = document.getElementById('bobotUjian');
@@ -2775,34 +2975,67 @@
                 });
             }
 
+            /**
+             * [BARU] Fungsi ini hanya bertugas menampilkan data mapel ke dalam tabel.
+             * @param {Array<object>} mapelToRender Array mapel yang akan ditampilkan.
+             */
+            function renderMapelTable(mapelToRender) {
+                const container = document.getElementById('mapelTableContainer');
+                container.innerHTML = ''; // Kosongkan kontainer sebelum mengisi
+
+                if (mapelToRender && mapelToRender.length > 0) {
+                    const table = document.createElement('table');
+                    table.className = 'min-w-full divide-y divide-gray-200';
+                    table.innerHTML = `
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kode</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Mata Pelajaran</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jenis Ujian</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200"></tbody>`;
+                    
+                    const tbody = table.querySelector('tbody');
+                    mapelToRender.forEach(m => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${m.kode}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 nama-siswa-cell">${m.nama}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${m.jenisUjian}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button class="text-indigo-600 hover:text-indigo-900" data-action="edit">Edit</button>
+                                <button class="text-red-600 hover:text-red-900 ml-4" data-action="delete">Hapus</button>
+                            </td>`;
+                        tr.querySelector('[data-action="edit"]').addEventListener('click', () => handleEditMapel(m));
+                        tr.querySelector('[data-action="delete"]').addEventListener('click', (e) => handleDeleteMapel(m, e.target));
+                        tbody.appendChild(tr);
+                    });
+                    container.appendChild(table);
+                } else {
+                    container.innerHTML = `<p class="text-center text-gray-500 py-4">Data mata pelajaran tidak ditemukan.</p>`;
+                }
+            }
+
+            /**
+             * [MODIFIKASI] Fungsi ini sekarang hanya bertugas mengambil data mapel dari server,
+             * menyimpannya ke variabel global, lalu memanggil renderMapelTable.
+             */
             function loadMapelData() {
                 const container = document.getElementById('mapelTableContainer');
-                container.innerHTML = `<p class="text-center text-gray-500 py-4">Memuat data mapel...</p>`;
+                container.innerHTML = `<p class="text-center text-gray-500 py-4 loading-animation">Memuat data mapel</p>`;
                 google.script.run
                     .withSuccessHandler(mapelList => {
-                        if (mapelList && mapelList.length > 0) {
-                            const table = document.createElement('table');
-                            table.className = 'min-w-full divide-y divide-gray-200';
-                            table.innerHTML = `<thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kode</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Mata Pelajaran</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jenis Ujian</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"></tbody>`;
-                            const tbody = table.querySelector('tbody');
-                            mapelList.forEach(m => {
-                                const tr = document.createElement('tr');
-                                tr.innerHTML = `<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${m.kode}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 nama-siswa-cell">${m.nama}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${m.jenisUjian}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><button class="text-indigo-600 hover:text-indigo-900" data-action="edit">Edit</button><button class="text-red-600 hover:text-red-900 ml-4" data-action="delete">Hapus</button></td>`;
-                                tr.querySelector('[data-action="edit"]').addEventListener('click', () => handleEditMapel(m));
-                                tr.querySelector('[data-action="delete"]').addEventListener('click', (e) => handleDeleteMapel(m, e.target));
-                                tbody.appendChild(tr);
-                            });
-                            container.innerHTML = '';
-                            container.appendChild(table);
-                        } else {
-                            container.innerHTML = `<p class="text-center text-gray-500 py-4">Belum ada data mata pelajaran.</p>`;
-                        }
+                        allMapelData = mapelList || []; // Simpan data asli ke variabel global
+                        renderMapelTable(allMapelData);   // Panggil fungsi render untuk menampilkan semua data
                     })
                     .withFailureHandler(err => {
                         container.innerHTML = `<p class="text-center text-red-500 py-4">Gagal memuat data: ${err.message}</p>`;
                     })
                     .getMapel(userSpreadsheetId);
             }
+
 
             // --- DENGAN KUMPULAN KODE BARU INI ---
 
@@ -3693,6 +3926,19 @@
                     }
                 });
             }
+
+            const searchMapelInput = document.getElementById('searchMapelInput');
+            if (searchMapelInput) {
+                searchMapelInput.addEventListener('input', () => {
+                    const keyword = searchMapelInput.value.toLowerCase().trim();
+                    const filteredMapel = allMapelData.filter(mapel => {
+                        const nameMatch = mapel.nama.toLowerCase().includes(keyword);
+                        const codeMatch = mapel.kode.toLowerCase().includes(keyword);
+                        return nameMatch || codeMatch;
+                    });
+                    renderMapelTable(filteredMapel);
+                });
+            }
         }
 
         /**
@@ -4484,18 +4730,18 @@
                 attachTo: { element: '#logoutButton', on: 'top' },
                 buttons: [
                     { text: '&larr; Kembali', action: tour.back, classes: 'shepherd-button-secondary' },
-                    { text: 'Selesai', action: tour.next }
+                    { text: 'Selanjutnya &rarr;', action: tour.next }
                 ]
             });
 
             tour.addStep({
-                id: 'step-10-footer',
+                id: 'step-10-contact', // ID diubah agar lebih deskriptif
                 title: 'Dukungan & Bantuan',
-                text: 'Menemukan kendala atau punya saran untuk aplikasi ini? Jangan ragu untuk menghubungi kami dengan mengklik tautan ini. Masukan Anda sangat berharga!',
-                attachTo: { element: '#app-container footer a', on: 'top' }, // Selector menunjuk ke link di footer
+                text: 'Menemukan kendala atau punya saran? Jangan ragu untuk menghubungi kami dengan mengklik kartu ini. Masukan Anda sangat berharga!',
+                attachTo: { element: '#hubungi-admin-card', on: 'bottom' }, // <-- Selector diubah ke kartu baru
                 buttons: [
                     { text: '&larr; Kembali', action: tour.back, classes: 'shepherd-button-secondary' },
-                    { text: 'Selesai!', action: tour.next } // Tombol Selesai di langkah terakhir
+                    { text: 'Selesai!', action: tour.complete } // Gunakan tour.complete untuk menandai tur selesai
                 ]
             });
 
@@ -4511,6 +4757,370 @@
             tour.on('cancel', handleTourEnd);
 
             tour.start();
+        }
+
+        // Letakkan ini di dalam event listener DOMContentLoaded atau di area fungsi-fungsi utama
+        // --- SUPERADMIN FUNCTIONS ---
+
+        // Panggil fungsi ini saat menu 'Manajemen Akun' diklik
+        function loadUserManagementPage() {
+            const container = document.getElementById('userManagementTableContainer');
+            container.innerHTML = `<p class="text-center p-8 loading-animation">Memuat data pengguna</p>`;
+            
+            const adminEmail = sessionStorage.getItem('userEmail');
+
+            // **PERBAIKAN: Cek email admin di sisi frontend sebelum mengirim ke backend**
+            if (!adminEmail) {
+                container.innerHTML = `<p class="text-center text-red-500 p-4">Error: Sesi admin tidak ditemukan atau telah berakhir. Silakan logout dan login kembali.</p>`;
+                return; // Hentikan eksekusi jika email admin tidak ada
+            }
+            
+            google.script.run
+                .withSuccessHandler(users => {
+                    renderUserManagementTable(users);
+                })
+                .withFailureHandler(err => {
+                    // Pesan error dari backend sekarang akan lebih jelas
+                    container.innerHTML = `<p class="text-center text-red-500 p-4">Gagal memuat data: ${err.message}</p>`;
+                })
+                .getAllUsers_Superadmin(adminEmail);
+        }
+
+        // Render tabel semua pengguna
+        function renderUserManagementTable(users) {
+            const container = document.getElementById('userManagementTableContainer');
+            if (!users || users.length === 0) {
+                container.innerHTML = `<p class="text-center p-4">Tidak ada pengguna lain yang terdaftar.</p>`;
+                return;
+            }
+
+            let tableHtml = `<table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Sekolah</th>
+                        <!-- KOLOM BARU -->
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Siswa (Saat Ini / Batas)</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">`;
+
+            users.forEach(user => {
+                const isSelf = user.email === sessionStorage.getItem('userEmail');
+                const statusClass = user.status === 'Aktif' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                const statusBtnText = user.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan';
+                const statusBtnClass = user.status === 'Aktif' ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900';
+                
+                tableHtml += `<tr>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${user.email} ${user.role === 'Superadmin' ? '<span class="text-xs font-bold text-blue-600">(Superadmin)</span>' : ''}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${user.namaSekolah}</td>
+                    <!-- DATA BARU -->
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-center font-mono">${user.currentStudentCount} / ${user.studentLimit}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-center"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">${user.status}</span></td>
+                    <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button class="text-indigo-600 hover:text-indigo-900" onclick='handleEditUser_Superadmin(${JSON.stringify(user)})'>Edit Akun</button>
+                        <!-- TOMBOL BARU -->
+                        <button class="ml-4 text-purple-600 hover:text-purple-900" onclick='handleSetLimit_Superadmin(${user.row}, "${user.studentLimit}")'>Ubah Limit</button>
+                        ${!isSelf ? `<button class="ml-4 ${statusBtnClass}" onclick='handleSetStatus_Superadmin(${user.row}, "${statusBtnText}")'>${statusBtnText}</button>` : ''}
+                    </td>
+                </tr>`;
+            });
+
+            tableHtml += `</tbody></table>`;
+            container.innerHTML = tableHtml;
+        }
+
+        // Buka modal edit dengan data pengguna
+        function handleEditUser_Superadmin(user) {
+            document.getElementById('edit-user-row').value = user.row;
+            document.getElementById('edit-user-email').value = user.email;
+            document.getElementById('edit-user-namasekolah').value = user.namaSekolah;
+            document.getElementById('edit-user-jenjang').value = user.jenjang;
+
+            const modal = document.getElementById('edit-user-modal');
+            modal.classList.remove('hidden');
+            
+            document.getElementById('closeEditUserModalBtn').onclick = () => modal.classList.add('hidden');
+            document.getElementById('cancelEditUserBtn').onclick = () => modal.classList.add('hidden');
+            
+            document.getElementById('editUserForm').onsubmit = (e) => {
+                e.preventDefault();
+                const updatedData = {
+                    row: document.getElementById('edit-user-row').value,
+                    email: document.getElementById('edit-user-email').value,
+                    namaSekolah: document.getElementById('edit-user-namasekolah').value,
+                    jenjang: document.getElementById('edit-user-jenjang').value
+                };
+                const adminEmail = sessionStorage.getItem('userEmail');
+                
+                google.script.run
+                    .withSuccessHandler(response => {
+                        showGlobalStatus(response.message, response.status === 'success');
+                        if (response.status === 'success') {
+                            modal.classList.add('hidden');
+                            loadUserManagementPage();
+                        }
+                    })
+                    .updateUserBySuperadmin(adminEmail, updatedData);
+            };
+        }
+
+        // Ubah status akun
+        function handleSetStatus_Superadmin(row, action) {
+            const newStatus = action === 'Nonaktifkan' ? 'Nonaktif' : 'Aktif';
+            if (confirm(`Anda yakin ingin ${action.toLowerCase()} akun ini?`)) {
+                const adminEmail = sessionStorage.getItem('userEmail');
+                google.script.run
+                    .withSuccessHandler(response => {
+                        showGlobalStatus(response.message, response.status === 'success');
+                        if (response.status === 'success') {
+                            loadUserManagementPage();
+                        }
+                    })
+                    .setUserStatus_Superadmin(adminEmail, row, newStatus);
+            }
+        }
+
+        /**
+         * [MODIFIKASI] Menyiapkan UI khusus untuk Superadmin, dengan Dashboard sebagai halaman utama.
+         */
+        function initializeSuperadminApp() {
+            // Sembunyikan SEMUA menu navigasi pengguna biasa
+            document.querySelectorAll('.nav-link').forEach(link => {
+                const page = link.dataset.page;
+                if (page && page !== 'dashboard' && page !== 'manajemen-akun' && page !== 'ubah-password') {
+                    link.classList.add('hidden');
+                }
+            });
+
+            // Tampilkan menu yang relevan untuk Superadmin
+            const dashboardNav = document.querySelector('.nav-link[data-page="dashboard"]');
+            const manajemenAkunNav = document.getElementById('nav-manajemen-akun');
+            const ubahPasswordNav = document.querySelector('.nav-link[data-page="ubah-password"]');
+            const logoutButton = document.getElementById('logoutButton');
+            
+            if (dashboardNav) dashboardNav.classList.remove('hidden');
+            if (manajemenAkunNav) manajemenAkunNav.classList.remove('hidden');
+            if(ubahPasswordNav) ubahPasswordNav.classList.remove('hidden'); // Juga tampilkan ubah password
+            if (logoutButton) logoutButton.classList.remove('hidden');
+            
+            document.getElementById('school-name-sidebar').textContent = 'SUPERADMIN PANEL';
+
+            // Sembunyikan semua halaman konten
+            document.querySelectorAll('.content-page').forEach(page => page.classList.add('hidden'));
+
+            // Tampilkan Dashboard Superadmin sebagai halaman default
+            const saDashboard = document.getElementById('page-superadmin-dashboard');
+            if (saDashboard) {
+                saDashboard.classList.remove('hidden');
+                if (dashboardNav) dashboardNav.classList.add('active');
+                loadSuperadminDashboardData(); // Muat data dashboard
+            }
+
+            // Fungsi untuk meng-handle klik navigasi Superadmin
+            const handleSuperadminNav = (targetPageId) => {
+                document.querySelectorAll('.content-page').forEach(p => p.classList.add('hidden'));
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+
+                const targetPage = document.getElementById('page-' + targetPageId);
+                const targetLink = document.querySelector(`.nav-link[data-page="${targetPageId}"]`);
+
+                if (targetPage) targetPage.classList.remove('hidden');
+                if (targetLink) targetLink.classList.add('active');
+
+                if (targetPageId === 'superadmin-dashboard') {
+                    loadSuperadminDashboardData();
+                } else if (targetPageId === 'manajemen-akun') {
+                    loadUserManagementPage();
+                }
+            };
+
+            // Pasang event listener untuk navigasi
+            if (dashboardNav) dashboardNav.onclick = (e) => {
+                e.preventDefault();
+                // Ganti halaman ke dashboard superadmin, bukan dashboard biasa
+                handleSuperadminNav('superadmin-dashboard');
+            };
+            if (manajemenAkunNav) manajemenAkunNav.onclick = (e) => {
+                e.preventDefault();
+                handleSuperadminNav('manajemen-akun');
+            };
+            if (ubahPasswordNav) ubahPasswordNav.onclick = (e) => {
+                e.preventDefault();
+                handleSuperadminNav('ubah-password');
+            };
+            if (logoutButton) logoutButton.onclick = (e) => {
+                e.preventDefault();
+                logoutUser();
+            };
+
+            // Event listener untuk kartu yang bisa diklik
+            const saCardTotalAkun = document.getElementById('sa-card-total-akun');
+            if (saCardTotalAkun) {
+                saCardTotalAkun.onclick = () => {
+                    if (manajemenAkunNav) handleSuperadminNav('manajemen-akun');
+                };
+            }
+            setupDefaultLimitManager(); 
+        }
+
+        /**
+         * [BARU] Memuat dan menampilkan data untuk dashboard Superadmin.
+         */
+        function loadSuperadminDashboardData() {
+            // Tampilkan loading spinner
+            document.getElementById('sa-total-akun').textContent = '...';
+            document.getElementById('sa-total-siswa').textContent = '...';
+            document.getElementById('sa-akun-aktif').textContent = '...';
+            document.getElementById('sa-akun-nonaktif').textContent = '...';
+
+            const adminEmail = sessionStorage.getItem('userEmail');
+            if (!adminEmail) return;
+
+            google.script.run
+                .withSuccessHandler(data => {
+                    if(data) {
+                        document.getElementById('sa-total-akun').textContent = data.totalAccounts;
+                        document.getElementById('sa-total-siswa').textContent = data.totalStudents;
+                        document.getElementById('sa-akun-aktif').textContent = data.activeAccounts;
+                        document.getElementById('sa-akun-nonaktif').textContent = data.inactiveAccounts;
+                    }
+                })
+                .withFailureHandler(err => {
+                    showGlobalStatus(`Gagal memuat dashboard: ${err.message}`, false);
+                })
+                .getSuperadminDashboardData(adminEmail);
+        }
+
+        // Letakkan ini bersama fungsi-fungsi JavaScript lainnya
+
+        // Fungsi untuk menangani klik tombol "Ubah Limit"
+        function handleSetLimit_Superadmin(rowNumber, currentLimit) {
+            const newLimit = prompt(`Masukkan batas siswa baru untuk akun ini.\nBatas saat ini: ${currentLimit}`, currentLimit);
+            
+            if (newLimit !== null && newLimit.trim() !== "") {
+                const adminEmail = sessionStorage.getItem('userEmail');
+                google.script.run
+                    .withSuccessHandler(response => {
+                        showGlobalStatus(response.message, response.status === 'success');
+                        if (response.status === 'success') {
+                            loadUserManagementPage(); // Muat ulang tabel untuk melihat perubahan
+                        }
+                    })
+                    .setStudentLimit_Superadmin(adminEmail, rowNumber, newLimit);
+            }
+        }
+
+        // Pasang event listener untuk pengaturan default di dashboard
+        function setupDefaultLimitManager() {
+            const adminEmail = sessionStorage.getItem('userEmail');
+            const input = document.getElementById('default-limit-input');
+            const saveBtn = document.getElementById('save-default-limit-btn');
+            const statusDiv = document.getElementById('default-limit-status');
+            
+            if (!saveBtn) return;
+
+            // 1. Ambil nilai saat ini saat halaman dimuat
+            google.script.run
+                .withSuccessHandler(response => {
+                    if (response.status === 'success') {
+                        input.value = response.currentLimit;
+                    }
+                })
+                .manageDefaultStudentLimit_Superadmin(adminEmail);
+
+            // 2. Simpan nilai baru saat tombol diklik
+            saveBtn.addEventListener('click', () => {
+                const newLimit = input.value;
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Menyimpan...';
+                statusDiv.textContent = '';
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        statusDiv.textContent = response.message;
+                        statusDiv.className = response.status === 'success' ? 'text-green-600 text-sm mt-2' : 'text-red-600 text-sm mt-2';
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = 'Simpan';
+                    })
+                    .manageDefaultStudentLimit_Superadmin(adminEmail, newLimit);
+            });
+        }
+
+        /**
+         * [MODIFIKASI] Memasang listener untuk validasi NISN ganda secara real-time.
+         * Pengecekan kini hanya aktif saat menambah siswa baru (studentRow kosong).
+         */
+        function setupRealtimeNisnCheck() {
+            const nisnInput = document.getElementById('nisn');
+            const errorMsgDiv = document.getElementById('nisn-error-msg');
+            const studentRowInput = document.getElementById('studentRow');
+
+            const nisnBlurHandler = () => {
+                // [PERBAIKAN] Logika ini memastikan pengecekan HANYA berjalan jika
+                // input studentRow kosong, yang menandakan mode "Tambah Siswa".
+                if (studentRowInput.value) {
+                    errorMsgDiv.textContent = ''; // Pastikan pesan error selalu bersih di mode edit
+                    return;
+                }
+
+                const nisnValue = nisnInput.value.trim();
+                if (!nisnValue) {
+                    errorMsgDiv.textContent = '';
+                    return;
+                }
+
+                const isDuplicate = allStudentsData.some(student => student.nisn === nisnValue);
+
+                if (isDuplicate) {
+                    errorMsgDiv.textContent = 'NISN ini sudah digunakan. Silakan gunakan NISN lain.';
+                } else {
+                    errorMsgDiv.textContent = '';
+                }
+            };
+            
+            // Menggunakan pola listener yang lebih aman untuk mencegah penumpukan
+            if (nisnInput.nisnBlurHandler) {
+                nisnInput.removeEventListener('blur', nisnInput.nisnBlurHandler);
+            }
+            nisnInput.nisnBlurHandler = nisnBlurHandler;
+            nisnInput.addEventListener('blur', nisnInput.nisnBlurHandler);
+        }
+
+        /**
+         * [BARU] Memuat dan menampilkan informasi kuota siswa di halaman Data Siswa.
+         */
+        function loadAndDisplayStudentQuota() {
+            const quotaContainer = document.getElementById('student-quota-info');
+            if (!quotaContainer) return;
+
+            quotaContainer.innerHTML = `<span class="loading-animation">Memuat info kuota</span>`;
+
+            const userEmail = sessionStorage.getItem('userEmail');
+            if (!userEmail) {
+                quotaContainer.innerHTML = 'Gagal memuat info kuota: Sesi tidak ditemukan.';
+                return;
+            }
+
+            google.script.run
+                .withSuccessHandler(response => {
+                    if (response && response.status === 'success') {
+                        const { totalLimit, usedCount, remaining } = response;
+                        quotaContainer.innerHTML = `
+                            <span class="font-semibold">Jumlah Total Kuota: <span class="text-lg">${totalLimit}</span></span>
+                            <span class="font-semibold">Jumlah Yang Digunakan: <span class="text-lg">${usedCount}</span></span>
+                            <span class="font-semibold text-green-600">Sisa Kuota Siswa: <span class="text-lg">${remaining}</span></span>
+                        `;
+                    } else {
+                        quotaContainer.innerHTML = response.message || 'Gagal memuat info kuota.';
+                    }
+                })
+                .withFailureHandler(err => {
+                    quotaContainer.innerHTML = `Error: ${err.message}`;
+                })
+                .getStudentQuotaInfo(userEmail);
         }
     </script>
 </body>
