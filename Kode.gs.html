@@ -200,15 +200,14 @@ function sendVerificationEmail(email) {
 
 
 /**
- * [MODIFIKASI] Mendaftarkan pengguna baru setelah verifikasi OTP berhasil.
- * Password kini di-hash sebelum disimpan.
+ * [MODIFIKASI FINAL] Mendaftarkan pengguna baru setelah verifikasi OTP berhasil.
+ * Secara otomatis mengatur Role='Pengguna' dan Status='Aktif'.
  * @param {{email: string, password: string, namaSekolah: string, jenjang: string}} userData Objek berisi data pengguna baru.
  * @param {string} otp Kode OTP yang dimasukkan pengguna.
  * @returns {{status: string, message: string}} Objek status pendaftaran.
  */
 function registerUser(userData, otp) {
   try {
-    // Di sini, 'password' dideklarasikan sebagai const dan nilainya tidak akan diubah.
     const { email, password, namaSekolah, jenjang } = userData;
 
     if (!verifyOtp(email, otp)) {
@@ -223,6 +222,9 @@ function registerUser(userData, otp) {
     lock.waitLock(30000);
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
+    // **[BARU]** Ambil nilai batas default dari sheet Konfigurasi
+    const configSheet = ss.getSheetByName('Konfigurasi Sistem');
+    const defaultLimit = configSheet ? configSheet.getRange("B2").getValue() : 100; // Default 100 jika sheet tidak ada
     let userSheet = ss.getSheetByName(SHEET_PENGGUNA);
     if (!userSheet) {
       throw new Error(`Sheet '${SHEET_PENGGUNA}' tidak ditemukan di spreadsheet induk.`);
@@ -251,16 +253,22 @@ function registerUser(userData, otp) {
 
     const userId = Utilities.getUuid();
     
-    // --- POLA YANG BENAR ---
-    // Buat variabel BARU untuk menampung hasil hash.
-    // Variabel 'password' dari userData tidak diubah sama sekali.
     const salt = generateSalt();
     const hashedPassword = hashPassword(password, salt);
     const storedPasswordString = `${salt}:${hashedPassword}`; 
-    // --- Akhir Pola yang Benar ---
 
-    // Gunakan variabel baru ('storedPasswordString') saat menyimpan ke sheet.
-    userSheet.appendRow([userId, email, storedPasswordString, namaSekolah, jenjang, newSpreadsheetId]);
+    // **[PERBAIKAN]** appendRow sekarang memiliki 9 kolom, termasuk Student Limit
+    userSheet.appendRow([
+        userId, 
+        email, 
+        storedPasswordString, 
+        namaSekolah, 
+        jenjang, 
+        newSpreadsheetId, 
+        'Pengguna', // Role
+        'Aktif',    // Status
+        defaultLimit // Student Limit
+    ]);
     
     CacheService.getScriptCache().remove(email.toLowerCase());
     
@@ -269,35 +277,26 @@ function registerUser(userData, otp) {
 
   } catch (error) {
     Logger.log(error);
-    // Tambahkan error.stack untuk detail lebih lanjut jika masih gagal
     return { status: "error", message: "Gagal mendaftar: " + error.message + " Stack: " + error.stack };
   }
 }
 
 /**
- * [MODIFIKASI] Memeriksa kredensial login. Mendukung password plaintext (lama)
- * dan password hashed (baru). Secara otomatis meng-upgrade password plaintext
- * menjadi hashed jika login berhasil.
+ * [MODIFIKASI FINAL] Memeriksa kredensial login.
+ * Menangani kasus Superadmin yang tidak memiliki spreadsheetId.
  * @param {string} email Email pengguna.
  * @param {string} password Password pengguna.
- * @returns {{status: string, message: string, spreadsheetId?: string}} Objek status login.
+ * @returns {object} Objek status login.
  */
 function checkLogin(email, password) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
-
-    if (!userSheet) {
-      return { status: "error", message: `Kesalahan Konfigurasi: Sheet '${SHEET_PENGGUNA}' tidak ditemukan.` };
+    if (!userSheet || userSheet.getLastRow() < 2) {
+      return { status: "error", message: "Konfigurasi pengguna tidak ditemukan." };
     }
 
-    if (userSheet.getLastRow() < 2) {
-      return { status: "error", message: "Belum ada pengguna terdaftar." };
-    }
-
-    const users = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 6).getValues();
-    
-    // Gunakan findIndex untuk mendapatkan baris spreadsheet yang benar untuk diupdate nanti
+    const users = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 8).getValues();
     const userIndex = users.findIndex(userRow => userRow[1].toLowerCase() === email.toLowerCase());
 
     if (userIndex === -1) {
@@ -305,40 +304,45 @@ function checkLogin(email, password) {
     }
 
     const userRow = users[userIndex];
-    const storedPassword = userRow[2].toString(); // Kolom password adalah index 2
-    const spreadsheetId = userRow[5]; // Kolom ID spreadsheet adalah index 5
+    const storedPassword = userRow[2].toString();
+    let spreadsheetId = userRow[5]; // Kolom F
+    const role = userRow[6] || 'Pengguna'; // Kolom G
+    const status = userRow[7] || 'Aktif';   // Kolom H
+
+    if (status !== 'Aktif') {
+        return { status: "error", message: "Akun Anda saat ini tidak aktif. Silahkan hubungi Admin." };
+    }
+
+    // Untuk Superadmin, spreadsheetId boleh kosong.
+    if (role === 'Superadmin') {
+      spreadsheetId = null; 
+    } else if (!spreadsheetId) {
+      // Untuk pengguna biasa, spreadsheetId wajib ada.
+      return { status: "error", message: "Akun pengguna ini tidak terkonfigurasi dengan benar (tidak ada Spreadsheet ID)." };
+    }
 
     let passwordIsValid = false;
-
-    // Cek apakah password tersimpan dalam format baru (mengandung ':') atau lama (plaintext)
     if (storedPassword.includes(':')) {
-      // --- Ini adalah akun baru/sudah di-upgrade dengan password hashed ---
       passwordIsValid = verifyPassword(password, storedPassword);
     } else {
-      // --- Ini adalah akun lama dengan password plaintext ---
+      // Logika upgrade password lama (jika masih diperlukan)
       passwordIsValid = (storedPassword === password);
-      
       if (passwordIsValid) {
-        // Jika login BERHASIL, upgrade password mereka ke format hash
         try {
           const salt = generateSalt();
           const newHashedPassword = hashPassword(password, salt);
           const newStoredPasswordString = `${salt}:${newHashedPassword}`;
-          
-          // Update spreadsheet. userIndex adalah 0-based, data sheet dimulai dari baris 2
-          const rowToUpdate = userIndex + 2; 
-          // Kolom password adalah kolom ke-3 (C)
+          const rowToUpdate = userIndex + 2;
           userSheet.getRange(rowToUpdate, 3).setValue(newStoredPasswordString);
           Logger.log(`Password for ${email} successfully upgraded to hashed format.`);
         } catch (e) {
             Logger.log(`Failed to upgrade password for ${email}. Error: ${e.message}`);
-            // Gagal upgrade tidak menghentikan login, hanya dicatat.
         }
       }
     }
 
     if (passwordIsValid) {
-        return { status: "success", message: "Login berhasil.", spreadsheetId: spreadsheetId, email: userRow[1] };
+        return { status: "success", message: "Login berhasil.", spreadsheetId: spreadsheetId, email: userRow[1], role: role };
     } else {
         return { status: "error", message: "Password salah." };
     }
@@ -656,59 +660,55 @@ function getStudents(spreadsheetId) {
 }
 
 /**
- * [MODIFIKASI] Menambahkan siswa baru atau mendeteksi konflik jika NISN sudah ada.
+ * [MODIFIKASI & PERBAIKAN FINAL] Menambahkan siswa baru atau mendeteksi konflik jika NISN sudah ada.
+ * Kini juga memeriksa batas siswa sebelum menambahkan.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @param {object} studentData Objek data siswa baru.
+ * @param {string} userEmail Email pengguna yang melakukan aksi (dikirim dari frontend).
  * @returns {{status: string, message: string, oldData?: object, newData?: object}} Status penambahan.
  */
-function addStudent(spreadsheetId, studentData) {
+function addStudent(spreadsheetId, studentData, userEmail) { // <-- [PERBAIKAN] Tambahkan parameter userEmail
   try {
+    // [PERBAIKAN] Panggil fungsi checkStudentLimit dengan userEmail yang dikirim dari frontend
+    const limitCheck = checkStudentLimit(spreadsheetId, userEmail); 
+    if (limitCheck.limitReached) {
+        return { status: "error", message: limitCheck.message };
+    }
+
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
     
     // Cek apakah ada data siswa
     if (sheet.getLastRow() > 1) {
-      const allStudents = getStudents(spreadsheetId); // Menggunakan fungsi yang sudah ada
+      const allStudents = getStudents(spreadsheetId);
       const existingStudent = allStudents.find(s => s.nisn.toString() === studentData.nisn.toString());
 
       if (existingStudent) {
-        // NISN ditemukan, sekarang cek apakah ada perbedaan data
         const isIdentical = areStudentsIdentical(existingStudent, studentData);
-
         if (isIdentical) {
           return { status: "duplicate", message: "Data siswa dengan NISN ini sudah ada dan semua datanya identik." };
         } else {
-          // Data berbeda, kirim balik data lama dan data baru untuk konfirmasi
           return {
             status: "conflict",
             message: "NISN ini sudah terdaftar dengan data yang berbeda.",
-            oldData: existingStudent, // Mengandung 'row' untuk proses update
+            oldData: existingStudent,
             newData: studentData
           };
         }
       }
     }
 
-    // Jika tidak ada konflik, tambahkan siswa baru seperti biasa
+    // Jika tidak ada konflik, tambahkan siswa baru
     const nextRow = sheet.getLastRow() + 1;
     sheet.getRange(nextRow, 1, 1, 2).setNumberFormat('@');
     const tanggalLahirObject = studentData.tanggalLahir ? new Date(studentData.tanggalLahir.replace(/-/g, '/')) : '';
-    // Atur format Teks untuk NISN, NIS, dan Telepon
     sheet.getRange(nextRow, 1, 1, 2).setNumberFormat('@');
     sheet.getRange(nextRow, 8, 1, 1).setNumberFormat('@');
 
     const newRowData = [
-        studentData.nisn, 
-        studentData.nis, 
-        studentData.nama, 
-        studentData.jenisKelamin, // <-- DATA BARU
-        toProperCase(studentData.tempatLahir), 
-        tanggalLahirObject,
-        studentData.alamat,
-        studentData.telepon,
-        studentData.emailSiswa,
-        studentData.tahunMasuk,
-        studentData.tahunLulus
+        studentData.nisn, studentData.nis, studentData.nama, studentData.jenisKelamin, 
+        toProperCase(studentData.tempatLahir), tanggalLahirObject, studentData.alamat, 
+        studentData.telepon, studentData.emailSiswa, studentData.tahunMasuk, studentData.tahunLulus
     ];
     sheet.getRange(nextRow, 1, 1, newRowData.length).setValues([newRowData]);
     
@@ -860,34 +860,38 @@ function generateSiswaTemplate() {
 }
 
 /**
- * [MODIFIKASI FINAL & DIPERBAIKI] Mengimpor data dari file Excel, dengan logika untuk menambah, memperkaya, atau mendeteksi konflik.
- * Memperbaiki kesalahan indeks kolom setelah penambahan "Jenis Kelamin".
+ * [MODIFIKASI FINAL & PERBAIKAN] Mengimpor data dari file Excel, dengan logika untuk menambah, memperkaya, atau mendeteksi konflik.
+ * Kini juga memeriksa batas siswa sebelum impor.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @param {object} fileData Data file yang diunggah.
  * @param {string} sheetName Nama sheet tujuan.
+ * @param {string} userEmail Email pengguna yang melakukan aksi (dikirim dari frontend).
  * @returns {object} Hasil proses impor yang detail.
  */
-function importFromExcel(spreadsheetId, fileData, sheetName) {
+function importFromExcel(spreadsheetId, fileData, sheetName, userEmail) { // <-- [PERBAIKAN] Tambahkan parameter userEmail
   let tempFile;
   try {
+    // Lakukan pengecekan batas siswa SEKALI di awal, SEBELUM memproses file.
+    // Ini hanya berlaku jika target impor adalah Data Siswa.
+    if (sheetName === SHEET_DATA_SISWA) {
+      const limitCheck = checkStudentLimit(spreadsheetId, userEmail);
+      if (limitCheck.limitReached) {
+        // Jika batas tercapai, langsung hentikan proses dan kirim SATU pesan error.
+        return { status: "error", message: limitCheck.message };
+      }
+    }
     const decoded = Utilities.base64Decode(fileData.content, Utilities.Charset.UTF_8);
     const blob = Utilities.newBlob(decoded, fileData.mimeType, fileData.fileName);
-
-    const tempSpreadsheetFile = Drive.Files.insert({
-      title: `temp_import_${new Date().getTime()}`
-    }, blob, {
-      convert: true
-    });
+    const tempSpreadsheetFile = Drive.Files.insert({ title: `temp_import_${new Date().getTime()}` }, blob, { convert: true });
     tempFile = DriveApp.getFileById(tempSpreadsheetFile.id);
     const importSheet = SpreadsheetApp.openById(tempFile.getId()).getSheets()[0];
     const data = importSheet.getDataRange().getValues();
 
     if (data.length <= 1) throw new Error("File kosong atau hanya berisi header.");
-    data.shift(); // Hapus header
+    data.shift();
 
     const targetSpreadsheet = getSpreadsheet(spreadsheetId);
     let targetSheet = targetSpreadsheet.getSheetByName(sheetName);
-
     if (sheetName === SHEET_DATA_SISWA) {
       targetSheet.getRange("A:B").setNumberFormat("@"); // Pastikan format sebelum memproses
       const existingStudents = getStudents(spreadsheetId);
@@ -1004,10 +1008,7 @@ function importFromExcel(spreadsheetId, fileData, sheetName) {
 
   } catch (e) {
     Logger.log(e);
-    return {
-      status: "error",
-      message: `Gagal mengimpor data: ${e.toString()}`
-    };
+    return { status: "error", message: `Gagal mengimpor data: ${e.toString()}` };
   } finally {
     if (tempFile) {
       tempFile.setTrashed(true);
@@ -2202,4 +2203,337 @@ function areStudentsIdentical(studentA, studentB) {
 
   // Jika loop selesai tanpa menemukan perbedaan, berarti mereka identik
   return true;
+}
+
+// =================================================================
+// FUNGSI KHUSUS SUPERADMIN
+// =================================================================
+
+/**
+ * [SUPERADMIN & DIPERBAIKI] Helper function untuk memverifikasi apakah pengguna adalah Superadmin.
+ * Kini lebih aman dan bisa menangani input email yang kosong (null).
+ * @param {string} email Email pengguna yang melakukan aksi.
+ * @returns {boolean} True jika Superadmin, false jika bukan.
+ */
+function isSuperadmin(email) {
+  // Cek apakah email yang dikirim valid sebelum diproses.
+  if (!email) { 
+    return false;
+  }
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
+  const data = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 8).getValues();
+  
+  // Pastikan data baris dan email di sheet tidak kosong sebelum .toLowerCase()
+  const userRow = data.find(row => row && row[1] && row[1].toLowerCase() === email.toLowerCase());
+  
+  return userRow && userRow[6] === 'Superadmin';
+}
+
+/**
+ * [SUPERADMIN] Mengambil semua data pengguna untuk ditampilkan di panel superadmin.
+ * @param {string} adminEmail Email superadmin yang meminta data.
+ * @returns {Array<object>} Array objek data pengguna.
+ */
+function getAllUsers_Superadmin(adminEmail) {
+  if (!isSuperadmin(adminEmail)) {
+    throw new Error("Akses ditolak. Hanya Superadmin yang dapat melakukan aksi ini.");
+  }
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PENGGUNA);
+  if (!sheet || sheet.getLastRow() < 2) return [];
+  
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 9).getValues(); // Baca sampai kolom I
+  
+  return data.map((row, index) => {
+    const spreadsheetId = row[5];
+    let currentStudentCount = '-';
+    if (row[6] !== 'Superadmin' && spreadsheetId) {
+      try {
+        const studentSheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(SHEET_DATA_SISWA);
+        currentStudentCount = studentSheet ? studentSheet.getLastRow() - 1 : 0;
+      } catch (e) {
+        currentStudentCount = 'Error';
+      }
+    }
+
+    return {
+      row: index + 2,
+      email: row[1],
+      namaSekolah: row[3],
+      role: row[6] || 'Pengguna',
+      status: row[7] || 'Aktif',
+      studentLimit: row[8] || 'N/A', // Kolom I
+      currentStudentCount: currentStudentCount
+    };
+  });
+}
+
+/**
+ * [SUPERADMIN] Memperbarui data pengguna (Nama Sekolah & Jenjang) oleh Superadmin.
+ * @param {string} adminEmail Email superadmin yang melakukan aksi.
+ * @param {object} userData Objek berisi data yang akan diupdate {row, namaSekolah, jenjang}.
+ * @returns {{status: string, message: string}} Hasil proses.
+ */
+function updateUserBySuperadmin(adminEmail, userData) {
+  if (!isSuperadmin(adminEmail)) {
+    return { status: "error", message: "Akses ditolak." };
+  }
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
+    
+    // Update Nama Sekolah (Kolom D) dan Jenjang (Kolom E) di sheet Data Pengguna
+    userSheet.getRange(userData.row, 4).setValue(userData.namaSekolah);
+    userSheet.getRange(userData.row, 5).setValue(userData.jenjang);
+
+    // Update juga di dalam spreadsheet sekolah yang bersangkutan
+    const schoolSsId = userSheet.getRange(userData.row, 6).getValue();
+    const schoolSs = SpreadsheetApp.openById(schoolSsId);
+    const dataSekolahSheet = schoolSs.getSheetByName(SHEET_DATA_SEKOLAH);
+    if (dataSekolahSheet) {
+      dataSekolahSheet.getRange(2, 1).setValue(userData.jenjang); // Jenjang di A2
+      dataSekolahSheet.getRange(2, 2).setValue(userData.namaSekolah); // Nama Sekolah di B2
+    }
+
+    return { status: "success", message: `Data untuk akun ${userData.email} berhasil diperbarui.` };
+  } catch (e) {
+    Logger.log(e);
+    return { status: "error", message: "Gagal memperbarui data: " + e.message };
+  }
+}
+
+/**
+ * [SUPERADMIN] Mengubah status akun pengguna (Aktif/Nonaktif).
+ * @param {string} adminEmail Email superadmin yang melakukan aksi.
+ * @param {number} rowNomor Nomor baris pengguna yang akan diubah.
+ * @param {string} newStatus Status baru ('Aktif' atau 'Nonaktif').
+ * @returns {{status: string, message: string}} Hasil proses.
+ */
+function setUserStatus_Superadmin(adminEmail, rowNumber, newStatus) {
+  if (!isSuperadmin(adminEmail)) {
+    return { status: "error", message: "Akses ditolak." };
+  }
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
+    // Kolom Status adalah kolom ke-8 (H)
+    userSheet.getRange(rowNumber, 8).setValue(newStatus); 
+    return { status: "success", message: `Status akun berhasil diubah menjadi ${newStatus}.` };
+  } catch (e) {
+    Logger.log(e);
+    return { status: "error", message: "Gagal mengubah status: " + e.message };
+  }
+}
+
+/**
+ * [SUPERADMIN] Mengumpulkan data statistik agregat untuk dashboard superadmin.
+ * @param {string} adminEmail - Email superadmin untuk verifikasi.
+ * @returns {object} Objek berisi data statistik.
+ */
+function getSuperadminDashboardData(adminEmail) {
+  if (!isSuperadmin(adminEmail)) {
+    throw new Error("Akses ditolak.");
+  }
+
+  const userSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PENGGUNA);
+  if (!userSheet || userSheet.getLastRow() < 2) {
+    return { totalAccounts: 0, activeAccounts: 0, inactiveAccounts: 0, totalStudents: 0 };
+  }
+
+  const usersData = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 8).getValues();
+
+  // 1. Hitung statistik akun
+  const totalAccounts = usersData.length;
+  let activeAccounts = 0;
+  let totalStudents = 0;
+  
+  // 2. Iterasi untuk menghitung status akun dan total siswa
+  usersData.forEach(userRow => {
+    const status = userRow[7] || 'Aktif';
+    if (status === 'Aktif') {
+      activeAccounts++;
+    }
+
+    // Hanya hitung siswa dari akun pengguna biasa yang memiliki Spreadsheet ID
+    const role = userRow[6];
+    const spreadsheetId = userRow[5];
+    if (role !== 'Superadmin' && spreadsheetId) {
+      try {
+        const studentSs = SpreadsheetApp.openById(spreadsheetId);
+        const studentSheet = studentSs.getSheetByName(SHEET_DATA_SISWA);
+        if (studentSheet && studentSheet.getLastRow() > 1) {
+          totalStudents += studentSheet.getLastRow() - 1; // Kurangi baris header
+        }
+      } catch (e) {
+        Logger.log(`[Superadmin] Gagal mengakses spreadsheet ID ${spreadsheetId} untuk email ${userRow[1]}. Error: ${e.message}`);
+      }
+    }
+  });
+
+  const inactiveAccounts = totalAccounts - activeAccounts;
+
+  return {
+    totalAccounts: totalAccounts,
+    activeAccounts: activeAccounts,
+    inactiveAccounts: inactiveAccounts,
+    totalStudents: totalStudents
+  };
+}
+
+/**
+ * Helper function untuk memeriksa apakah pengguna telah mencapai batas siswa.
+ * @param {string} spreadsheetId ID spreadsheet pengguna.
+ * @param {string} userEmail Email pengguna yang akan diperiksa.
+ * @returns {{limitReached: boolean, message: string}} Objek berisi status batas.
+ */
+function checkStudentLimit(spreadsheetId, userEmail) {
+  try {
+    // Dapatkan batas siswa dari sheet Data Pengguna
+    const userSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PENGGUNA);
+    const usersData = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 9).getValues();
+    const userRow = usersData.find(row => row[1].toLowerCase() === userEmail.toLowerCase());
+    
+    if (!userRow) {
+      return { limitReached: true, message: "Data pengguna tidak ditemukan." };
+    }
+    const studentLimit = parseInt(userRow[8]); // Kolom I adalah student limit
+
+    if (isNaN(studentLimit)) {
+      // Jika batas tidak diatur, anggap tidak ada batas (untuk keamanan)
+      return { limitReached: false, message: "" };
+    }
+
+    // Dapatkan jumlah siswa saat ini
+    const studentSs = SpreadsheetApp.openById(spreadsheetId);
+    const studentSheet = studentSs.getSheetByName(SHEET_DATA_SISWA);
+    const currentStudentCount = studentSheet ? studentSheet.getLastRow() - 1 : 0;
+
+    if (currentStudentCount >= studentLimit) {
+      return { limitReached: true, message: `Batas jumlah siswa tercapai (${currentStudentCount}/${studentLimit}). Anda tidak dapat menambahkan siswa baru. Hubungi admin untuk menaikkan batas.` };
+    }
+
+    return { limitReached: false, message: "" };
+
+  } catch (e) {
+    Logger.log(`Error di checkStudentLimit: ${e.message}`);
+    return { limitReached: true, message: "Terjadi kesalahan saat memeriksa batas siswa." };
+  }
+}
+
+/**
+ * [SUPERADMIN] Mengatur batas jumlah siswa untuk akun tertentu.
+ * @param {string} adminEmail Email superadmin untuk verifikasi.
+ * @param {number} rowNumber Nomor baris pengguna yang akan diubah.
+ * @param {number} newLimit Batas baru yang akan ditetapkan.
+ * @returns {object} Hasil proses.
+ */
+function setStudentLimit_Superadmin(adminEmail, rowNumber, newLimit) {
+  if (!isSuperadmin(adminEmail)) {
+    return { status: "error", message: "Akses ditolak." };
+  }
+  try {
+    const limit = parseInt(newLimit);
+    if (isNaN(limit) || limit < 0) {
+      return { status: "error", message: "Batas siswa harus berupa angka positif." };
+    }
+    const userSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PENGGUNA);
+    userSheet.getRange(rowNumber, 9).setValue(limit); // Kolom I adalah Student Limit
+    return { status: "success", message: "Batas siswa berhasil diperbarui." };
+  } catch (e) {
+    return { status: "error", message: "Gagal memperbarui batas: " + e.message };
+  }
+}
+
+/**
+ * [SUPERADMIN] Mengatur dan mengambil batas default siswa untuk pendaftaran baru.
+ * @param {string} adminEmail Email superadmin untuk verifikasi.
+ * @param {number} [newLimit] Batas default baru (opsional). Jika tidak diberikan, fungsi hanya akan mengambil nilai saat ini.
+ * @returns {object} Hasil proses atau nilai saat ini.
+ */
+function manageDefaultStudentLimit_Superadmin(adminEmail, newLimit) {
+  if (!isSuperadmin(adminEmail)) {
+    return { status: "error", message: "Akses ditolak." };
+  }
+  try {
+    const configSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Konfigurasi Sistem');
+    if (!configSheet) {
+      return { status: "error", message: "Sheet 'Konfigurasi Sistem' tidak ditemukan." };
+    }
+    const limitCell = configSheet.getRange("B2");
+
+    if (newLimit !== undefined && newLimit !== null) {
+      // Mode: Mengatur nilai baru
+      const limit = parseInt(newLimit);
+      if (isNaN(limit) || limit < 0) {
+        return { status: "error", message: "Batas default harus berupa angka positif." };
+      }
+      limitCell.setValue(limit);
+      return { status: "success", message: `Batas default siswa berhasil diubah menjadi ${limit}.`, currentLimit: limit };
+    } else {
+      // Mode: Mengambil nilai saat ini
+      const currentLimit = limitCell.getValue();
+      return { status: "success", currentLimit: currentLimit };
+    }
+  } catch (e) {
+    return { status: "error", message: "Gagal mengelola batas default: " + e.message };
+  }
+}
+
+/**
+ * [BARU] Mengambil informasi kuota siswa untuk pengguna yang sedang login.
+ * @param {string} userEmail Email pengguna.
+ * @returns {object} Objek berisi info kuota: {status, totalLimit, usedCount, remaining}.
+ */
+function getStudentQuotaInfo(userEmail) {
+  if (!userEmail) {
+    return { status: "error", message: "Email pengguna tidak diberikan." };
+  }
+
+  try {
+    const userSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PENGGUNA);
+    const usersData = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 9).getValues();
+    const userRow = usersData.find(row => row[1] && row[1].toLowerCase() === userEmail.toLowerCase());
+
+    if (!userRow) {
+      return { status: "error", message: "Data pengguna tidak ditemukan." };
+    }
+
+    const role = userRow[6];
+    if (role === 'Superadmin') {
+        // Superadmin tidak memiliki kuota siswa
+        return { status: "success", totalLimit: 'Tak Terbatas', usedCount: '-', remaining: '-' };
+    }
+
+    const spreadsheetId = userRow[5];
+    const studentLimit = parseInt(userRow[8]);
+
+    if (!spreadsheetId) {
+        return { status: "error", message: "Spreadsheet ID tidak ditemukan untuk pengguna ini." };
+    }
+
+    // Jika batas tidak diatur atau bukan angka, anggap tak terbatas
+    if (isNaN(studentLimit)) {
+      const studentSheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(SHEET_DATA_SISWA);
+      const usedCount = studentSheet ? Math.max(0, studentSheet.getLastRow() - 1) : 0;
+      return { status: "success", totalLimit: 'Tak Terbatas', usedCount: usedCount, remaining: '-' };
+    }
+
+    const studentSs = SpreadsheetApp.openById(spreadsheetId);
+    const studentSheet = studentSs.getSheetByName(SHEET_DATA_SISWA);
+    const usedCount = studentSheet ? Math.max(0, studentSheet.getLastRow() - 1) : 0;
+    
+    const remaining = studentLimit - usedCount;
+
+    return {
+      status: "success",
+      totalLimit: studentLimit,
+      usedCount: usedCount,
+      remaining: remaining
+    };
+
+  } catch (e) {
+    Logger.log(`Error di getStudentQuotaInfo untuk ${userEmail}: ${e.message}`);
+    return { status: "error", message: "Gagal mengambil informasi kuota." };
+  }
 }
