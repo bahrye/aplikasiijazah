@@ -345,6 +345,16 @@
                         </svg>
                         <span>Manajemen Akun</span>
                     </a>
+                    <a href="#" id="nav-daftar-pengajuan" class="nav-link flex justify-between items-center space-x-3 p-2 rounded-md hidden" data-page="daftar-pengajuan">
+                        <span class="flex items-center space-x-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                            </svg>
+                            <span>Daftar Pengajuan</span>
+                        </span>
+                        <span id="pengajuan-badge" class="hidden bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full">
+                            </span>
+                    </a>
                     <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="data-sekolah"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg><span>Data Sekolah</span></a>
                     <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="data-siswa">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -368,6 +378,19 @@
                     <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="input-rapor"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><span>Input Nilai Rapor</span></a>
                     <div class="border-t border-blue-700 my-2"></div>
                     <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="rekapitulasi"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><span>Rekapitulasi</span></a>
+                    <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="pengajuan">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Pengajuan</span>
+                    </a>
+                    <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="backup-restore">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 20h5v-5M20 4h-5v5" />
+                      </svg>
+                      <span>Backup & Restore</span>
+                    </a>
+                    <div class="border-t border-blue-700 my-2"></div>
                 </nav>
                 <div class="mt-auto p-4 border-t border-blue-700">
                     <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="ubah-password">
@@ -557,6 +580,13 @@
                         </div>
                     </div>
 
+                    <div id="page-daftar-pengajuan" class="content-page hidden">
+                        <h1 class="text-3xl font-bold text-gray-800">Daftar Pengajuan Perubahan Data</h1>
+                        <p class="mt-2 text-gray-600 mb-8">Tinjau dan proses permintaan perubahan data dari pengguna.</p>
+                        <div id="pengajuanContainer_Superadmin" class="bg-white p-4 rounded-lg shadow-md mt-4">
+                            </div>
+                    </div>
+
                     <!-- Letakkan ini di dalam <main> -->
                     <div id="page-superadmin-dashboard" class="content-page hidden">
                         <h1 class="text-3xl font-bold text-gray-800 mb-2">Dashboard Superadmin</h1>
@@ -604,6 +634,54 @@
                                 <div>
                                     <p class="text-sm text-gray-500">Akun Nonaktif</p>
                                     <p id="sa-akun-nonaktif" class="text-3xl font-bold text-gray-800">...</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-6 rounded-2xl shadow-lg flex items-center space-x-4">
+                                <div class="bg-gray-100 p-4 rounded-full">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Jumlah Total Ajuan</p>
+                                    <p id="sa-total-ajuan" class="text-3xl font-bold text-gray-800">...</p>
+                                </div>
+                            </div>
+
+                            <div id="sa-card-ajuan-menunggu" class="bg-white p-6 rounded-2xl shadow-lg flex items-center space-x-4 transition-transform transform hover:scale-105 cursor-pointer">
+                                <div class="bg-yellow-100 p-4 rounded-full">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Ajuan Menunggu</p>
+                                    <p id="sa-ajuan-menunggu" class="text-3xl font-bold text-gray-800">...</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-6 rounded-2xl shadow-lg flex items-center space-x-4">
+                                <div class="bg-green-100 p-4 rounded-full">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Ajuan Diterima</p>
+                                    <p id="sa-ajuan-diterima" class="text-3xl font-bold text-gray-800">...</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-6 rounded-2xl shadow-lg flex items-center space-x-4">
+                                <div class="bg-red-100 p-4 rounded-full">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Ajuan Ditolak</p>
+                                    <p id="sa-ajuan-ditolak" class="text-3xl font-bold text-gray-800">...</p>
                                 </div>
                             </div>
 
@@ -789,6 +867,30 @@
                         </div>
                     </div>
 
+                    <div id="page-backup-restore" class="content-page hidden">
+                        <h1 class="text-3xl font-bold text-gray-800">Backup & Restore Data</h1>
+                        <p class="mt-2 text-gray-600 mb-8">Amankan data Anda dengan membuat salinan, atau pulihkan data dari salinan yang ada.</p>
+
+                        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                            <h2 class="text-xl font-bold text-gray-800">Buat Backup Baru</h2>
+                            <p class="mt-1 text-sm text-gray-600">Proses ini akan membuat salinan lengkap dari seluruh data Anda saat ini (Data Sekolah, Siswa, Mapel, dan semua Nilai) ke dalam file Google Sheet baru di Google Drive.</p>
+                            <div class="mt-4">
+                                <button id="createBackupBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
+                                    <span id="createBackupBtnText">Buat Backup Sekarang</span>
+                                    <span id="createBackupSpinner" class="hidden loading-animation">Membuat Backup</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h2 class="text-xl font-bold text-gray-800">Pulihkan Data dari Backup</h2>
+                            <p class="mt-1 text-sm text-gray-600 mb-4">Pilih file backup untuk memulihkan data. <strong class="text-red-600">PERINGATAN:</strong> Proses ini akan menimpa semua data Anda saat ini dengan data dari file backup yang dipilih.</p>
+                            <div id="backupListContainer" class="overflow-x-auto">
+                                <p class="text-center text-gray-500 py-4 loading-animation">Memuat daftar backup</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="page-ubah-password" class="content-page hidden">
                         <h1 class="text-3xl font-bold text-gray-800">Ubah Password Akun</h1>
                         <p class="mt-2 text-gray-600 mb-8">Gunakan formulir ini untuk mengubah password Anda.</p>
@@ -837,6 +939,60 @@
                             </form>
                             <div id="changePasswordStatusMessage" class="mt-6 text-center"></div>
                         </div>
+                    </div>
+
+                    <div id="page-pengajuan" class="content-page hidden">
+                        <h1 class="text-3xl font-bold text-gray-800">Pengajuan Perubahan Data</h1>
+                        <p class="mt-2 text-gray-600 mb-8">Gunakan form ini jika Anda ingin mengubah Jenjang atau Nama Sekolah Anda. Pengajuan akan ditinjau oleh Superadmin.</p>
+                        
+                        <div class="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto">
+
+                            <div class="mb-6 pb-6 border-b">
+                                <h2 class="text-xl font-semibold text-gray-700 mb-4">Data Saat Ini</h2>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <label class="block font-medium text-gray-500">Jenjang Sekolah</label>
+                                        <p id="currentJenjang" class="mt-1 text-gray-900 font-bold text-base">-</p>
+                                    </div>
+                                    <div>
+                                        <label class="block font-medium text-gray-500">Nama Sekolah</label>
+                                        <p id="currentNamaSekolah" class="mt-1 text-gray-900 font-bold text-base">-</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <form id="pengajuanForm">
+                                <h2 class="text-xl font-semibold text-gray-700 mb-4">Form Pengajuan Data Baru</h2>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                    <div>
+                                        <label for="newJenjang" class="block text-sm font-medium text-gray-700">Ubah Jenjang ke</label>
+                                        <select id="newJenjang" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm">
+                                            <option value="">-- Biarkan Jika Tidak Diubah --</option>
+                                            <option value="MI">MI (Madrasah Ibtidaiyah)</option>
+                                            <option value="MTS">MTS (Madrasah Tsanawiyah)</option>
+                                            <option value="MA">MA (Madrasah Aliyah)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="newNamaSekolah" class="block text-sm font-medium text-gray-700">Ubah Nama Sekolah ke</label>
+                                        <input type="text" id="newNamaSekolah" placeholder="Kosongkan jika tidak diubah" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-8 pt-5 border-t flex items-center justify-between flex-wrap gap-4">
+                                    <button type="submit" id="submitPengajuanBtn" class="order-1 flex justify-center py-2 px-8 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                                        <span id="pengajuanBtnText">Ajukan Perubahan</span>
+                                        <span id="pengajuanSpinner" class="hidden loading-animation">Mengajukan</span>
+                                    </button>
+                                    <div id="currentAjuanStatusContainer" class="order-2 flex-grow text-right">
+                                        </div>
+                                </div>
+                            </form>
+
+                        </div>
+
+                        <div id="ajuanHistoryContainer" class="max-w-4xl mx-auto mt-10">
+                            </div>
                     </div>
                 </div>
                 <footer class="text-center py-4 mt-8 border-t">
@@ -1262,8 +1418,34 @@
         </div>
     </div>
 
+    <div id="type-to-confirm-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-[51]">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-lg transform scale-95 p-6">
+            <h2 id="confirm-modal-title" class="text-2xl font-bold text-red-700">Konfirmasi Penghapusan</h2>
+            <div id="confirm-modal-body" class="mt-4 text-gray-600">
+                </div>
+            
+            <p class="mt-4 text-sm">Untuk melanjutkan, ketik frasa <code class="bg-gray-200 text-red-700 font-bold p-1 rounded">HAPUS SEMUA</code> di kolom di bawah ini.</p>
+            
+            <input type="text" id="confirm-modal-input" class="mt-2 w-full p-2 border border-gray-400 rounded-md" autocomplete="off">
+            
+            <div class="mt-6 pt-4 border-t flex justify-end space-x-3">
+                <button id="confirm-modal-cancel-btn" class="bg-gray-300 text-gray-800 py-2 px-6 rounded-md hover:bg-gray-400">Batal</button>
+                <button id="confirm-modal-action-btn" class="bg-red-600 text-white py-2 px-6 rounded-md hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed">
+                    Konfirmasi & Hapus
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="data-viewer-tooltip" class="hidden absolute z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm"></div>
     <div id="globalStatusMessage"></div>
+
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-white bg-opacity-90 flex flex-col items-center justify-center text-center z-[9999] p-4">
+      <h2 id="overlay-title" class="text-2xl font-bold text-gray-800">Memproses Permintaan Anda</h2>
+      <p id="overlay-subtitle" class="mt-2 text-gray-600">Mohon tunggu dan jangan menutup jendela ini...</p>
+      
+      <div id="overlay-button-container" class="mt-6"></div>
+    </div>
 
     <!-- Tambahkan library Chart.js di dalam <head> -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -1680,6 +1862,8 @@
                         // Simpan data sesi dasar
                         sessionStorage.setItem('userEmail', response.email);
                         sessionStorage.setItem('userRole', response.role);
+
+                        sessionStorage.setItem('webAppUrl', response.webAppUrl);
 
                         document.getElementById('auth-wrapper').classList.add('hidden');
                         document.getElementById('app-container').classList.remove('hidden');
@@ -2143,56 +2327,69 @@
                 return;
             }
 
-            // Reset timer logout otomatis
             resetInactivityTimer();
             ['mousemove', 'mousedown', 'touchstart', 'click', 'keydown', 'scroll'].forEach(event => {
                 document.addEventListener(event, resetInactivityTimer, true);
             });
 
-            // 1. Tampilkan SEMUA menu untuk pengguna biasa
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('hidden');
-            });
-            
-            // 2. Sembunyikan menu khusus Superadmin
-            const manajemenAkunNav = document.getElementById('nav-manajemen-akun');
-            if (manajemenAkunNav) manajemenAkunNav.classList.add('hidden');
+            // --- [LOGIKA BARU YANG DIPERBAIKI] ---
+            // Definisikan menu apa saja yang boleh dilihat oleh PENGGUNA BIASA.
+            const allowedUserPages = [
+                'dashboard', 'data-sekolah', 'data-siswa', 'mapel', 
+                'input-ujian', 'input-rapor', 'rekapitulasi', 
+                'pengajuan', 'ubah-password', 'backup-restore'
+            ];
 
-            // Sisa dari fungsi ini sama seperti sebelumnya...
+            // Loop melalui semua link navigasi dan tampilkan HANYA yang diizinkan.
+            document.querySelectorAll('.nav-link').forEach(link => {
+                const page = link.dataset.page;
+                if (page && allowedUserPages.includes(page)) {
+                    link.classList.remove('hidden');
+                } else {
+                    // Sembunyikan semua yang tidak ada dalam daftar, termasuk menu admin.
+                    link.classList.add('hidden');
+                }
+            });
+            // Pastikan tombol Logout selalu terlihat untuk pengguna yang login.
+            document.getElementById('logoutButton').classList.remove('hidden');
+            // --- [AKHIR DARI LOGIKA BARU] ---
+
+
             loadSchoolData();
             setupCompletenessCheck();
+            
+            // Sisa dari kode di bawah ini tidak perlu diubah...
             
             const navLinks = document.querySelectorAll('.nav-link');
             const contentPages = document.querySelectorAll('.content-page');
 
             navLinks.forEach(link => {
-                // Hapus event listener lama agar tidak menumpuk
                 const newLink = link.cloneNode(true);
                 link.parentNode.replaceChild(newLink, link);
                 
                 newLink.addEventListener('click', e => {
                     e.preventDefault();
-                    if (e.currentTarget.id === 'logoutButton' || e.currentTarget.id === 'nav-manajemen-akun') return;
-
+                    // Cek untuk memastikan link admin tidak bisa diklik jika entah bagaimana terlihat
                     const targetPageId = e.currentTarget.dataset.page;
+                    if (!allowedUserPages.includes(targetPageId) && targetPageId) return;
+
                     sessionStorage.setItem('lastActivePage', targetPageId);
                     contentPages.forEach(p => p.classList.add('hidden'));
                     document.getElementById('page-' + targetPageId)?.classList.remove('hidden');
                     document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
                     e.currentTarget.classList.add('active');
 
-                    // Logika pemuatan data per halaman (tidak berubah)
                     if (targetPageId === 'dashboard') loadDashboardData();
                     if (targetPageId === 'data-siswa') loadStudentsData();
                     if (targetPageId === 'mapel') { loadMapelData(); loadBobotData(); }
                     if (targetPageId === 'input-ujian') document.getElementById('input-ujian-container').innerHTML = '';
                     if (targetPageId === 'input-rapor') initRaporPage();
                     if (targetPageId === 'rekapitulasi') initRekapitulasiPage();
-                    if (targetPageId === 'ubah-password') { /* fungsi ubah password sudah ada di listener terpisah */ }
+                    if (targetPageId === 'pengajuan') loadPengajuanPage();
+                    if (targetPageId === 'backup-restore') loadBackupRestorePage();
                 });
             });
 
-            // Event listener untuk tombol Logout
             document.getElementById('logoutButton').onclick = (e) => {
                 e.preventDefault();
                 logoutUser();
@@ -2206,7 +2403,7 @@
             });
 
             const lastActiveLink = document.querySelector(`.nav-link[data-page="${lastPage}"]`);
-            if (lastActiveLink && lastActiveLink.id !== 'nav-manajemen-akun') {
+            if (lastActiveLink && allowedUserPages.includes(lastPage)) {
                 lastActiveLink.click();
             } else {
                 document.querySelector('.nav-link[data-page="dashboard"]').click();
@@ -2314,48 +2511,28 @@
             }
             if (deleteAllStudentsBtn) {
                 deleteAllStudentsBtn.addEventListener('click', function() {
-                    const btn = this;
-                    if (btn.dataset.confirming) {
-                        btn.disabled = true;
-                        btn.textContent = 'Menghapus...';
-                        google.script.run
-                            .withSuccessHandler(response => {
-                                showGlobalStatus(response.message, response.status === 'success');
-                                if (response.status === 'success') {
-                                    loadStudentsData();
-                                }
-                                btn.disabled = false;
-                                btn.textContent = 'Hapus Semua Siswa';
-                                delete btn.dataset.confirming;
-                                // [MODIFIKASI] Kembalikan warna tombol ke merah
-                                btn.classList.replace('bg-yellow-500', 'bg-red-600');
-                                btn.classList.replace('hover:bg-yellow-600', 'hover:bg-red-700');
-                            })
-                            .withFailureHandler(err => {
-                                showGlobalStatus('Error: ' + err.message, false);
-                                btn.disabled = false;
-                                btn.textContent = 'Hapus Semua Siswa';
-                                delete btn.dataset.confirming;
-                                // [MODIFIKASI] Kembalikan warna tombol ke merah
-                                btn.classList.replace('bg-yellow-500', 'bg-red-600');
-                                btn.classList.replace('hover:bg-yellow-600', 'hover:bg-red-700');
-                            })
-                            .deleteAllStudents(userSpreadsheetId);
-                    } else {
-                        btn.dataset.confirming = 'true';
-                        btn.textContent = 'YAKIN? KLIK LAGI UNTUK HAPUS';
-                        btn.classList.replace('bg-red-600', 'bg-yellow-500');
-                        btn.classList.replace('hover:bg-red-700', 'hover:bg-yellow-600');
+                    showTypeToConfirmModal({
+                        title: 'Hapus Semua Data Siswa',
+                        body: 'Anda akan menghapus **SELURUH** data siswa di database Anda. Tindakan ini tidak dapat dibatalkan.',
+                        onConfirm: () => {
+                            // Fungsi ini akan dijalankan setelah konfirmasi berhasil
+                            const btn = this;
+                            btn.disabled = true;
+                            showGlobalStatus('Menghapus semua data siswa...', true);
 
-                        setTimeout(() => {
-                            if (btn.dataset.confirming) {
-                                btn.textContent = 'Hapus Semua Siswa';
-                                delete btn.dataset.confirming;
-                                btn.classList.replace('bg-yellow-500', 'bg-red-600');
-                                btn.classList.replace('hover:bg-yellow-600', 'hover:bg-red-700');
-                            }
-                        }, 4000);
-                    }
+                            google.script.run
+                                .withSuccessHandler(response => {
+                                    showGlobalStatus(response.message, response.status === 'success');
+                                    loadStudentsData();
+                                    btn.disabled = false;
+                                })
+                                .withFailureHandler(err => {
+                                    showGlobalStatus('Error: ' + err.message, false);
+                                    btn.disabled = false;
+                                })
+                                .deleteAllStudents(userSpreadsheetId);
+                        }
+                    });
                 });
             }
             if (downloadTemplateBtn) {
@@ -2442,7 +2619,11 @@
 
                                 // 1. Tampilkan notifikasi ringkasan global (pop-up) untuk setiap hasil
                                 if (response.status !== 'error') {
-                                    const summaryMessage = `Impor Selesai: <strong>${response.newCount || 0}</strong> baru, <strong>${response.enrichedCount || 0}</strong> diperkaya, <strong>${response.conflictCount || 0}</strong> konflik.`;
+                                    // [PERBAIKAN] Tambahkan info siswa yang dilewati karena limit ke notifikasi
+                                    const summaryMessage = `Impor Selesai: <strong>${response.newCount || 0}</strong> baru, ` +
+                                                          `<strong>${response.enrichedCount || 0}</strong> diperkaya, ` +
+                                                          `<strong>${response.skippedLimitCount || 0}</strong> dilewati (kuota), ` +
+                                                          `<strong>${response.conflictCount || 0}</strong> konflik.`;
                                     showGlobalStatus(summaryMessage, true);
                                 } else {
                                     showGlobalStatus(response.message, false);
@@ -2450,51 +2631,66 @@
                                     return;
                                 }
 
-                                // 2. Hanya bangun dan tampilkan laporan detail jika ada konflik
-                                if (response.conflictCount > 0) {
-                                    currentImportConflicts = response.conflicts;
-                                    let reportHtml = `
-                                        <div class="p-4 border rounded-md bg-gray-50 mt-4">
+                                // 2. Hanya bangun dan tampilkan laporan detail jika ada konflik ATAU siswa yang dilewati
+                                if (response.conflictCount > 0 || response.skippedLimitCount > 0) {
+                                    let reportHtml = `<div class="p-4 border rounded-md bg-gray-50 mt-4">`;
+
+                                    // Bagian untuk KONFLIK DATA (jika ada)
+                                    if (response.conflictCount > 0) {
+                                        currentImportConflicts = response.conflicts;
+                                        reportHtml += `
                                             <h4 class="font-bold text-lg text-yellow-800">Tinjau Konflik Data</h4>
-                                            <p class="text-sm text-gray-600 mb-2">Ditemukan ${response.conflictCount} data dengan NISN yang sama namun isinya berbeda. Pilih data yang ingin Anda perbarui dengan versi dari file impor.</p>
+                                            <p class="text-sm text-gray-600 mb-2">Ditemukan ${response.conflictCount} data dengan NISN yang sama namun isinya berbeda. Pilih data yang ingin Anda perbarui.</p>
                                             <div class="my-2"><input type="checkbox" id="selectAllConflicts" class="mr-2 h-4 w-4 align-middle"><label for="selectAllConflicts" class="align-middle">Pilih Semua</label></div>
                                             <div class="max-h-60 overflow-y-auto border rounded-md">
                                                 <table class="min-w-full text-sm">
                                                     <thead class="bg-gray-200 sticky top-0">
                                                         <tr>
-                                                            <th class="p-2">Pilih</th>
-                                                            <th class="p-2 text-left">NISN (Klik Detail)</th>
-                                                            <th class="p-2 text-left">Nama Lama</th>
-                                                            <th class="p-2 text-left">Nama Baru</th>
+                                                            <th class="p-2">Pilih</th><th class="p-2 text-left">NISN (Klik Detail)</th>
+                                                            <th class="p-2 text-left">Nama Lama</th><th class="p-2 text-left">Nama Baru</th>
                                                         </tr>
                                                     </thead>
-                                                    <tbody>
-                                    `;
-                                    currentImportConflicts.forEach((c, index) => {
-                                        reportHtml += `
-                                            <tr class="border-b" data-conflict-index="${index}">
-                                                <td class="p-2 text-center"><input type="checkbox" class="conflict-checkbox h-4 w-4"></td>
-                                                <td class="p-2 font-mono"><a href="#" class="text-blue-600 hover:underline conflict-detail-link" data-index="${index}">${c.nisn}</a></td>
-                                                <td class="p-2">${c.oldData.nama}</td>
-                                                <td class="p-2 text-green-700 font-medium">${c.newData.nama}</td>
-                                            </tr>
-                                        `;
-                                    });
-                                    reportHtml += `
-                                                    </tbody>
-                                                </table>
-                                            </div>
+                                                    <tbody>`;
+                                        currentImportConflicts.forEach((c, index) => {
+                                            reportHtml += `
+                                                <tr class="border-b" data-conflict-index="${index}">
+                                                    <td class="p-2 text-center"><input type="checkbox" class="conflict-checkbox h-4 w-4"></td>
+                                                    <td class="p-2 font-mono"><a href="#" class="text-blue-600 hover:underline conflict-detail-link" data-index="${index}">${c.nisn}</a></td>
+                                                    <td class="p-2">${c.oldData.nama}</td>
+                                                    <td class="p-2 text-green-700 font-medium">${c.newData.nama}</td>
+                                                </tr>`;
+                                        });
+                                        reportHtml += `</tbody></table></div>
                                             <div class="mt-4 flex flex-wrap gap-3">
                                                 <button id="updateSelectedBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Update yang Dipilih</button>
                                                 <button id="updateAllBtn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Update Semua Konflik</button>
                                                 <button id="cancelImportUpdateBtn" class="bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600">Batal & Tutup</button>
-                                            </div>
-                                        </div>
-                                    `;
+                                            </div>`;
+                                    }
+
+                                    // [BARU] Bagian untuk SISWA YANG DILEWATI KARENA KUOTA (jika ada)
+                                    if (response.skippedLimitCount > 0) {
+                                        reportHtml += `<div class="mt-6 pt-4 border-t">
+                                                <h4 class="font-bold text-lg text-orange-800">Siswa Dilewati (Batas Kuota Penuh)</h4>
+                                                <p class="text-sm text-gray-600 mb-2">${response.skippedLimitCount} siswa dari file tidak diimpor karena akan melebihi batas kuota Anda.</p>
+                                                <div class="max-h-48 overflow-y-auto border rounded-md">
+                                                    <table class="min-w-full text-sm">
+                                                        <thead class="bg-orange-100 sticky top-0">
+                                                            <tr><th class="p-2 text-left">NISN</th><th class="p-2 text-left">Nama Siswa</th></tr>
+                                                        </thead>
+                                                        <tbody>`;
+                                        response.skippedLimitData.forEach(s => {
+                                            reportHtml += `<tr class="border-b"><td class="p-2 font-mono">${s.nisn}</td><td class="p-2">${s.nama}</td></tr>`;
+                                        });
+                                        reportHtml += `</tbody></table></div></div>`;
+                                    }
+                                    
+                                    reportHtml += `</div>`; // Penutup div utama
                                     importStatusDiv.innerHTML = reportHtml;
-                                    setupConflictResolutionListeners(response);
+                                    if(response.conflictCount > 0) {
+                                      setupConflictResolutionListeners(response);
+                                    }
                                 } else {
-                                    // Jika tidak ada konflik, pastikan area laporan detail kosong
                                     importStatusDiv.innerHTML = '';
                                 }
 
@@ -2901,48 +3097,27 @@
             }
             if (deleteAllMapelBtn) {
                 deleteAllMapelBtn.addEventListener('click', function() {
-                    const btn = this;
-                    if (btn.dataset.confirming) {
-                        btn.disabled = true;
-                        btn.textContent = 'Menghapus...';
-                        google.script.run
-                            .withSuccessHandler(response => {
-                                showGlobalStatus(response.message, response.status === 'success');
-                                if (response.status === 'success') {
-                                    loadMapelData();
-                                }
-                                btn.disabled = false;
-                                btn.textContent = 'Hapus Semua Mapel';
-                                delete btn.dataset.confirming;
-                                // [MODIFIKASI] Kembalikan warna tombol ke merah
-                                btn.classList.replace('bg-yellow-500', 'bg-red-600');
-                                btn.classList.replace('hover:bg-yellow-600', 'hover:bg-red-700');
-                            })
-                            .withFailureHandler(err => {
-                                showGlobalStatus('Error: ' + err.message, false);
-                                btn.disabled = false;
-                                btn.textContent = 'Hapus Semua Mapel';
-                                delete btn.dataset.confirming;
-                                // [MODIFIKASI] Kembalikan warna tombol ke merah
-                                btn.classList.replace('bg-yellow-500', 'bg-red-600');
-                                btn.classList.replace('hover:bg-yellow-600', 'hover:bg-red-700');
-                            })
-                            .deleteAllMapel(userSpreadsheetId);
-                    } else {
-                        btn.dataset.confirming = 'true';
-                        btn.textContent = 'YAKIN? KLIK LAGI';
-                        btn.classList.replace('bg-red-600', 'bg-yellow-500');
-                        btn.classList.replace('hover:bg-red-700', 'hover:bg-yellow-600');
+                    showTypeToConfirmModal({
+                        title: 'Hapus Semua Mata Pelajaran',
+                        body: 'Anda akan menghapus **SELURUH** data mata pelajaran. Anda harus mengimpor atau menambahkannya lagi dari awal. Tindakan ini tidak dapat dibatalkan.',
+                        onConfirm: () => {
+                            const btn = this;
+                            btn.disabled = true;
+                            showGlobalStatus('Menghapus semua mapel...', true);
 
-                        setTimeout(() => {
-                            if (btn.dataset.confirming) {
-                                btn.textContent = 'Hapus Semua Mapel';
-                                delete btn.dataset.confirming;
-                                btn.classList.replace('bg-yellow-500', 'bg-red-600');
-                                btn.classList.replace('hover:bg-yellow-600', 'hover:bg-red-700');
-                            }
-                        }, 4000);
-                    }
+                            google.script.run
+                                .withSuccessHandler(response => {
+                                    showGlobalStatus(response.message, response.status === 'success');
+                                    loadMapelData();
+                                    btn.disabled = false;
+                                })
+                                .withFailureHandler(err => {
+                                    showGlobalStatus('Error: ' + err.message, false);
+                                    btn.disabled = false;
+                                })
+                                .deleteAllMapel(userSpreadsheetId);
+                        }
+                    });
                 });
             }
             if (importMapelSystemBtn) {
@@ -3346,9 +3521,15 @@
                     scoreTable.addEventListener('paste', handleSmartPaste);
                     document.getElementById(`form-nilai-${jenis}`).addEventListener('submit', (e) => handleSaveNilai(e, jenis));
                     mainWrapper.querySelector('.clear-scores-btn').addEventListener('click', (e) => {
-                        const form = e.target.closest('form');
-                        form.querySelectorAll('.score-input').forEach(input => input.value = '');
-                        form.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row));
+                        const konfirmasi = prompt("Anda yakin ingin membersihkan semua nilai di tabel ini?\n\nKetik YA untuk melanjutkan.");
+                        
+                        // Cek jika input pengguna (setelah diubah ke huruf besar dan dihapus spasinya) adalah "YA"
+                        if (konfirmasi && konfirmasi.toUpperCase().trim() === 'YA') {
+                            const form = e.target.closest('form');
+                            form.querySelectorAll('.score-input').forEach(input => input.value = '');
+                            form.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row));
+                            showGlobalStatus("Data di tabel telah dibersihkan.", true);
+                        }
                     });
 
                 }).catch(err => {
@@ -3836,43 +4017,24 @@
             const deleteAllUjianScoresBtn = document.getElementById('deleteAllUjianScoresBtn');
             if (deleteAllUjianScoresBtn) {
                 deleteAllUjianScoresBtn.addEventListener('click', function() {
-                    const btn = this;
-                    if (btn.dataset.confirming) {
-                        btn.disabled = true;
-                        btn.textContent = 'Menghapus...';
-
-                        google.script.run
-                            .withSuccessHandler(response => {
-                                showGlobalStatus(response.message, response.status !== 'error');
-                                btn.disabled = false;
-                                btn.textContent = 'Hapus Semua Nilai Ujian';
-                                delete btn.dataset.confirming;
-                            })
-                            .withFailureHandler(err => {
-                                showGlobalStatus('Gagal: ' + err.message, false);
-                                btn.disabled = false;
-                                btn.textContent = 'Hapus Semua Nilai Ujian';
-                                delete btn.dataset.confirming;
-                            })
-                            .deleteAllUjianScores(userSpreadsheetId);
-
-                    } else {
-                        btn.dataset.confirming = 'true';
-                        btn.textContent = 'YAKIN? KLIK LAGI UNTUK HAPUS';
-                        const originalColor = 'bg-red-600';
-                        const hoverColor = 'hover:bg-red-700';
-                        btn.classList.remove(originalColor, hoverColor);
-                        btn.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
-
-                        setTimeout(() => {
-                            if (btn.dataset.confirming) {
-                                delete btn.dataset.confirming;
-                                btn.textContent = 'Hapus Semua Nilai Ujian';
-                                btn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
-                                btn.classList.add(originalColor, hoverColor);
-                            }
-                        }, 4000); // Reset setelah 4 detik
-                    }
+                    showTypeToConfirmModal({
+                        title: 'Hapus Semua Nilai Ujian',
+                        body: 'Anda akan menghapus **SEMUA** nilai dari tabel Ujian Madrasah dan Ujian Praktek. Tindakan ini tidak dapat dibatalkan.',
+                        onConfirm: () => {
+                            showGlobalStatus('Menghapus nilai ujian...', true);
+                            
+                            google.script.run
+                                .withSuccessHandler(response => {
+                                    showGlobalStatus(response.message, response.status !== 'error');
+                                    // Bersihkan tabel di tampilan jika ada
+                                    document.getElementById('input-ujian-container').innerHTML = '';
+                                })
+                                .withFailureHandler(err => {
+                                    showGlobalStatus('Gagal: ' + err.message, false);
+                                })
+                                .deleteAllUjianScores(userSpreadsheetId);
+                        }
+                    });
                 });
             }
 
@@ -3887,42 +4049,25 @@
                         const semesterKey = btn.dataset.semesterKey;
                         const semesterName = btn.dataset.semesterName;
 
-                        if (btn.dataset.confirming) {
-                            btn.disabled = true;
-                            btn.textContent = 'Menghapus...';
-
-                            google.script.run
-                                .withSuccessHandler(response => {
-                                    showGlobalStatus(response.message, response.status !== 'error');
-                                    btn.disabled = false;
-                                    btn.textContent = 'Hapus Data Semester Ini';
-                                    delete btn.dataset.confirming;
-                                })
-                                .withFailureHandler(err => {
-                                    showGlobalStatus('Gagal: ' + err.message, false);
-                                    btn.disabled = false;
-                                    btn.textContent = 'Hapus Data Semester Ini';
-                                    delete btn.dataset.confirming;
-                                })
-                                .deleteAllRaporScoresBySemester(userSpreadsheetId, semesterKey);
-
-                        } else {
-                            btn.dataset.confirming = 'true';
-                            btn.textContent = `YAKIN HAPUS DATA ${semesterName.toUpperCase()}?`;
-                            const originalColor = 'bg-red-600';
-                            const hoverColor = 'hover:bg-red-700';
-                            btn.classList.remove(originalColor, hoverColor);
-                            btn.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
-
-                            setTimeout(() => {
-                                if (btn.dataset.confirming) {
-                                    delete btn.dataset.confirming;
-                                    btn.textContent = 'Hapus Data Semester Ini';
-                                    btn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
-                                    btn.classList.add(originalColor, hoverColor);
-                                }
-                            }, 4000);
-                        }
+                        showTypeToConfirmModal({
+                            title: `Hapus Nilai Rapor ${semesterName}`,
+                            body: `Anda akan menghapus **SEMUA** data nilai rapor (Pengetahuan & Keterampilan) untuk <strong>${semesterName}</strong>. Tindakan ini tidak dapat dibatalkan.`,
+                            onConfirm: () => {
+                                showGlobalStatus(`Menghapus nilai rapor ${semesterName}...`, true);
+                                
+                                google.script.run
+                                    .withSuccessHandler(response => {
+                                        showGlobalStatus(response.message, response.status !== 'error');
+                                        // Bersihkan tabel di tampilan jika ada
+                                        const tableContainer = document.getElementById(`table-container-${semesterKey}`);
+                                        if(tableContainer) tableContainer.innerHTML = '';
+                                    })
+                                    .withFailureHandler(err => {
+                                        showGlobalStatus('Gagal: ' + err.message, false);
+                                    })
+                                    .deleteAllRaporScoresBySemester(userSpreadsheetId, semesterKey);
+                            }
+                        });
                     }
                 });
             }
@@ -4048,9 +4193,15 @@
                 scoreTable.addEventListener('paste', handleSmartPaste);
                 document.getElementById(`form-${sheetName}`).addEventListener('submit', (e) => handleSaveRapor(e, semesterKey, jenisNilai));
                 tableWrapper.querySelector('.clear-scores-btn').addEventListener('click', (e) => {
-                    const form = e.target.closest('form');
-                    form.querySelectorAll('.score-input').forEach(input => input.value = '');
-                    form.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row));
+                    const konfirmasi = prompt("Anda yakin ingin membersihkan semua nilai di tabel ini?\n\nKetik YA untuk melanjutkan.");
+                    
+                    // Cek jika input pengguna (setelah diubah ke huruf besar dan dihapus spasinya) adalah "YA"
+                    if (konfirmasi && konfirmasi.toUpperCase().trim() === 'YA') {
+                        const form = e.target.closest('form');
+                        form.querySelectorAll('.score-input').forEach(input => input.value = '');
+                        form.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row));
+                        showGlobalStatus("Data di tabel telah dibersihkan.", true);
+                    }
                 });
             });
         }
@@ -4763,27 +4914,38 @@
         // --- SUPERADMIN FUNCTIONS ---
 
         // Panggil fungsi ini saat menu 'Manajemen Akun' diklik
+        // GANTI FUNGSI INI
         function loadUserManagementPage() {
             const container = document.getElementById('userManagementTableContainer');
             container.innerHTML = `<p class="text-center p-8 loading-animation">Memuat data pengguna</p>`;
             
             const adminEmail = sessionStorage.getItem('userEmail');
-
-            // **PERBAIKAN: Cek email admin di sisi frontend sebelum mengirim ke backend**
             if (!adminEmail) {
-                container.innerHTML = `<p class="text-center text-red-500 p-4">Error: Sesi admin tidak ditemukan atau telah berakhir. Silakan logout dan login kembali.</p>`;
-                return; // Hentikan eksekusi jika email admin tidak ada
+                container.innerHTML = `<p class="text-center text-red-500 p-4">Error: Sesi admin tidak valid.</p>`;
+                return;
             }
             
             google.script.run
-                .withSuccessHandler(users => {
-                    renderUserManagementTable(users);
-                })
-                .withFailureHandler(err => {
-                    // Pesan error dari backend sekarang akan lebih jelas
-                    container.innerHTML = `<p class="text-center text-red-500 p-4">Gagal memuat data: ${err.message}</p>`;
-                })
+                .withSuccessHandler(users => { renderUserManagementTable(users); })
+                .withFailureHandler(err => { container.innerHTML = `<p class="text-center text-red-500 p-4">Gagal memuat pengguna: ${err.message}</p>`; })
                 .getAllUsers_Superadmin(adminEmail);
+        }
+
+        // TAMBAHKAN FUNGSI BARU INI
+        function loadPengajuanListPage_Superadmin() {
+            const pengajuanContainer = document.getElementById('pengajuanContainer_Superadmin');
+            pengajuanContainer.innerHTML = `<p class="text-center p-4 loading-animation">Memuat daftar pengajuan</p>`;
+
+            const adminEmail = sessionStorage.getItem('userEmail');
+            if (!adminEmail) {
+                pengajuanContainer.innerHTML = `<p class="text-center text-red-500 p-4">Error: Sesi admin tidak valid.</p>`;
+                return;
+            }
+
+            google.script.run
+                .withSuccessHandler(requests => { renderChangeRequestsTable(requests); })
+                .withFailureHandler(err => { pengajuanContainer.innerHTML = `<p class="text-center text-red-500 p-4">Gagal memuat pengajuan: ${err.message}</p>`; })
+                .getChangeRequests_Superadmin(adminEmail);
         }
 
         // Render tabel semua pengguna
@@ -4886,95 +5048,107 @@
         /**
          * [MODIFIKASI] Menyiapkan UI khusus untuk Superadmin, dengan Dashboard sebagai halaman utama.
          */
+        // GANTI SELURUH FUNGSI initializeSuperadminApp DENGAN VERSI BARU INI
         function initializeSuperadminApp() {
-            // Sembunyikan SEMUA menu navigasi pengguna biasa
+            // Definisikan menu apa saja yang boleh dilihat oleh SUPERADMIN.
+            const allowedAdminPages = ['dashboard', 'manajemen-akun', 'daftar-pengajuan', 'ubah-password'];
+
+            // Loop melalui semua link navigasi dan tampilkan HANYA yang diizinkan untuk admin.
             document.querySelectorAll('.nav-link').forEach(link => {
                 const page = link.dataset.page;
-                if (page && page !== 'dashboard' && page !== 'manajemen-akun' && page !== 'ubah-password') {
+                if (page && allowedAdminPages.includes(page)) {
+                    link.classList.remove('hidden');
+                } else {
+                    // Sembunyikan semua yang tidak ada dalam daftar.
                     link.classList.add('hidden');
                 }
             });
-
-            // Tampilkan menu yang relevan untuk Superadmin
-            const dashboardNav = document.querySelector('.nav-link[data-page="dashboard"]');
-            const manajemenAkunNav = document.getElementById('nav-manajemen-akun');
-            const ubahPasswordNav = document.querySelector('.nav-link[data-page="ubah-password"]');
-            const logoutButton = document.getElementById('logoutButton');
-            
-            if (dashboardNav) dashboardNav.classList.remove('hidden');
-            if (manajemenAkunNav) manajemenAkunNav.classList.remove('hidden');
-            if(ubahPasswordNav) ubahPasswordNav.classList.remove('hidden'); // Juga tampilkan ubah password
-            if (logoutButton) logoutButton.classList.remove('hidden');
+            // Pastikan tombol Logout selalu terlihat.
+            document.getElementById('logoutButton').classList.remove('hidden');
             
             document.getElementById('school-name-sidebar').textContent = 'SUPERADMIN PANEL';
 
-            // Sembunyikan semua halaman konten
+            // Sembunyikan semua halaman konten terlebih dahulu
             document.querySelectorAll('.content-page').forEach(page => page.classList.add('hidden'));
 
-            // Tampilkan Dashboard Superadmin sebagai halaman default
-            const saDashboard = document.getElementById('page-superadmin-dashboard');
-            if (saDashboard) {
-                saDashboard.classList.remove('hidden');
-                if (dashboardNav) dashboardNav.classList.add('active');
-                loadSuperadminDashboardData(); // Muat data dashboard
-            }
-
-            // Fungsi untuk meng-handle klik navigasi Superadmin
+            // Fungsi untuk meng-handle klik navigasi Superadmin (sudah diperbaiki)
             const handleSuperadminNav = (targetPageId) => {
                 document.querySelectorAll('.content-page').forEach(p => p.classList.add('hidden'));
                 document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
 
                 const targetPage = document.getElementById('page-' + targetPageId);
-                const targetLink = document.querySelector(`.nav-link[data-page="${targetPageId}"]`);
-
-                if (targetPage) targetPage.classList.remove('hidden');
-                if (targetLink) targetLink.classList.add('active');
-
+                
+                // [PERBAIKAN] Logika untuk menyorot link navigasi yang benar
+                let linkToActivate = document.querySelector(`.nav-link[data-page="${targetPageId}"]`);
                 if (targetPageId === 'superadmin-dashboard') {
-                    loadSuperadminDashboardData();
-                } else if (targetPageId === 'manajemen-akun') {
-                    loadUserManagementPage();
+                    linkToActivate = document.querySelector('.nav-link[data-page="dashboard"]');
                 }
+                
+                if (targetPage) targetPage.classList.remove('hidden');
+                if (linkToActivate) linkToActivate.classList.add('active');
+
+                // Panggil fungsi pemuat data yang sesuai
+                if (targetPageId === 'superadmin-dashboard') loadSuperadminDashboardData();
+                if (targetPageId === 'manajemen-akun') loadUserManagementPage();
+                if (targetPageId === 'daftar-pengajuan') loadPengajuanListPage_Superadmin();
             };
 
-            // Pasang event listener untuk navigasi
-            if (dashboardNav) dashboardNav.onclick = (e) => {
-                e.preventDefault();
-                // Ganti halaman ke dashboard superadmin, bukan dashboard biasa
-                handleSuperadminNav('superadmin-dashboard');
-            };
-            if (manajemenAkunNav) manajemenAkunNav.onclick = (e) => {
-                e.preventDefault();
-                handleSuperadminNav('manajemen-akun');
-            };
-            if (ubahPasswordNav) ubahPasswordNav.onclick = (e) => {
-                e.preventDefault();
-                handleSuperadminNav('ubah-password');
-            };
-            if (logoutButton) logoutButton.onclick = (e) => {
-                e.preventDefault();
-                logoutUser();
-            };
+            // Pasang event listener untuk semua navigasi yang terlihat
+            document.querySelectorAll('#app-container .nav-link:not(.hidden)').forEach(link => {
+                // Hapus listener lama untuk menghindari duplikasi
+                const newLink = link.cloneNode(true);
+                link.parentNode.replaceChild(newLink, link);
 
-            // Event listener untuk kartu yang bisa diklik
-            const saCardTotalAkun = document.getElementById('sa-card-total-akun');
-            if (saCardTotalAkun) {
-                saCardTotalAkun.onclick = () => {
-                    if (manajemenAkunNav) handleSuperadminNav('manajemen-akun');
-                };
+                newLink.addEventListener('click', e => {
+                    e.preventDefault();
+                    let pageId = e.currentTarget.dataset.page;
+                    
+                    if (pageId) {
+                        // [PERBAIKAN UTAMA ADA DI SINI]
+                        // Jika superadmin mengklik link dengan data-page 'dashboard',
+                        // arahkan dia ke halaman 'superadmin-dashboard'.
+                        if (pageId === 'dashboard') {
+                            handleSuperadminNav('superadmin-dashboard');
+                        } else {
+                            handleSuperadminNav(pageId);
+                        }
+                    }
+                });
+            });
+
+            // Atur ulang listener untuk tombol logout secara eksplisit
+            const logoutButton = document.getElementById('logoutButton');
+            if (logoutButton) {
+                const newLogoutButton = logoutButton.cloneNode(true);
+                logoutButton.parentNode.replaceChild(newLogoutButton, logoutButton);
+                newLogoutButton.addEventListener('click', (e) => { e.preventDefault(); logoutUser(); });
             }
-            setupDefaultLimitManager(); 
+            
+            // Atur listener untuk card di dashboard
+            document.getElementById('sa-card-total-akun')?.addEventListener('click', () => handleSuperadminNav('manajemen-akun'));
+
+            document.getElementById('sa-card-ajuan-menunggu')?.addEventListener('click', () => handleSuperadminNav('daftar-pengajuan'));
+            
+            // Muat halaman default saat pertama kali login
+            handleSuperadminNav('superadmin-dashboard');
+            setupDefaultLimitManager();
+            updatePengajuanBadge();
         }
 
         /**
          * [BARU] Memuat dan menampilkan data untuk dashboard Superadmin.
          */
+        // GANTI FUNGSI INI
         function loadSuperadminDashboardData() {
             // Tampilkan loading spinner
-            document.getElementById('sa-total-akun').textContent = '...';
-            document.getElementById('sa-total-siswa').textContent = '...';
-            document.getElementById('sa-akun-aktif').textContent = '...';
-            document.getElementById('sa-akun-nonaktif').textContent = '...';
+            const statIds = [
+                'sa-total-akun', 'sa-total-siswa', 'sa-akun-aktif', 'sa-akun-nonaktif',
+                'sa-total-ajuan', 'sa-ajuan-menunggu', 'sa-ajuan-diterima', 'sa-ajuan-ditolak'
+            ];
+            statIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = '...';
+            });
 
             const adminEmail = sessionStorage.getItem('userEmail');
             if (!adminEmail) return;
@@ -4986,6 +5160,11 @@
                         document.getElementById('sa-total-siswa').textContent = data.totalStudents;
                         document.getElementById('sa-akun-aktif').textContent = data.activeAccounts;
                         document.getElementById('sa-akun-nonaktif').textContent = data.inactiveAccounts;
+                        // [BARU] Isi data untuk kartu pengajuan
+                        document.getElementById('sa-total-ajuan').textContent = data.totalRequests;
+                        document.getElementById('sa-ajuan-menunggu').textContent = data.pendingRequests;
+                        document.getElementById('sa-ajuan-diterima').textContent = data.approvedRequests;
+                        document.getElementById('sa-ajuan-ditolak').textContent = data.rejectedRequests;
                     }
                 })
                 .withFailureHandler(err => {
@@ -5121,6 +5300,598 @@
                     quotaContainer.innerHTML = `Error: ${err.message}`;
                 })
                 .getStudentQuotaInfo(userEmail);
+        }
+
+        // [TAMBAHKAN SEMUA FUNGSI INI]
+
+        /**
+         * Memuat data dan status untuk halaman pengajuan (versi baru).
+         */
+        // GANTI SELURUH FUNGSI INI
+        function loadPengajuanPage() {
+            const currentJenjangEl = document.getElementById('currentJenjang');
+            const currentNamaSekolahEl = document.getElementById('currentNamaSekolah');
+            
+            setPengajuanUiState('loading');
+            document.getElementById('ajuanHistoryContainer').innerHTML = `<p class="text-center text-gray-500 py-4 loading-animation">Memuat riwayat</p>`;
+
+            const userEmail = sessionStorage.getItem('userEmail');
+            if (!userEmail) { /* ... kode error sesi ... */ return; }
+
+            Promise.all([
+                new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getSchoolData(userSpreadsheetId)),
+                new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getChangeRequestHistory_User(userEmail)) // <-- Panggil fungsi riwayat
+            ]).then(([schoolData, requestHistory]) => {
+                
+                if (schoolData) {
+                    currentJenjangEl.textContent = schoolData.jenjang || '(Belum diatur)';
+                    currentNamaSekolahEl.textContent = schoolData.namaSekolah || '(Belum diatur)';
+                }
+
+                const latestRequest = (requestHistory && requestHistory.length > 0) ? requestHistory[0] : null;
+
+                if (latestRequest) {
+                    if (latestRequest.status === 'Menunggu Persetujuan') {
+                        setPengajuanUiState('pending', latestRequest);
+                    } else if (latestRequest.status === 'Ditolak') {
+                        setPengajuanUiState('rejected', latestRequest);
+                    } else if (latestRequest.status === 'Disetujui') {
+                        setPengajuanUiState('approved', latestRequest);
+                    } else {
+                        setPengajuanUiState('idle');
+                    }
+                } else {
+                    setPengajuanUiState('idle');
+                }
+
+                // Panggil fungsi untuk merender tabel riwayat
+                renderRequestHistoryTable(requestHistory);
+            });
+        }
+
+        // Pasang event listener untuk form pengajuan (versi baru)
+        document.getElementById('pengajuanForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const newJenjang = document.getElementById('newJenjang').value;
+            const newNamaSekolah = document.getElementById('newNamaSekolah').value.trim();
+
+            if (!newJenjang && !newNamaSekolah) {
+                showGlobalStatus("Anda harus mengisi minimal salah satu data baru.", false);
+                return;
+            }
+            
+            if (!confirm("Anda yakin ingin mengajukan perubahan data ini?")) {
+                return;
+            }
+
+            const btn = document.getElementById('submitPengajuanBtn');
+            const btnText = document.getElementById('pengajuanBtnText');
+            const spinner = document.getElementById('pengajuanSpinner');
+
+            btn.disabled = true;
+            btnText.classList.add('hidden');
+            spinner.classList.remove('hidden');
+
+            const newData = { newJenjang, newNamaSekolah };
+            const userEmail = sessionStorage.getItem('userEmail');
+
+            google.script.run
+                .withSuccessHandler(response => {
+                    spinner.classList.add('hidden'); // Sembunyikan spinner
+                    showGlobalStatus(response.message, response.status === 'success');
+                    
+                    if (response.status === 'success') {
+                        // Langsung update UI ke status 'pending' tanpa memuat ulang seluruh halaman.
+                        // Ini adalah kunci perbaikannya.
+                        setPengajuanUiState('pending', { requestDate: new Date() });
+                    } else {
+                        // Jika gagal (misal: sudah ada ajuan), kembalikan tombol ke keadaan semula.
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                    }
+                })
+                .withFailureHandler(err => {
+                    showGlobalStatus('Gagal: ' + err.message, false);
+                    btn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    spinner.classList.add('hidden');
+                })
+                .submitChangeRequest(userEmail, newData);
+        });
+
+        // [TAMBAHKAN FUNGSI BARU INI]
+        /**
+         * Merender tabel daftar pengajuan untuk Superadmin.
+         * @param {Array<object>} requests - Array data pengajuan dari backend.
+         */
+        function renderChangeRequestsTable(requests) {
+            const container = document.getElementById('pengajuanContainer_Superadmin');
+            if (!requests || requests.length === 0) {
+                container.innerHTML = `<p class="text-center text-gray-500 p-4">Tidak ada pengajuan perubahan data saat ini.</p>`;
+                return;
+            }
+
+            let tableHtml = `<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-medium text-gray-500 uppercase">Tanggal</th>
+                        <th class="px-4 py-3 text-left font-medium text-gray-500 uppercase">Pemohon</th>
+                        <th class="px-4 py-3 text-left font-medium text-gray-500 uppercase">Data Lama</th>
+                        <th class="px-4 py-3 text-left font-medium text-gray-500 uppercase">Data Baru</th>
+                        <th class="px-4 py-3 text-center font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-4 py-3 text-right font-medium text-gray-500 uppercase">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">`;
+
+            requests.forEach(req => {
+                let statusClass, statusText, actionButtons;
+
+                switch(req.status) {
+                    case 'Menunggu Persetujuan':
+                        statusClass = 'bg-yellow-100 text-yellow-800';
+                        statusText = 'Menunggu';
+                        actionButtons = `
+                            <button class="text-green-600 hover:text-green-900 font-medium" onclick="handleResolveRequest_Superadmin('${req.requestId}', 'Disetujui', this)">Setujui</button>
+                            <button class="ml-4 text-red-600 hover:text-red-900 font-medium" onclick="handleResolveRequest_Superadmin('${req.requestId}', 'Ditolak', this)">Tolak</button>
+                        `;
+                        break;
+                    case 'Disetujui':
+                        statusClass = 'bg-green-100 text-green-800';
+                        statusText = 'Disetujui';
+                        actionButtons = `<span class="text-gray-400">Selesai</span>`;
+                        break;
+                    case 'Ditolak':
+                        statusClass = 'bg-red-100 text-red-800';
+                        statusText = 'Ditolak';
+                        actionButtons = `<span class="text-gray-400">Selesai</span>`;
+                        break;
+                }
+
+                tableHtml += `<tr>
+                    <td class="px-4 py-4 whitespace-nowrap">${new Date(req.requestDate).toLocaleDateString('id-ID')}</td>
+                    <td class="px-4 py-4 whitespace-nowrap font-medium text-gray-900">${req.userEmail}</td>
+                    <td class="px-4 py-4"><span class="block">${req.oldNamaSekolah}</span><span class="text-xs text-gray-500">${req.oldJenjang}</span></td>
+                    <td class="px-4 py-4 text-blue-600"><span class="block">${req.newNamaSekolah}</span><span class="text-xs">${req.newJenjang}</span></td>
+                    <td class="px-4 py-4 text-center"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">${statusText}</span></td>
+                    <td class="px-4 py-4 whitespace-nowrap text-right">${actionButtons}</td>
+                </tr>`;
+            });
+
+            tableHtml += `</tbody></table></div>`;
+            container.innerHTML = tableHtml;
+        }
+
+        /**
+         * Menangani klik tombol Setujui/Tolak oleh Superadmin.
+         * @param {string} requestId - ID pengajuan.
+         * @param {string} resolution - 'Disetujui' atau 'Ditolak'.
+         * @param {HTMLElement} btnElement - Elemen tombol yang diklik.
+         */
+        function handleResolveRequest_Superadmin(requestId, resolution, btnElement) {
+            let adminNotes = "";
+            if (resolution === 'Ditolak') {
+                adminNotes = prompt("Harap masukkan alasan penolakan:");
+                if (adminNotes === null) {
+                    return;
+                }
+            }
+
+            const parentTd = btnElement.parentElement;
+            parentTd.innerHTML = `<span class="text-sm loading-animation">Memproses</span>`;
+
+            const adminEmail = sessionStorage.getItem('userEmail');
+            google.script.run
+                .withSuccessHandler(response => {
+                    showGlobalStatus(response.message, response.status === 'success');
+                    // Muat ulang HANYA daftar pengajuan
+                    loadPengajuanListPage_Superadmin(); 
+                    updatePengajuanBadge();
+                })
+                .withFailureHandler(err => {
+                    showGlobalStatus("Gagal memproses: " + err.message, false);
+                    // Muat ulang daftar pengajuan agar tombol aksi muncul kembali
+                    loadPengajuanListPage_Superadmin();
+                })
+                .resolveChangeRequest_Superadmin(adminEmail, requestId, resolution, adminNotes);
+        }
+
+        /**
+         * [DIPERBARUI] Fungsi terpusat untuk mengatur tampilan halaman pengajuan.
+         * @param {string} state - Kondisi tampilan ('loading', 'idle', 'pending', 'rejected', 'approved').
+         * @param {object} [data={}] - Data opsional seperti status dari server.
+         */
+        function setPengajuanUiState(state, data = {}) {
+            const form = document.getElementById('pengajuanForm');
+            const newJenjangEl = document.getElementById('newJenjang');
+            const newNamaSekolahEl = document.getElementById('newNamaSekolah');
+            const submitBtn = document.getElementById('submitPengajuanBtn');
+            const btnText = document.getElementById('pengajuanBtnText');
+            const statusContainer = document.getElementById('currentAjuanStatusContainer');
+
+            // Default state: form aktif, status kosong
+            statusContainer.innerHTML = '';
+            newJenjangEl.disabled = false;
+            newNamaSekolahEl.disabled = false;
+            submitBtn.disabled = false;
+            btnText.textContent = 'Ajukan Perubahan';
+
+            switch (state) {
+                case 'loading':
+                    newJenjangEl.disabled = true;
+                    newNamaSekolahEl.disabled = true;
+                    submitBtn.disabled = true;
+                    btnText.textContent = 'Memuat...';
+                    break;
+
+                case 'pending':
+                    statusContainer.innerHTML = `<div class="p-3 rounded-md text-sm bg-yellow-100 text-yellow-800 font-medium">
+                        <strong>Status Terakhir:</strong> Menunggu Persetujuan
+                    </div>`;
+                    newJenjangEl.disabled = true;
+                    newNamaSekolahEl.disabled = true;
+                    submitBtn.disabled = true;
+                    btnText.textContent = 'Ajuan Telah Dikirim';
+                    break;
+
+                case 'rejected':
+                    // [PERBAIKAN DI SINI] Tambahkan logika untuk menampilkan catatan admin.
+                    const catatanAdmin = data.adminNotes ? ` || <strong>Catatan Admin:</strong> ${data.adminNotes}` : '';
+                    statusContainer.innerHTML = `<div class="p-3 rounded-md text-sm bg-red-100 text-red-800">
+                        <strong>Status Terakhir:</strong> Ditolak${catatanAdmin}
+                    </div>`;
+                    // Form tetap aktif agar bisa mengajukan lagi
+                    break;
+
+                case 'approved':
+                    statusContainer.innerHTML = `<div class="p-3 rounded-md text-sm bg-green-100 text-green-800 font-medium">
+                        <strong>Status Terakhir:</strong> Disetujui
+                    </div>`;
+                    // Form bisa dikunci atau tidak, tergantung preferensi. Kita biarkan aktif jika ingin mengajukan perubahan lagi.
+                    // Jika ingin dikunci, uncomment baris di bawah:
+                    // newJenjangEl.disabled = true;
+                    // newNamaSekolahEl.disabled = true;
+                    // submitBtn.disabled = true;
+                    // btnText.textContent = 'Perubahan Disetujui';
+                    break;
+                    
+                case 'idle':
+                default:
+                    // Tidak melakukan apa-apa, form sudah diaktifkan di atas.
+                    break;
+            }
+        }
+
+        // TAMBAHKAN FUNGSI BARU INI
+        /**
+         * Memanggil backend untuk mendapatkan jumlah pengajuan yang menunggu
+         * dan memperbarui emblem notifikasi di sidebar.
+         */
+        function updatePengajuanBadge() {
+            const adminEmail = sessionStorage.getItem('userEmail');
+            if (!adminEmail || sessionStorage.getItem('userRole') !== 'Superadmin') {
+                return; // Hanya jalankan untuk Superadmin
+            }
+
+            google.script.run
+                .withSuccessHandler(response => {
+                    const badge = document.getElementById('pengajuan-badge');
+                    if (!badge) return;
+
+                    if (response && response.status === 'success' && response.count > 0) {
+                        badge.textContent = response.count;
+                        badge.classList.remove('hidden');
+                    } else {
+                        badge.classList.add('hidden');
+                    }
+                })
+                .getPendingRequestCount_Superadmin(adminEmail);
+        }
+
+        // TAMBAHKAN FUNGSI BARU INI
+        /**
+         * Merender tabel riwayat pengajuan untuk pengguna.
+         * @param {Array<object>} history - Array objek riwayat dari backend.
+         */
+        function renderRequestHistoryTable(history) {
+            const container = document.getElementById('ajuanHistoryContainer');
+            if (!history || history.length === 0) {
+                container.innerHTML = ''; // Kosongkan jika tidak ada riwayat
+                return;
+            }
+
+            let tableHtml = `
+                <h3 class="text-xl font-bold text-gray-800 mb-4 border-t pt-6">Riwayat Pengajuan Anda</h3>
+                <div class="overflow-x-auto bg-white rounded-lg shadow-md">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-medium text-gray-500 uppercase">Tanggal</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-500 uppercase">Data Lama</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-500 uppercase">Data Baru Diajukan</th>
+                                <th class="px-4 py-3 text-center font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-500 uppercase">Catatan Admin</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+            `;
+
+            history.forEach(req => {
+                let statusClass, statusText;
+                switch(req.status) {
+                    case 'Menunggu Persetujuan':
+                        statusClass = 'bg-yellow-100 text-yellow-800'; statusText = 'Menunggu'; break;
+                    case 'Disetujui':
+                        statusClass = 'bg-green-100 text-green-800'; statusText = 'Disetujui'; break;
+                    case 'Ditolak':
+                        statusClass = 'bg-red-100 text-red-800'; statusText = 'Ditolak'; break;
+                    default:
+                        statusClass = 'bg-gray-100 text-gray-800'; statusText = req.status;
+                }
+
+                const catatan = req.status === 'Ditolak' && req.adminNotes ? req.adminNotes : '-';
+
+                tableHtml += `
+                    <tr>
+                        <td class="px-4 py-4 whitespace-nowrap">${new Date(req.requestDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: 'numeric'})}</td>
+                        <td class="px-4 py-4"><span class="block">${req.oldNamaSekolah}</span><span class="text-xs text-gray-500">${req.oldJenjang}</span></td>
+                        <td class="px-4 py-4 text-blue-600 font-medium"><span class="block">${req.newNamaSekolah}</span><span class="text-xs">${req.newJenjang}</span></td>
+                        <td class="px-4 py-4 text-center"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">${statusText}</span></td>
+                        <td class="px-4 py-4 text-gray-600">${catatan}</td>
+                    </tr>
+                `;
+            });
+
+            tableHtml += `</tbody></table></div>`;
+            container.innerHTML = tableHtml;
+        }
+
+        /**
+         * [BARU] Memuat halaman backup & restore, lalu mengambil daftar backup dari server.
+         */
+        function loadBackupRestorePage() {
+            const container = document.getElementById('backupListContainer');
+            if (!container) return;
+            container.innerHTML = `<p class="text-center text-gray-500 py-4 loading-animation">Memuat daftar backup</p>`;
+            
+            google.script.run
+                .withSuccessHandler(response => {
+                    if (response.status === 'success') {
+                        renderBackupList(response.backups);
+                    } else {
+                        container.innerHTML = `<p class="text-red-600 text-center py-4">${response.message}</p>`;
+                    }
+                })
+                .withFailureHandler(err => {
+                    container.innerHTML = `<p class="text-red-600 text-center py-4">Error: ${err.message}</p>`;
+                })
+                .getBackupList(userSpreadsheetId);
+        }
+
+        /**
+         * [BARU] Menampilkan daftar backup yang diterima dari server ke dalam sebuah tabel.
+         * @param {Array<object>} backups - Array berisi objek file backup.
+         */
+        function renderBackupList(backups) {
+            const container = document.getElementById('backupListContainer');
+            if (!container) return;
+
+            if (!backups || backups.length === 0) {
+                container.innerHTML = `<p class="text-center text-gray-500 py-4">Belum ada file backup yang dibuat.</p>`;
+                return;
+            }
+
+            let tableHtml = `<table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama File Backup (Tanggal Dibuat)</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">`;
+            
+            backups.forEach(backup => {
+                const date = new Date(backup.date);
+                const formattedDate = date.toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' });
+                tableHtml += `
+                    <tr>
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${backup.name}</div>
+                            <div class="text-xs text-gray-500">${formattedDate}</div>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="restore-btn text-green-600 hover:text-green-900" data-backup-id="${backup.id}" data-backup-name="${backup.name}">Pulihkan</button>
+                            <button class="delete-btn ml-4 text-red-600 hover:text-red-900" data-backup-id="${backup.id}">Hapus</button>
+                        </td>
+                    </tr>`;
+            });
+
+            tableHtml += `</tbody></table>`;
+            container.innerHTML = tableHtml;
+
+            // Pasang event listener untuk semua tombol aksi yang baru dibuat
+            container.querySelectorAll('.restore-btn').forEach(btn => btn.onclick = handleRestore);
+            container.querySelectorAll('.delete-btn').forEach(btn => btn.onclick = handleDelete);
+        }
+
+        // Pasang event listener ini di dalam fungsi DOMContentLoaded agar elemennya pasti sudah ada
+        document.getElementById('createBackupBtn')?.addEventListener('click', function() {
+            const btn = this;
+            const btnText = document.getElementById('createBackupBtnText');
+            const spinner = document.getElementById('createBackupSpinner');
+
+            btn.disabled = true;
+            btnText.classList.add('hidden');
+            spinner.classList.remove('hidden');
+
+            google.script.run
+                .withSuccessHandler(response => {
+                    showGlobalStatus(response.message, response.status === 'success');
+                    if (response.status === 'success') {
+                        loadBackupRestorePage(); // Muat ulang daftar backup setelah berhasil
+                    }
+                    btn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    spinner.classList.add('hidden');
+                })
+                .withFailureHandler(err => {
+                    showGlobalStatus(`Error: ${err.message}`, false);
+                    btn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    spinner.classList.add('hidden');
+                })
+                .createBackup(userSpreadsheetId);
+        });
+
+        /**
+         * [VERSI FINAL 4.0 - AKSI MANUAL] Menangani restore dengan tombol reload manual.
+         * Ini adalah metode paling stabil untuk mengatasi batasan iframe Google Apps Script.
+         * @param {Event} event - Event klik dari tombol.
+         */
+        function handleRestore(event) {
+            const backupId = event.target.dataset.backupId;
+            const backupName = event.target.dataset.backupName;
+            const schoolName = document.getElementById('school-name-sidebar').textContent;
+
+            const confirmationText = `ANDA YAKIN INGIN MEMULIHKAN DATA DARI BACKUP INI?\n\nFile: ${backupName}\n\nSEMUA DATA ANDA SAAT INI AKAN DIHAPUS DAN DIGANTI DENGAN DATA DARI BACKUP. TINDAKAN INI TIDAK BISA DIBATALKAN.\n\nUntuk melanjutkan, ketik nama sekolah Anda di bawah ini: "${schoolName}"`;
+            
+            const userInput = prompt(confirmationText);
+
+            if (userInput === schoolName) {
+                const overlay = document.getElementById('loading-overlay');
+                const overlayTitle = document.getElementById('overlay-title');
+                const overlaySubtitle = document.getElementById('overlay-subtitle');
+                const overlayButtonContainer = document.getElementById('overlay-button-container');
+
+                // Reset tampilan overlay
+                overlayButtonContainer.innerHTML = '';
+                overlayTitle.textContent = "Memulai Proses Pemulihan...";
+                overlayTitle.classList.add('loading-animation');
+                overlaySubtitle.textContent = "Mohon tunggu, proses berjalan di latar belakang...";
+                overlay.classList.remove('hidden');
+
+                // Jalankan restore di backend
+                google.script.run.restoreFromBackup(userSpreadsheetId, backupId);
+
+                // Mulai pengecekan status
+                let pollingInterval = setInterval(() => {
+                    google.script.run
+                        .withSuccessHandler(status => {
+                            if (status && status.startsWith('error')) {
+                                clearInterval(pollingInterval);
+                                overlay.classList.add('hidden');
+                                showGlobalStatus(`Proses pemulihan gagal: ${status}`, false);
+                            } else if (status === 'complete') {
+                                clearInterval(pollingInterval);
+                                
+                                // --- INI BAGIAN UTAMA YANG BERUBAH ---
+                                
+                                // 1. Ubah teks untuk memberi instruksi
+                                overlayTitle.textContent = "Proses Berhasil!";
+                                overlayTitle.classList.remove('loading-animation');
+                                overlaySubtitle.innerHTML = `Data Anda telah dipulihkan.<br><strong class="text-blue-600 text-lg">Silakan klik tombol di bawah untuk memuat ulang halaman.</strong>`;
+
+                                // 2. Buat dan tampilkan tombol reload manual
+                                const webAppUrl = sessionStorage.getItem('webAppUrl');
+                                if (webAppUrl) {
+                                    overlayButtonContainer.innerHTML = `<a href="${webAppUrl}" class="bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 text-lg">Muat Ulang Halaman</a>`;
+                                } else {
+                                  overlaySubtitle.innerHTML += `<br><span class="text-red-500">Gagal mendapatkan URL reload otomatis, silakan muat ulang halaman ini secara manual.</span>`;
+                                }
+                            }
+                        })
+                        .getRestoreStatus();
+                }, 3000);
+                    
+            } else if (userInput !== null) {
+                alert("Konfirmasi salah. Proses pemulihan dibatalkan.");
+            }
+        }
+
+        /**
+         * [BARU] Menangani aksi klik tombol hapus file backup.
+         * @param {Event} event - Event klik dari tombol.
+         */
+        function handleDelete(event) {
+            const backupId = event.target.dataset.backupId;
+            if (confirm("Apakah Anda yakin ingin menghapus file backup ini secara permanen?")) {
+                event.target.textContent = 'Menghapus...';
+                google.script.run
+                    .withSuccessHandler(response => {
+                        showGlobalStatus(response.message, response.status === 'success');
+                        if (response.status === 'success') {
+                            loadBackupRestorePage(); // Muat ulang daftar backup
+                        }
+                    })
+                    .withFailureHandler(err => showGlobalStatus(`Error saat menghapus: ${err.message}`, false))
+                    .deleteBackup(backupId);
+            }
+        }
+
+        /**
+         * [DIPERBAIKI] Menampilkan modal konfirmasi "ketik untuk hapus" yang generik.
+         * @param {object} options Opsi untuk modal.
+         * @param {string} options.title Judul modal.
+         * @param {string} options.body Teks deskripsi tentang apa yang akan dihapus.
+         * @param {function} options.onConfirm Fungsi callback yang akan dijalankan jika konfirmasi berhasil.
+         */
+        function showTypeToConfirmModal(options) {
+            const modal = document.getElementById('type-to-confirm-modal');
+            const titleEl = document.getElementById('confirm-modal-title');
+            const bodyEl = document.getElementById('confirm-modal-body');
+            const inputEl = document.getElementById('confirm-modal-input');
+            const cancelBtn = document.getElementById('confirm-modal-cancel-btn');
+            const actionBtn = document.getElementById('confirm-modal-action-btn');
+
+            // Isi konten modal sesuai opsi
+            titleEl.textContent = options.title;
+            bodyEl.innerHTML = options.body;
+
+            // Reset kondisi modal
+            inputEl.value = '';
+            
+            // --- PERBAIKAN LOGIKA DIMULAI DI SINI ---
+
+            // 1. Ganti tombol lama dengan kloningannya untuk menghapus listener lama.
+            // Lakukan ini SEBELUM kita menambahkan listener baru.
+            const newActionBtn = actionBtn.cloneNode(true);
+            actionBtn.parentNode.replaceChild(newActionBtn, actionBtn);
+            
+            // 2. Set tombol baru ke kondisi non-aktif (disabled)
+            newActionBtn.disabled = true;
+
+            // Fungsi untuk menutup modal
+            const closeModal = () => {
+                modal.classList.add('hidden');
+                inputEl.removeEventListener('input', inputHandler);
+            };
+
+            // Handler untuk input teks, SEKARANG MENGACU KE newActionBtn
+            const inputHandler = () => {
+                // .trim() untuk menghapus spasi tidak sengaja
+                if (inputEl.value.trim() === 'HAPUS SEMUA') { 
+                    newActionBtn.disabled = false;
+                } else {
+                    newActionBtn.disabled = true;
+                }
+            };
+            
+            // Handler untuk tombol aksi
+            const actionHandler = () => {
+                closeModal();
+                options.onConfirm(); // Jalankan fungsi callback
+            };
+
+            // 3. Pasang semua event listener yang diperlukan
+            inputEl.addEventListener('input', inputHandler);
+            cancelBtn.onclick = closeModal;
+            newActionBtn.addEventListener('click', actionHandler);
+            
+            // Tampilkan modal
+            modal.classList.remove('hidden');
+            modal.querySelector('.modal-content').style.transform = 'scale(1)';
+            inputEl.focus();
         }
     </script>
 </body>
