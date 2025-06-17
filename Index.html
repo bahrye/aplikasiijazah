@@ -711,7 +711,7 @@
                         </div>
                         <div class="mt-8 border-t pt-6">
                             <h2 class="text-xl font-bold text-gray-800">Import Data Siswa</h2>
-                            <p class="mt-1 text-gray-600">Unggah data siswa secara massal menggunakan template Excel. <br>Wajib mengisi <b>NISN</b> dan <b>NAMA LENGKAP</b>, yang lain boleh dikosongkan.</p>
+                            <p class="mt-1 text-gray-600">Unggah data siswa secara massal menggunakan template Excel.</p>
                             <div class="mt-4 flex flex-wrap items-center gap-4">
                                 <button id="downloadTemplateBtn" class="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700">Download Template</button>
                                 <input type="file" id="siswaFileInput" class="hidden" accept=".xlsx, .xls, .csv">
@@ -854,6 +854,11 @@
                                 <button id="updateRekapBtn" class="ml-auto bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center disabled:bg-green-400">
                                     <span id="updateRekapBtnText">Perbarui & Muat Ulang Data</span>
                                     <span id="updateRekapSpinner" class="hidden loading-animation">Memperbarui</span>
+                                </button>
+                                <button id="exportLedgerBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    <span id="exportLedgerBtnText">Unduh Leger Lengkap</span>
+                                    <span id="exportLedgerSpinner" class="hidden loading-animation">Memproses</span>
                                 </button>
                             </div>
                             <div id="rekap-display-area">
@@ -1785,6 +1790,50 @@
                         fpStatusMessage.className = 'mt-4 text-center text-sm text-red-600';
                     })
                     .resetPasswordWithOtp(email, otp, newPassword);
+            });
+
+            // [GANTI BLOK LAMA DENGAN KODE YANG SUDAH DIPERBAIKI INI]
+            document.getElementById('rekap-content')?.addEventListener('click', function(event) {
+                // Menggunakan .closest() untuk memastikan kita mendapatkan tombolnya,
+                // tidak peduli apakah yang diklik ikon, teks, atau area tombol itu sendiri.
+                const button = event.target.closest('#exportLedgerBtn');
+
+                // Jika tombolnya (atau elemen di dalamnya) yang diklik
+                if (button) {
+                    const btn = button; // Sekarang variabel btn merujuk ke elemen <button> dengan benar
+                    const btnText = document.getElementById('exportLedgerBtnText');
+                    const spinner = document.getElementById('exportLedgerSpinner');
+
+                    btn.disabled = true;
+                    btnText.classList.add('hidden');
+                    spinner.classList.remove('hidden');
+
+                    google.script.run
+                        .withSuccessHandler(result => {
+                            if (result && result.base64Data) {
+                                const link = document.createElement('a');
+                                link.href = `data:${result.mimeType};base64,${result.base64Data}`;
+                                link.download = result.fileName;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                showGlobalStatus(`File '${result.fileName}' berhasil diunduh.`, true);
+                            } else {
+                                const errorMessage = result ? result.error : 'Terjadi kesalahan tidak diketahui di server.';
+                                showGlobalStatus(`Gagal mengekspor leger: ${errorMessage}`, false);
+                            }
+                            btn.disabled = false;
+                            btnText.classList.remove('hidden');
+                            spinner.classList.add('hidden');
+                        })
+                        .withFailureHandler(error => {
+                            showGlobalStatus(`Error Kritis: ${error.message}. Coba refresh halaman.`, false);
+                            btn.disabled = false;
+                            btnText.classList.remove('hidden');
+                            spinner.classList.add('hidden');
+                        })
+                        .exportLedgerToExcel(userSpreadsheetId);
+                }
             });
         });
 
