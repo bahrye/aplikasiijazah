@@ -3063,3 +3063,259 @@ function getRestoreStatus() {
   const statusKey = `restore_status_${user}`;
   return cache.get(statusKey);
 }
+
+// =================================================================
+// [BARU] FUNGSI EKSPOR LEGER LENGKAP
+// =================================================================
+
+/**
+ * Fungsi utama untuk membuat dan mengekspor leger lengkap sebagai file Excel.
+ * @param {string} spreadsheetId ID spreadsheet pengguna.
+ * @returns {object} Objek berisi data file Excel yang di-encode base64.
+ */
+function exportLedgerToExcel(spreadsheetId) {
+  let tempSpreadsheetFileId = null;
+  try {
+    // 1. Ambil data utama yang akan sering digunakan
+    const students = getStudents(spreadsheetId);
+    const mapel = getMapel(spreadsheetId);
+    const jenjang = (getSchoolData(spreadsheetId) || {}).jenjang;
+    if (!students || students.length === 0) throw new Error("Tidak ada data siswa untuk diekspor.");
+    if (!mapel || mapel.length === 0) throw new Error("Tidak ada data mata pelajaran untuk diekspor.");
+
+    // 2. Buat Spreadsheet sementara untuk menampung semua sheet leger
+    const tempSpreadsheetName = `Leger Lengkap - ${getSchoolData(spreadsheetId).namaSekolah}`;
+    const tempSpreadsheet = SpreadsheetApp.create(tempSpreadsheetName);
+    tempSpreadsheetFileId = tempSpreadsheet.getId();
+
+    // 3. Buat setiap sheet yang diminta
+    createNilaiUjianSheetForLedger(tempSpreadsheet, spreadsheetId, students, mapel);
+    createNilaiRaporSheetForLedger(tempSpreadsheet, spreadsheetId, students, mapel, jenjang);
+    createNilaiIjazahSheetForLedger(tempSpreadsheet, spreadsheetId, students, mapel);
+    createRekapSheetForLedger(tempSpreadsheet, spreadsheetId, students, mapel);
+
+    // 4. Hapus sheet default "Sheet1" yang tidak digunakan
+    const defaultSheet = tempSpreadsheet.getSheetByName('Sheet1');
+    if (defaultSheet) {
+      tempSpreadsheet.deleteSheet(defaultSheet);
+    }
+
+    SpreadsheetApp.flush(); // Pastikan semua perubahan tersimpan
+
+    // 5. Ekspor spreadsheet sementara menjadi file .xlsx
+    const url = `https://docs.google.com/spreadsheets/d/${tempSpreadsheetFileId}/export?format=xlsx`;
+    const token = ScriptApp.getOAuthToken();
+    const response = UrlFetchApp.fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const blob = response.getBlob().setName(`${tempSpreadsheetName}.xlsx`);
+
+    return {
+      fileName: `${tempSpreadsheetName}.xlsx`,
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      base64Data: Utilities.base64Encode(blob.getBytes())
+    };
+
+  } catch (e) {
+    Logger.log(`exportLedgerToExcel Error: ${e.toString()}`);
+    return { error: e.toString() };
+  } finally {
+    // 6. Hapus file sementara setelah selesai
+    if (tempSpreadsheetFileId) {
+      DriveApp.getFileById(tempSpreadsheetFileId).setTrashed(true);
+    }
+  }
+}
+
+/**
+ * Fungsi pembantu untuk membuat sheet "Nilai Ujian".
+ */
+function createNilaiUjianSheetForLedger(ss, liveSsId, students, mapel) {
+  const sheet = ss.insertSheet("1. Nilai Ujian");
+  // [PERBAIKAN] Atur format kolom NISN ke Teks sebelum menulis data
+  sheet.getRange("B:B").setNumberFormat('@');
+
+  const nilaiMadrasah = getSheetDataAsObject(liveSsId, SHEET_NILAI_UJIAN_MADRASAH);
+  const nilaiPraktek = getSheetDataAsObject(liveSsId, SHEET_NILAI_UJIAN_PRAKTEK);
+
+  const headers = ["No", "NISN", "Nama Lengkap", ...mapel.map(m => m.kode), "Jumlah", "Rata-Rata", "Pembulatan"];
+  const bodyData = [];
+
+  students.forEach((student, index) => {
+    const nisn = student.nisn;
+    const row = [index + 1, nisn, student.nama.toUpperCase()];
+    let totalUjian = 0;
+    let mapelCount = 0;
+
+    mapel.forEach(m => {
+      const um = parseFloat((nilaiMadrasah[nisn] || {})[m.kode]);
+      const up = parseFloat((nilaiPraktek[nisn] || {})[m.kode]);
+      let rataUjian = 0;
+      if (!isNaN(um) && !isNaN(up)) rataUjian = (um + up) / 2;
+      else if (!isNaN(um)) rataUjian = um;
+      else if (!isNaN(up)) rataUjian = up;
+
+      row.push(rataUjian > 0 ? Math.round(rataUjian) : '');
+      if (rataUjian > 0) {
+          totalUjian += Math.round(rataUjian);
+          mapelCount++;
+      }
+    });
+
+    const average = mapelCount > 0 ? totalUjian / mapelCount : 0;
+    row.push(totalUjian);
+    row.push(average.toFixed(2));
+    row.push(Math.round(average));
+    bodyData.push(row);
+  });
+
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+  if (bodyData.length > 0) {
+    sheet.getRange(2, 1, bodyData.length, headers.length).setValues(bodyData);
+  }
+
+  // Auto resize kolom
+  sheet.autoResizeColumn(3); // Kolom Nama Siswa
+  for(let i = 4; i <= mapel.length + 3; i++){
+    sheet.autoResizeColumn(i); // Kolom Mapel
+  }
+}
+
+/**
+ * Fungsi pembantu untuk membuat sheet "Nilai Rapor".
+ */
+function createNilaiRaporSheetForLedger(ss, liveSsId, students, mapel, jenjang) {
+    const sheet = ss.insertSheet("2. Nilai Rapor");
+    // [PERBAIKAN] Atur format kolom NISN ke Teks sebelum menulis data
+    sheet.getRange("B:B").setNumberFormat('@');
+
+    const semesterKeys = { MI: ['k4_ganjil', 'k4_genap', 'k5_ganjil', 'k5_genap', 'k6_ganjil'], MTS: ['k7_ganjil', 'k7_genap', 'k8_ganjil', 'k8_genap', 'k9_ganjil'], MA: ['k10_ganjil', 'k10_genap', 'k11_ganjil', 'k11_genap', 'k12_ganjil'] };
+    const semestersForJenjang = semesterKeys[jenjang] || [];
+
+    const allRaporData = {};
+    semestersForJenjang.forEach(smKey => {
+        allRaporData[`P_${smKey}`] = getSheetDataAsObject(liveSsId, `Rapor_Pengetahuan_${smKey}`);
+        allRaporData[`K_${smKey}`] = getSheetDataAsObject(liveSsId, `Rapor_Keterampilan_${smKey}`);
+    });
+
+    const headers = ["No", "NISN", "Nama Lengkap", ...mapel.map(m => m.kode), "Jumlah", "Rata-Rata"];
+    const bodyData = [];
+
+    students.forEach((student, index) => {
+        const nisn = student.nisn;
+        const row = [index + 1, nisn, student.nama.toUpperCase()];
+        let totalRataRapor = 0;
+        let mapelCount = 0;
+
+        mapel.forEach(m => {
+            let totalNilaiSemester = 0;
+            let semesterCount = 0;
+            semestersForJenjang.forEach(smKey => {
+                const np = parseFloat((allRaporData[`P_${smKey}`][nisn] || {})[m.kode]);
+                const nk = parseFloat((allRaporData[`K_${smKey}`][nisn] || {})[m.kode]);
+                if(!isNaN(np) && !isNaN(nk)) { totalNilaiSemester += (np+nk)/2; semesterCount++; }
+                else if(!isNaN(np)) { totalNilaiSemester += np; semesterCount++; }
+                else if(!isNaN(nk)) { totalNilaiSemester += nk; semesterCount++; }
+            });
+            const rataRaporMapel = semesterCount > 0 ? totalNilaiSemester / semesterCount : 0;
+            row.push(rataRaporMapel > 0 ? Math.round(rataRaporMapel) : '');
+            if(rataRaporMapel > 0) {
+                totalRataRapor += Math.round(rataRaporMapel);
+                mapelCount++;
+            }
+        });
+        const average = mapelCount > 0 ? totalRataRapor / mapelCount : 0;
+        row.push(totalRataRapor);
+        row.push(average.toFixed(2));
+        bodyData.push(row);
+    });
+
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+    if (bodyData.length > 0) {
+      sheet.getRange(2, 1, bodyData.length, headers.length).setValues(bodyData);
+    }
+    sheet.autoResizeColumn(3);
+    for(let i = 4; i <= mapel.length + 3; i++){ sheet.autoResizeColumn(i); }
+}
+
+/**
+ * Fungsi pembantu untuk membuat sheet "Nilai Ijazah".
+ */
+function createNilaiIjazahSheetForLedger(ss, liveSsId, students, mapel) {
+  const sheet = ss.insertSheet("3. Nilai Ijazah");
+  // [PERBAIKAN] Atur format kolom NISN ke Teks sebelum menulis data
+  sheet.getRange("B:B").setNumberFormat('@');
+
+  const dataIjazah = getSheetDataAsObject(liveSsId, SHEET_REKAP_IJAZAH);
+  const headers = ["No", "NISN", "Nama Lengkap", ...mapel.map(m => m.kode), "Jumlah", "Rata-Rata"];
+  const bodyData = [];
+
+  students.forEach((student, index) => {
+      const nisn = student.nisn;
+      const row = [index + 1, nisn, student.nama.toUpperCase()];
+      let total = 0;
+      mapel.forEach(m => {
+          const score = parseFloat((dataIjazah[nisn] || {})[m.kode] || 0);
+          const roundedScore = Math.round(score);
+          row.push(roundedScore);
+          total += roundedScore;
+      });
+      const average = mapel.length > 0 ? total / mapel.length : 0;
+      row.push(total);
+      row.push(average.toFixed(2));
+      bodyData.push(row);
+  });
+  
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+  if (bodyData.length > 0) {
+    sheet.getRange(2, 1, bodyData.length, headers.length).setValues(bodyData);
+  }
+  sheet.autoResizeColumn(3);
+  for(let i = 4; i <= mapel.length + 3; i++){ sheet.autoResizeColumn(i); }
+}
+
+/**
+ * Fungsi pembantu untuk membuat sheet "Rekap".
+ */
+function createRekapSheetForLedger(ss, liveSsId, students, mapel) {
+  const sheet = ss.insertSheet("4. Rekap");
+  // [PERBAIKAN] Atur format kolom NISN ke Teks sebelum menulis data
+  sheet.getRange("B:B").setNumberFormat('@');
+
+  const rekapUjian = getSheetDataAsObject(liveSsId, SHEET_REKAP_UJIAN);
+  const rekapRapor = getSheetDataAsObject(liveSsId, SHEET_REKAP_RAPOR);
+  const rekapIjazah = getSheetDataAsObject(liveSsId, SHEET_REKAP_IJAZAH);
+  const bobot = getBobot(liveSsId);
+
+  const headers = ["No", "NISN", "Nama Lengkap", "Rata-Rata Nilai Ujian", "Rata-Rata Nilai Rapor", "Nilai Akhir Ijazah"];
+  const bodyData = [];
+
+  students.forEach((student, index) => {
+      const nisn = student.nisn;
+      const rataUjian = parseFloat((rekapUjian[nisn] || {})['Rata-rata'] || 0);
+      const rataRapor = parseFloat((rekapRapor[nisn] || {})['Rata-rata'] || 0);
+      const nilaiIjazah = parseFloat((rekapIjazah[nisn] || {})['Rata-rata'] || 0);
+      
+      const row = [
+          index + 1, 
+          nisn, 
+          student.nama.toUpperCase(),
+          Math.round(rataUjian),
+          Math.round(rataRapor),
+          Math.round(nilaiIjazah)
+      ];
+      bodyData.push(row);
+  });
+
+  // Tambahkan informasi bobot di atas tabel
+  sheet.getRange("A1").setValue("REKAPITULASI NILAI AKHIR").setFontWeight('bold').setFontSize(14);
+  sheet.getRange("A3").setValue(`Bobot Nilai Ujian: ${bobot.bobotUjian}%`);
+  sheet.getRange("A4").setValue(`Bobot Nilai Rapor: ${bobot.bobotRapor}%`);
+  
+  sheet.getRange(6, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+  if (bodyData.length > 0) {
+    sheet.getRange(7, 1, bodyData.length, headers.length).setValues(bodyData);
+  }
+  sheet.autoResizeColumn(3); // Kolom Nama
+  sheet.autoResizeColumn(4); 
+  sheet.autoResizeColumn(5); 
+  sheet.autoResizeColumn(6);
+}
