@@ -631,12 +631,23 @@ function changeUserPassword(email, currentPassword, newPassword) {
     const storedPasswordString = data[userIndex][2].toString();
 
     // 1. Verifikasi password saat ini
-    const isCurrentPasswordValid = verifyPassword(currentPassword, storedPasswordString);
+    // ==== AWAL PERBAIKAN ====
+    // Logika verifikasi ini sekarang dapat menangani password lama (plain text) dan baru (hash).
+    let isCurrentPasswordValid = false;
+    if (storedPasswordString.includes(':')) {
+      // Jika formatnya 'salt:hash', gunakan verifikasi hash.
+      isCurrentPasswordValid = verifyPassword(currentPassword, storedPasswordString);
+    } else {
+      // Jika tidak, ini adalah password lama, bandingkan sebagai teks biasa.
+      isCurrentPasswordValid = (currentPassword === storedPasswordString);
+    }
+    // ==== AKHIR PERBAIKAN ====
+    
     if (!isCurrentPasswordValid) {
       return { status: "error", message: "Password Anda saat ini salah. Silakan coba lagi." };
     }
 
-    // 2. Hash password baru
+    // 2. Hash password baru (bagian ini sudah benar)
     const salt = generateSalt();
     const hashedPassword = hashPassword(newPassword, salt);
     const newStoredPasswordString = `${salt}:${hashedPassword}`;
@@ -1912,6 +1923,117 @@ function getRekapitulasiData_Optimized(spreadsheetId) {
   } catch (e) {
     Logger.log(`Error di getRekapitulasiData_Optimized: ${e}`);
     return { status: "error", message: "Gagal mengambil data rekapitulasi: " + e.message };
+  }
+}
+
+/**
+ * [BARU] Mengambil semua data yang diperlukan untuk transkrip nilai seorang siswa.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {string} nisn NISN siswa yang akan dicari.
+ * @returns {object} Objek berisi data lengkap untuk transkrip.
+ */
+function getTranscriptData(spreadsheetId, nisn) {
+  try {
+    // 1. Ambil data-data dasar
+    const allStudents = getStudents(spreadsheetId);
+    const student = allStudents.find(s => s.nisn === nisn);
+    if (!student) {
+      throw new Error("Siswa dengan NISN " + nisn + " tidak ditemukan.");
+    }
+
+    const schoolData = getSchoolData(spreadsheetId);
+    const mapelList = getMapel(spreadsheetId);
+    const bobot = getBobot(spreadsheetId);
+    const jenjang = schoolData.jenjang;
+
+    if (!jenjang) {
+      throw new Error("Jenjang sekolah belum diatur.");
+    }
+
+    // 2. Tentukan semester yang relevan
+    const semesterKeys = {
+      MI: ['k4_ganjil', 'k4_genap', 'k5_ganjil', 'k5_genap', 'k6_ganjil'],
+      MTS: ['k7_ganjil', 'k7_genap', 'k8_ganjil', 'k8_genap', 'k9_ganjil'],
+      MA: ['k10_ganjil', 'k10_genap', 'k11_ganjil', 'k11_genap', 'k12_ganjil']
+    };
+    const semestersForJenjang = semesterKeys[jenjang] || [];
+
+    // 3. Ambil semua data nilai yang relevan
+    const sheetsToRead = [SHEET_NILAI_UJIAN_MADRASAH, SHEET_NILAI_UJIAN_PRAKTEK];
+    semestersForJenjang.forEach(smKey => {
+        sheetsToRead.push(`Rapor_Pengetahuan_${smKey}`);
+        sheetsToRead.push(`Rapor_Keterampilan_${smKey}`);
+    });
+    
+    const allScoreData = {};
+    sheetsToRead.forEach(sheetName => {
+        allScoreData[sheetName] = getSheetDataAsObject(spreadsheetId, sheetName);
+    });
+
+    // 4. Proses data untuk setiap mata pelajaran
+    const transcriptSubjects = mapelList.map(mapel => {
+      const kode = mapel.kode;
+      const studentScoresUM = (allScoreData[SHEET_NILAI_UJIAN_MADRASAH] || {})[nisn] || {};
+      const studentScoresUP = (allScoreData[SHEET_NILAI_UJIAN_PRAKTEK] || {})[nisn] || {};
+
+      const nilaiUM = parseFloat(studentScoresUM[kode]);
+      const nilaiUP = parseFloat(studentScoresUP[kode]);
+      
+      let rataUjian = null;
+      if (!isNaN(nilaiUM) && !isNaN(nilaiUP)) rataUjian = (nilaiUM + nilaiUP) / 2;
+      else if (!isNaN(nilaiUM)) rataUjian = nilaiUM;
+      else if (!isNaN(nilaiUP)) rataUjian = nilaiUP;
+
+      let totalNilaiRapor = 0;
+      let semesterCount = 0;
+      semestersForJenjang.forEach(smKey => {
+        const sheetP = `Rapor_Pengetahuan_${smKey}`;
+        const sheetK = `Rapor_Keterampilan_${smKey}`;
+        const nilaiP = parseFloat(((allScoreData[sheetP] || {})[nisn] || {})[kode]);
+        const nilaiK = parseFloat(((allScoreData[sheetK] || {})[nisn] || {})[kode]);
+
+        if (!isNaN(nilaiP) && !isNaN(nilaiK)) {
+          totalNilaiRapor += (nilaiP + nilaiK) / 2;
+          semesterCount++;
+        } else if (!isNaN(nilaiP)) {
+          totalNilaiRapor += nilaiP;
+          semesterCount++;
+        } else if (!isNaN(nilaiK)) {
+          totalNilaiRapor += nilaiK;
+          semesterCount++;
+        }
+      });
+      
+      const rataRapor = semesterCount > 0 ? totalNilaiRapor / semesterCount : null;
+      
+      let nilaiIjazah = null;
+      if (rataUjian !== null || rataRapor !== null) {
+        const finalRataUjian = rataUjian !== null ? rataUjian : 0;
+        const finalRataRapor = rataRapor !== null ? rataRapor : 0;
+        nilaiIjazah = (finalRataUjian * (bobot.bobotUjian / 100)) + (finalRataRapor * (bobot.bobotRapor / 100));
+      }
+
+      return {
+        kode: kode,
+        nama: mapel.nama,
+        kelompok: mapel.kelompok,
+        nilaiRapor: rataRapor,
+        nilaiUjian: rataUjian,
+        nilaiIjazah: nilaiIjazah
+      };
+    });
+
+    const finalTranscript = {
+      student: student,
+      school: schoolData,
+      subjects: transcriptSubjects
+    };
+    
+    return { status: 'success', data: finalTranscript };
+
+  } catch (e) {
+    Logger.log(e);
+    return { status: 'error', message: 'Gagal mengambil data transkrip: ' + e.message };
   }
 }
 
