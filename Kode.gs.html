@@ -19,6 +19,12 @@ const SHEET_REKAP_UJIAN = "Rekap Nilai Ujian";
 const SHEET_REKAP_RAPOR = "Rekap Nilai Rapor";
 const SHEET_REKAP_IJAZAH = "Rekap Nilai Ijazah";
 const SHEET_MAPEL_DEFAULT = "Mapel Default"; // Sheet di Spreadsheet Induk untuk mapel standar
+const SHEET_LOG = 'Log Aktivitas';
+const SHEET_VERSI = 'Versi Aplikasi'; // Sheet baru untuk info update
+const SHEET_BACKUP_REGISTRY = "Data Backup Terdaftar";
+const SHEET_PENGAJUAN = "Data Pengajuan"; // <-- TAMBAHAN DARI SEBELUMNYA
+const SHEET_DASHBOARD_CACHE = "Cache Dashboard"; // <-- TAMBAHKAN BARIS INI
+const SHEET_PENGATURAN = "Pengaturan"; // <-- TAMBAHKAN BARIS INI
 
 
 /**
@@ -28,10 +34,46 @@ const SHEET_MAPEL_DEFAULT = "Mapel Default"; // Sheet di Spreadsheet Induk untuk
 function doGet(e) {
   return HtmlService.createHtmlOutputFromFile('Index')
     .setTitle('Aplikasi Pengolahan Nilai Ijazah by Syamsul Bahri')
-    .setFaviconUrl("https://uploadimage.io/images/2025/06/12/appbySyamsulBahri.png")
+    .setFaviconUrl("https://i.imgur.com/C0cZOT0.png")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+/**
+ * [BARU] Mengambil informasi versi aplikasi terbaru dari Spreadsheet Induk.
+ * @returns {object|null} Objek berisi detail versi terbaru atau null jika gagal.
+ */
+function getAppVersionInfo() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const versionSheet = ss.getSheetByName(SHEET_VERSI);
+
+    // Jika sheet tidak ada atau hanya ada header
+    if (!versionSheet || versionSheet.getLastRow() < 2) {
+      return null;
+    }
+
+    // Ambil data dari baris teratas (baris ke-2)
+    const latestVersionData = versionSheet.getRange(2, 1, 1, 3).getValues()[0];
+    const version = latestVersionData[0];
+    const releaseDate = latestVersionData[1];
+    const changelog = latestVersionData[2];
+
+    if (!version) {
+      return null; // Jika kolom versi kosong, jangan kirim apa-apa
+    }
+
+    return {
+      version: version.toString().trim(),
+      releaseDate: releaseDate instanceof Date ? releaseDate.toISOString().split('T')[0] : releaseDate,
+      // Ubah catatan perubahan yang dipisahkan baris baru menjadi array HTML (<li>)
+      changelog: changelog.split('\n').map(line => line.trim()).filter(line => line)
+    };
+
+  } catch (e) {
+    Logger.log("Error in getAppVersionInfo: " + e.message);
+    return null; // Jangan hentikan aplikasi jika fitur ini gagal
+  }
+}
 // =================================================================
 // FUNGSI KEAMANAN (PASSWORD HASHING) - [BARU]
 // =================================================================
@@ -200,8 +242,8 @@ function sendVerificationEmail(email) {
 
 
 /**
- * [MODIFIKASI FINAL] Mendaftarkan pengguna baru setelah verifikasi OTP berhasil.
- * Secara otomatis mengatur Role='Pengguna' dan Status='Aktif'.
+ * [MODIFIKASI FINAL - DENGAN VERSI OTOMATIS] Mendaftarkan pengguna baru setelah verifikasi OTP berhasil.
+ * Secara otomatis mengatur Role, Status, Batas Siswa, dan Versi Aplikasi terbaru.
  * @param {{email: string, password: string, namaSekolah: string, jenjang: string}} userData Objek berisi data pengguna baru.
  * @param {string} otp Kode OTP yang dimasukkan pengguna.
  * @returns {{status: string, message: string}} Objek status pendaftaran.
@@ -222,21 +264,24 @@ function registerUser(userData, otp) {
     lock.waitLock(30000);
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    // **[BARU]** Ambil nilai batas default dari sheet Konfigurasi
     const configSheet = ss.getSheetByName('Konfigurasi Sistem');
-    const defaultLimit = configSheet ? configSheet.getRange("B2").getValue() : 100; // Default 100 jika sheet tidak ada
+    const defaultLimit = configSheet ? configSheet.getRange("B2").getValue() : 100;
     let userSheet = ss.getSheetByName(SHEET_PENGGUNA);
     if (!userSheet) {
       throw new Error(`Sheet '${SHEET_PENGGUNA}' tidak ditemukan di spreadsheet induk.`);
     }
+    
+    // [BARU] Dapatkan versi aplikasi terbaru untuk dicatat saat pendaftaran
+    const latestVersionInfo = getAppVersionInfo();
+    const latestVersion = latestVersionInfo ? latestVersionInfo.version : ''; // Default ke string kosong jika gagal mengambil info versi
 
     if (userSheet.getLastRow() > 1) {
-        const dataRange = userSheet.getRange(2, 2, userSheet.getLastRow() - 1, 1);
-        const existingEmails = dataRange.getValues().flat();
-        if (existingEmails.some(existingEmail => existingEmail.toLowerCase() === email.toLowerCase())) {
-          lock.releaseLock();
-          return { status: "error", message: "Email sudah terdaftar." };
-        }
+      const dataRange = userSheet.getRange(2, 2, userSheet.getLastRow() - 1, 1);
+      const existingEmails = dataRange.getValues().flat();
+      if (existingEmails.some(existingEmail => existingEmail.toLowerCase() === email.toLowerCase())) {
+        lock.releaseLock();
+        return { status: "error", message: "Email sudah terdaftar." };
+      }
     }
 
     const templateFile = DriveApp.getFileById(TEMPLATE_SPREADSHEET_ID);
@@ -252,22 +297,22 @@ function registerUser(userData, otp) {
     }
 
     const userId = Utilities.getUuid();
-    
     const salt = generateSalt();
     const hashedPassword = hashPassword(password, salt);
-    const storedPasswordString = `${salt}:${hashedPassword}`; 
+    const storedPasswordString = `${salt}:${hashedPassword}`;
 
-    // **[PERBAIKAN]** appendRow sekarang memiliki 9 kolom, termasuk Student Limit
+    // [MODIFIKASI] appendRow sekarang memiliki 10 kolom, termasuk Versi Terpasang
     userSheet.appendRow([
-        userId, 
-        email, 
-        storedPasswordString, 
-        namaSekolah, 
-        jenjang, 
-        newSpreadsheetId, 
-        'Pengguna', // Role
-        'Aktif',    // Status
-        defaultLimit // Student Limit
+        userId,
+        email,
+        storedPasswordString,
+        namaSekolah,
+        jenjang,
+        newSpreadsheetId,
+        'Pengguna',     // Role (Kolom G)
+        'Aktif',        // Status (Kolom H)
+        defaultLimit,   // Student Limit (Kolom I)
+        latestVersion   // Versi Terpasang (Kolom J) <-- TAMBAHAN BARU
     ]);
     
     CacheService.getScriptCache().remove(email.toLowerCase());
@@ -283,10 +328,10 @@ function registerUser(userData, otp) {
 
 /**
  * [MODIFIKASI FINAL] Memeriksa kredensial login.
- * Menangani kasus Superadmin yang tidak memiliki spreadsheetId.
+ * Menangani kasus Superadmin, status akun, dan mengirimkan changelog baru jika tersedia.
  * @param {string} email Email pengguna.
  * @param {string} password Password pengguna.
- * @returns {object} Objek status login.
+ * @returns {object} Objek status login, bisa berisi data changelog baru.
  */
 function checkLogin(email, password) {
   try {
@@ -296,7 +341,8 @@ function checkLogin(email, password) {
       return { status: "error", message: "Konfigurasi pengguna tidak ditemukan." };
     }
 
-    const users = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 8).getValues();
+    // --- PERUBAHAN 1: Baca data hingga kolom K (kolom ke-11) ---
+    const users = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 11).getValues(); 
     const userIndex = users.findIndex(userRow => userRow[1].toLowerCase() === email.toLowerCase());
 
     if (userIndex === -1) {
@@ -304,20 +350,20 @@ function checkLogin(email, password) {
     }
 
     const userRow = users[userIndex];
-    const storedPassword = userRow[2].toString();
+    const storedPassword = userRow[2].toString(); 
     let spreadsheetId = userRow[5]; // Kolom F
     const role = userRow[6] || 'Pengguna'; // Kolom G
-    const status = userRow[7] || 'Aktif';   // Kolom H
+    const status = userRow[7] || 'Aktif'; // Kolom H
+    // --- PERUBAHAN 2: Baca data dari kolom baru (K) ---
+    const lastSeenChangelogVersion = (userRow[10] || '').toString().trim(); // Kolom K adalah indeks 10
 
     if (status !== 'Aktif') {
         return { status: "error", message: "Akun Anda saat ini tidak aktif. Silahkan hubungi Admin." };
     }
 
-    // Untuk Superadmin, spreadsheetId boleh kosong.
     if (role === 'Superadmin') {
-      spreadsheetId = null; 
+      spreadsheetId = null;  
     } else if (!spreadsheetId) {
-      // Untuk pengguna biasa, spreadsheetId wajib ada.
       return { status: "error", message: "Akun pengguna ini tidak terkonfigurasi dengan benar (tidak ada Spreadsheet ID)." };
     }
 
@@ -325,42 +371,144 @@ function checkLogin(email, password) {
     if (storedPassword.includes(':')) {
       passwordIsValid = verifyPassword(password, storedPassword);
     } else {
-      // Logika upgrade password lama (jika masih diperlukan)
       passwordIsValid = (storedPassword === password);
       if (passwordIsValid) {
         try {
           const salt = generateSalt();
           const newHashedPassword = hashPassword(password, salt);
           const newStoredPasswordString = `${salt}:${newHashedPassword}`;
-          const rowToUpdate = userIndex + 2;
-          userSheet.getRange(rowToUpdate, 3).setValue(newStoredPasswordString);
+          userSheet.getRange(userIndex + 2, 3).setValue(newStoredPasswordString);
           Logger.log(`Password for ${email} successfully upgraded to hashed format.`);
         } catch (e) {
-            Logger.log(`Failed to upgrade password for ${email}. Error: ${e.message}`);
+          Logger.log(`Failed to upgrade password for ${email}. Error: ${e.message}`);
         }
       }
     }
 
     if (passwordIsValid) {
-        // ▼▼▼ TAMBAHKAN BARIS INI ▼▼▼
-        const url = ScriptApp.getService().getUrl(); 
+      const namaSekolah = userRow[3];
+      const jenjang = userRow[4];
+      logLoginActivity(email, namaSekolah, jenjang, role);
 
-        // ▼▼▼ UBAH BARIS return LAMA ANDA DENGAN YANG BARU INI ▼▼▼
-        return { 
-            status: "success", 
-            message: "Login berhasil.", 
-            spreadsheetId: spreadsheetId, 
-            email: userRow[1], 
-            role: role, 
-            webAppUrl: url // Tambahkan properti ini
-        };
+      const url = ScriptApp.getService().getUrl();  
+      
+      const loginResponse = {  
+          status: "success",  
+          message: "Login berhasil.",  
+          spreadsheetId: spreadsheetId,  
+          email: userRow[1],  
+          role: role,  
+          webAppUrl: url
+      };
+
+      // --- PERUBAHAN 3: Logika Pengecekan Changelog ---
+      // Hanya cek untuk pengguna biasa, bukan Superadmin
+      if (role === 'Pengguna') {
+        const latestVersionInfo = getAppVersionInfo(); // Gunakan fungsi yang ada
+        if (latestVersionInfo && latestVersionInfo.version !== lastSeenChangelogVersion) {
+          // Jika versi terbaru beda dengan yang terakhir dilihat, lampirkan data changelog
+          loginResponse.newChangelog = latestVersionInfo;
+        }
+      }
+      // --- AKHIR PERUBAHAN ---
+
+      return loginResponse;
+
     } else {
-        return { status: "error", message: "Password salah." };
+      return { status: "error", message: "Password salah." };
     }
 
   } catch (error) {
     Logger.log(error);
     return { status: "error", message: "Kesalahan Server: " + error.message };
+  }
+}
+
+/**
+ * [VERSI FINAL & DIPERBAIKI] Memperbarui 'Versi Changelog Terakhir Dilihat' untuk pengguna spesifik.
+ * @param {string} userEmail - Email pengguna yang sesi-nya akan diperbarui, dikirim dari frontend.
+ * @param {string} version - Versi changelog yang baru saja dilihat oleh pengguna.
+ * @returns {{status: string, message: string}} Hasil operasi.
+ */
+function updateLastSeenChangelogVersion(userEmail, version) {
+  try {
+    // Gunakan userEmail yang dikirim dari frontend, yang didapat dari sessionStorage.
+    if (!userEmail || !version) {
+      throw new Error("Email pengguna atau versi tidak boleh kosong.");
+    }
+    
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
+    if (!userSheet) {
+      throw new Error(`Sheet '${SHEET_PENGGUNA}' tidak ditemukan.`);
+    }
+
+    // Cari baris berdasarkan email yang dikirim dari frontend
+    const emailColumn = userSheet.getRange("B2:B").getValues().flat();
+    const userIndex = emailColumn.findIndex(email => email && email.toLowerCase() === userEmail.toLowerCase());
+
+    if (userIndex !== -1) {
+      const rowToUpdate = userIndex + 2;
+      const targetCell = userSheet.getRange(rowToUpdate, 11); // Kolom K
+      
+      targetCell.setNumberFormat('@');
+      targetCell.setValue(version); 
+      
+      return { status: 'success', message: 'Status changelog berhasil diperbarui.' };
+    } else {
+      // Ini jarang terjadi jika pengguna sudah login, tapi sebagai pengaman.
+      throw new Error(`Pengguna dengan email ${userEmail} tidak ditemukan untuk update status changelog.`);
+    }
+
+  } catch (e) {
+    Logger.log(`updateLastSeenChangelogVersion Error: ${e.message}`);
+    return { status: 'error', message: e.message };
+  }
+}
+
+/**
+ * [DIPERBARUI] Mengambil riwayat semua aktivitas login pengguna dari 'Log Aktivitas'.
+ * @param {string} adminEmail Email superadmin untuk verifikasi.
+ * @returns {Array<object>} Array objek berisi data riwayat login.
+ */
+function getLoginHistory_Superadmin(adminEmail) {
+  if (!isSuperadmin(adminEmail)) {
+    throw new Error("Akses ditolak. Hanya Superadmin yang dapat mengakses riwayat login.");
+  }
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const logSheet = ss.getSheetByName(SHEET_LOG);
+    
+    // Jika sheet log belum ada atau kosong, kembalikan array kosong.
+    if (!logSheet || logSheet.getLastRow() < 2) {
+        return [];
+    }
+
+    // Baca semua data dari sheet log kecuali baris header
+    const dataRange = logSheet.getRange(2, 1, logSheet.getLastRow() - 1, 5);
+    const values = dataRange.getValues();
+
+    const loginHistory = values
+      .map(row => ({
+        timestamp: row[0],      // Kolom A: Timestamp
+        namaSekolah: row[2],    // Kolom C: Nama Sekolah
+        jenjang: row[3],        // Kolom D: Jenjang
+        role: row[4]            // Kolom E: Role
+      }))
+      .filter(log => log.role === 'Pengguna') // Tetap filter hanya untuk 'Pengguna'
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()) // Urutkan dari yang paling baru
+      .slice(0, 50); // Ambil 50 aktivitas terbaru agar dashboard tidak lambat
+
+    // Ubah format data agar sesuai dengan yang diharapkan frontend
+    return loginHistory.map(item => ({
+      namaSekolah: item.namaSekolah,
+      jenjang: item.jenjang,
+      loginTimestamp: item.timestamp.toISOString() // Gunakan key 'loginTimestamp'
+    }));
+
+  } catch (e) {
+    Logger.log(`getLoginHistory_Superadmin Error: ${e.message}`);
+    return []; // Kembalikan array kosong jika error
   }
 }
 
@@ -552,7 +700,7 @@ function saveSchoolData(spreadsheetId, dataObj) {
     let sheet = ss.getSheetByName(SHEET_DATA_SEKOLAH);
     
     // [MODIFIKASI] Set format kolom NSM (D), Kode Pos (J), dan Telepon (K) ke Plain Text
-    sheet.getRange("D:D").setNumberFormat('@');
+    sheet.getRange("C:D").setNumberFormat('@');
     sheet.getRange("J:K").setNumberFormat('@'); // Indeks kolom bergeser
     sheet.getRange("O:O").setNumberFormat('@'); // <-- TAMBAHKAN BARIS INI UNTUK NIP KEPSEK
     
@@ -591,7 +739,7 @@ function getSchoolData(spreadsheetId) {
     if (!sheet || sheet.getLastRow() < 2) return null;
 
     // [MODIFIKASI] Set format kolom NSM, Kode Pos, dan Telepon ke Plain Text saat mengambil data
-    sheet.getRange("D:D").setNumberFormat('@');
+    sheet.getRange("C:D").setNumberFormat('@');
     sheet.getRange("J:K").setNumberFormat('@'); // Indeks kolom bergeser
     sheet.getRange("O:O").setNumberFormat('@'); // <-- TAMBAHKAN BARIS INI UNTUK NIP KEPSEK
 
@@ -723,7 +871,15 @@ function addStudent(spreadsheetId, studentData, userEmail) { // <-- [PERBAIKAN] 
     ];
     sheet.getRange(nextRow, 1, 1, newRowData.length).setValues([newRowData]);
     
-    return { status: "success", message: `Siswa "${studentData.nama}" berhasil ditambahkan.` };
+    // -- PERUBAHAN INTI --
+    SpreadsheetApp.flush();
+    const updatedStudentList = getStudents(spreadsheetId);
+    
+    return { 
+      status: "success", 
+      message: `Siswa "${studentData.nama}" berhasil ditambahkan.`,
+      updatedStudentList: updatedStudentList
+    };
 
   } catch (e) { 
     Logger.log(e); 
@@ -775,7 +931,15 @@ function updateStudent(spreadsheetId, studentData) {
 
     targetRange.setValues([rowToUpdate]);
 
-    return { status: "success", message: `Data siswa "${studentData.nama}" berhasil diperbarui.` };
+    // -- PERUBAHAN INTI --
+    SpreadsheetApp.flush();
+    const updatedStudentList = getStudents(spreadsheetId);
+
+    return { 
+      status: "success", 
+      message: `Data siswa "${studentData.nama}" berhasil diperbarui.`,
+      updatedStudentList: updatedStudentList
+    };
   } catch (e) {
     Logger.log(e);
     return { status: "error", message: "Gagal memperbarui data: " + e.message };
@@ -793,7 +957,15 @@ function deleteStudent(spreadsheetId, rowNumber) {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
     sheet.deleteRow(rowNumber);
-    return { status: "success", message: "Data siswa berhasil dihapus." };
+    // -- PERUBAHAN INTI --
+    SpreadsheetApp.flush();
+    const updatedStudentList = getStudents(spreadsheetId);
+
+    return { 
+      status: "success", 
+      message: "Data siswa berhasil dihapus.",
+      updatedStudentList: updatedStudentList
+    };
   } catch (e) { Logger.log(e); return { status: "error", message: "Gagal menghapus data: " + e.message }; }
 }
 
@@ -1048,21 +1220,18 @@ function getMapel(spreadsheetId) {
   } catch (e) { Logger.log(e); return []; }
 }
 
-// HAPUS fungsi addMapel(spreadsheetId, mapelData) yang lama.
-
 /**
- * [MODIFIKASI] Menambahkan beberapa mata pelajaran sekaligus (input massal)
- * dengan validasi duplikasi kode yang efisien.
+ * [PERBAIKAN] Menambahkan beberapa mata pelajaran sekaligus (input massal)
+ * dan mengembalikan daftar mapel terbaru setelah selesai.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @param {Array<object>} mapelArray Array objek data mata pelajaran baru.
- * @returns {{status: string, message: string}} Status penambahan.
+ * @returns {object} Status penambahan DAN daftar mapel yang sudah diupdate.
  */
 function addMultipleMapel(spreadsheetId, mapelArray) {
     try {
         const ss = getSpreadsheet(spreadsheetId);
         const sheet = ss.getSheetByName(SHEET_MAPEL);
 
-        // 1. Ambil semua kode mapel yang ada dalam satu kali panggilan
         const existingMapel = getMapel(spreadsheetId);
         const existingCodes = new Set(existingMapel.map(m => m.kode.toString().trim().toLowerCase()));
         
@@ -1070,44 +1239,47 @@ function addMultipleMapel(spreadsheetId, mapelArray) {
         const codesInThisBatch = new Set();
         let skippedCount = 0;
 
-        // 2. Loop melalui data baru dari frontend
         for (const mapelData of mapelArray) {
             const newCode = (mapelData.kode || '').toString().trim().toLowerCase();
             const newName = (mapelData.nama || '').toString().trim();
 
-            // Lakukan validasi
             if (!newCode || !newName) {
-                // Lewati baris yang tidak lengkap
                 skippedCount++;
                 continue;
             }
 
-            // Cek duplikasi dengan data yang sudah ada DI SHEET dan DI DALAM BATCH ini
             if (existingCodes.has(newCode) || codesInThisBatch.has(newCode)) {
                 skippedCount++;
                 continue;
             }
 
-            // Atur nilai default untuk Jenis Ujian jika kosong
             const jenisUjian = mapelData.jenisUjian || 'Ujian Madrasah';
             
-            // Tambahkan ke daftar yang akan disimpan
             rowsToAppend.push([mapelData.kode, newName, mapelData.kelompok, jenisUjian]);
-            codesInThisBatch.add(newCode); // Catat kode ini agar tidak ada duplikat dalam satu kali simpan
+            codesInThisBatch.add(newCode);
         }
         
-        // 3. Simpan semua baris baru dalam satu operasi (jika ada)
         if (rowsToAppend.length > 0) {
             sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAppend.length, rowsToAppend[0].length).setValues(rowsToAppend);
         }
 
-        // 4. Buat pesan laporan
         let message = `${rowsToAppend.length} mata pelajaran berhasil ditambahkan.`;
         if (skippedCount > 0) {
             message += ` ${skippedCount} mapel dilewati karena tidak lengkap atau kode duplikat.`;
         }
 
-        return { status: "success", message: message };
+        // ======================================================
+        // === PERUBAHAN INTI ADA DI BAWAH INI ===
+        // ======================================================
+
+        SpreadsheetApp.flush();
+        const updatedMapelList = getMapel(spreadsheetId);
+
+        return { 
+            status: "success", 
+            message: message,
+            updatedMapelList: updatedMapelList // <-- Data baru disertakan di sini
+        };
 
     } catch (e) {
         Logger.log(e);
@@ -1116,34 +1288,66 @@ function addMultipleMapel(spreadsheetId, mapelArray) {
 }
 
 /**
- * Memperbarui data mata pelajaran.
+ * [PERBAIKAN] Memperbarui data mata pelajaran DAN mengembalikan daftar mapel terbaru.
  * @param {string} spreadsheetId ID spreadsheet target.
- * @param {object} mapelData Data mata pelajaran yang akan diupdate.
- * @returns {{status: string, message: string}} Status pembaruan.
+ * @param {object} mapelData Data mata pelajaran yang akan diupdate, termasuk nomor baris.
+ * @returns {object} Status pembaruan DAN daftar mapel yang sudah diupdate.
  */
 function updateMapel(spreadsheetId, mapelData) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_MAPEL);
+    
+    // Data yang akan ditulis ke baris yang diupdate
     const rowToUpdate = [mapelData.kode, mapelData.nama, mapelData.kelompok, mapelData.jenisUjian];
     sheet.getRange(mapelData.mapelRow, 1, 1, rowToUpdate.length).setValues([rowToUpdate]);
-    return { status: "success", message: `Mata Pelajaran "${mapelData.nama}" berhasil diperbarui.` };
-  } catch (e) { Logger.log(e); return { status: "error", message: "Gagal memperbarui data mapel: " + e.message }; }
+    
+    // Paksa Google Sheet untuk menyelesaikan proses update
+    SpreadsheetApp.flush();
+    
+    // Baca kembali data yang sudah terupdate
+    const updatedMapelList = getMapel(spreadsheetId);
+
+    // Kembalikan data baru bersama pesan sukses
+    return { 
+      status: "success", 
+      message: `Mata Pelajaran "${mapelData.nama}" berhasil diperbarui.`,
+      updatedMapelList: updatedMapelList 
+    };
+  } catch (e) { 
+    Logger.log(e); 
+    return { status: "error", message: "Gagal memperbarui data mapel: " + e.message }; 
+  }
 }
 
 /**
- * Menghapus mata pelajaran.
+ * [PERBAIKAN] Menghapus mata pelajaran DAN mengembalikan daftar mapel terbaru.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @param {number} rowNumber Nomor baris yang akan dihapus.
- * @returns {{status: string, message: string}} Status penghapusan.
+ * @returns {object} Status penghapusan DAN daftar mapel yang sudah diupdate.
  */
 function deleteMapel(spreadsheetId, rowNumber) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_MAPEL);
     sheet.deleteRow(rowNumber);
-    return { status: "success", message: "Mata pelajaran berhasil dihapus." };
-  } catch (e) { Logger.log(e); return { status: "error", message: "Gagal menghapus mapel: " + e.message }; }
+    
+    // Paksa Google Sheet untuk menyelesaikan proses hapus
+    SpreadsheetApp.flush();
+    
+    // Baca kembali data yang sudah terupdate
+    const updatedMapelList = getMapel(spreadsheetId);
+
+    // Kembalikan data baru bersama pesan sukses
+    return { 
+      status: "success", 
+      message: "Mata pelajaran berhasil dihapus.",
+      updatedMapelList: updatedMapelList 
+    };
+  } catch (e) { 
+    Logger.log(e); 
+    return { status: "error", message: "Gagal menghapus mapel: " + e.message }; 
+  }
 }
 
 /**
@@ -1162,61 +1366,6 @@ function deleteAllMapel(spreadsheetId) {
   } catch (e) {
     Logger.log(e);
     return { status: "error", message: "Gagal menghapus data mata pelajaran: " + e.message };
-  }
-}
-
-/**
- * Mengimpor daftar mata pelajaran standar berdasarkan jenjang sekolah.
- * @param {string} spreadsheetId ID spreadsheet target.
- * @returns {object} Hasil proses impor.
- */
-function importMapelBySystem(spreadsheetId) {
-  try {
-    const userSs = getSpreadsheet(spreadsheetId);
-    const jenjang = (getSchoolData(spreadsheetId) || {}).jenjang;
-
-    if (!jenjang) {
-      return { status: 'error', message: 'Jenjang sekolah belum diatur. Harap atur di menu Data Sekolah terlebih dahulu.' };
-    }
-
-    const masterSs = SpreadsheetApp.getActiveSpreadsheet();
-    const mapelDefaultSheet = masterSs.getSheetByName(SHEET_MAPEL_DEFAULT);
-    if (!mapelDefaultSheet) {
-      return { status: 'error', message: `Sheet '${SHEET_MAPEL_DEFAULT}' tidak ditemukan di spreadsheet master.` };
-    }
-
-    const defaultMapelData = mapelDefaultSheet.getDataRange().getValues();
-    defaultMapelData.shift(); // Hapus header
-
-    const mapelForJenjang = defaultMapelData
-      .filter(row => row[0] === jenjang) // Filter berdasarkan jenjang
-      .map(row => [row[1], row[2], row[3], row[4]]); // Ambil kolom B-E (Kode, Nama, Kelompok, Jenis Ujian)
-
-    if (mapelForJenjang.length === 0) {
-      return { status: 'info', message: `Tidak ada mata pelajaran default yang ditemukan untuk jenjang ${jenjang}.`};
-    }
-    
-    const existingMapel = getMapel(spreadsheetId);
-    const existingMapelCodes = new Set(existingMapel.map(m => m.kode.toString().trim()));
-
-    const newMapel = mapelForJenjang.filter(row => !existingMapelCodes.has(row[0].toString().trim()));
-    const skippedCount = mapelForJenjang.length - newMapel.length;
-
-    if (newMapel.length > 0) {
-      const targetSheet = userSs.getSheetByName(SHEET_MAPEL);
-      targetSheet.getRange(targetSheet.getLastRow() + 1, 1, newMapel.length, newMapel[0].length).setValues(newMapel);
-    }
-
-    let message = `${newMapel.length} mata pelajaran berhasil diimpor.`;
-    if (skippedCount > 0) {
-      message += ` ${skippedCount} mata pelajaran dilewati karena kode sudah ada.`;
-    }
-
-    return { status: "success", message: message, newCount: newMapel.length, skippedCount: skippedCount };
-
-  } catch (e) {
-    Logger.log(e);
-    return { status: "error", message: "Gagal mengimpor dari sistem: " + e.message };
   }
 }
 
@@ -1264,6 +1413,70 @@ function getBobot(spreadsheetId) {
   } catch (e) { 
     Logger.log('Error di getBobot: ' + e.message); 
     return { bobotUjian: 40, bobotRapor: 60 }; 
+  }
+}
+
+/**
+ * [BARU] Menyimpan nilai KKM sekolah.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {number} kkm Nilai KKM yang akan disimpan.
+ * @returns {{status: string, message: string}} Status penyimpanan.
+ */
+function saveKkm(spreadsheetId, kkm) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    let sheet = ss.getSheetByName(SHEET_PENGATURAN);
+
+    // Jika sheet belum ada, buat baru dan siapkan header & label
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_PENGATURAN);
+      sheet.getRange("A1:B1").setValues([['Nama Pengaturan', 'Value']]).setFontWeight('bold');
+      sheet.getRange("A2").setValue("KKM Sekolah");
+      sheet.setFrozenRows(1);
+    }
+
+    // Pastikan label ada jika sheet sudah ada tapi kosong
+    if (sheet.getRange("A2").getValue() === "") {
+        sheet.getRange("A2").setValue("KKM Sekolah");
+    }
+    
+    // Simpan nilai KKM di sel B2
+    sheet.getRange("B2").setValue(kkm);
+
+    return { status: "success", message: "Nilai KKM berhasil disimpan." };
+  } catch (e) {
+    Logger.log(`saveKkm Error: ${e.message}`);
+    return { status: "error", message: `Gagal menyimpan KKM: ${e.message}` };
+  }
+}
+
+/**
+ * [BARU] Mengambil nilai KKM sekolah, atau mengembalikan default jika belum ada.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {{status: string, kkm: number}} Objek berisi KKM.
+ */
+function getKkm(spreadsheetId) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheet = ss.getSheetByName(SHEET_PENGATURAN);
+    const defaultValue = 75; // Nilai default KKM jika belum diatur
+
+    if (!sheet || sheet.getLastRow() < 2) {
+      return { status: 'success', kkm: defaultValue };
+    }
+
+    const kkmValue = sheet.getRange("B2").getValue();
+    
+    // Jika sel B2 kosong atau tidak valid, kembalikan nilai default
+    if (kkmValue === '' || isNaN(kkmValue)) {
+        return { status: 'success', kkm: defaultValue };
+    }
+    
+    return { status: 'success', kkm: kkmValue };
+  } catch (e) {
+    Logger.log(`getKkm Error: ${e.message}`);
+    // Jika error, kembalikan nilai default agar aplikasi tidak macet
+    return { status: 'success', kkm: 75 }; 
   }
 }
 
@@ -1524,6 +1737,7 @@ function updateRekapitulasi(spreadsheetId) {
 /**
  * [FINAL & DIPERBAIKI] Menyimpan data rekapitulasi ke sheet yang ditentukan.
  * Rata-rata kini dihitung dari nilai per mapel yang sudah dibulatkan agar konsisten.
+ * MENAMBAHKAN kolom status LULUS/TIDAK LULUS berdasarkan KKM untuk rekap ijazah.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @param {string} sheetName Nama sheet rekap.
  * @param {Array<object>} students Daftar siswa.
@@ -1538,17 +1752,24 @@ function saveRekapSheet(spreadsheetId, sheetName, students, mapel, data) {
     }
     sheet.clear();
 
+    // [MODIFIKASI] Tambahkan header "Status" secara kondisional untuk rekap ijazah
     const headers = ["NISN", "Nama Lengkap", ...mapel.map(m => m.kode), "Jumlah", "Rata-rata"];
+    if (sheetName === SHEET_REKAP_IJAZAH) {
+        headers.push("Status");
+    }
+
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
     sheet.getRange("A:A").setNumberFormat("@");
 
+    // [BARU] Ambil data KKM sekali saja jika ini adalah sheet rekap ijazah
+    const isIjazahSheet = sheetName === SHEET_REKAP_IJAZAH;
+    const kkm = isIjazahSheet ? (getKkm(spreadsheetId).kkm || 75) : 0; // Fallback ke 75 jika KKM tidak teratur
+
     const rows = students.map(student => {
         const nisn = student.nisn.toString().trim();
-        // [PERBAIKAN] Nama kolom diubah menjadi "Nama Lengkap" agar konsisten
-        const rowData = [nisn, student.nama]; 
+        const rowData = [nisn, student.nama];
         
-        // [PERBAIKAN] Logika perhitungan diubah agar menjumlahkan nilai yang sudah dibulatkan
         let roundedTotal = 0;
         let count = 0;
 
@@ -1557,19 +1778,25 @@ function saveRekapSheet(spreadsheetId, sheetName, students, mapel, data) {
             const numericScore = parseFloat(rawScore);
 
             if (!isNaN(numericScore)) {
-              // Jumlahkan nilai yang SUDAH DIBULATKAN
-              roundedTotal += Math.round(numericScore);
-              count++;
+                roundedTotal += Math.round(numericScore);
+                count++;
             }
-            // Tetap simpan nilai asli di kolom per mapel
             rowData.push(rawScore !== undefined && rawScore !== null ? rawScore : '');
         });
 
-        // Hitung rata-rata dari total nilai yang sudah dibulatkan
         const averageOfRounded = count > 0 ? roundedTotal / count : 0;
         
-        rowData.push(roundedTotal); // Simpan Jumlah dari nilai bulat
-        rowData.push(averageOfRounded); // Simpan Rata-rata dari nilai bulat
+        rowData.push(roundedTotal);
+        rowData.push(averageOfRounded);
+
+        // [BARU] Hitung dan tambahkan status kelulusan HANYA untuk rekap ijazah
+        if (isIjazahSheet) {
+            let status = '-'; // Default status jika tidak ada nilai
+            if (count > 0) { // Hanya tentukan status jika ada nilai yang bisa dirata-ratakan
+                 status = (averageOfRounded >= kkm) ? 'LULUS' : 'TIDAK LULUS';
+            }
+            rowData.push(status);
+        }
 
         return rowData;
     });
@@ -1663,13 +1890,24 @@ function getRekapitulasiData_Optimized(spreadsheetId) {
         bobot = { bobotUjian: bobotValues[0], bobotRapor: bobotValues[1] };
       }
     }
+    
+    // =======================================================
+    // ▼▼▼ PERUBAHAN UTAMA ADA DI SINI ▼▼▼
+    // =======================================================
+    // 4. Mengambil Data KKM
+    const kkmData = getKkm(spreadsheetId); // Panggil fungsi yang sudah kita buat
+    const kkm = kkmData.kkm; // Ambil nilainya
+    // =======================================================
+    // ▲▲▲ AKHIR DARI PERUBAHAN ▲▲▲
+    // =======================================================
 
-    // 4. Mengambil Semua Data Rekapitulasi
+    // 5. Mengambil Semua Data Rekapitulasi
     const rekapUjian = processSheetData(ss.getSheetByName(SHEET_REKAP_UJIAN));
     const rekapRapor = processSheetData(ss.getSheetByName(SHEET_REKAP_RAPOR));
     const rekapIjazah = processSheetData(ss.getSheetByName(SHEET_REKAP_IJAZAH));
 
-    return { status: "success", data: { students, mapel, bobot, rekapUjian, rekapRapor, rekapIjazah } };
+    // Kirim semua data, termasuk KKM, ke frontend
+    return { status: "success", data: { students, mapel, bobot, kkm, rekapUjian, rekapRapor, rekapIjazah } };
 
   } catch (e) {
     Logger.log(`Error di getRekapitulasiData_Optimized: ${e}`);
@@ -1691,7 +1929,8 @@ function checkRekapSheetsExist(spreadsheetId) {
 }
 
 /**
- * Mengekspor data rekapitulasi ke format PDF atau Excel dengan layout kustom presisi.
+ * [DIPERBARUI] Mengekspor data rekapitulasi ke format PDF atau Excel.
+ * Kini menyertakan kolom Status LULUS/TIDAK LULUS untuk rekap ijazah.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @param {string} type Jenis rekap ('ujian', 'rapor', 'ijazah').
  * @param {string} format Format ekspor ('pdf' atau 'excel').
@@ -1699,207 +1938,259 @@ function checkRekapSheetsExist(spreadsheetId) {
  * @returns {object} Objek berisi data file yang telah di-encode base64.
  */
 function exportRekapData(spreadsheetId, type, format, exportOptions) {
-  let tempSpreadsheetFileId = null;
-  try {
-    // 1. Tentukan Judul Laporan
-    let reportTitle;
-    switch (type) {
-      case 'ijazah': reportTitle = "REKAPITULASI NILAI IJAZAH"; break;
-      case 'rapor': reportTitle = "REKAPITULASI NILAI RAPOR"; break;
-      case 'ujian': reportTitle = "REKAPITULASI NILAI UJIAN"; break; // [MODIFIKASI] Judul untuk jenis 'ujian'
-      default: throw new Error("Jenis rekap tidak valid.");
-    }
+    let tempSpreadsheetFileId = null;
+    try {
+        // 1. Tentukan Judul Laporan
+        let reportTitle;
+        switch (type) {
+            case 'ijazah': reportTitle = "REKAPITULASI NILAI IJAZAH"; break;
+            case 'rapor': reportTitle = "REKAPITULASI NILAI RAPOR"; break;
+            case 'ujian': reportTitle = "REKAPITULASI NILAI UJIAN"; break;
+            default: throw new Error("Jenis rekap tidak valid.");
+        }
 
-    // 2. Ambil data yang diperlukan
-    const { students, mapel } = getRekapitulasiData(spreadsheetId);
-    if (!students || students.length === 0) throw new Error("Tidak ada data siswa untuk diekspor.");
-    
-    const sheetName = `Rekap Nilai ${type.charAt(0).toUpperCase() + type.slice(1)}`;
-    const dataToProcess = getSheetDataAsObject(spreadsheetId, sheetName);
+        // 2. Ambil data yang diperlukan
+        const { students, mapel } = getRekapitulasiData(spreadsheetId);
+        if (!students || students.length === 0) throw new Error("Tidak ada data siswa untuk diekspor.");
+        
+        // [BARU] Ambil data KKM jika yang diekspor adalah rekap ijazah
+        const kkm = (type === 'ijazah') ? (getKkm(spreadsheetId).kkm || 75) : 75;
 
-    // 3. Bangun data tabel
-    const tableBodyData = [];
-    students.forEach((student, index) => {
-        const nisn = student.nisn;
-        const studentScores = dataToProcess[nisn] || {};
-        
-        const rowData = [index + 1, `'${nisn}`, student.nama.toUpperCase()];
-        
-        let total = 0;
-        mapel.forEach(m => {
-            const score = parseFloat(studentScores[m.kode] || 0);
-            const roundedScore = Math.round(score);
-            rowData.push(roundedScore);
-            total += roundedScore; // Menjumlahkan nilai yang sudah dibulatkan
+        const sheetName = `Rekap Nilai ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+        const dataToProcess = getSheetDataAsObject(spreadsheetId, sheetName);
+
+        // 3. Bangun data tabel
+        const tableBodyData = [];
+        students.forEach((student, index) => {
+            const nisn = student.nisn;
+            const studentScores = dataToProcess[nisn] || {};
+            const rowData = [index + 1, `'${nisn}`, student.nama.toUpperCase()];
+            
+            let total = 0;
+            // [PERBAIKAN 1] Kembalikan deklarasi validScoresCount untuk pengecekan status.
+            let validScoresCount = 0; 
+
+            mapel.forEach(m => {
+                const score = parseFloat(studentScores[m.kode]);
+                let displayValue = 0; // Default ke 0
+
+                if (!isNaN(score)) {
+                    const roundedScore = Math.round(score);
+                    displayValue = roundedScore;
+                    total += roundedScore;
+                    // [PERBAIKAN 2] Kembalikan increment (penambahan) validScoresCount.
+                    validScoresCount++; 
+                }
+                
+                // Selalu push angka 0 atau nilai yang ada
+                rowData.push(displayValue);
+            });
+
+            // [TETAP] Rata-rata TETAP menggunakan logika baru (dibagi jumlah total mapel).
+            const mapelCount = mapel.length;
+            const average = mapelCount > 0 ? (total / mapelCount) : 0;
+            
+            rowData.push(total);
+            rowData.push(average.toFixed(2).replace('.', ','));
+
+            if (type === 'ujian') {
+                rowData.push(Math.round(average));
+            } else if (type === 'ijazah') {
+                // [TETAP] Status LULUS/TIDAK LULUS sekarang berfungsi kembali karena validScoresCount sudah ada.
+                const status = (validScoresCount > 0 && average >= kkm) ? 'LULUS' : 'TIDAK LULUS';
+                rowData.push(status);
+            }
+            
+            tableBodyData.push(rowData);
         });
-
-        const average = mapel.length > 0 ? (total / mapel.length) : 0;
         
-        rowData.push(total);
-        rowData.push(average.toFixed(2).replace('.', ','));
+        // 4. Buat spreadsheet sementara
+        const tempSpreadsheetName = `Cetak_${reportTitle.replace(/ /g, "_")}_${new Date().getTime()}`;
+        const tempSpreadsheet = SpreadsheetApp.create(tempSpreadsheetName);
+        tempSpreadsheetFileId = tempSpreadsheet.getId();
+        const tempSheet = tempSpreadsheet.getSheets()[0];
+        tempSheet.setName("Rekapitulasi");
 
-        // [MODIFIKASI] Tambahkan kolom pembulatan HANYA untuk tipe 'ujian'
+        // --- PEMFORMATAN KUSTOM ---
+        const schoolData = getSchoolData(spreadsheetId);
+        let currentRow = 1;
+        const numMapel = mapel.length;
+
+        // [MODIFIKASI] Sesuaikan jumlah total kolom jika tipenya 'ujian' atau 'ijazah'
+        let numColumns = numMapel + 5; // No, NISN, Nama, Jumlah, Rata-Rata
+        if (type === 'ujian' || type === 'ijazah') {
+            numColumns++; // Tambah 1 untuk kolom Pembulatan atau Status
+        }
+
+        // Header Laporan (tidak berubah)
+        tempSheet.getRange(currentRow, 1, 1, numColumns).merge().setValue(reportTitle).setFontSize(16);
+        currentRow++;
+        tempSheet.getRange(currentRow, 1, 1, numColumns).merge().setValue((schoolData.namaSekolah || "NAMA SEKOLAH").toUpperCase()).setFontSize(16);
+        currentRow++;
+        tempSheet.getRange(currentRow, 1, 1, numColumns).merge().setValue(`Tahun Ajaran ${exportOptions.tahunAjaran || ""}`).setFontSize(14);
+        currentRow += 2;
+
+        // --- HEADER TABEL (STRUKTUR 2 BARIS) ---
+        const tableStartRow = currentRow;
+        tempSheet.getRange(tableStartRow, 4, 1, numMapel).merge().setValue("MATA PELAJARAN");
+        const mapelHeaders = mapel.map(m => m.kode);
+        tempSheet.getRange(tableStartRow + 1, 4, 1, numMapel).setValues([mapelHeaders]);
+        
+        // Header Tetap
+        tempSheet.getRange(tableStartRow, 1).setValue("No.");
+        tempSheet.getRange(tableStartRow, 2).setValue("NISN");
+        tempSheet.getRange(tableStartRow, 3).setValue("Nama Siswa");
+        const jumlahCol = 4 + numMapel;
+        const rataRataCol = 5 + numMapel;
+        tempSheet.getRange(tableStartRow, jumlahCol).setValue("Jumlah");
+        tempSheet.getRange(tableStartRow, rataRataCol).setValue("Rata-Rata");
+
+        // Merge Vertikal
+        tempSheet.getRange(tableStartRow, 1, 2, 1).merge();
+        tempSheet.getRange(tableStartRow, 2, 2, 1).merge();
+        tempSheet.getRange(tableStartRow, 3, 2, 1).merge();
+        tempSheet.getRange(tableStartRow, jumlahCol, 2, 1).merge();
+        tempSheet.getRange(tableStartRow, rataRataCol, 2, 1).merge();
+        
+        // [MODIFIKASI] Tambahkan header "Pembulatan" atau "Status"
         if (type === 'ujian') {
-            rowData.push(Math.round(average));
+            const pembulatanCol = 6 + numMapel;
+            tempSheet.getRange(tableStartRow, pembulatanCol).setValue("Pembulatan");
+            tempSheet.getRange(tableStartRow, pembulatanCol, 2, 1).merge();
+        } else if (type === 'ijazah') {
+            const statusCol = 6 + numMapel;
+            tempSheet.getRange(tableStartRow, statusCol).setValue("Status");
+            tempSheet.getRange(tableStartRow, statusCol, 2, 1).merge();
         }
         
-        tableBodyData.push(rowData);
-    });
-    
-    // 4. Buat spreadsheet sementara
-    const tempSpreadsheetName = `Cetak_${reportTitle.replace(/ /g, "_")}_${new Date().getTime()}`;
-    const tempSpreadsheet = SpreadsheetApp.create(tempSpreadsheetName);
-    tempSpreadsheetFileId = tempSpreadsheet.getId();
-    const tempSheet = tempSpreadsheet.getSheets()[0];
-    tempSheet.setName("Rekapitulasi");
+        // Tulis Body Tabel
+        if (tableBodyData.length > 0) {
+            tempSheet.getRange(tableStartRow + 2, 1, tableBodyData.length, numColumns).setValues(tableBodyData);
+        }
 
-    // --- PEMFORMATAN KUSTOM ---
-    const schoolData = getSchoolData(spreadsheetId);
-    let currentRow = 1;
-    const numMapel = mapel.length;
+        // --- APLIKASI FORMAT ---
+        const fullRange = tempSheet.getRange(1, 1, tempSheet.getLastRow() + 5, numColumns);
+        fullRange.setFontFamily("Arial").setVerticalAlignment("middle");
+        tempSheet.getRange(1, 1, 3, 1).setFontWeight("bold").setHorizontalAlignment("center");
+        const tableHeaderRange = tempSheet.getRange(tableStartRow, 1, 2, numColumns);
+        tableHeaderRange.setFontWeight("bold").setFontSize(12).setHorizontalAlignment("center").setBackground("#ffff00");
+        if (tableBodyData.length > 0) {
+            tempSheet.getRange(tableStartRow + 2, 1, tableBodyData.length, numColumns).setFontSize(12);
+            tempSheet.getRange(tableStartRow + 2, 1, tableBodyData.length, 1).setHorizontalAlignment("center");
+            tempSheet.getRange(tableStartRow + 2, 2, tableBodyData.length, 1).setNumberFormat("@").setHorizontalAlignment("center");
+            tempSheet.getRange(tableStartRow + 2, 3, tableBodyData.length, 1).setHorizontalAlignment("left");
+            tempSheet.getRange(tableStartRow + 2, 4, tableBodyData.length, numColumns - 3).setHorizontalAlignment("center");
+        }
+        tempSheet.getRange(tableStartRow, 1, tableBodyData.length + 2, numColumns).setBorder(true, true, true, true, true, true);
+        
+        // --- [BARU] PEWARNAAN KONDISIONAL UNTUK STATUS ---
+        if (type === 'ijazah' && tableBodyData.length > 0) {
+            const statusColumnIndex = numColumns; // Status adalah kolom terakhir
+            const statusRange = tempSheet.getRange(tableStartRow + 2, statusColumnIndex, tableBodyData.length, 1);
 
-    // [MODIFIKASI] Sesuaikan jumlah total kolom jika tipenya 'ujian'
-    let numColumns = numMapel + 5; // Kolom default: No, NISN, Nama, Jumlah, Rata-Rata
-    if (type === 'ujian') {
-      numColumns++; // Tambah 1 untuk kolom Pembulatan
+            const ruleLulus = SpreadsheetApp.newConditionalFormatRule()
+                .whenTextEqualTo("LULUS")
+                .setBackground("#dcfce7") // Tailwind green-100
+                .setFontColor("#166534")  // Tailwind green-800
+                .setBold(true)
+                .setRanges([statusRange])
+                .build();
+
+            const ruleTidakLulus = SpreadsheetApp.newConditionalFormatRule()
+                .whenTextEqualTo("TIDAK LULUS")
+                .setBackground("#fee2e2") // Tailwind red-100
+                .setFontColor("#991b1b")  // Tailwind red-800
+                .setBold(true)
+                .setRanges([statusRange])
+                .build();
+            
+            const rules = tempSheet.getConditionalFormatRules();
+            rules.push(ruleLulus, ruleTidakLulus);
+            tempSheet.setConditionalFormatRules(rules);
+
+            // [BARU] Atur format spesifik untuk kolom Status agar tidak terpotong
+            statusRange.setWrap(false).setHorizontalAlignment('center');
+        }
+        
+        // --- Atur Lebar Kolom ---
+        tempSheet.setColumnWidth(1, 40);
+        tempSheet.setColumnWidth(2, 100);
+        tempSheet.setColumnWidth(3, 220);
+        for (let i = 4; i <= 3 + numMapel; i++) {
+            tempSheet.setColumnWidth(i, 60);
+        }
+        tempSheet.setColumnWidth(jumlahCol, 80);
+        tempSheet.setColumnWidth(rataRataCol, 80);
+        // [MODIFIKASI] Atur lebar kolom "Pembulatan" atau "Status"
+        if (type === 'ujian') {
+            tempSheet.setColumnWidth(6 + numMapel, 90);
+        } else if (type === 'ijazah') {
+            tempSheet.setColumnWidth(6 + numMapel, 120);
+        }
+
+        // Blok Tanda Tangan
+        const signatureBlockStartRow = tableStartRow + tableBodyData.length + 3;
+        const signatureColumnStart = numColumns - 3;
+        const formatDateToIndonesian = (dateString) => {
+          if (!dateString) return "";
+          const date = new Date(dateString);
+          return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(date);
+        };
+        
+        let ttdRow = signatureBlockStartRow;
+        const ttdDate = formatDateToIndonesian(exportOptions.tanggalTTD);
+        
+        tempSheet.getRange(ttdRow, signatureColumnStart, 1, 4).merge().setValue(`${exportOptions.tempatTTD || "Tempat"}, ${ttdDate}`);
+        ttdRow++;
+        tempSheet.getRange(ttdRow, signatureColumnStart, 1, 4).merge().setValue(exportOptions.tipeKamad || "Kepala Madrasah");
+        ttdRow += 3;
+        tempSheet.getRange(ttdRow, signatureColumnStart, 1, 4).merge().setValue(schoolData.namaKepsek || "Nama Kepala").setFontWeight("bold").setFontLine('underline');
+        ttdRow++;
+        const nipRange = tempSheet.getRange(ttdRow, signatureColumnStart, 1, 4).merge();
+        nipRange.setNumberFormat("@");
+        nipRange.setValue(schoolData.nipKepsek ? `NIP. ${schoolData.nipKepsek}` : "NIP. -");
+        
+        // Samakan ukuran font seluruh blok ttd
+        tempSheet.getRange(signatureBlockStartRow, signatureColumnStart, 5, 4).setFontSize(12).setHorizontalAlignment("left");
+        
+        SpreadsheetApp.flush(); 
+
+        // 5. Ekspor file
+        const exportUrl = `https://docs.google.com/spreadsheets/d/${tempSpreadsheetFileId}/export`;
+        const token = ScriptApp.getOAuthToken();
+        const fetchOptions = { headers: { Authorization: `Bearer ${token}` }, muteHttpExceptions: true };
+        let blob, fileName, mimeType;
+
+        if (format === 'excel') {
+          fileName = `${reportTitle.replace(/ /g, "_")}.xlsx`;
+          mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+          const url = `${exportUrl}?format=xlsx`;
+          blob = UrlFetchApp.fetch(url, fetchOptions).getBlob().setName(fileName);
+        } else { // PDF
+          fileName = `${reportTitle.replace(/ /g, "_")}.pdf`;
+          mimeType = 'application/pdf';
+          const pdfOptions = `?exportFormat=pdf&format=pdf&size=A4&portrait=false&fitw=true&sheetnames=false&printtitle=false&gridlines=false&gid=${tempSheet.getSheetId()}`;
+          const url = `${exportUrl}${pdfOptions}`;
+          blob = UrlFetchApp.fetch(url, fetchOptions).getBlob().setName(fileName);
+        }
+        
+        if (!blob || blob.getBytes().length === 0) throw new Error("Gagal membuat file ekspor. Blob kosong.");
+        
+        // 6. Kembalikan data file
+        return {
+          fileName: fileName,
+          mimeType: mimeType,
+          base64Data: Utilities.base64Encode(blob.getBytes())
+        };
+
+    } catch (e) {
+        Logger.log(`Export Error: ${e.toString()}\nStack: ${e.stack}`);
+        return { error: e.toString() };
+    } finally {
+        if (tempSpreadsheetFileId) {
+            DriveApp.getFileById(tempSpreadsheetFileId).setTrashed(true);
+        }
     }
-
-    // Header Laporan
-    tempSheet.getRange(currentRow, 1, 1, numColumns).merge().setValue(reportTitle).setFontSize(16);
-    currentRow++;
-    tempSheet.getRange(currentRow, 1, 1, numColumns).merge().setValue((schoolData.namaSekolah || "NAMA SEKOLAH").toUpperCase()).setFontSize(16);
-    currentRow++;
-    tempSheet.getRange(currentRow, 1, 1, numColumns).merge().setValue(`Tahun Ajaran ${exportOptions.tahunAjaran || ""}`).setFontSize(14);
-    currentRow += 2;
-
-    // --- HEADER TABEL (STRUKTUR 2 BARIS) ---
-    const tableStartRow = currentRow;
-    tempSheet.getRange(tableStartRow, 4, 1, numMapel).merge().setValue("MATA PELAJARAN");
-    const mapelHeaders = mapel.map(m => m.kode);
-    tempSheet.getRange(tableStartRow + 1, 4, 1, numMapel).setValues([mapelHeaders]);
-    
-    // Header Tetap
-    tempSheet.getRange(tableStartRow, 1).setValue("No.");
-    tempSheet.getRange(tableStartRow, 2).setValue("NISN");
-    tempSheet.getRange(tableStartRow, 3).setValue("Nama Siswa");
-    const jumlahCol = 4 + numMapel;
-    const rataRataCol = 5 + numMapel;
-    tempSheet.getRange(tableStartRow, jumlahCol).setValue("Jumlah");
-    tempSheet.getRange(tableStartRow, rataRataCol).setValue("Rata-Rata");
-
-    // Merge Vertikal
-    tempSheet.getRange(tableStartRow, 1, 2, 1).merge();
-    tempSheet.getRange(tableStartRow, 2, 2, 1).merge();
-    tempSheet.getRange(tableStartRow, 3, 2, 1).merge();
-    tempSheet.getRange(tableStartRow, jumlahCol, 2, 1).merge();
-    tempSheet.getRange(tableStartRow, rataRataCol, 2, 1).merge();
-    
-    // [MODIFIKASI] Tambahkan header "Pembulatan" jika tipenya 'ujian'
-    if (type === 'ujian') {
-      const pembulatanCol = 6 + numMapel;
-      tempSheet.getRange(tableStartRow, pembulatanCol).setValue("Pembulatan");
-      tempSheet.getRange(tableStartRow, pembulatanCol, 2, 1).merge();
-    }
-    
-    // Tulis Body Tabel
-    if (tableBodyData.length > 0) {
-        tempSheet.getRange(tableStartRow + 2, 1, tableBodyData.length, numColumns).setValues(tableBodyData);
-    }
-
-    // --- APLIKASI FORMAT ---
-    // (Kode format lainnya tidak berubah)
-    const fullRange = tempSheet.getRange(1, 1, tempSheet.getLastRow() + 5, numColumns);
-    fullRange.setFontFamily("Arial").setVerticalAlignment("middle");
-    tempSheet.getRange(1, 1, 3, 1).setFontWeight("bold").setHorizontalAlignment("center");
-    const tableHeaderRange = tempSheet.getRange(tableStartRow, 1, 2, numColumns);
-    tableHeaderRange.setFontWeight("bold").setFontSize(12).setHorizontalAlignment("center").setBackground("#ffff00");
-    if (tableBodyData.length > 0) {
-        tempSheet.getRange(tableStartRow + 2, 1, tableBodyData.length, numColumns).setFontSize(12);
-        tempSheet.getRange(tableStartRow + 2, 1, tableBodyData.length, 1).setHorizontalAlignment("center");
-        tempSheet.getRange(tableStartRow + 2, 2, tableBodyData.length, 1).setNumberFormat("@").setHorizontalAlignment("center");
-        tempSheet.getRange(tableStartRow + 2, 3, tableBodyData.length, 1).setHorizontalAlignment("left");
-        tempSheet.getRange(tableStartRow + 2, 4, tableBodyData.length, numColumns - 3).setHorizontalAlignment("center");
-    }
-    tempSheet.getRange(tableStartRow, 1, tableBodyData.length + 2, numColumns).setBorder(true, true, true, true, true, true);
-    
-    // --- Atur Lebar Kolom ---
-    tempSheet.setColumnWidth(1, 40);
-    tempSheet.setColumnWidth(2, 100);
-    tempSheet.setColumnWidth(3, 220);
-    for (let i = 4; i <= 3 + numMapel; i++) {
-        tempSheet.setColumnWidth(i, 60); // Lebar seragam untuk kolom mapel
-    }
-    tempSheet.setColumnWidth(jumlahCol, 80);
-    tempSheet.setColumnWidth(rataRataCol, 80);
-    // [MODIFIKASI] Atur lebar kolom "Pembulatan"
-    if (type === 'ujian') {
-      tempSheet.setColumnWidth(6 + numMapel, 90);
-    }
-    // --- AKHIR LOGIKA LEBAR KOLOM ---
-
-    // Blok Tanda Tangan
-    const signatureBlockStartRow = tableStartRow + tableBodyData.length + 3;
-    const signatureColumnStart = numColumns - 3;
-    const formatDateToIndonesian = (dateString) => {
-      if (!dateString) return "";
-      const date = new Date(dateString);
-      return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(date);
-    };
-    
-    let ttdRow = signatureBlockStartRow;
-    const ttdDate = formatDateToIndonesian(exportOptions.tanggalTTD);
-    
-    tempSheet.getRange(ttdRow, signatureColumnStart, 1, 4).merge().setValue(`${exportOptions.tempatTTD || "Tempat"}, ${ttdDate}`);
-    ttdRow++;
-    tempSheet.getRange(ttdRow, signatureColumnStart, 1, 4).merge().setValue(exportOptions.tipeKamad || "Kepala Madrasah");
-    ttdRow += 3;
-    tempSheet.getRange(ttdRow, signatureColumnStart, 1, 4).merge().setValue(schoolData.namaKepsek || "Nama Kepala").setFontWeight("bold").setFontLine('underline');
-    ttdRow++;
-    const nipRange = tempSheet.getRange(ttdRow, signatureColumnStart, 1, 4).merge();
-    nipRange.setNumberFormat("@");
-    nipRange.setValue(schoolData.nipKepsek ? `NIP. ${schoolData.nipKepsek}` : "NIP. -");
-    
-    // Samakan ukuran font seluruh blok ttd
-    tempSheet.getRange(signatureBlockStartRow, signatureColumnStart, 5, 4).setFontSize(12).setHorizontalAlignment("left");
-    
-    SpreadsheetApp.flush(); 
-
-    // 5. Ekspor file
-    const exportUrl = `https://docs.google.com/spreadsheets/d/${tempSpreadsheetFileId}/export`;
-    const token = ScriptApp.getOAuthToken();
-    const fetchOptions = { headers: { Authorization: `Bearer ${token}` }, muteHttpExceptions: true };
-    let blob, fileName, mimeType;
-
-    if (format === 'excel') {
-      fileName = `${reportTitle.replace(/ /g, "_")}.xlsx`;
-      mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      const url = `${exportUrl}?format=xlsx`;
-      blob = UrlFetchApp.fetch(url, fetchOptions).getBlob().setName(fileName);
-    } else { // PDF
-      fileName = `${reportTitle.replace(/ /g, "_")}.pdf`;
-      mimeType = 'application/pdf';
-      const pdfOptions = `?exportFormat=pdf&format=pdf&size=A4&portrait=false&fitw=true&sheetnames=false&printtitle=false&gridlines=false&gid=${tempSheet.getSheetId()}`;
-      const url = `${exportUrl}${pdfOptions}`;
-      blob = UrlFetchApp.fetch(url, fetchOptions).getBlob().setName(fileName);
-    }
-    
-    if (!blob || blob.getBytes().length === 0) throw new Error("Gagal membuat file ekspor. Blob kosong.");
-    
-    // 6. Kembalikan data file
-    return {
-      fileName: fileName,
-      mimeType: mimeType,
-      base64Data: Utilities.base64Encode(blob.getBytes())
-    };
-
-  } catch (e) {
-    Logger.log(`Export Error: ${e.toString()}\nStack: ${e.stack}`);
-    return { error: e.toString() };
-  } finally {
-    if (tempSpreadsheetFileId) {
-      DriveApp.getFileById(tempSpreadsheetFileId).setTrashed(true);
-    }
-  }
 }
 
 /**
@@ -2225,26 +2516,40 @@ function areStudentsIdentical(studentA, studentB) {
 // FUNGSI KHUSUS SUPERADMIN
 // =================================================================
 
+// File: Kode.gs
+
 /**
- * [SUPERADMIN & DIPERBAIKI] Helper function untuk memverifikasi apakah pengguna adalah Superadmin.
- * Kini lebih aman dan bisa menangani input email yang kosong (null).
- * @param {string} email Email pengguna yang melakukan aksi.
+ * [STANDAR KEAMANAN] Memverifikasi apakah email yang diberikan memiliki peran Superadmin.
+ * @param {string} email Email pengguna yang akan diperiksa.
  * @returns {boolean} True jika Superadmin, false jika bukan.
  */
 function isSuperadmin(email) {
-  // Cek apakah email yang dikirim valid sebelum diproses.
   if (!email) { 
     return false;
   }
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    // Gunakan konstanta yang sudah ada
+    const userSheet = ss.getSheetByName(SHEET_PENGGUNA); 
+    if (!userSheet || userSheet.getLastRow() < 2) return false;
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
-  const data = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 8).getValues();
-  
-  // Pastikan data baris dan email di sheet tidak kosong sebelum .toLowerCase()
-  const userRow = data.find(row => row && row[1] && row[1].toLowerCase() === email.toLowerCase());
-  
-  return userRow && userRow[6] === 'Superadmin';
+    // Ambil data dari kolom B (email) dan kolom G (role)
+    const emailColumn = userSheet.getRange("B2:B").getValues().flat();
+    const roleColumn = userSheet.getRange("G2:G").getValues().flat();
+    
+    // Cari indeks baris berdasarkan email
+    const userIndex = emailColumn.findIndex(sheetEmail => sheetEmail && sheetEmail.toLowerCase() === email.toLowerCase());
+    
+    // Jika email ditemukan, cek perannya di indeks yang sama
+    if (userIndex !== -1) {
+      return roleColumn[userIndex] === 'Superadmin';
+    }
+    
+    return false; // Jika email tidak ditemukan
+  } catch (e) {
+    Logger.log("Error in isSuperadmin: " + e.message);
+    return false;
+  }
 }
 
 /**
@@ -2343,7 +2648,8 @@ function setUserStatus_Superadmin(adminEmail, rowNumber, newStatus) {
 }
 
 /**
- * [SUPERADMIN & DIPERBARUI] Mengumpulkan data statistik agregat untuk dashboard superadmin.
+ * [SUPERADMIN & VERSI FINAL] Mengambil data statistik dari cache.
+ * Didesain ulang agar lebih tangguh dan tidak akan mengembalikan null.
  * @param {string} adminEmail - Email superadmin untuk verifikasi.
  * @returns {object} Objek berisi data statistik.
  */
@@ -2352,60 +2658,80 @@ function getSuperadminDashboardData(adminEmail) {
     throw new Error("Akses ditolak.");
   }
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
-  
-  // -- Statistik Akun & Siswa (Kode Lama, tidak diubah) --
-  let totalAccounts = 0, activeAccounts = 0, totalStudents = 0, inactiveAccounts = 0;
-  if (userSheet && userSheet.getLastRow() >= 2) {
-    const usersData = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 8).getValues();
-    totalAccounts = usersData.length;
-    usersData.forEach(userRow => {
-      const status = userRow[7] || 'Aktif';
-      if (status === 'Aktif') activeAccounts++;
-      const role = userRow[6];
-      const spreadsheetId = userRow[5];
-      if (role !== 'Superadmin' && spreadsheetId) {
-        try {
-          const studentSs = SpreadsheetApp.openById(spreadsheetId);
-          const studentSheet = studentSs.getSheetByName(SHEET_DATA_SISWA);
-          if (studentSheet && studentSheet.getLastRow() > 1) {
-            totalStudents += studentSheet.getLastRow() - 1;
-          }
-        } catch (e) {
-          Logger.log(`[Superadmin] Gagal akses spreadsheet ID ${spreadsheetId} untuk email ${userRow[1]}. Error: ${e.message}`);
+  // 1. Siapkan objek output dengan nilai default. Ini menjamin kita tidak pernah mengembalikan null.
+  const output = {
+    status: "success",
+    totalAccounts: 0, activeAccounts: 0, inactiveAccounts: 0,
+    totalStudents: 0, totalRequests: 0, pendingRequests: 0,
+    approvedRequests: 0, rejectedRequests: 0,
+    lastUpdated: "Belum pernah"
+  };
+
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const cacheSheet = ss.getSheetByName(SHEET_DASHBOARD_CACHE);
+
+    // 2. Hanya proses jika sheet cache ada dan memiliki data.
+    if (cacheSheet && cacheSheet.getLastRow() > 1) {
+      const data = cacheSheet.getRange(2, 1, cacheSheet.getLastRow() - 1, 2).getValues();
+      const cachedStats = {};
+      
+      // Ubah data dari array menjadi objek agar mudah diakses
+      data.forEach(row => {
+        if (row[0]) { // Pastikan nama metrik tidak kosong
+          cachedStats[row[0]] = row[1];
+        }
+      });
+      
+      // 3. Timpa nilai default dengan data dari cache, jika ada.
+      for (const key in output) {
+        if (cachedStats.hasOwnProperty(key)) {
+          output[key] = cachedStats[key];
         }
       }
-    });
-    inactiveAccounts = totalAccounts - activeAccounts;
-  }
-
-  // -- [KODE BARU] Statistik Pengajuan --
-  let totalRequests = 0, pendingRequests = 0, approvedRequests = 0, rejectedRequests = 0;
-  try {
-    const pengajuanSheet = ss.getSheetByName(SHEET_PENGAJUAN);
-    if (pengajuanSheet && pengajuanSheet.getLastRow() >= 2) {
-      const statusColumn = pengajuanSheet.getRange(2, 8, pengajuanSheet.getLastRow() - 1, 1).getValues();
-      totalRequests = statusColumn.length;
-      pendingRequests = statusColumn.filter(row => row[0] === 'Menunggu Persetujuan').length;
-      approvedRequests = statusColumn.filter(row => row[0] === 'Disetujui').length;
-      rejectedRequests = statusColumn.filter(row => row[0] === 'Ditolak').length;
+    } else {
+        // Jika cache belum ada, beri pesan
+        output.lastUpdated = "Cache belum dibuat. Klik 'Perbarui Data Sekarang'.";
     }
-  } catch(e) {
-     Logger.log("getSuperadminDashboardData Error saat mengambil data pengajuan: " + e.message);
-  }
+    
+    // 4. Selalu kembalikan objek 'output'.
+    return output;
 
-  // -- Return semua data --
-  return {
-    totalAccounts: totalAccounts,
-    activeAccounts: activeAccounts,
-    inactiveAccounts: inactiveAccounts,
-    totalStudents: totalStudents,
-    totalRequests: totalRequests,
-    pendingRequests: pendingRequests,
-    approvedRequests: approvedRequests,
-    rejectedRequests: rejectedRequests
-  };
+  } catch (e) {
+    Logger.log("Error saat membaca cache dashboard: " + e.message);
+    output.status = "error";
+    output.message = "Gagal membaca cache: " + e.message;
+    return output;
+  }
+}
+
+/**
+ * [BARU] Menjalankan pembaruan cache, lalu langsung memanggil getSuperadminDashboardData
+ * untuk mengembalikan data yang paling fresh ke UI.
+ * @param {string} adminEmail - Email superadmin untuk verifikasi.
+ */
+function forceDashboardCacheUpdate_Superadmin(adminEmail) {
+  if (!isSuperadmin(adminEmail)) {
+    return { status: "error", message: "Akses ditolak." };
+  }
+  try {
+    // 1. Jalankan proses update yang lambat
+    updateSuperadminDashboardCache();
+    
+    // 2. Setelah selesai, panggil fungsi pembaca data yang cepat untuk mendapatkan hasil terbaru
+    const freshData = getSuperadminDashboardData(adminEmail);
+    
+    // 3. Kembalikan data terbaru ini ke frontend
+    return { 
+      status: 'success', 
+      message: 'Data dashboard berhasil diperbarui!',
+      dashboardData: freshData // <-- Kita sertakan data baru di sini
+    };
+
+  } catch (e) {
+    Logger.log('Gagal force update cache: ' + e.message);
+    return { status: "error", message: 'Gagal memperbarui data: ' + e.message };
+  }
 }
 
 /**
@@ -2569,9 +2895,6 @@ function getStudentQuotaInfo(userEmail) {
 // [BARU] FUNGSI PENGAJUAN PERUBAHAN DATA
 // =================================================================
 
-// Nama Sheet baru untuk menyimpan data pengajuan.
-const SHEET_PENGAJUAN = "Data Pengajuan";
-
 /**
  * [BARU & DIPERBAIKI] Mengajukan permintaan perubahan data sekolah oleh pengguna.
  * @param {string} userEmail Email pengguna yang mengajukan.
@@ -2628,7 +2951,8 @@ function submitChangeRequest(userEmail, newData) {
       requestDate,
       'Menunggu Persetujuan', // Status awal
       '', // Catatan Admin kosong
-      ''  // Tanggal diproses kosong
+      '',  // Tanggal diproses kosong
+      'Proses' // <-- [TAMBAHAN BARU] Kolom K: Status Dibaca
     ]);
 
     // !! PENTING: TAMBAHKAN BARIS INI !!
@@ -2720,16 +3044,14 @@ function getChangeRequests_Superadmin(adminEmail) {
       oldNamaSekolah: row[3],
       newJenjang: row[4],
       newNamaSekolah: row[5],
-      // Mengubah format tanggal menjadi string ISO agar aman saat diurutkan
       requestDate: row[6] instanceof Date ? row[6].toISOString() : new Date().toISOString(),
-      status: row[7]
-    })).filter(req => req.requestId); // Filter baris yang tidak punya ID
+      status: row[7],
+      adminNotes: row[8] || '' // <-- [PERBAIKAN] Ambil juga data catatan admin
+    })).filter(req => req.requestId);
 
-    // Urutkan agar yang "Menunggu Persetujuan" selalu di atas
     requests.sort((a, b) => {
         if (a.status === 'Menunggu Persetujuan' && b.status !== 'Menunggu Persetujuan') return -1;
         if (a.status !== 'Menunggu Persetujuan' && b.status === 'Menunggu Persetujuan') return 1;
-        // Sekarang pengurutan tanggal lebih aman
         return new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime();
     });
 
@@ -2737,7 +3059,6 @@ function getChangeRequests_Superadmin(adminEmail) {
 
   } catch (e) {
     Logger.log("getChangeRequests_Superadmin Error: " + e.message);
-    // Jika terjadi error, kembalikan array kosong agar tidak merusak UI
     return [];
   }
 }
@@ -2813,6 +3134,7 @@ function resolveChangeRequest_Superadmin(adminEmail, requestId, resolution, admi
     pengajuanSheet.getRange(targetRowInSheet, 8).setValue(resolution); // Status
     pengajuanSheet.getRange(targetRowInSheet, 9).setValue(adminNotes); // Catatan Admin
     pengajuanSheet.getRange(targetRowInSheet, 10).setValue(new Date()); // Tanggal Diproses
+    pengajuanSheet.getRange(targetRowInSheet, 11).setValue('Belum Dibaca'); // Set Status Dibaca
 
     return { status: 'success', message: `Pengajuan berhasil ${resolution.toLowerCase()}.` };
 
@@ -2882,7 +3204,8 @@ function getChangeRequestHistory_User(userEmail) {
         newJenjang: row[4],
         newNamaSekolah: row[5],
         status: row[7],
-        adminNotes: row[8]
+        adminNotes: row[8],
+        statusBaca: row[10] || 'Proses' // <-- [TAMBAHAN BARU] Ambil data dari kolom K (indeks 10)
     })).sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime());
 
     return history;
@@ -2893,429 +3216,1287 @@ function getChangeRequestHistory_User(userEmail) {
   }
 }
 
+/**
+ * [VERSI FINAL - DIPERBAIKI] Menandai pengajuan sebagai "Sudah Dibaca" oleh pengguna.
+ * @param {string} requestId - ID dari pengajuan yang akan ditandai.
+ * @param {string} userEmailFromClient - Email pengguna yang sedang login, dikirim dari frontend.
+ * @returns {object} Hasil operasi.
+ */
+function markRequestAsRead_User(requestId, userEmailFromClient) {
+  try {
+    // Validasi: Pastikan email dari frontend tidak kosong
+    if (!userEmailFromClient) {
+      throw new Error("Email pengguna tidak disertakan dalam permintaan.");
+    }
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_PENGAJUAN);
+    if (!sheet || sheet.getLastRow() < 2) {
+      return { status: 'error', message: 'Sheet pengajuan tidak ditemukan.' };
+    }
+
+    const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 11).getValues();
+    
+    // Logika pencarian yang diperbaiki: Membandingkan dengan email yang dikirim dari klien
+    const requestIndex = data.findIndex(row => 
+      row[0] === requestId && row[1].toLowerCase() === userEmailFromClient.toLowerCase()
+    );
+
+    if (requestIndex !== -1) {
+      const rowToUpdate = requestIndex + 2;
+      // Kolom K adalah kolom ke-11
+      sheet.getRange(rowToUpdate, 11).setValue('Sudah Dibaca');
+      return { status: 'success', message: 'Berhasil ditandai sebagai sudah dibaca.' };
+    }
+    
+    // Jika tidak ditemukan, log untuk debugging
+    Logger.log(`Gagal menandai dibaca. RequestId: ${requestId}. Email dari Klien: ${userEmailFromClient}. Tidak ada baris yang cocok.`);
+    return { status: 'error', message: 'Pengajuan tidak ditemukan atau bukan milik Anda.' };
+
+  } catch (e) {
+    Logger.log(`markRequestAsRead_User Error: ${e.stack}`);
+    return { status: 'error', message: `Gagal menandai pengajuan: ${e.message}` };
+  }
+}
+
 // =================================================================
-// FUNGSI BACKUP & RESTORE
+// FUNGSI BACKUP & RESTORE (SISTEM KODE UNIK)
 // =================================================================
 
 /**
- * [BARU] Membuat folder backup khusus untuk sekolah jika belum ada.
+ * [BARU] Mencari atau membuat folder backup yang spesifik untuk pengguna di dalam folder induk spreadsheet mereka.
  * @param {string} spreadsheetId ID spreadsheet sekolah.
  * @returns {DriveApp.Folder} Objek folder backup.
  */
-function getOrCreateBackupFolder(spreadsheetId) {
-  const ss = SpreadsheetApp.openById(spreadsheetId);
-  const schoolName = ss.getSheetByName(SHEET_DATA_SEKOLAH).getRange("B2").getValue();
-  const parentFolder = DriveApp.getFileById(SpreadsheetApp.getActiveSpreadsheet().getId()).getParents().next();
+function getOrCreateUserBackupFolder(spreadsheetId) {
+  try {
+    const userSpreadsheetFile = DriveApp.getFileById(spreadsheetId);
+    // Asumsi spreadsheet pengguna berada di dalam satu folder induk
+    const parentFolder = userSpreadsheetFile.getParents().next(); 
+    
+    // Nama folder backup yang lebih rapi
+    const backupFolderName = `_Backup Aplikasi Ijazah`; 
+    let backupFolderIterator = parentFolder.getFoldersByName(backupFolderName);
 
-  const backupFolderName = `Backups Aplikasi Ijazah`;
-  let backupRootFolder = parentFolder.getFoldersByName(backupFolderName);
-  
-  if (backupRootFolder.hasNext()) {
-    backupRootFolder = backupRootFolder.next();
-  } else {
-    backupRootFolder = parentFolder.createFolder(backupFolderName);
-  }
-
-  const schoolBackupFolderName = `Backup - ${schoolName}`;
-  let schoolFolder = backupRootFolder.getFoldersByName(schoolBackupFolderName);
-
-  if (schoolFolder.hasNext()) {
-    return schoolFolder.next();
-  } else {
-    return backupRootFolder.createFolder(schoolBackupFolderName);
+    if (backupFolderIterator.hasNext()) {
+      return backupFolderIterator.next();
+    } else {
+      return parentFolder.createFolder(backupFolderName);
+    }
+  } catch (e) {
+    // Jika gagal mendapatkan folder induk, buat di root Drive pengguna sebagai fallback
+    Logger.log(`Tidak dapat menemukan folder induk untuk SS ID: ${spreadsheetId}. Membuat folder backup di Root Drive. Error: ${e.message}`);
+    const rootFolder = DriveApp.getRootFolder();
+    const fallbackFolderName = `BACKUP APLIKASI IJAZAH (ID: ${spreadsheetId.slice(0,8)})`;
+    let fallbackFolderIterator = rootFolder.getFoldersByName(fallbackFolderName);
+     if (fallbackFolderIterator.hasNext()) {
+      return fallbackFolderIterator.next();
+    } else {
+      return rootFolder.createFolder(fallbackFolderName);
+    }
   }
 }
 
 /**
- * [BARU] Membuat file backup dari spreadsheet pengguna.
- * @param {string} spreadsheetId ID spreadsheet yang akan di-backup.
- * @returns {object} Status pembuatan backup.
+ * [BARU] Membuat backup, menghasilkan kode unik, dan mencatatnya di registry.
+ * @param {string} spreadsheetId ID spreadsheet pengguna yang akan dibackup.
+ * @param {string} userEmail Email pengguna yang membuat backup.
+ * @returns {object} Hasil operasi berisi status, pesan, dan kode unik.
  */
-function createBackup(spreadsheetId) {
+function createBackupWithCode(spreadsheetId, userEmail) {
   try {
     const liveFile = DriveApp.getFileById(spreadsheetId);
-    const backupFolder = getOrCreateBackupFolder(spreadsheetId);
+    const backupFolder = getOrCreateUserBackupFolder(spreadsheetId);
     
     const now = new Date();
-    const timestamp = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM-dd_HH-mm-ss");
-    const schoolName = SpreadsheetApp.openById(spreadsheetId).getName();
+    const timestamp = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM-dd_HH-mm");
+    const schoolData = getSchoolData(spreadsheetId); // Menggunakan fungsi yang ada untuk mendapatkan nama sekolah
+    const schoolName = schoolData ? schoolData.namaSekolah : "Unknown_School";
+
+    // 1. Buat file backup
+    const backupFileName = `[${timestamp}] Backup - ${schoolName}`;
+    const backupFile = liveFile.makeCopy(backupFileName, backupFolder);
+    const backupFileId = backupFile.getId();
+
+    // 2. Buat kode restore yang unik dan mudah dibaca
+    const uniqueCode = Utilities.getUuid().substring(0, 4).toUpperCase() + '-' + Utilities.getUuid().substring(9, 13).toUpperCase();
+
+    // 3. Simpan catatan di Spreadsheet Induk
+    const masterSs = SpreadsheetApp.getActiveSpreadsheet();
+    let registrySheet = masterSs.getSheetByName(SHEET_BACKUP_REGISTRY);
+
+    // Buat sheet jika belum ada
+    if (!registrySheet) {
+      registrySheet = masterSs.insertSheet(SHEET_BACKUP_REGISTRY);
+      const headers = ['Kode Restore', 'ID File Backup', 'Dibuat Oleh (Email)', 'Tanggal Dibuat', 'Nama Sekolah', 'Nama File'];
+      registrySheet.appendRow(headers);
+      registrySheet.getRange("A1:F1").setFontWeight("bold");
+      registrySheet.setFrozenRows(1);
+    }
+
+    // Tambahkan data backup baru
+    registrySheet.appendRow([uniqueCode, backupFileId, userEmail, now, schoolName, backupFileName]);
     
-    const backupFileName = `[BACKUP] ${schoolName} (${timestamp})`;
-    
-    liveFile.makeCopy(backupFileName, backupFolder);
-    
-    return { status: "success", message: `Backup '${backupFileName}' berhasil dibuat.` };
+    return { 
+      status: "success", 
+      message: `Backup berhasil dibuat. Kode restore Anda adalah: ${uniqueCode}`,
+      code: uniqueCode,
+      backupName: backupFileName
+    };
+
   } catch (e) {
-    Logger.log(`createBackup Error: ${e}`);
+    Logger.log(`createBackupWithCode Error: ${e.stack}`);
     return { status: "error", message: `Gagal membuat backup: ${e.message}` };
   }
 }
 
 /**
- * [BARU] Mengambil daftar file backup yang tersedia untuk pengguna.
- * @param {string} spreadsheetId ID spreadsheet pengguna.
- * @returns {object} Daftar file backup.
+ * [VERSI FINAL - DIPERBAIKI] Mengambil daftar semua backup yang dibuat oleh pengguna tertentu.
+ * Memastikan data tanggal diubah menjadi string sebelum dikirim ke frontend.
+ * @param {string} userEmail Email pengguna yang sedang login.
+ * @returns {object} Hasil operasi berisi daftar file backup.
  */
-function getBackupList(spreadsheetId) {
+function getBackupListForUser(userEmail) {
   try {
-    const backupFolder = getOrCreateBackupFolder(spreadsheetId);
-    const filesIterator = backupFolder.getFiles();
-    const backupList = [];
-    
-    while (filesIterator.hasNext()) {
-      const file = filesIterator.next();
-      backupList.push({
-        id: file.getId(),
-        name: file.getName(),
-        date: file.getDateCreated().toISOString() // Format standar untuk sorting
-      });
+    const masterSs = SpreadsheetApp.getActiveSpreadsheet();
+    const registrySheet = masterSs.getSheetByName(SHEET_BACKUP_REGISTRY);
+
+    if (!registrySheet || registrySheet.getLastRow() < 2) {
+      return { status: "success", backups: [] };
+    }
+
+    const data = registrySheet.getDataRange().getValues();
+    const headers = data.shift();
+    const emailIndex = headers.indexOf('Dibuat Oleh (Email)');
+
+    // Pengecekan header untuk menghindari error
+    if (emailIndex === -1) {
+      throw new Error("Kolom 'Dibuat Oleh (Email)' tidak ditemukan di sheet 'Data Backup Terdaftar'.");
     }
     
-    // Urutkan dari yang terbaru ke yang terlama
-    backupList.sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-    return { status: "success", backups: backupList };
+    const userBackups = data
+      .filter(row => row[emailIndex] && row[emailIndex].toLowerCase() === userEmail.toLowerCase())
+      .map(row => {
+        const tglDibuat = row[headers.indexOf('Tanggal Dibuat')];
+
+        return {
+          code: row[headers.indexOf('Kode Restore')],
+          id: row[headers.indexOf('ID File Backup')],
+          // ▼▼▼ PERBAIKAN UTAMA ADA DI SINI ▼▼▼
+          // Mengubah objek Date menjadi string ISO, yang aman untuk dikirim ke frontend.
+          date: tglDibuat instanceof Date ? tglDibuat.toISOString() : tglDibuat,
+          // ▲▲▲ AKHIR PERBAIKAN ▲▲▲
+          name: row[headers.indexOf('Nama File')] || `Backup dari tanggal tidak diketahui`
+        };
+      })
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    return { status: "success", backups: userBackups };
+
   } catch (e) {
-    Logger.log(`getBackupList Error: ${e}`);
+    Logger.log(`getBackupListForUser Error: ${e.stack}`);
     return { status: "error", message: `Gagal mengambil daftar backup: ${e.message}` };
   }
 }
 
 /**
- * [BARU] Menghapus file backup tertentu.
- * @param {string} backupFileId ID file backup yang akan dihapus.
- * @returns {object} Status penghapusan.
+ * [BARU] Memulihkan data dari backup menggunakan kode unik, dengan validasi kepemilikan.
+ * Ini memicu proses di latar belakang.
+ * @param {string} liveSpreadsheetId ID spreadsheet yang akan ditimpa.
+ * @param {string} uniqueCode Kode restore yang dimasukkan pengguna.
+ * @param {string} userEmail Email pengguna yang meminta restore (untuk verifikasi).
  */
-function deleteBackup(backupFileId) {
-    try {
-        const file = DriveApp.getFileById(backupFileId);
-        file.setTrashed(true);
-        return { status: 'success', message: 'File backup berhasil dihapus.' };
-    } catch (e) {
-        Logger.log(`deleteBackup Error: ${e}`);
-        return { status: 'error', message: 'Gagal menghapus file backup: ' + e.message };
-    }
-}
-
-
-/**
- * [VERSI 3.0 - POLLING] Memulihkan data dari file backup ke file utama.
- * Fungsi ini sekarang hanya berjalan di latar belakang dan mengatur status di Cache.
- * @param {string} liveSpreadsheetId ID spreadsheet utama yang akan ditimpa.
- * @param {string} backupSpreadsheetId ID spreadsheet backup sumber data.
- */
-function restoreFromBackup(liveSpreadsheetId, backupSpreadsheetId) {
+function restoreFromCode(liveSpreadsheetId, uniqueCode, userEmail) {
   const cache = CacheService.getScriptCache();
-  const user = Session.getActiveUser().getEmail();
-  const statusKey = `restore_status_${user}`;
+  const statusKey = `restore_status_${userEmail}_${liveSpreadsheetId}`;
 
-  // Set status 'berjalan' sebelum memulai
+  // Segera set status 'running' di cache
   cache.put(statusKey, 'running', 21600); // Simpan status selama 6 jam
 
   try {
-    const liveSs = SpreadsheetApp.openById(liveSpreadsheetId);
-    const backupSs = SpreadsheetApp.openById(backupSpreadsheetId);
+    if (!uniqueCode || !userEmail) {
+      throw new Error("Kode restore dan email pengguna wajib diisi.");
+    }
+    
+    const lock = LockService.getScriptLock();
+    lock.waitLock(30000);
 
-    const backupSheets = backupSs.getSheets();
-    const liveSheetNames = liveSs.getSheets().map(s => s.getName());
-    const backupSheetNames = backupSheets.map(s => s.getName());
+    // 1. Cari kode di Spreadsheet Induk
+    const masterSs = SpreadsheetApp.getActiveSpreadsheet();
+    const registrySheet = masterSs.getSheetByName(SHEET_BACKUP_REGISTRY);
+    if (!registrySheet) {
+      throw new Error("Sistem registry backup tidak ditemukan. Hubungi Superadmin.");
+    }
 
-    backupSheets.forEach((backupSheet, index) => {
-      const sheetName = backupSheet.getName();
-      const oldLiveSheet = liveSs.getSheetByName(sheetName);
+    const data = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 4).getValues();
+    let backupFileId = null;
+    let found = false;
 
-      if (oldLiveSheet) {
-        liveSs.deleteSheet(oldLiveSheet);
-      }
-
-      const newCopiedSheet = backupSheet.copyTo(liveSs);
-      newCopiedSheet.setName(sheetName);
-      liveSs.setActiveSheet(newCopiedSheet);
-      liveSs.moveActiveSheet(index + 1);
-    });
-
-    liveSheetNames.forEach(liveName => {
-        if (!backupSheetNames.includes(liveName)) {
-            const extraSheet = liveSs.getSheetByName(liveName);
-            if (extraSheet) {
-                liveSs.deleteSheet(extraSheet);
-            }
+    for (let i = 0; i < data.length; i++) {
+      // Bandingkan kode (kolom 0) dan email (kolom 2)
+      if (data[i][0].toString().toUpperCase() === uniqueCode.toUpperCase()) {
+        if (data[i][2].toLowerCase() === userEmail.toLowerCase()) {
+          backupFileId = data[i][1];
+          found = true;
+          break;
+        } else {
+          // Kode ditemukan, tapi bukan milik pengguna ini
+          throw new Error("Akses ditolak. Kode restore ini milik pengguna lain.");
         }
-    });
+      }
+    }
+    
+    lock.releaseLock();
+    
+    if (!found) {
+      throw new Error(`Kode restore '${uniqueCode}' tidak valid atau tidak ditemukan.`);
+    }
 
-    // Set status 'selesai' jika berhasil
-    cache.put(statusKey, 'complete', 300); // Simpan status 'complete' selama 5 menit
+    // 2. Jalankan proses restore inti
+    const liveSs = SpreadsheetApp.openById(liveSpreadsheetId);
+    const backupSs = SpreadsheetApp.openById(backupFileId);
+
+    performSheetCopyRestore(backupSs, liveSs); // Panggil helper function
+
+    // 3. Set status 'complete' di cache jika berhasil
+    cache.put(statusKey, 'complete', 300); // Simpan status selesai selama 5 menit
 
   } catch (e) {
-    Logger.log(`restoreFromBackup Error: ${e.toString()}`);
-    // Set status 'error' jika gagal
+    Logger.log(`restoreFromCode Error: ${e.stack}`);
+    // Jika ada error, simpan pesan error di cache
     cache.put(statusKey, `error: ${e.message}`, 300);
   }
 }
 
 /**
- * [BARU - POLLING] Fungsi cepat untuk memeriksa status proses restore.
- * @returns {string|null} Status saat ini: 'running', 'complete', 'error', atau null.
+ * [BARU] Helper untuk memeriksa status proses restore yang berjalan di latar belakang.
+ * @param {string} liveSpreadsheetId ID spreadsheet yang sedang direstore.
+ * @param {string} userEmail Email pengguna yang meminta.
+ * @returns {string|null} Status saat ini: 'running', 'complete', 'error: ...', atau null.
  */
-function getRestoreStatus() {
+function getRestoreStatusForUser(liveSpreadsheetId, userEmail) {
   const cache = CacheService.getScriptCache();
-  const user = Session.getActiveUser().getEmail();
-  const statusKey = `restore_status_${user}`;
+  const statusKey = `restore_status_${userEmail}_${liveSpreadsheetId}`;
   return cache.get(statusKey);
 }
 
-// =================================================================
-// [BARU] FUNGSI EKSPOR LEGER LENGKAP
-// =================================================================
-
 /**
- * Fungsi utama untuk membuat dan mengekspor leger lengkap sebagai file Excel.
- * @param {string} spreadsheetId ID spreadsheet pengguna.
- * @returns {object} Objek berisi data file Excel yang di-encode base64.
+ * [BARU] Menghapus file backup dan catatannya di registry, dengan validasi kepemilikan.
+ * @param {string} backupFileId ID file backup yang akan dihapus.
+ * @param {string} userEmail Email pengguna yang meminta penghapusan.
+ * @returns {object} Hasil operasi.
  */
-function exportLedgerToExcel(spreadsheetId) {
-  let tempSpreadsheetFileId = null;
+function deleteBackupForUser(backupFileId, userEmail) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  
   try {
-    // 1. Ambil data utama yang akan sering digunakan
-    const students = getStudents(spreadsheetId);
-    const mapel = getMapel(spreadsheetId);
-    const jenjang = (getSchoolData(spreadsheetId) || {}).jenjang;
-    if (!students || students.length === 0) throw new Error("Tidak ada data siswa untuk diekspor.");
-    if (!mapel || mapel.length === 0) throw new Error("Tidak ada data mata pelajaran untuk diekspor.");
-
-    // 2. Buat Spreadsheet sementara untuk menampung semua sheet leger
-    const tempSpreadsheetName = `Leger Lengkap - ${getSchoolData(spreadsheetId).namaSekolah}`;
-    const tempSpreadsheet = SpreadsheetApp.create(tempSpreadsheetName);
-    tempSpreadsheetFileId = tempSpreadsheet.getId();
-
-    // 3. Buat setiap sheet yang diminta
-    createNilaiUjianSheetForLedger(tempSpreadsheet, spreadsheetId, students, mapel);
-    createNilaiRaporSheetForLedger(tempSpreadsheet, spreadsheetId, students, mapel, jenjang);
-    createNilaiIjazahSheetForLedger(tempSpreadsheet, spreadsheetId, students, mapel);
-    createRekapSheetForLedger(tempSpreadsheet, spreadsheetId, students, mapel);
-
-    // 4. Hapus sheet default "Sheet1" yang tidak digunakan
-    const defaultSheet = tempSpreadsheet.getSheetByName('Sheet1');
-    if (defaultSheet) {
-      tempSpreadsheet.deleteSheet(defaultSheet);
+    const masterSs = SpreadsheetApp.getActiveSpreadsheet();
+    const registrySheet = masterSs.getSheetByName(SHEET_BACKUP_REGISTRY);
+    if (!registrySheet) {
+      throw new Error("Sistem registry backup tidak ditemukan.");
     }
 
-    SpreadsheetApp.flush(); // Pastikan semua perubahan tersimpan
+    const data = registrySheet.getRange(1, 1, registrySheet.getLastRow(), registrySheet.getLastColumn()).getValues();
+    const headers = data[0];
+    const idIndex = headers.indexOf('ID File Backup');
+    const emailIndex = headers.indexOf('Dibuat Oleh (Email)');
+    
+    let rowIndexToDelete = -1;
 
-    // 5. Ekspor spreadsheet sementara menjadi file .xlsx
-    const url = `https://docs.google.com/spreadsheets/d/${tempSpreadsheetFileId}/export?format=xlsx`;
-    const token = ScriptApp.getOAuthToken();
-    const response = UrlFetchApp.fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    const blob = response.getBlob().setName(`${tempSpreadsheetName}.xlsx`);
+    // Cari dari baris ke-2 (indeks 1)
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][idIndex] === backupFileId) {
+        if (data[i][emailIndex].toLowerCase() === userEmail.toLowerCase()) {
+          rowIndexToDelete = i + 1; // Nomor baris di spreadsheet
+          break;
+        } else {
+          throw new Error("Akses ditolak. Anda tidak memiliki izin untuk menghapus backup ini.");
+        }
+      }
+    }
 
-    return {
-      fileName: `${tempSpreadsheetName}.xlsx`,
-      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      base64Data: Utilities.base64Encode(blob.getBytes())
-    };
+    if (rowIndexToDelete !== -1) {
+      // Hapus file di Google Drive
+      DriveApp.getFileById(backupFileId).setTrashed(true);
+      // Hapus baris di registry
+      registrySheet.deleteRow(rowIndexToDelete);
+      
+      lock.releaseLock();
+      return { status: 'success', message: 'File backup dan catatannya berhasil dihapus.' };
+    } else {
+      lock.releaseLock();
+      return { status: 'error', message: 'Backup tidak ditemukan atau Anda tidak memiliki izin.' };
+    }
 
   } catch (e) {
-    Logger.log(`exportLedgerToExcel Error: ${e.toString()}`);
-    return { error: e.toString() };
-  } finally {
-    // 6. Hapus file sementara setelah selesai
-    if (tempSpreadsheetFileId) {
-      DriveApp.getFileById(tempSpreadsheetFileId).setTrashed(true);
-    }
+    lock.releaseLock();
+    Logger.log(`deleteBackupForUser Error: ${e.stack}`);
+    return { status: 'error', message: `Gagal menghapus backup: ${e.message}` };
   }
 }
 
 /**
- * Fungsi pembantu untuk membuat sheet "Nilai Ujian".
+ * [HELPER - TIDAK DIUBAH] Fungsi inti untuk menyalin semua sheet dari sumber ke target.
+ * @param {SpreadsheetApp.Spreadsheet} sourceSs Objek Spreadsheet sumber.
+ * @param {SpreadsheetApp.Spreadsheet} targetSs Objek Spreadsheet tujuan.
  */
-function createNilaiUjianSheetForLedger(ss, liveSsId, students, mapel) {
-  const sheet = ss.insertSheet("1. Nilai Ujian");
-  // [PERBAIKAN] Atur format kolom NISN ke Teks sebelum menulis data
-  sheet.getRange("B:B").setNumberFormat('@');
+function performSheetCopyRestore(sourceSs, targetSs) {
+  const placeholderName = '__placeholder__' + new Date().getTime();
+  const placeholderSheet = targetSs.insertSheet(placeholderName);
+  
+  const originalTargetSheets = targetSs.getSheets().filter(s => s.getName() !== placeholderName);
+  
+  originalTargetSheets.forEach(sheet => {
+    try {
+      targetSs.deleteSheet(sheet);
+    } catch (e) {
+      Logger.log(`Gagal menghapus sheet lama: ${sheet.getName()}. Error: ${e.message}`);
+    }
+  });
+  
+  const sourceSheets = sourceSs.getSheets();
+  sourceSheets.forEach(sourceSheet => {
+    const sourceName = sourceSheet.getName();
+    sourceSheet.copyTo(targetSs).setName(sourceName);
+  });
+  
+  targetSs.deleteSheet(placeholderSheet);
+  
+  try {
+    const allSheets = targetSs.getSheets();
+    if (allSheets.length > 0) {
+      targetSs.setActiveSheet(allSheets[0]);
+    }
+  } catch (e) { 
+    Logger.log('Gagal mengaktifkan sheet pertama setelah restore.');
+  }
+}
 
-  const nilaiMadrasah = getSheetDataAsObject(liveSsId, SHEET_NILAI_UJIAN_MADRASAH);
-  const nilaiPraktek = getSheetDataAsObject(liveSsId, SHEET_NILAI_UJIAN_PRAKTEK);
 
-  const headers = ["No", "NISN", "Nama Lengkap", ...mapel.map(m => m.kode), "Jumlah", "Rata-Rata", "Pembulatan"];
-  const bodyData = [];
+/**
+ * [BARU] Mencatat setiap aktivitas login ke sheet 'Log Aktivitas'.
+ * Fungsi ini akan otomatis membuat sheet jika belum ada.
+ * @param {string} email - Email pengguna yang login.
+ * @param {string} namaSekolah - Nama sekolah pengguna.
+ * @param {string} jenjang - Jenjang sekolah pengguna.
+ * @param {string} role - Role pengguna.
+ */
+function logLoginActivity(email, namaSekolah, jenjang, role) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let logSheet = ss.getSheetByName(SHEET_LOG);
 
-  students.forEach((student, index) => {
-    const nisn = student.nisn;
-    const row = [index + 1, nisn, student.nama.toUpperCase()];
-    let totalUjian = 0;
-    let mapelCount = 0;
+    // Jika sheet 'Log Aktivitas' tidak ditemukan, buat baru beserta header.
+    if (!logSheet) {
+      logSheet = ss.insertSheet(SHEET_LOG, 0); // Buat sebagai sheet pertama
+      const headers = [['Timestamp', 'Email', 'Nama Sekolah', 'Jenjang', 'Role']];
+      logSheet.getRange(1, 1, 1, 5).setValues(headers).setFontWeight('bold');
+      logSheet.setFrozenRows(1); // Bekukan baris header
+    }
 
-    mapel.forEach(m => {
-      const um = parseFloat((nilaiMadrasah[nisn] || {})[m.kode]);
-      const up = parseFloat((nilaiPraktek[nisn] || {})[m.kode]);
-      let rataUjian = 0;
-      if (!isNaN(um) && !isNaN(up)) rataUjian = (um + up) / 2;
-      else if (!isNaN(um)) rataUjian = um;
-      else if (!isNaN(up)) rataUjian = up;
+    // Tambahkan baris baru untuk setiap aktivitas login
+    logSheet.appendRow([new Date(), email, namaSekolah, jenjang, role]);
+  } catch (e) {
+    // Catat error jika gagal logging, tapi jangan hentikan proses login
+    Logger.log(`Gagal mencatat log aktivitas untuk email ${email}: ${e.message}`);
+  }
+}
 
-      row.push(rataUjian > 0 ? Math.round(rataUjian) : '');
-      if (rataUjian > 0) {
-          totalUjian += Math.round(rataUjian);
-          mapelCount++;
+/**
+ * [VERSI FINAL] Mengambil seluruh riwayat versi dari sheet 'Versi Aplikasi'.
+ * Memanggil helper untuk memastikan format tanggal dalam Bahasa Indonesia.
+ * @returns {Array} Array berisi objek untuk setiap versi.
+ */
+function getAllVersionChangelogs() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_VERSI);
+
+    if (!sheet) {
+      Logger.log("Sheet 'Versi Aplikasi' tidak ditemukan.");
+      return [];
+    }
+
+    const data = sheet.getDataRange().getValues();
+
+    if (data.length < 2) {
+      return [];
+    }
+
+    const allVersions = [];
+    const headers = data[0];
+    const versionIndex = headers.indexOf("Versi");
+    const dateIndex = headers.indexOf("Tanggal Rilis");
+    const changelogIndex = headers.indexOf("Catatan Perubahan (pisahkan dengan baris baru)");
+
+    if(versionIndex === -1 || dateIndex === -1 || changelogIndex === -1) {
+        throw new Error("Satu atau lebih nama header ('Versi', 'Tanggal Rilis', 'Catatan Perubahan (pisahkan dengan baris baru)') tidak ditemukan di sheet 'Versi Aplikasi'.");
+    }
+
+    const spreadsheetTimezone = ss.getSpreadsheetTimeZone();
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const version = row[versionIndex];
+
+      if (!version) {
+        continue;
+      }
+
+      const releaseDate = row[dateIndex];
+
+      allVersions.push({
+        version: version.toString().trim(),
+
+        // ▼▼▼ PERUBAHAN UTAMA ADA DI SINI ▼▼▼
+        // Memanggil fungsi helper baru kita untuk format tanggal
+        releaseDate: releaseDate instanceof Date ? formatDateToIndonesian(releaseDate, spreadsheetTimezone) : releaseDate.toString(),
+        // ▲▲▲ AKHIR DARI PERUBAHAN ▲▲▲
+
+        changelog: row[changelogIndex].toString().split('\n').map(line => line.trim()).filter(line => line)
+      });
+    }
+
+    return allVersions;
+
+  } catch (e) {
+    Logger.log("Error di getAllVersionChangelogs: " + e.message);
+    throw new Error("Gagal mengambil data changelog dari server. " + e.message); 
+  }
+}
+
+/**
+ * [BARU] Helper untuk memformat tanggal ke Bahasa Indonesia dengan benar.
+ * Menerjemahkan nama bulan dari output default Apps Script.
+ * @param {Date} dateObj Objek tanggal yang akan diformat.
+ * @param {string} timezone Zona waktu dari spreadsheet.
+ * @return {string} Tanggal yang sudah diformat, cth: "18 Oktober 2025".
+ */
+function formatDateToIndonesian(dateObj, timezone) {
+  // Peta untuk menerjemahkan bulan
+  const monthMap = {
+    'January': 'Januari', 'February': 'Februari', 'March': 'Maret',
+    'April': 'April', 'May': 'Mei', 'June': 'Juni',
+    'July': 'Juli', 'August': 'Agustus', 'September': 'September',
+    'October': 'Oktober', 'November': 'November', 'December': 'Desember'
+  };
+
+  // Format tanggal ke dalam Bahasa Inggris terlebih dahulu
+  let formattedDate = Utilities.formatDate(dateObj, timezone, "dd MMMM yyyy");
+
+  // Ganti nama bulan Inggris dengan nama bulan Indonesia
+  for (const [english, indonesian] of Object.entries(monthMap)) {
+    formattedDate = formattedDate.replace(english, indonesian);
+  }
+
+  return formattedDate;
+}
+
+/**
+ * [ADMIN] Mengambil semua data versi untuk ditampilkan di panel kelola update.
+ * @returns {Array<object>} Array berisi semua data versi.
+ */
+function getVersionsForAdmin() {
+  // ▼▼▼ GERBANG KEAMANAN YANG BENAR ▼▼▼
+  const adminEmail = Session.getActiveUser().getEmail();
+  if (!isSuperadmin(adminEmail)) {
+    // Gunakan throw Error agar bisa ditangkap oleh withFailureHandler di frontend
+    throw new Error("Akses ditolak.");
+  }
+  // ▲▲▲ AKHIR DARI GERBANG KEAMANAN ▲▲▲
+
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_VERSI);
+    if (!sheet || sheet.getLastRow() < 2) {
+      return [];
+    }
+    
+    const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).getValues();
+    
+    return data.map((row, index) => {
+      const releaseDate = row[1];
+      return {
+        row: index + 2,
+        version: row[0],
+        releaseDate: releaseDate instanceof Date ? Utilities.formatDate(releaseDate, ss.getSpreadsheetTimeZone(), "yyyy-MM-dd") : releaseDate,
+        changelog: row[2]
+      };
+    }).sort((a, b) => a.row - b.row);
+
+  } catch (e) {
+    Logger.log("getVersionsForAdmin Error: " + e.message);
+    throw new Error("Gagal mengambil data versi dari server.");
+  }
+}
+
+/**
+ * [ADMIN - DIPERBAIKI] Menambahkan data versi baru ke baris kedua (setelah header)
+ * dan memastikan format kolom Versi adalah Teks.
+ * @param {object} versionData Objek berisi data versi baru {version, releaseDate, changelog}.
+ * @returns {object} Objek status.
+ */
+function addVersion(versionData) {
+    const adminEmail = Session.getActiveUser().getEmail();
+    if (!isSuperadmin(adminEmail)) {
+        return { status: "error", message: "Akses ditolak." };
+    }
+
+    try {
+        const { version, releaseDate, changelog } = versionData;
+        if (!version || !releaseDate || !changelog) {
+            throw new Error("Semua field wajib diisi.");
+        }
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        const sheet = ss.getSheetByName(SHEET_VERSI);
+
+        // --- [PERBAIKAN DIMULAI DI SINI] ---
+
+        // 1. Sisipkan baris baru di bawah header (setelah baris 1)
+        sheet.insertRowAfter(1);
+
+        // 2. Ambil range untuk baris baru tersebut (yaitu baris ke-2)
+        const newRowRange = sheet.getRange("A2:C2");
+        
+        // 3. Paksa format kolom A di baris baru itu menjadi Plain Text ('@')
+        sheet.getRange("A2").setNumberFormat('@');
+        
+        // 4. Masukkan data ke baris baru tersebut
+        newRowRange.setValues([[version, new Date(releaseDate), changelog]]);
+        
+        // --- [PERBAIKAN SELESAI] ---
+
+        return { status: "success", message: `Versi ${version} berhasil ditambahkan.` };
+    } catch (e) {
+        return { status: "error", message: `Gagal menambahkan versi: ${e.message}` };
+    }
+}
+
+/**
+ * [ADMIN] Memperbarui data versi yang sudah ada.
+ * @param {object} versionData Objek berisi data versi, termasuk nomor baris {row, version, releaseDate, changelog}.
+ * @returns {object} Objek status.
+ */
+function updateVersion(versionData) {
+  const adminEmail = Session.getActiveUser().getEmail();
+  if (!isSuperadmin(adminEmail)) {
+    return { status: "error", message: "Akses ditolak." };
+  }
+
+  try {
+    const { row, version, releaseDate, changelog } = versionData;
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_VERSI);
+    // Update 1 baris, 3 kolom (A, B, C)
+    sheet.getRange(row, 1, 1, 3).setValues([[version, new Date(releaseDate), changelog]]);
+    return { status: "success", message: `Versi ${version} berhasil diperbarui.` };
+  } catch (e) {
+    return { status: "error", message: `Gagal memperbarui versi: ${e.message}` };
+  }
+}
+
+/**
+ * [ADMIN] Menghapus data versi dari sheet.
+ * @param {number} rowNumber Nomor baris yang akan dihapus.
+ * @returns {object} Objek status.
+ */
+function deleteVersion(rowNumber) {
+  const adminEmail = Session.getActiveUser().getEmail();
+  if (!isSuperadmin(adminEmail)) {
+    return { status: "error", message: "Akses ditolak." };
+  }
+  
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_VERSI);
+    sheet.deleteRow(rowNumber);
+    return { status: "success", message: "Data versi berhasil dihapus." };
+  } catch (e) {
+    return { status: "error", message: `Gagal menghapus versi: ${e.message}` };
+  }
+}
+
+/**
+ * FUNGSI UNTUK DIAGNOSA (VERSI FINAL)
+ * Mengirimkan hasil diagnosa langsung ke email pengguna yang terdeteksi.
+ */
+function cekStatusAdminSaya() {
+  try {
+    const emailAktif = Session.getActiveUser().getEmail();
+    const isAdmin = isSuperadmin(emailAktif); // Memanggil fungsi pengecekan standar kita
+    
+    const subject = "Hasil Diagnosa Akun Superadmin - Aplikasi Ijazah";
+    const message = "Halo,\n\n" +
+                  "Anda telah menjalankan fungsi diagnosa dari aplikasi Anda. Berikut adalah hasilnya:\n\n" +
+                  "=========================================================\n" +
+                  "1. Email yang terdeteksi oleh Google saat ini: " + emailAktif + "\n\n" +
+                  "2. Apakah email ini terdaftar sebagai Superadmin di sheet 'Data Pengguna'? " + (isAdmin ? 'YA, Benar.' : 'TIDAK, Salah.') + "\n" +
+                  "=========================================================\n\n" +
+                  "TINDAK LANJUT:\n" +
+                  "- Jika statusnya 'TIDAK', mohon periksa kembali sheet 'Data Pengguna' di Spreadsheet Induk.\n" +
+                  "- Pastikan email di atas tertulis dengan benar dan di kolom 'Role' tertulis persis 'Superadmin' (tanpa salah ketik atau spasi tambahan).\n" +
+                  "- Jika email yang terdeteksi bukan email yang Anda harapkan, coba gunakan browser dalam mode Incognito/Private.";
+
+    // Kirim hasil ke email pengguna yang terdeteksi
+    MailApp.sendEmail(emailAktif, subject, message);
+    
+    // Juga catat di log untuk backup
+    Logger.log(message);
+    
+    // Beri tahu pengguna di editor bahwa email telah dikirim
+    Browser.msgBox("Diagnosa Selesai", "Hasil diagnosa telah dikirim ke email Anda di: " + emailAktif + ". Silakan periksa kotak masuk (dan folder spam) Anda.", Browser.Buttons.OK);
+
+  } catch (e) {
+    Browser.msgBox("Error Saat Diagnosa", "Gagal menjalankan diagnosa: " + e.message, Browser.Buttons.OK);
+  }
+}
+
+/**
+ * [BARU] Mengambil daftar mata pelajaran default berdasarkan jenjang sekolah pengguna.
+ * Fungsi ini HANYA mengambil daftar, tidak melakukan impor.
+ * @param {string} spreadsheetId ID spreadsheet pengguna untuk menentukan jenjang.
+ * @returns {Array<object>} Array objek data mata pelajaran default.
+ */
+function getDefaultMapelList(spreadsheetId) {
+  try {
+    const jenjang = (getSchoolData(spreadsheetId) || {}).jenjang;
+
+    if (!jenjang) {
+      throw new Error('Jenjang sekolah belum diatur. Harap atur di menu Data Sekolah.');
+    }
+
+    const masterSs = SpreadsheetApp.getActiveSpreadsheet();
+    const mapelDefaultSheet = masterSs.getSheetByName(SHEET_MAPEL_DEFAULT);
+    if (!mapelDefaultSheet) {
+      throw new Error(`Sheet '${SHEET_MAPEL_DEFAULT}' tidak ditemukan di spreadsheet master.`);
+    }
+
+    const defaultMapelData = mapelDefaultSheet.getDataRange().getValues();
+    defaultMapelData.shift(); // Hapus header
+
+    const mapelForJenjang = defaultMapelData
+      .filter(row => row[0] === jenjang) // Filter berdasarkan jenjang
+      .map(row => ({ // Ubah menjadi objek agar lebih mudah di frontend
+        kode: row[1], 
+        nama: row[2], 
+        kelompok: row[3], 
+        jenisUjian: row[4]
+      }));
+
+    if (mapelForJenjang.length === 0) {
+      // Tidak melempar error, tapi kirim array kosong agar frontend bisa menangani
+      return []; 
+    }
+    
+    return mapelForJenjang;
+
+  } catch (e) {
+    Logger.log(e);
+    // Lempar error agar bisa ditangkap oleh .withFailureHandler di frontend
+    throw new Error("Gagal mengambil daftar mapel default: " + e.message);
+  }
+}
+
+/**
+ * [PERBAIKAN SANGAT PENTING] Mengimpor mapel pilihan PENGGUNA.
+ * Setelah selesai, fungsi ini akan membaca ulang dan mengembalikan daftar mapel terbaru
+ * untuk menghilangkan delay dan memastikan data selalu sinkron.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {Array<object>} selectedMapelArray Array berisi objek mapel yang dipilih pengguna.
+ * @returns {object} Hasil proses impor, TERMASUK daftar mapel yang sudah diupdate.
+ */
+function importSelectedMapel(spreadsheetId, selectedMapelArray) {
+  if (!selectedMapelArray || selectedMapelArray.length === 0) {
+    return { status: "info", message: "Tidak ada mata pelajaran yang dipilih untuk diimpor." };
+  }
+
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheet = ss.getSheetByName(SHEET_MAPEL);
+
+    const existingMapelMap = new Map();
+    if (sheet.getLastRow() >= 2) { 
+      const existingDataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, 4);
+      const existingValues = existingDataRange.getValues();
+      existingValues.forEach((row, index) => {
+        const kode = row[0].toString().trim();
+        if (kode) {
+          existingMapelMap.set(kode, index + 2);
+        }
+      });
+    }
+
+    const rowsToAppend = [];
+    let updatedCount = 0;
+    let newCount = 0;
+
+    selectedMapelArray.forEach(mapel => {
+      const dataToInsert = [mapel.kode, mapel.nama, mapel.kelompok, mapel.jenisUjian];
+      if (existingMapelMap.has(mapel.kode)) {
+        const rowNumber = existingMapelMap.get(mapel.kode);
+        sheet.getRange(rowNumber, 1, 1, 4).setValues([dataToInsert]);
+        updatedCount++;
+      } else {
+        rowsToAppend.push(dataToInsert);
+        newCount++;
       }
     });
 
-    const average = mapelCount > 0 ? totalUjian / mapelCount : 0;
-    row.push(totalUjian);
-    row.push(average.toFixed(2));
-    row.push(Math.round(average));
-    bodyData.push(row);
-  });
+    if (rowsToAppend.length > 0) {
+      sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAppend.length, 4).setValues(rowsToAppend);
+    }
+    
+    // ======================================================
+    // === PERUBAHAN INTI ADA DI BAWAH INI ===
+    // ======================================================
+    
+    // 1. Paksa Google Sheet untuk menyelesaikan semua penulisan data
+    SpreadsheetApp.flush(); 
+    
+    // 2. Baca kembali data mapel yang sudah fresh/terbaru
+    const updatedMapelList = getMapel(spreadsheetId);
 
-  sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
-  if (bodyData.length > 0) {
-    sheet.getRange(2, 1, bodyData.length, headers.length).setValues(bodyData);
-  }
+    // 3. Kirim kembali pesan, status, DAN data yang baru ke frontend
+    return { 
+      status: "success", 
+      message: `Impor Selesai. ${newCount} mapel baru ditambahkan dan ${updatedCount} mapel diperbarui.`,
+      updatedMapelList: updatedMapelList // <-- Data baru disertakan di sini
+    };
 
-  // Auto resize kolom
-  sheet.autoResizeColumn(3); // Kolom Nama Siswa
-  for(let i = 4; i <= mapel.length + 3; i++){
-    sheet.autoResizeColumn(i); // Kolom Mapel
+  } catch (e) {
+    Logger.log(e);
+    return { status: "error", message: "Gagal mengimpor mapel: " + e.message };
   }
 }
 
 /**
- * Fungsi pembantu untuk membuat sheet "Nilai Rapor".
+ * [BARU] Menyimpan urutan baru dari daftar mata pelajaran.
+ * Fungsi ini akan menghapus semua mapel yang ada dan menulisnya kembali
+ * sesuai dengan urutan yang diberikan dari frontend.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {Array<object>} orderedMapelArray Array objek mapel yang sudah diurutkan.
+ * @returns {object} Status penyimpanan.
  */
-function createNilaiRaporSheetForLedger(ss, liveSsId, students, mapel, jenjang) {
-    const sheet = ss.insertSheet("2. Nilai Rapor");
-    // [PERBAIKAN] Atur format kolom NISN ke Teks sebelum menulis data
-    sheet.getRange("B:B").setNumberFormat('@');
+function saveMapelOrder(spreadsheetId, orderedMapelArray) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheet = ss.getSheetByName(SHEET_MAPEL);
 
-    const semesterKeys = { MI: ['k4_ganjil', 'k4_genap', 'k5_ganjil', 'k5_genap', 'k6_ganjil'], MTS: ['k7_ganjil', 'k7_genap', 'k8_ganjil', 'k8_genap', 'k9_ganjil'], MA: ['k10_ganjil', 'k10_genap', 'k11_ganjil', 'k11_genap', 'k12_ganjil'] };
+    // Hapus data lama terlebih dahulu (dari baris 2 ke bawah)
+    if (sheet.getLastRow() >= 2) {
+      sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
+    }
+
+    // Jika ada data baru untuk ditulis
+    if (orderedMapelArray && orderedMapelArray.length > 0) {
+      // Ubah array of objects menjadi array 2D untuk ditulis ke sheet
+      const newValues = orderedMapelArray.map(m => [m.kode, m.nama, m.kelompok, m.jenisUjian]);
+      // Tulis semua data baru dalam satu operasi
+      sheet.getRange(2, 1, newValues.length, newValues[0].length).setValues(newValues);
+    }
+    
+    SpreadsheetApp.flush(); // Pastikan perubahan segera diterapkan
+    return { status: "success", message: "Urutan mata pelajaran berhasil disimpan." };
+
+  } catch (e) {
+    Logger.log("saveMapelOrder Error: " + e.message);
+    return { status: "error", message: "Gagal menyimpan urutan baru: " + e.message };
+  }
+}
+
+/**
+ * [FINAL] Menghitung ulang semua statistik Superadmin dari sumber asli
+ * dan menyimpannya ke dalam sheet cache dengan format yang benar.
+ */
+function updateSuperadminDashboardCache() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let cacheSheet = ss.getSheetByName(SHEET_DASHBOARD_CACHE);
+
+  if (!cacheSheet) {
+    cacheSheet = ss.insertSheet(SHEET_DASHBOARD_CACHE);
+  }
+  cacheSheet.clearContents().appendRow(['Metric', 'Value']);
+  cacheSheet.getRange("B:B").setNumberFormat('@'); // Format kolom value sebagai Teks
+
+  const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
+  
+  // 1. Hitung Statistik Akun & Siswa
+  let totalAccounts = 0, activeAccounts = 0, totalStudents = 0, inactiveAccounts = 0;
+  if (userSheet && userSheet.getLastRow() >= 2) {
+    const usersData = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 8).getValues();
+    totalAccounts = usersData.filter(u => u[1]).length;
+    usersData.forEach(userRow => {
+      if (!userRow[1]) return;
+      const status = userRow[7] || 'Aktif';
+      if (status === 'Aktif') activeAccounts++;
+      
+      const role = userRow[6];
+      const spreadsheetId = userRow[5];
+      if (role !== 'Superadmin' && spreadsheetId) {
+        try {
+          const studentSheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(SHEET_DATA_SISWA);
+          if (studentSheet && studentSheet.getLastRow() > 1) {
+            totalStudents += studentSheet.getLastRow() - 1;
+          }
+        } catch (e) {
+          Logger.log(`[Cache] Gagal akses spreadsheet ID ${spreadsheetId}. Error: ${e.message}`);
+        }
+      }
+    });
+    inactiveAccounts = totalAccounts - activeAccounts;
+  }
+
+  // 2. Hitung Statistik Pengajuan
+  let totalRequests = 0, pendingRequests = 0, approvedRequests = 0, rejectedRequests = 0;
+  try {
+    const pengajuanSheet = ss.getSheetByName(SHEET_PENGAJUAN);
+    if (pengajuanSheet && pengajuanSheet.getLastRow() >= 2) {
+      const statusColumn = pengajuanSheet.getRange(2, 8, pengajuanSheet.getLastRow() - 1, 1).getValues();
+      totalRequests = statusColumn.length;
+      pendingRequests = statusColumn.filter(row => row[0] === 'Menunggu Persetujuan').length;
+      approvedRequests = statusColumn.filter(row => row[0] === 'Disetujui').length;
+      rejectedRequests = statusColumn.filter(row => row[0] === 'Ditolak').length;
+    }
+  } catch(e) {
+     Logger.log("updateSuperadminDashboardCache Error saat mengambil data pengajuan: " + e.message);
+  }
+
+  // 3. Siapkan data untuk ditulis ke cache
+  const cacheData = [
+    ['totalAccounts', totalAccounts],
+    ['activeAccounts', activeAccounts],
+    ['inactiveAccounts', inactiveAccounts],
+    ['totalStudents', totalStudents],
+    ['totalRequests', totalRequests],
+    ['pendingRequests', pendingRequests],
+    ['approvedRequests', approvedRequests],
+    ['rejectedRequests', rejectedRequests],
+    // ▼▼▼ PERUBAHAN UTAMA ADA DI SINI ▼▼▼
+    // Ubah objek Date menjadi string format ISO yang standar dan universal.
+    ['lastUpdated', new Date().toISOString()]
+    // ▲▲▲ AKHIR DARI PERUBAHAN ▲▲▲
+  ];
+  
+  cacheSheet.getRange(2, 1, cacheData.length, 2).setValues(cacheData);
+  Logger.log('Cache Dashboard Superadmin berhasil diperbarui.');
+}
+
+/**
+ * [SUPERADMIN - BARU] Memulihkan data dari file backup menggunakan kode unik ke spreadsheet target.
+ * Berbeda dari restore pengguna biasa, fungsi ini tidak memeriksa kepemilikan email.
+ * @param {string} adminEmail Email superadmin untuk verifikasi.
+ * @param {string} uniqueCode Kode restore unik dari sheet 'Data Backup Terdaftar'.
+ * @param {string} targetSpreadsheetId ID spreadsheet pengguna yang akan ditimpa datanya.
+ * @returns {object} Objek berisi status dan pesan.
+ */
+function adminRestoreFromCode_Superadmin(adminEmail, uniqueCode, targetSpreadsheetId) {
+  // 1. Verifikasi bahwa yang menjalankan adalah Superadmin
+  if (!isSuperadmin(adminEmail)) {
+    return { status: "error", message: "Akses ditolak. Hanya Superadmin." };
+  }
+
+  if (!uniqueCode || !targetSpreadsheetId) {
+    return { status: "error", message: "Kode Unik dan ID Spreadsheet Tujuan wajib diisi." };
+  }
+  
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+
+  try {
+    // 2. Cari kode di Spreadsheet Induk untuk mendapatkan ID file backup
+    const masterSs = SpreadsheetApp.getActiveSpreadsheet();
+    const registrySheet = masterSs.getSheetByName(SHEET_BACKUP_REGISTRY);
+    if (!registrySheet) {
+      throw new Error("Sistem registry backup tidak ditemukan.");
+    }
+
+    const data = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 2).getValues(); // Ambil kolom Kode dan ID File
+    let backupFileId = null;
+
+    for (let i = 0; i < data.length; i++) {
+      if (data[i][0].toString().toUpperCase() === uniqueCode.toUpperCase()) {
+        backupFileId = data[i][1];
+        break;
+      }
+    }
+    
+    if (!backupFileId) {
+      throw new Error(`Kode restore '${uniqueCode}' tidak valid atau tidak ditemukan.`);
+    }
+
+    // 3. Lakukan proses restore inti
+    const backupSs = SpreadsheetApp.openById(backupFileId);
+    const targetSs = SpreadsheetApp.openById(targetSpreadsheetId);
+
+    performSheetCopyRestore(backupSs, targetSs); // Memanggil helper function yang sudah ada
+
+    lock.releaseLock();
+    return { status: "success", message: `Data berhasil dipulihkan dari kode ${uniqueCode} ke spreadsheet tujuan.` };
+
+  } catch (e) {
+    lock.releaseLock();
+    Logger.log(`adminRestoreFromCode Error: ${e.stack}`);
+    return { status: "error", message: `Gagal memulihkan data: ${e.message}` };
+  }
+}
+
+// ===== [BARU] FUNGSI UNTUK VALIDASI KELENGKAPAN NILAI =====
+
+/**
+ * Memvalidasi kelengkapan semua nilai (ujian dan rapor) untuk setiap siswa.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {object} Objek berisi hasil validasi atau pesan error.
+ */
+function validateAllScores(spreadsheetId) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    
+    // 1. Ambil data-data dasar yang diperlukan
+    const students = getStudents(spreadsheetId);
+    if (!students || students.length === 0) {
+      return { status: 'error', message: 'Tidak ada data siswa untuk divalidasi.' };
+    }
+
+    const mapel = getMapel(spreadsheetId);
+    if (!mapel || mapel.length === 0) {
+      return { status: 'error', message: 'Tidak ada data mata pelajaran untuk divalidasi.' };
+    }
+    
+    const schoolData = getSchoolData(spreadsheetId);
+    const jenjang = schoolData ? schoolData.jenjang : null;
+    if (!jenjang) {
+      return { status: 'error', message: 'Jenjang sekolah belum diatur di menu Data Sekolah.' };
+    }
+
+    // 2. Tentukan semua nama sheet yang akan diperiksa berdasarkan jenjang
+    const semesterKeys = {
+      MI: ['k4_ganjil', 'k4_genap', 'k5_ganjil', 'k5_genap', 'k6_ganjil'],
+      MTS: ['k7_ganjil', 'k7_genap', 'k8_ganjil', 'k8_genap', 'k9_ganjil'],
+      MA: ['k10_ganjil', 'k10_genap', 'k11_ganjil', 'k11_genap', 'k12_ganjil']
+    };
+    
     const semestersForJenjang = semesterKeys[jenjang] || [];
+    
+    const sheetNamesToCheck = [
+      SHEET_NILAI_UJIAN_MADRASAH,
+      SHEET_NILAI_UJIAN_PRAKTEK,
+      ...semestersForJenjang.flatMap(smKey => [`Rapor_Pengetahuan_${smKey}`, `Rapor_Keterampilan_${smKey}`])
+    ];
 
-    const allRaporData = {};
-    semestersForJenjang.forEach(smKey => {
-        allRaporData[`P_${smKey}`] = getSheetDataAsObject(liveSsId, `Rapor_Pengetahuan_${smKey}`);
-        allRaporData[`K_${smKey}`] = getSheetDataAsObject(liveSsId, `Rapor_Keterampilan_${smKey}`);
+    // 3. Ambil semua data nilai dari semua sheet yang relevan
+    const allScoreData = {};
+    sheetNamesToCheck.forEach(sheetName => {
+      // Menggunakan getSheetByName untuk memastikan sheet ada sebelum dibaca
+      if (ss.getSheetByName(sheetName)) {
+        allScoreData[sheetName] = getSheetDataAsObject(spreadsheetId, sheetName);
+      } else {
+        allScoreData[sheetName] = {}; // Jika sheet tidak ada, anggap datanya kosong
+      }
     });
 
-    const headers = ["No", "NISN", "Nama Lengkap", ...mapel.map(m => m.kode), "Jumlah", "Rata-Rata"];
-    const bodyData = [];
+    // 4. Proses validasi untuk setiap siswa
+    const validationResults = students.map(student => {
+      const nisn = student.nisn;
+      const studentStatus = {
+        nisn: nisn,
+        nama: student.nama,
+        completeness: {}
+      };
+      
+      let totalMissingCount = 0;
 
-    students.forEach((student, index) => {
-        const nisn = student.nisn;
-        const row = [index + 1, nisn, student.nama.toUpperCase()];
-        let totalRataRapor = 0;
-        let mapelCount = 0;
+      sheetNamesToCheck.forEach(sheetName => {
+        const studentScoresOnSheet = allScoreData[sheetName][nisn] || {};
+        let isComplete = true; // Asumsikan lengkap pada awalnya
 
-        mapel.forEach(m => {
-            let totalNilaiSemester = 0;
-            let semesterCount = 0;
-            semestersForJenjang.forEach(smKey => {
-                const np = parseFloat((allRaporData[`P_${smKey}`][nisn] || {})[m.kode]);
-                const nk = parseFloat((allRaporData[`K_${smKey}`][nisn] || {})[m.kode]);
-                if(!isNaN(np) && !isNaN(nk)) { totalNilaiSemester += (np+nk)/2; semesterCount++; }
-                else if(!isNaN(np)) { totalNilaiSemester += np; semesterCount++; }
-                else if(!isNaN(nk)) { totalNilaiSemester += nk; semesterCount++; }
-            });
-            const rataRaporMapel = semesterCount > 0 ? totalNilaiSemester / semesterCount : 0;
-            row.push(rataRaporMapel > 0 ? Math.round(rataRaporMapel) : '');
-            if(rataRaporMapel > 0) {
-                totalRataRapor += Math.round(rataRaporMapel);
-                mapelCount++;
+        // Tentukan mapel mana yang harus ada di sheet ini
+        let requiredMapel;
+        if (sheetName === SHEET_NILAI_UJIAN_MADRASAH) {
+          requiredMapel = mapel.filter(m => m.jenisUjian === 'Ujian Madrasah' || m.jenisUjian === 'Keduanya');
+        } else if (sheetName === SHEET_NILAI_UJIAN_PRAKTEK) {
+          requiredMapel = mapel.filter(m => m.jenisUjian === 'Ujian Praktek' || m.jenisUjian === 'Keduanya');
+        } else { // Untuk semua sheet rapor
+          requiredMapel = mapel;
+        }
+
+        // Jika tidak ada mapel yang disyaratkan untuk sheet ini, anggap lengkap
+        if (requiredMapel.length === 0) {
+           studentStatus.completeness[sheetName] = true;
+           return; // Lanjut ke sheet berikutnya
+        }
+        
+        // Cek setiap mapel yang disyaratkan
+        for (const m of requiredMapel) {
+          const score = studentScoresOnSheet[m.kode];
+          if (score === undefined || score === null || String(score).trim() === '') {
+            isComplete = false;
+            totalMissingCount++;
+            break; // Cukup temukan satu yang kosong, sheet ini tidak lengkap
+          }
+        }
+        studentStatus.completeness[sheetName] = isComplete;
+      });
+      
+      studentStatus.missingCount = totalMissingCount;
+      return studentStatus;
+    });
+
+    return {
+      status: 'success',
+      data: validationResults,
+      sheetHeaders: sheetNamesToCheck
+    };
+
+  } catch (e) {
+    Logger.log(`Error in validateAllScores: ${e.stack}`);
+    return { status: 'error', message: 'Gagal melakukan validasi: ' + e.message };
+  }
+}
+
+/**
+ * [DIPERBARUI] Memvalidasi kelengkapan nilai berdasarkan per-mata pelajaran untuk setiap siswa.
+ * Kini juga menyertakan daftar detail nilai yang kosong.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {object} Objek berisi hasil validasi atau pesan error.
+ */
+function validateScoresBySubject(spreadsheetId) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+
+    // 1. Ambil data-data dasar
+    const students = getStudents(spreadsheetId);
+    if (!students || students.length === 0) {
+      return { status: 'error', message: 'Tidak ada data siswa untuk divalidasi.' };
+    }
+
+    const mapelList = getMapel(spreadsheetId);
+    if (!mapelList || mapelList.length === 0) {
+      return { status: 'error', message: 'Tidak ada data mata pelajaran untuk divalidasi.' };
+    }
+    
+    const schoolData = getSchoolData(spreadsheetId);
+    const jenjang = schoolData ? schoolData.jenjang : null;
+    if (!jenjang) {
+      return { status: 'error', message: 'Jenjang sekolah belum diatur di menu Data Sekolah.' };
+    }
+
+    // Peta untuk nama yang lebih ramah pengguna
+    const semesterNameMap = {
+      k4_ganjil: 'Kelas 4 Ganjil', k4_genap: 'Kelas 4 Genap', k5_ganjil: 'Kelas 5 Ganjil',
+      k5_genap: 'Kelas 5 Genap', k6_ganjil: 'Kelas 6 Ganjil',
+      k7_ganjil: 'Kelas 7 Ganjil', k7_genap: 'Kelas 7 Genap', k8_ganjil: 'Kelas 8 Ganjil',
+      k8_genap: 'Kelas 8 Genap', k9_ganjil: 'Kelas 9 Ganjil',
+      k10_ganjil: 'Kelas 10 Ganjil', k10_genap: 'Kelas 10 Genap', k11_ganjil: 'Kelas 11 Ganjil',
+      k11_genap: 'Kelas 11 Genap', k12_ganjil: 'Kelas 12 Ganjil'
+    };
+
+    const semesterKeys = {
+      MI: ['k4_ganjil', 'k4_genap', 'k5_ganjil', 'k5_genap', 'k6_ganjil'],
+      MTS: ['k7_ganjil', 'k7_genap', 'k8_ganjil', 'k8_genap', 'k9_ganjil'],
+      MA: ['k10_ganjil', 'k10_genap', 'k11_ganjil', 'k11_genap', 'k12_ganjil']
+    };
+    
+    const semestersForJenjang = semesterKeys[jenjang] || [];
+    const raporSheetNames = semestersForJenjang.flatMap(smKey => [`Rapor_Pengetahuan_${smKey}`, `Rapor_Keterampilan_${smKey}`]);
+    const allSheetNames = [SHEET_NILAI_UJIAN_MADRASAH, SHEET_NILAI_UJIAN_PRAKTEK, ...raporSheetNames];
+
+    // Ambil semua data nilai sekali jalan
+    const allScoreData = {};
+    allSheetNames.forEach(sheetName => {
+      if (ss.getSheetByName(sheetName)) {
+        allScoreData[sheetName] = getSheetDataAsObject(spreadsheetId, sheetName);
+      } else {
+        allScoreData[sheetName] = {};
+      }
+    });
+
+    // Proses validasi
+    const validationResults = students.map(student => {
+      const nisn = student.nisn;
+      const studentResult = {
+        nisn: nisn,
+        nama: student.nama,
+        subjectCompleteness: {}
+      };
+
+      mapelList.forEach(mapel => {
+        let requiredCount = 0;
+        let filledCount = 0;
+        let missingDetails = []; // <-- [PERUBAHAN] Array untuk menyimpan detail yang kosong
+        const mapelKode = mapel.kode;
+        const jenisUjian = mapel.jenisUjian;
+
+        // Cek Nilai Ujian Madrasah
+        if (jenisUjian === 'Ujian Madrasah' || jenisUjian === 'Keduanya') {
+          requiredCount++;
+          const score = (allScoreData[SHEET_NILAI_UJIAN_MADRASAH][nisn] || {})[mapelKode];
+          if (score !== undefined && score !== null && String(score).trim() !== '') {
+            filledCount++;
+          } else {
+            missingDetails.push('Nilai Ujian Madrasah'); // <-- [PERUBAHAN] Catat jika kosong
+          }
+        }
+        
+        // Cek Nilai Ujian Praktek
+        if (jenisUjian === 'Ujian Praktek' || jenisUjian === 'Keduanya') {
+          requiredCount++;
+          const score = (allScoreData[SHEET_NILAI_UJIAN_PRAKTEK][nisn] || {})[mapelKode];
+          if (score !== undefined && score !== null && String(score).trim() !== '') {
+            filledCount++;
+          } else {
+            missingDetails.push('Nilai Ujian Praktek'); // <-- [PERUBAHAN] Catat jika kosong
+          }
+        }
+        
+        // Cek semua nilai rapor
+        semestersForJenjang.forEach(smKey => {
+            // Cek Pengetahuan
+            requiredCount++;
+            const scoreP = (allScoreData[`Rapor_Pengetahuan_${smKey}`][nisn] || {})[mapelKode];
+            if (scoreP !== undefined && scoreP !== null && String(scoreP).trim() !== '') {
+                filledCount++;
+            } else {
+                missingDetails.push(`Rapor Pengetahuan ${semesterNameMap[smKey]}`); // <-- [PERUBAHAN] Catat jika kosong
+            }
+
+            // Cek Keterampilan
+            requiredCount++;
+            const scoreK = (allScoreData[`Rapor_Keterampilan_${smKey}`][nisn] || {})[mapelKode];
+            if (scoreK !== undefined && scoreK !== null && String(scoreK).trim() !== '') {
+                filledCount++;
+            } else {
+                missingDetails.push(`Rapor Keterampilan ${semesterNameMap[smKey]}`); // <-- [PERUBAHAN] Catat jika kosong
             }
         });
-        const average = mapelCount > 0 ? totalRataRapor / mapelCount : 0;
-        row.push(totalRataRapor);
-        row.push(average.toFixed(2));
-        bodyData.push(row);
+
+        studentResult.subjectCompleteness[mapelKode] = {
+          complete: filledCount,
+          total: requiredCount,
+          missing: missingDetails // <-- [PERUBAHAN] Sertakan array detail yang kosong
+        };
+      });
+
+      return studentResult;
     });
 
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
-    if (bodyData.length > 0) {
-      sheet.getRange(2, 1, bodyData.length, headers.length).setValues(bodyData);
+    return {
+      status: 'success',
+      data: validationResults,
+      mapelHeaders: mapelList
+    };
+
+  } catch (e) {
+    Logger.log(`Error in validateScoresBySubject: ${e.stack}`);
+    return { status: 'error', message: 'Gagal melakukan validasi per mapel: ' + e.message };
+  }
+}
+
+// ===== TAMBAHKAN FUNGSI BARU INI DI Kode.gs =====
+
+/**
+ * [SUPERADMIN] Mengambil data sesi pengguna target untuk impersonasi.
+ * @param {string} adminEmail - Email superadmin yang meminta.
+ * @param {number} targetUserRow - Nomor baris dari pengguna yang akan diimpersonasi.
+ * @returns {object} Objek berisi data sesi pengguna target.
+ */
+function getImpersonationData_Superadmin(adminEmail, targetUserRow) {
+  // Keamanan: Pastikan yang meminta adalah Superadmin
+  if (!isSuperadmin(adminEmail)) {
+    throw new Error("Akses ditolak. Hanya Superadmin yang dapat melakukan aksi ini.");
+  }
+
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
+    
+    // Ambil data dari baris target (4 kolom: Email, Nama Sekolah, Spreadsheet ID, Role)
+    const targetUserData = userSheet.getRange(targetUserRow, 2, 1, 6).getValues()[0];
+    
+    const impersonationData = {
+      email: targetUserData[0],         // Kolom B
+      namaSekolah: targetUserData[2],   // Kolom D
+      spreadsheetId: targetUserData[4], // Kolom F
+      role: targetUserData[5] || 'Pengguna' // Kolom G
+    };
+
+    if (!impersonationData.spreadsheetId) {
+        throw new Error("Pengguna target tidak memiliki Spreadsheet ID yang valid.");
     }
-    sheet.autoResizeColumn(3);
-    for(let i = 4; i <= mapel.length + 3; i++){ sheet.autoResizeColumn(i); }
-}
 
-/**
- * Fungsi pembantu untuk membuat sheet "Nilai Ijazah".
- */
-function createNilaiIjazahSheetForLedger(ss, liveSsId, students, mapel) {
-  const sheet = ss.insertSheet("3. Nilai Ijazah");
-  // [PERBAIKAN] Atur format kolom NISN ke Teks sebelum menulis data
-  sheet.getRange("B:B").setNumberFormat('@');
+    return { status: 'success', impersonationData: impersonationData };
 
-  const dataIjazah = getSheetDataAsObject(liveSsId, SHEET_REKAP_IJAZAH);
-  const headers = ["No", "NISN", "Nama Lengkap", ...mapel.map(m => m.kode), "Jumlah", "Rata-Rata"];
-  const bodyData = [];
-
-  students.forEach((student, index) => {
-      const nisn = student.nisn;
-      const row = [index + 1, nisn, student.nama.toUpperCase()];
-      let total = 0;
-      mapel.forEach(m => {
-          const score = parseFloat((dataIjazah[nisn] || {})[m.kode] || 0);
-          const roundedScore = Math.round(score);
-          row.push(roundedScore);
-          total += roundedScore;
-      });
-      const average = mapel.length > 0 ? total / mapel.length : 0;
-      row.push(total);
-      row.push(average.toFixed(2));
-      bodyData.push(row);
-  });
-  
-  sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
-  if (bodyData.length > 0) {
-    sheet.getRange(2, 1, bodyData.length, headers.length).setValues(bodyData);
+  } catch (e) {
+    Logger.log(`Error in getImpersonationData_Superadmin: ${e.message}`);
+    return { status: 'error', message: `Gagal mendapatkan data impersonasi: ${e.message}` };
   }
-  sheet.autoResizeColumn(3);
-  for(let i = 4; i <= mapel.length + 3; i++){ sheet.autoResizeColumn(i); }
+}
+
+// ===== GANTI KEMBALI KEDUA FUNGSI INI DI Kode.gs =====
+
+/**
+ * [AKSI MASSAL] Menghapus beberapa siswa berdasarkan nomor baris mereka.
+ */
+function bulkDeleteStudents(spreadsheetId, rowNumbers) {
+  try {
+    if (!rowNumbers || rowNumbers.length === 0) {
+      return { status: "info", message: "Tidak ada siswa yang dipilih untuk dihapus." };
+    }
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
+
+    rowNumbers.sort((a, b) => b - a);
+
+    rowNumbers.forEach(rowNum => {
+      sheet.deleteRow(rowNum);
+    });
+    
+    SpreadsheetApp.flush();
+    // Ambil dan kirim kembali daftar siswa yang sudah fresh
+    const updatedStudentList = getStudents(spreadsheetId);
+
+    return { 
+      status: "success", 
+      message: `${rowNumbers.length} data siswa berhasil dihapus.`,
+      updatedStudentList: updatedStudentList 
+    };
+  } catch (e) {
+    Logger.log(e);
+    return { status: "error", message: "Gagal menghapus data siswa secara massal: " + e.message };
+  }
 }
 
 /**
- * Fungsi pembantu untuk membuat sheet "Rekap".
+ * [AKSI MASSAL] Memperbarui kolom Tahun Lulus untuk beberapa siswa.
  */
-function createRekapSheetForLedger(ss, liveSsId, students, mapel) {
-  const sheet = ss.insertSheet("4. Rekap");
-  // [PERBAIKAN] Atur format kolom NISN ke Teks sebelum menulis data
-  sheet.getRange("B:B").setNumberFormat('@');
-
-  const rekapUjian = getSheetDataAsObject(liveSsId, SHEET_REKAP_UJIAN);
-  const rekapRapor = getSheetDataAsObject(liveSsId, SHEET_REKAP_RAPOR);
-  const rekapIjazah = getSheetDataAsObject(liveSsId, SHEET_REKAP_IJAZAH);
-  const bobot = getBobot(liveSsId);
-
-  const headers = ["No", "NISN", "Nama Lengkap", "Rata-Rata Nilai Ujian", "Rata-Rata Nilai Rapor", "Nilai Akhir Ijazah"];
-  const bodyData = [];
-
-  students.forEach((student, index) => {
-      const nisn = student.nisn;
-      const rataUjian = parseFloat((rekapUjian[nisn] || {})['Rata-rata'] || 0);
-      const rataRapor = parseFloat((rekapRapor[nisn] || {})['Rata-rata'] || 0);
-      const nilaiIjazah = parseFloat((rekapIjazah[nisn] || {})['Rata-rata'] || 0);
+function bulkUpdateTahunLulus(spreadsheetId, rowNumbers, tahunLulus) {
+  try {
+    if (!rowNumbers || rowNumbers.length === 0) {
+      return { status: "info", message: "Tidak ada siswa yang dipilih." };
+    }
+    if (!tahunLulus || tahunLulus.toString().trim() === '') {
+        return { status: "error", message: "Tahun lulus tidak boleh kosong." };
+    }
       
-      const row = [
-          index + 1, 
-          nisn, 
-          student.nama.toUpperCase(),
-          Math.round(rataUjian),
-          Math.round(rataRapor),
-          Math.round(nilaiIjazah)
-      ];
-      bodyData.push(row);
-  });
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
+    const tahunLulusColumn = 11; // Kolom K
 
-  // Tambahkan informasi bobot di atas tabel
-  sheet.getRange("A1").setValue("REKAPITULASI NILAI AKHIR").setFontWeight('bold').setFontSize(14);
-  sheet.getRange("A3").setValue(`Bobot Nilai Ujian: ${bobot.bobotUjian}%`);
-  sheet.getRange("A4").setValue(`Bobot Nilai Rapor: ${bobot.bobotRapor}%`);
-  
-  sheet.getRange(6, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
-  if (bodyData.length > 0) {
-    sheet.getRange(7, 1, bodyData.length, headers.length).setValues(bodyData);
+    rowNumbers.forEach(rowNum => {
+      sheet.getRange(rowNum, tahunLulusColumn).setValue(tahunLulus);
+    });
+
+    SpreadsheetApp.flush();
+    // Ambil dan kirim kembali daftar siswa yang sudah fresh
+    const updatedStudentList = getStudents(spreadsheetId);
+
+    return { 
+      status: "success", 
+      message: `${rowNumbers.length} data siswa berhasil diupdate tahun lurusnya.`,
+      updatedStudentList: updatedStudentList
+    };
+  } catch (e) {
+    Logger.log(e);
+    return { status: "error", message: "Gagal mengupdate tahun lulus secara massal: " + e.message };
   }
-  sheet.autoResizeColumn(3); // Kolom Nama
-  sheet.autoResizeColumn(4); 
-  sheet.autoResizeColumn(5); 
-  sheet.autoResizeColumn(6);
 }
