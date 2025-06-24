@@ -843,6 +843,15 @@
 
                         <div id="student-quota-info" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
                             </div>
+                        
+                        <div id="bulk-action-bar" class="hidden my-4 p-3 bg-blue-100 border border-blue-200 rounded-lg flex items-center justify-between flex-wrap gap-4">
+                            <span id="selected-student-count" class="font-bold text-blue-800">0 siswa dipilih</span>
+                            <div class="flex items-center gap-3">
+                                <input type="number" id="bulk-tahun-lulus-input" placeholder="Tahun Lulus" class="p-2 border border-gray-300 rounded-md w-32">
+                                <button id="bulk-update-tahun-lulus-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md text-sm">Update Tahun Lulus</button>
+                                <button id="bulk-delete-btn" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md text-sm">Hapus Terpilih</button>
+                            </div>
+                        </div>
 
                         <div class="flex justify-between items-center my-4 flex-wrap gap-4">
                             <div class="flex-grow max-w-lg">
@@ -2195,11 +2204,13 @@
                 });
             }
 
-            // GANTI BLOK LISTENER LAMA DENGAN VERSI BARU INI
+            // ===== GANTI BLOK LISTENER INI DENGAN VERSI BARU =====
             // "Penjaga" untuk overlay. Dia akan menangani semua klik di dalam overlay.
             document.getElementById('loading-overlay').addEventListener('click', function(event) {
-                // Cek apakah elemen yang diklik adalah tombol refresh kita
-                if (event.target.id === 'force-refresh-btn' || event.target.id === 'manual-refresh-btn') {
+                // Cek apakah elemen yang diklik adalah tombol refresh manual kita
+                if (event.target.id === 'force-refresh-btn') {
+                    
+                    // --- PERBAIKAN FINAL (METODE MUAT ULANG HALAMAN) ---
                     
                     // 1. Simpan informasi bahwa kita ingin kembali ke halaman data siswa.
                     sessionStorage.setItem('lastActivePage', 'data-siswa');
@@ -2211,6 +2222,7 @@
                     if (webAppUrl) {
                         window.top.location.href = webAppUrl;
                     } else {
+                        // Fallback jika URL tidak ditemukan, jarang terjadi.
                         window.top.location.reload();
                     }
                 }
@@ -3311,50 +3323,34 @@
                 closeSiswaModalBtn.addEventListener('click', closeSiswaModal);
                 cancelSiswaBtn.addEventListener('click', closeSiswaModal);
             }
-            // GANTI BLOK event listener LAMA DENGAN VERSI BARU INI
             if (deleteAllStudentsBtn) {
                 deleteAllStudentsBtn.addEventListener('click', function() {
-                    if (selectedStudentRows.size > 0) {
-                        // [PERUBAHAN] Panggil modal konfirmasi sederhana sebelum menghapus
-                        showConfirmationModal({
-                            title: "Konfirmasi Hapus Siswa",
-                            body: `Anda yakin ingin menghapus <strong>${selectedStudentRows.size} data siswa</strong> yang dipilih? Tindakan ini tidak dapat dibatalkan.`,
-                            confirmText: "Ya, Hapus",
-                            confirmColor: "bg-red-600 hover:bg-red-700",
-                            onConfirm: () => {
-                                // Fungsi handleBulkDelete akan dijalankan HANYA jika pengguna menekan "Ya, Hapus"
-                                handleBulkDelete();
-                            }
-                        });
-                    } else {
-                        // Logika untuk "Hapus Semua" tetap sama (menggunakan konfirmasi ketik)
-                        showTypeToConfirmModal({
-                            title: 'Hapus Semua Data Siswa',
-                            body: 'Anda akan menghapus <strong>SELURUH</strong> data siswa di database Anda. Tindakan ini tidak dapat dibatalkan.',
-                            onConfirm: () => {
-                                const btn = this;
-                                btn.disabled = true;
-                                showGlobalStatus('Menghapus semua data siswa...', true);
+                    showTypeToConfirmModal({
+                        title: 'Hapus Semua Data Siswa',
+                        body: 'Anda akan menghapus **SELURUH** data siswa di database Anda. Tindakan ini tidak dapat dibatalkan.',
+                        onConfirm: () => {
+                            // Fungsi ini akan dijalankan setelah konfirmasi berhasil
+                            const btn = this;
+                            btn.disabled = true;
+                            showGlobalStatus('Menghapus semua data siswa...', true);
 
-                                google.script.run
-                                    .withSuccessHandler(response => {
-                                        showGlobalStatus(response.message, response.status === 'success');
-                                        if (response.status === 'success') {
-                                            sessionStorage.setItem('rekapNeedsUpdate', 'true');
-                                            checkAndApplyRekapIndicator();
-                                        }
-                                        selectedStudentRows.clear();
-                                        loadStudentsData();
-                                        btn.disabled = false;
-                                    })
-                                    .withFailureHandler(err => {
-                                        showGlobalStatus('Error: ' + err.message, false);
-                                        btn.disabled = false;
-                                    })
-                                    .deleteAllStudents(userSpreadsheetId);
-                            }
-                        });
-                    }
+                            google.script.run
+                                .withSuccessHandler(response => {
+                                    showGlobalStatus(response.message, response.status === 'success');
+                                    if (response.status === 'success') { // <-- Tambahkan pengecekan ini
+                                        sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
+                                        checkAndApplyRekapIndicator();                   // <-- TAMBAHKAN
+                                    }
+                                    loadStudentsData();
+                                    btn.disabled = false;
+                                })
+                                .withFailureHandler(err => {
+                                    showGlobalStatus('Error: ' + err.message, false);
+                                    btn.disabled = false;
+                                })
+                                .deleteAllStudents(userSpreadsheetId);
+                        }
+                    });
                 });
             }
             if (downloadTemplateBtn) {
@@ -3719,13 +3715,16 @@
                     .withFailureHandler(err => {
                         container.innerHTML = `<p class="text-center text-red-500 py-4">Gagal memuat data: ${err.message}</p>`;
                     })
-                    .getStudents(userSpreadsheetId, new Date().getTime());
+                    .getStudents(userSpreadsheetId);
             }
 
-            // GANTI FUNGSI LAMA DENGAN VERSI BARU INI
+            /**
+             * [MODIFIKASI] Menampilkan data siswa ke dalam tabel HTML, dengan tambahan kolom JK.
+             * @param {Array<object>} studentsToRender - Array data siswa yang ingin ditampilkan.
+             */
             function renderSiswaTable(studentsToRender) {
                 const container = document.getElementById('siswaTableContainer');
-                container.innerHTML = '';
+                container.innerHTML = ''; 
 
                 if (studentsToRender && studentsToRender.length > 0) {
                     const table = document.createElement('table');
@@ -3748,7 +3747,6 @@
                     const tbody = table.querySelector('tbody');
                     studentsToRender.forEach(s => {
                         const tr = document.createElement('tr');
-                        // ... (kode untuk mengisi baris tabel tidak berubah) ...
                         const formattedDate = formatIndonesianDate(s.tanggalLahir);
                         const tempat = toProperCase(s.tempatLahir || '');
                         const tanggal = formattedDate || '';
@@ -3771,6 +3769,7 @@
                         tr.querySelector('[data-action="transcript"]').addEventListener('click', () => handleShowTranscript(s.nisn));
                         tr.querySelector('[data-action="edit"]').addEventListener('click', () => handleEditStudent(s));
                         tr.querySelector('[data-action="delete"]').addEventListener('click', (e) => handleDeleteStudent(s, e.target));
+                        
                         tbody.appendChild(tr);
                     });
                     
@@ -3779,7 +3778,7 @@
                 } else {
                     container.innerHTML = `<p class="text-center text-gray-500 py-4">Belum ada data siswa atau data tidak ditemukan.</p>`;
                 }
-                updateMainDeleteButtonState(); // Panggil fungsi baru
+                updateBulkActionBar();
             }
 
             /**
@@ -3819,40 +3818,48 @@
              * [UX UPGRADE] Menangani aksi hapus siswa dengan konfirmasi 2 langkah
              * dan menampilkan overlay loading dinamis.
              */
-            // GANTI FUNGSI LAMA DENGAN VERSI BARU INI
-            /**
-             * [FINAL] Menangani hapus satu siswa dengan metode reload halaman penuh.
-             */
             function handleDeleteStudent(student, targetButton) {
-                showConfirmationModal({
-                    title: "Konfirmasi Hapus",
-                    body: `Anda yakin ingin menghapus data siswa <strong>${student.nama.toUpperCase()}</strong>?`,
-                    confirmText: "Ya, Hapus",
-                    onConfirm: () => {
-                        const overlay = document.getElementById('loading-overlay');
-                        overlay.classList.remove('hidden');
-                        overlay.querySelector('#overlay-title').textContent = `Menghapus data "${student.nama}"...`;
-                        overlay.querySelector('#overlay-subtitle').textContent = "Mohon tunggu...";
-                        overlay.querySelector('#overlay-button-container').innerHTML = '';
+                if (targetButton.dataset.confirming) {
+                    // Tampilkan loading overlay dengan nama siswa
+                    const overlay = document.getElementById('loading-overlay');
+                    const overlayTitle = document.getElementById('overlay-title');
+                    const overlaySubtitle = document.getElementById('overlay-subtitle');
+                    overlayTitle.innerHTML = `Menghapus Data Siswa <br class="sm:hidden"> <strong class="text-red-600">"${student.nama}"</strong>`;
+                    overlaySubtitle.textContent = "Proses sedang berjalan, mohon tunggu...";
+                    overlay.classList.remove('hidden');
+                    
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            overlay.classList.add('hidden');
+                            showGlobalStatus(response.message, response.status === 'success');
+                            if (response.status === 'success' && response.updatedStudentList) {
+                                sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
+                                checkAndApplyRekapIndicator();  
+                                allStudentsData = response.updatedStudentList;
+                                renderSiswaTable(response.updatedStudentList);
+                            }
+                        })
+                        .withFailureHandler(err => {
+                            overlay.classList.add('hidden');
+                            showGlobalStatus(err.message, false);
+                        })
+                        .deleteStudent(userSpreadsheetId, student.row);
+                } else {
+                    // Logika untuk klik pertama (konfirmasi)
+                    targetButton.textContent = 'Yakin?';
+                    targetButton.dataset.confirming = true;
+                    targetButton.classList.add('text-yellow-500', 'font-bold');
+                    targetButton.classList.remove('text-red-600');
 
-                        google.script.run
-                            .withSuccessHandler(response => {
-                                if (response.status === 'success') {
-                                    overlay.querySelector('#overlay-title').textContent = 'Berhasil Dihapus';
-                                    overlay.querySelector('#overlay-subtitle').innerHTML = `Data siswa telah dihapus.<br>Klik tombol di bawah untuk memuat ulang.`;
-                                    overlay.querySelector('#overlay-button-container').innerHTML = `<button id="force-refresh-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg">Selesai</button>`;
-                                } else {
-                                    overlay.classList.add('hidden');
-                                    showGlobalStatus(response.message, false);
-                                }
-                            })
-                            .withFailureHandler(err => {
-                                overlay.classList.add('hidden');
-                                showGlobalStatus(err.message, false);
-                            })
-                            .deleteStudent(userSpreadsheetId, student.row);
-                    }
-                });
+                    setTimeout(() => {
+                        if (targetButton.dataset.confirming) {
+                            targetButton.textContent = 'Hapus';
+                            delete targetButton.dataset.confirming;
+                            targetButton.classList.remove('text-yellow-500', 'font-bold');
+                            targetButton.classList.add('text-red-600');
+                        }
+                    }, 3000);
+                }
             }
 
             // --- MAPEL & BOBOT FUNCTIONS ---
@@ -8897,7 +8904,27 @@
             }
         }
 
-        // GANTI FUNGSI LAMA DENGAN VERSI BARU INI
+        // ===== TAMBAHKAN SEMUA FUNGSI BARU INI =====
+
+        /**
+         * Memperbarui tampilan menu aksi massal (terlihat/tidak & jumlah terpilih).
+         */
+        function updateBulkActionBar() {
+            const actionBar = document.getElementById('bulk-action-bar');
+            const countSpan = document.getElementById('selected-student-count');
+            const selectedCount = selectedStudentRows.size;
+
+            if (selectedCount > 0) {
+                countSpan.textContent = `${selectedCount} siswa dipilih`;
+                actionBar.classList.remove('hidden');
+            } else {
+                actionBar.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Memasang semua event listener yang dibutuhkan untuk checkbox di tabel siswa.
+         */
         function attachTableCheckboxListeners() {
             const selectAllCheckbox = document.getElementById('select-all-students-checkbox');
             const studentCheckboxes = document.querySelectorAll('.student-checkbox');
@@ -8914,32 +8941,45 @@
                             selectedStudentRows.delete(rowNum);
                         }
                     });
-                    updateMainDeleteButtonState(); // Panggil fungsi baru
+                    updateBulkActionBar();
                 });
             }
 
             studentCheckboxes.forEach(cb => {
+                // Cek apakah baris ini sudah ada di set sebelumnya
                 const rowNum = parseInt(cb.dataset.row);
                 cb.checked = selectedStudentRows.has(rowNum);
 
                 cb.addEventListener('change', (e) => {
                     const isChecked = e.target.checked;
-                    const rowNum = parseInt(e.target.dataset.row);
                     if (isChecked) {
                         selectedStudentRows.add(rowNum);
                     } else {
                         selectedStudentRows.delete(rowNum);
                     }
-                    selectAllCheckbox.checked = (studentCheckboxes.length === selectedStudentRows.size);
-                    updateMainDeleteButtonState(); // Panggil fungsi baru
+                    // Cek apakah semua checkbox terpilih untuk update status 'select all'
+                    if (!isChecked) {
+                        selectAllCheckbox.checked = false;
+                    } else {
+                        if (studentCheckboxes.length === selectedStudentRows.size) {
+                            selectAllCheckbox.checked = true;
+                        }
+                    }
+                    updateBulkActionBar();
                 });
             });
+
+            // Pasang listener untuk tombol-tombol di menu aksi massal
+            document.getElementById('bulk-delete-btn')?.addEventListener('click', handleBulkDelete);
+            document.getElementById('bulk-update-tahun-lulus-btn')?.addEventListener('click', handleBulkUpdateTahunLulus);
         }
 
-        // GANTI FUNGSI LAMA DENGAN VERSI BARU INI
+        // ===== GANTI KEDUA FUNGSI INI DENGAN VERSI FINAL =====
+
         /**
-         * [FINAL] Menangani HAPUS TERPILIH dengan metode reload halaman penuh.
+         * Menangani aksi klik pada tombol "Hapus Terpilih".
          */
+        // ===== GANTI FUNGSI LAMA DENGAN VERSI BARU INI =====
         function handleBulkDelete() {
             const selectedCount = selectedStudentRows.size;
             if (selectedCount === 0) {
@@ -8947,40 +8987,112 @@
                 return;
             }
 
-            const overlay = document.getElementById('loading-overlay');
-            const overlayTitle = document.getElementById('overlay-title');
-            const overlaySubtitle = document.getElementById('overlay-subtitle');
-            const overlayButtonContainer = document.getElementById('overlay-button-container');
+            showConfirmationModal({
+                title: "Konfirmasi Hapus Massal",
+                body: `Anda yakin ingin menghapus <strong>${selectedStudentRows.size} data siswa</strong> yang dipilih? Tindakan ini tidak dapat dibatalkan.`,
+                confirmText: "Ya, Hapus",
+                confirmColor: "bg-red-600 hover:bg-red-700",
+                onConfirm: () => {
+                    const overlay = document.getElementById('loading-overlay');
+                    const overlayTitle = document.getElementById('overlay-title');
+                    const overlaySubtitle = document.getElementById('overlay-subtitle');
+                    const overlayButtonContainer = document.getElementById('overlay-button-container');
 
-            overlayButtonContainer.innerHTML = '';
-            overlayTitle.textContent = `Menghapus ${selectedCount} siswa...`;
-            overlaySubtitle.textContent = "Mohon tunggu dan jangan menutup jendela ini...";
-            overlay.classList.remove('hidden');
+                    overlayButtonContainer.innerHTML = '';
+                    overlayTitle.textContent = `Menghapus ${selectedStudentRows.size} siswa...`;
+                    overlaySubtitle.textContent = "Mohon tunggu dan jangan menutup jendela ini...";
+                    overlay.classList.remove('hidden');
+                    
+                    const rowsToDelete = Array.from(selectedStudentRows);
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            if (response.status === 'success') {
+                                overlayTitle.textContent = 'Proses Selesai';
+                                overlaySubtitle.textContent = response.message + ' Klik tombol di bawah untuk melihat hasilnya.';
+                                overlayButtonContainer.innerHTML = `
+                                    <button id="force-refresh-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg text-lg">
+                                        Muat Ulang Data Siswa
+                                    </button>
+                                `;
+                                // BARIS addEventListener TELAH DIHAPUS DARI SINI
+                                selectedStudentRows.clear();
+                                updateBulkActionBar();
+                            } else {
+                                overlay.classList.add('hidden');
+                                showGlobalStatus(response.message, false);
+                            }
+                        })
+                        .withFailureHandler(err => {
+                            overlay.classList.add('hidden');
+                            showGlobalStatus(err.message, false);
+                        })
+                        .bulkDeleteStudents(userSpreadsheetId, rowsToDelete);
+                }
+            });
+        }
 
-            const rowsToDelete = Array.from(selectedStudentRows);
-            google.script.run
-                .withSuccessHandler(response => {
-                    if (response.status === 'success') {
-                        sessionStorage.setItem('rekapNeedsUpdate', 'true');
-                        checkAndApplyRekapIndicator();
-                        
-                        overlayTitle.textContent = 'Proses Selesai';
-                        overlaySubtitle.innerHTML = `${response.message}<br>Klik tombol di bawah untuk memperbarui tabel.`;
-                        overlayButtonContainer.innerHTML = `
-                            <button id="force-refresh-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg text-lg">
-                                Tampilkan Daftar Terbaru
-                            </button>
-                        `;
-                    } else {
-                        overlay.classList.add('hidden');
-                        showGlobalStatus(response.message, false);
-                    }
-                })
-                .withFailureHandler(err => {
-                    overlay.classList.add('hidden');
-                    showGlobalStatus(`Error: ${err.message}`, false);
-                })
-                .bulkDeleteStudents(userSpreadsheetId, rowsToDelete);
+        /**
+         * Menangani aksi klik pada tombol "Update Tahun Lulus".
+         */
+        // ===== GANTI FUNGSI LAMA DENGAN VERSI BARU INI =====
+        function handleBulkUpdateTahunLulus() {
+            const selectedCount = selectedStudentRows.size;
+            if (selectedCount === 0) {
+                showGlobalStatus("Tidak ada siswa yang dipilih.", false);
+                return;
+            }
+
+            const tahunLulusInput = document.getElementById('bulk-tahun-lulus-input');
+            const tahunLulus = tahunLulusInput.value.trim();
+            if (!tahunLulus) {
+                showGlobalStatus("Silakan isi kolom Tahun Lulus terlebih dahulu.", false);
+                tahunLulusInput.focus();
+                return;
+            }
+
+            showConfirmationModal({
+                title: "Konfirmasi Update Massal",
+                body: `Anda yakin ingin mengubah Tahun Lulus menjadi <strong>${document.getElementById('bulk-tahun-lulus-input').value.trim()}</strong> untuk <strong>${selectedStudentRows.size} siswa</strong> yang dipilih?`,
+                confirmText: "Ya, Update",
+                confirmColor: "bg-blue-600 hover:bg-blue-700",
+                onConfirm: () => {
+                    const overlay = document.getElementById('loading-overlay');
+                    const overlayTitle = document.getElementById('overlay-title');
+                    const overlaySubtitle = document.getElementById('overlay-subtitle');
+                    const overlayButtonContainer = document.getElementById('overlay-button-container');
+
+                    overlayButtonContainer.innerHTML = '';
+                    overlayTitle.textContent = `Mengupdate ${selectedStudentRows.size} siswa...`;
+                    overlaySubtitle.textContent = "Mohon tunggu dan jangan menutup jendela ini...";
+                    overlay.classList.remove('hidden');
+
+                    const rowsToUpdate = Array.from(selectedStudentRows);
+                    const tahunLulus = document.getElementById('bulk-tahun-lulus-input').value.trim();
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            if (response.status === 'success') {
+                                overlayTitle.textContent = 'Proses Selesai';
+                                overlaySubtitle.textContent = response.message + ' Klik tombol di bawah untuk melihat hasilnya.';
+                                overlayButtonContainer.innerHTML = `
+                                    <button id="force-refresh-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg text-lg">
+                                        Muat Ulang Data Siswa
+                                    </button>
+                                `;
+                                // BARIS addEventListener TELAH DIHAPUS DARI SINI
+                                selectedStudentRows.clear();
+                                updateBulkActionBar();
+                            } else {
+                                overlay.classList.add('hidden');
+                                showGlobalStatus(response.message, false);
+                            }
+                        })
+                        .withFailureHandler(err => {
+                            overlay.classList.add('hidden');
+                            showGlobalStatus(err.message, false);
+                        })
+                        .bulkUpdateTahunLulus(userSpreadsheetId, rowsToUpdate, tahunLulus);
+                }
+            });
         }
 
         /**
@@ -9437,21 +9549,6 @@
                 })
                 .generateNilaiTemplate(userSpreadsheetId, templateName);
         });
-
-        // TAMBAHKAN FUNGSI BARU INI
-        /**
-         * Memperbarui teks pada tombol hapus utama berdasarkan jumlah siswa yang dipilih.
-         */
-        function updateMainDeleteButtonState() {
-            const mainDeleteButton = document.getElementById('deleteAllStudentsBtn');
-            const selectedCount = selectedStudentRows.size;
-
-            if (selectedCount > 0) {
-                mainDeleteButton.textContent = `Hapus ${selectedCount} Siswa Terpilih`;
-            } else {
-                mainDeleteButton.textContent = 'Hapus Semua Siswa';
-            }
-        }
     </script>
 </body>
 </html>
