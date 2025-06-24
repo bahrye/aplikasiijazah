@@ -828,28 +828,17 @@
                             </div>
                         </div>
 
-                        <div class="mt-8 border-t pt-6">
-                            <h2 class="text-xl font-bold text-gray-800">Import Data Siswa</h2>
-                            <p class="mt-1 text-gray-600">Unggah data siswa secara massal menggunakan template Excel. <br>Wajib mengisi <b>NISN</b> dan <b>NAMA LENGKAP</b>, yang lain boleh dikosongkan.</p>
-                            <div class="mt-4 flex flex-wrap items-center gap-4">
-                                <button id="downloadTemplateBtn" class="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700">Download Template</button>
-                                <input type="file" id="siswaFileInput" class="hidden" accept=".xlsx, .xls, .csv">
-                                <label for="siswaFileInput" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg cursor-pointer hover:bg-green-700">Pilih File...</label>
-                                <span id="fileName" class="text-gray-500">Tidak ada file dipilih</span>
-                                <button id="importSiswaBtn" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Import Data</button>
-                            </div>
-                            <div id="importStatus" class="mt-4"></div>
-                        </div>
-
                         <div id="student-quota-info" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
                             </div>
                         
-                        <div id="bulk-action-bar" class="hidden my-4 p-3 bg-blue-100 border border-blue-200 rounded-lg flex items-center justify-between flex-wrap gap-4">
-                            <span id="selected-student-count" class="font-bold text-blue-800">0 siswa dipilih</span>
-                            <div class="flex items-center gap-3">
-                                <input type="number" id="bulk-tahun-lulus-input" placeholder="Tahun Lulus" class="p-2 border border-gray-300 rounded-md w-32">
-                                <button id="bulk-update-tahun-lulus-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md text-sm">Update Tahun Lulus</button>
-                                <button id="bulk-delete-btn" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md text-sm">Hapus Terpilih</button>
+                        <div id="bulk-action-bar" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-auto bg-gray-800 text-white rounded-full shadow-2xl p-2 z-40 transition-all duration-300 ease-out transform">
+                            <div class="flex items-center justify-between gap-4 px-4">
+                                <span id="selected-student-count" class="font-semibold whitespace-nowrap">0 siswa dipilih</span>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" id="bulk-tahun-lulus-input" placeholder="Tahun Lulus" class="p-2 border border-gray-500 bg-gray-700 text-white rounded-full w-32 text-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <button id="bulk-update-tahun-lulus-btn" class="bg-blue-600 hover:bg-blue-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Update</button>
+                                    <button id="bulk-delete-btn" class="bg-red-600 hover:bg-red-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Hapus</button>
+                                </div>
                             </div>
                         </div>
 
@@ -866,6 +855,12 @@
                                 </div>
                             </div>
                             <div class="flex space-x-2">
+                                <button id="openSiswaUploadModalBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-md text-sm transition-colors flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                                      <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                                    </svg>
+                                    <span>Upload Data Siswa</span>
+                                </button>
                                 <button id="addStudentBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-md text-sm transition-colors">+ Tambah Siswa</button>
                                 <button id="deleteAllStudentsBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-md text-sm transition-colors">Hapus Semua Siswa</button>
                             </div>
@@ -1949,7 +1944,45 @@
         </div>
     </div>
 
-<script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+    <div id="siswa-upload-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-3xl transform scale-95 flex flex-col max-h-[90vh]">
+            <div class="flex-shrink-0 flex justify-between items-center border-b p-4">
+                <h2 class="text-xl font-bold text-gray-800">Upload Data Siswa</h2>
+                <button id="closeSiswaUploadModalBtn" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div class="flex-grow overflow-y-auto p-6 space-y-6">
+                <div>
+                    <button id="downloadSiswaTemplateBtnModal" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg inline-flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                        </svg>
+                        Download Template Excel
+                    </button>
+                    
+                    <div class="mt-4 p-3 bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 rounded-r-lg">
+                        <p class="text-sm font-medium">
+                            <strong class="font-bold">PENTING:</strong> Wajib mengisi 
+                            <span class="bg-red-100 text-red-800 font-bold border border-red-300 rounded px-2 py-0.5">NISN</span> 
+                            dan 
+                            <span class="bg-red-100 text-red-800 font-bold border border-red-300 rounded px-2 py-0.5">NAMA LENGKAP</span> 
+                            pada template. Kolom lain boleh dikosongkan.
+                        </p>
+                    </div>
+                </div>
+                <form action="#" class="dropzone" id="siswa-dropzone-form">
+                    <div class="dz-message" data-dz-message>
+                        <span>Letakkan File Excel di sini atau Klik untuk memilih</span>
+                    </div>
+                </form>
+                <div id="importStatus" class="mt-4"></div>
+            </div>
+            <div class="flex-shrink-0 mt-auto p-4 border-t flex justify-end">
+                <button id="closeSiswaUploadModalBtn2" type="button" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
 
     <div id="data-viewer-tooltip" class="hidden absolute z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm"></div>
     <div id="globalStatusMessage"></div>
@@ -3284,6 +3317,8 @@
             });
 
             // --- DATA SISWA FUNCTIONS ---
+            let siswaDropzone;
+
             const addStudentBtn = document.getElementById('addStudentBtn');
             const siswaModal = document.getElementById('siswa-modal');
             const closeSiswaModalBtn = document.getElementById('closeSiswaModalBtn');
@@ -3291,12 +3326,148 @@
             const siswaForm = document.getElementById('siswaForm');
             const siswaModalTitle = document.getElementById('siswa-modal-title');
             const studentRowInput = document.getElementById('studentRow');
-            const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
-            const importSiswaBtn = document.getElementById('importSiswaBtn');
-            const siswaFileInput = document.getElementById('siswaFileInput');
-            const fileNameSpan = document.getElementById('fileName');
+
+            const openSiswaUploadModalBtn = document.getElementById('openSiswaUploadModalBtn');
+            const downloadSiswaTemplateBtnModal = document.getElementById('downloadSiswaTemplateBtnModal');
+            const closeSiswaUploadModalBtn = document.getElementById('closeSiswaUploadModalBtn');
+            const closeSiswaUploadModalBtn2 = document.getElementById('closeSiswaUploadModalBtn2');
+            
             const importStatusDiv = document.getElementById('importStatus');
             const deleteAllStudentsBtn = document.getElementById('deleteAllStudentsBtn');
+
+            function openSiswaUploadModal() {
+                const modal = document.getElementById('siswa-upload-modal');
+                const importStatusDiv = document.getElementById('importStatus');
+                importStatusDiv.innerHTML = '';
+                modal.classList.remove('hidden');
+
+                if (!siswaDropzone) {
+                    siswaDropzone = new Dropzone("#siswa-dropzone-form", {
+                        url: "#",
+                        autoProcessQueue: false,
+                        maxFiles: 1,
+                        acceptedFiles: '.xlsx, .xls, .csv',
+                        addRemoveLinks: true,
+                        dictDefaultMessage: "Letakkan File Excel di sini atau Klik untuk memilih",
+                        init: function() {
+                            this.on("maxfilesexceeded", function(file) {
+                                this.removeAllFiles();
+                                this.addFile(file);
+                            });
+                            this.on("addedfile", function(file) {
+                                handleSiswaFileUpload(file, this);
+                            });
+                        }
+                    });
+                }
+            }
+
+            function closeSiswaUploadModal() {
+                const modal = document.getElementById('siswa-upload-modal');
+                modal.classList.add('hidden');
+                if (siswaDropzone) {
+                    siswaDropzone.removeAllFiles(true);
+                }
+                document.getElementById('importStatus').innerHTML = '';
+            }
+
+            function handleSiswaFileUpload(file, dropzoneInstance) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const fileData = {
+                        fileName: file.name,
+                        mimeType: file.type,
+                        content: e.target.result.split(',')[1]
+                    };
+
+                    const importStatusDiv = document.getElementById('importStatus');
+                    importStatusDiv.innerHTML = '<p class="text-blue-600 loading-animation">Mengimpor data, mohon tunggu...</p>';
+                    dropzoneInstance.emit("processing", file);
+
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            if (response.status !== 'error') {
+                                const summaryMessage = `Impor Selesai: <strong>${response.newCount || 0}</strong> baru, ` +
+                                                      `<strong>${response.enrichedCount || 0}</strong> diperkaya, ` +
+                                                      `<strong>${response.skippedLimitCount || 0}</strong> dilewati (kuota), ` +
+                                                      `<strong>${response.conflictCount || 0}</strong> konflik.`;
+                                showGlobalStatus(summaryMessage, 'success');
+                                dropzoneInstance.emit("success", file);
+                            } else {
+                                showGlobalStatus(response.message, 'error');
+                                dropzoneInstance.emit("error", file, response.message);
+                            }
+
+                            if (response.conflictCount > 0 || response.skippedLimitCount > 0) {
+                                let reportHtml = `<div class="p-4 border rounded-md bg-gray-50 mt-4">`;
+                                if (response.conflictCount > 0) {
+                                    currentImportConflicts = response.conflicts;
+                                    reportHtml += `
+                                        <h4 class="font-bold text-lg text-yellow-800">Tinjau Konflik Data</h4>
+                                        <p class="text-sm text-gray-600 mb-2">Ditemukan ${response.conflictCount} data dengan NISN yang sama namun isinya berbeda. Pilih data yang ingin Anda perbarui.</p>
+                                        <div class="my-2"><input type="checkbox" id="selectAllConflicts" class="mr-2 h-4 w-4 align-middle"><label for="selectAllConflicts" class="align-middle">Pilih Semua</label></div>
+                                        <div class="max-h-60 overflow-y-auto border rounded-md">
+                                            <table class="min-w-full text-sm">
+                                                <thead class="bg-gray-200 sticky top-0">
+                                                    <tr>
+                                                        <th class="p-2">Pilih</th><th class="p-2 text-left">NISN (Klik Detail)</th>
+                                                        <th class="p-2 text-left">Nama Lama</th><th class="p-2 text-left">Nama Baru</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>`;
+                                    currentImportConflicts.forEach((c, index) => {
+                                        reportHtml += `
+                                            <tr class="border-b" data-conflict-index="${index}">
+                                                <td class="p-2 text-center"><input type="checkbox" class="conflict-checkbox h-4 w-4"></td>
+                                                <td class="p-2 font-mono"><a href="#" class="text-blue-600 hover:underline conflict-detail-link" data-index="${index}">${c.nisn}</a></td>
+                                                <td class="p-2">${c.oldData.nama}</td>
+                                                <td class="p-2 text-green-700 font-medium">${c.newData.nama}</td>
+                                            </tr>`;
+                                    });
+                                    reportHtml += `</tbody></table></div>
+                                        <div class="mt-4 flex flex-wrap gap-3">
+                                            <button id="updateSelectedBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Update yang Dipilih</button>
+                                            <button id="updateAllBtn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Update Semua Konflik</button>
+                                            <button id="cancelImportUpdateBtn" class="bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600">Batal & Tutup</button>
+                                        </div>`;
+                                }
+                                if (response.skippedLimitCount > 0) { 
+                                    reportHtml += `<div class="mt-6 pt-4 border-t">
+                                            <h4 class="font-bold text-lg text-orange-800">Siswa Dilewati (Batas Kuota Penuh)</h4>
+                                            <p class="text-sm text-gray-600 mb-2">${response.skippedLimitCount} siswa dari file tidak diimpor karena akan melebihi batas kuota Anda.</p>
+                                            <div class="max-h-48 overflow-y-auto border rounded-md">
+                                                <table class="min-w-full text-sm">
+                                                    <thead class="bg-orange-100 sticky top-0">
+                                                        <tr><th class="p-2 text-left">NISN</th><th class="p-2 text-left">Nama Siswa</th></tr>
+                                                    </thead>
+                                                    <tbody>`;
+                                    response.skippedLimitData.forEach(s => {
+                                        reportHtml += `<tr class="border-b"><td class="p-2 font-mono">${s.nisn}</td><td class="p-2">${s.nama}</td></tr>`;
+                                    });
+                                    reportHtml += `</tbody></table></div></div>`;
+                                }
+                                reportHtml += `</div>`;
+                                importStatusDiv.innerHTML = reportHtml;
+                                if(response.conflictCount > 0) {
+                                  setupConflictResolutionListeners(response);
+                                }
+                            } else {
+                                importStatusDiv.innerHTML = '';
+                            }
+                            
+                            if (response.newCount > 0 || response.enrichedCount > 0) {
+                                loadStudentsData();
+                            }
+                        })
+                        .withFailureHandler(error => {
+                            showGlobalStatus('Error: ' + error.message, 'error');
+                            importStatusDiv.innerHTML = `<p class="p-4 bg-red-100 text-red-700 rounded-md">${error.message}</p>`;
+                            dropzoneInstance.emit("error", file, error.message);
+                        })
+                        .importFromExcel(userSpreadsheetId, fileData, 'Data Siswa', sessionStorage.getItem('userEmail'));
+                };
+                reader.readAsDataURL(file);
+            }
 
             const openSiswaModal = () => {
                 siswaModal.classList.remove('hidden');
@@ -3308,44 +3479,41 @@
                 siswaModal.querySelector('.modal-content').style.transform = 'scale(0.95)';
                 setTimeout(() => siswaModal.classList.add('hidden'), 300);
             };
+
             if (addStudentBtn) {
                 addStudentBtn.addEventListener('click', () => {
                     siswaForm.reset();
                     studentRowInput.value = '';
                     siswaModalTitle.textContent = "Tambah Siswa Baru";
-                    
-                    // [TAMBAHAN] Hapus pesan error lama dan pasang listener baru
                     document.getElementById('nisn-error-msg').textContent = '';
                     setupRealtimeNisnCheck();
-
                     openSiswaModal();
                 });
                 closeSiswaModalBtn.addEventListener('click', closeSiswaModal);
                 cancelSiswaBtn.addEventListener('click', closeSiswaModal);
             }
+
             if (deleteAllStudentsBtn) {
                 deleteAllStudentsBtn.addEventListener('click', function() {
                     showTypeToConfirmModal({
                         title: 'Hapus Semua Data Siswa',
                         body: 'Anda akan menghapus **SELURUH** data siswa di database Anda. Tindakan ini tidak dapat dibatalkan.',
                         onConfirm: () => {
-                            // Fungsi ini akan dijalankan setelah konfirmasi berhasil
                             const btn = this;
                             btn.disabled = true;
-                            showGlobalStatus('Menghapus semua data siswa...', true);
-
+                            showGlobalStatus('Menghapus semua data siswa...', 'info');
                             google.script.run
                                 .withSuccessHandler(response => {
-                                    showGlobalStatus(response.message, response.status === 'success');
-                                    if (response.status === 'success') { // <-- Tambahkan pengecekan ini
-                                        sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                                        checkAndApplyRekapIndicator();                   // <-- TAMBAHKAN
+                                    showGlobalStatus(response.message, response.status === 'success' ? 'success' : 'error');
+                                    if (response.status === 'success') {
+                                        sessionStorage.setItem('rekapNeedsUpdate', 'true');
+                                        checkAndApplyRekapIndicator();
                                     }
                                     loadStudentsData();
                                     btn.disabled = false;
                                 })
                                 .withFailureHandler(err => {
-                                    showGlobalStatus('Error: ' + err.message, false);
+                                    showGlobalStatus('Error: ' + err.message, 'error');
                                     btn.disabled = false;
                                 })
                                 .deleteAllStudents(userSpreadsheetId);
@@ -3353,192 +3521,39 @@
                     });
                 });
             }
-            if (downloadTemplateBtn) {
-                downloadTemplateBtn.addEventListener('click', () => {
-                    const btn = downloadTemplateBtn;
+
+            if (openSiswaUploadModalBtn) openSiswaUploadModalBtn.addEventListener('click', openSiswaUploadModal);
+            if (closeSiswaUploadModalBtn) closeSiswaUploadModalBtn.addEventListener('click', closeSiswaUploadModal);
+            if (closeSiswaUploadModalBtn2) closeSiswaUploadModalBtn2.addEventListener('click', closeSiswaUploadModal);
+
+            if (downloadSiswaTemplateBtnModal) {
+                downloadSiswaTemplateBtnModal.addEventListener('click', () => {
+                    const btn = downloadSiswaTemplateBtnModal;
+                    const originalContent = btn.innerHTML;
                     btn.disabled = true;
-                    btn.textContent = 'Membuat Template...';
+                    btn.innerHTML = '<span class="loading-animation">Membuat</span>';
                     google.script.run
                         .withSuccessHandler(result => {
                             btn.disabled = false;
-                            btn.textContent = 'Download Template';
-                            if (result.base64Data) {
+                            btn.innerHTML = originalContent;
+                             if (result.base64Data) {
                                 const link = document.createElement('a');
                                 link.href = `data:${result.mimeType};base64,${result.base64Data}`;
                                 link.download = result.fileName;
                                 document.body.appendChild(link);
                                 link.click();
                                 document.body.removeChild(link);
-                                showGlobalStatus('Template berhasil diunduh.', true);
+                                showGlobalStatus('Template berhasil diunduh.', 'success');
                             } else {
-                                showGlobalStatus('Gagal membuat template: ' + (result.error || 'Unknown error'), false);
+                                showGlobalStatus('Gagal membuat template: ' + (result.error || 'Unknown error'), 'error');
                             }
                         })
                         .withFailureHandler(error => {
-                            showGlobalStatus('Error: ' + error.message, false);
                             btn.disabled = false;
-                            btn.textContent = 'Download Template';
+                            btn.innerHTML = originalContent;
+                             showGlobalStatus('Error: ' + error.message, 'error');
                         })
                         .generateSiswaTemplate();
-                });
-            }
-            if (siswaFileInput) {
-                siswaFileInput.addEventListener('change', () => {
-                    const file = siswaFileInput.files[0];
-                    if (file) {
-                        fileNameSpan.textContent = file.name;
-                        importSiswaBtn.disabled = false;
-                    } else {
-                        fileNameSpan.textContent = 'Tidak ada file dipilih';
-                        importSiswaBtn.disabled = true;
-                    }
-                });
-            }
-            /**
-             * =======================================================================
-             * INSTRUKSI:
-             * Ganti seluruh event listener untuk 'importSiswaBtn' di file Index.html Anda
-             * dengan kode di bawah ini.
-             * * Perubahan ini akan:
-             * 1. Selalu menampilkan notifikasi pop-up ringkas di pojok atas.
-             * 2. Hanya menampilkan laporan detail di bawah jika ada KONFLIK data.
-             * 3. Tidak menampilkan rincian hasil impor jika semuanya sukses.
-             * =======================================================================
-             */
-
-            // Ganti seluruh blok 'if (importSiswaBtn)' Anda dengan ini.
-            if (importSiswaBtn) {
-                importSiswaBtn.addEventListener('click', () => {
-                    const file = siswaFileInput.files[0];
-                    if (!file) {
-                        showGlobalStatus('Silakan pilih file untuk diimpor.', false);
-                        return;
-                    }
-                    const reader = new FileReader();
-                    reader.readAsDataURL(file);
-                    reader.onload = () => {
-                        const fileData = {
-                            fileName: file.name,
-                            mimeType: file.type,
-                            content: reader.result.split(',')[1]
-                        };
-                        const importStatusDiv = document.getElementById('importStatus');
-                        importStatusDiv.innerHTML = '<p class="text-blue-600 loading-animation">Mengimpor data, mohon tunggu...</p>';
-                        importSiswaBtn.disabled = true;
-                        importSiswaBtn.textContent = 'Mengimpor...';
-                        
-                        google.script.run
-                            .withSuccessHandler(response => {
-                                // --- AWAL PERUBAHAN DI SINI (SUCCESS HANDLER) ---
-                                importSiswaBtn.textContent = 'Import Data';
-                                document.getElementById('fileName').textContent = 'Tidak ada file dipilih';
-                                siswaFileInput.value = '';
-                                
-                                // Baris ini diubah dari 'false' menjadi 'true' agar tombol kembali nonaktif
-                                importSiswaBtn.disabled = true; 
-                                // --- AKHIR PERUBAHAN (SUCCESS HANDLER) ---
-
-                                // 1. Tampilkan notifikasi ringkasan global (pop-up) untuk setiap hasil
-                                if (response.status !== 'error') {
-                                    // [PERBAIKAN] Tambahkan info siswa yang dilewati karena limit ke notifikasi
-                                    const summaryMessage = `Impor Selesai: <strong>${response.newCount || 0}</strong> baru, ` +
-                                                          `<strong>${response.enrichedCount || 0}</strong> diperkaya, ` +
-                                                          `<strong>${response.skippedLimitCount || 0}</strong> dilewati (kuota), ` +
-                                                          `<strong>${response.conflictCount || 0}</strong> konflik.`;
-                                    showGlobalStatus(summaryMessage, true);
-                                } else {
-                                    showGlobalStatus(response.message, false);
-                                    importStatusDiv.innerHTML = `<p class="p-4 bg-red-100 text-red-700 rounded-md">${response.message}</p>`;
-                                    return;
-                                }
-
-                                // 2. Hanya bangun dan tampilkan laporan detail jika ada konflik ATAU siswa yang dilewati
-                                if (response.conflictCount > 0 || response.skippedLimitCount > 0) {
-                                    let reportHtml = `<div class="p-4 border rounded-md bg-gray-50 mt-4">`;
-
-                                    // Bagian untuk KONFLIK DATA (jika ada)
-                                    if (response.conflictCount > 0) {
-                                        currentImportConflicts = response.conflicts;
-                                        reportHtml += `
-                                            <h4 class="font-bold text-lg text-yellow-800">Tinjau Konflik Data</h4>
-                                            <p class="text-sm text-gray-600 mb-2">Ditemukan ${response.conflictCount} data dengan NISN yang sama namun isinya berbeda. Pilih data yang ingin Anda perbarui.</p>
-                                            <div class="my-2"><input type="checkbox" id="selectAllConflicts" class="mr-2 h-4 w-4 align-middle"><label for="selectAllConflicts" class="align-middle">Pilih Semua</label></div>
-                                            <div class="max-h-60 overflow-y-auto border rounded-md">
-                                                <table class="min-w-full text-sm">
-                                                    <thead class="bg-gray-200 sticky top-0">
-                                                        <tr>
-                                                            <th class="p-2">Pilih</th><th class="p-2 text-left">NISN (Klik Detail)</th>
-                                                            <th class="p-2 text-left">Nama Lama</th><th class="p-2 text-left">Nama Baru</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>`;
-                                        currentImportConflicts.forEach((c, index) => {
-                                            reportHtml += `
-                                                <tr class="border-b" data-conflict-index="${index}">
-                                                    <td class="p-2 text-center"><input type="checkbox" class="conflict-checkbox h-4 w-4"></td>
-                                                    <td class="p-2 font-mono"><a href="#" class="text-blue-600 hover:underline conflict-detail-link" data-index="${index}">${c.nisn}</a></td>
-                                                    <td class="p-2">${c.oldData.nama}</td>
-                                                    <td class="p-2 text-green-700 font-medium">${c.newData.nama}</td>
-                                                </tr>`;
-                                        });
-                                        reportHtml += `</tbody></table></div>
-                                            <div class="mt-4 flex flex-wrap gap-3">
-                                                <button id="updateSelectedBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Update yang Dipilih</button>
-                                                <button id="updateAllBtn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Update Semua Konflik</button>
-                                                <button id="cancelImportUpdateBtn" class="bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600">Batal & Tutup</button>
-                                            </div>`;
-                                    }
-
-                                    // [BARU] Bagian untuk SISWA YANG DILEWATI KARENA KUOTA (jika ada)
-                                    if (response.skippedLimitCount > 0) {
-                                        reportHtml += `<div class="mt-6 pt-4 border-t">
-                                                <h4 class="font-bold text-lg text-orange-800">Siswa Dilewati (Batas Kuota Penuh)</h4>
-                                                <p class="text-sm text-gray-600 mb-2">${response.skippedLimitCount} siswa dari file tidak diimpor karena akan melebihi batas kuota Anda.</p>
-                                                <div class="max-h-48 overflow-y-auto border rounded-md">
-                                                    <table class="min-w-full text-sm">
-                                                        <thead class="bg-orange-100 sticky top-0">
-                                                            <tr><th class="p-2 text-left">NISN</th><th class="p-2 text-left">Nama Siswa</th></tr>
-                                                        </thead>
-                                                        <tbody>`;
-                                        response.skippedLimitData.forEach(s => {
-                                            reportHtml += `<tr class="border-b"><td class="p-2 font-mono">${s.nisn}</td><td class="p-2">${s.nama}</td></tr>`;
-                                        });
-                                        reportHtml += `</tbody></table></div></div>`;
-                                    }
-                                    
-                                    reportHtml += `</div>`; // Penutup div utama
-                                    importStatusDiv.innerHTML = reportHtml;
-                                    if(response.conflictCount > 0) {
-                                      setupConflictResolutionListeners(response);
-                                    }
-                                } else {
-                                    importStatusDiv.innerHTML = '';
-                                }
-
-                                // 3. Muat ulang tabel siswa jika ada data yang ditambahkan atau diperkaya
-                                if (response.newCount > 0 || response.enrichedCount > 0) {
-                                    loadStudentsData();
-                                }
-                            })
-                            .withFailureHandler(error => {
-                                showGlobalStatus('Error: ' + error.message, false);
-                                
-                                // --- AWAL PERUBAHAN DI SINI (FAILURE HANDLER) ---
-                                importSiswaBtn.textContent = 'Import Data';
-                                document.getElementById('fileName').textContent = 'Tidak ada file dipilih';
-                                siswaFileInput.value = '';
-                                
-                                // Baris ini juga diubah menjadi 'true' agar tombol nonaktif jika gagal
-                                importSiswaBtn.disabled = true;
-                                // --- AKHIR PERUBAHAN (FAILURE HANDLER) ---
-                                
-                                importStatusDiv.innerHTML = `<p class="p-4 bg-red-100 text-red-700 rounded-md">${error.message}</p>`;
-                            })
-                            .importFromExcel(userSpreadsheetId, fileData, 'Data Siswa', sessionStorage.getItem('userEmail'));
-                    };
-                    reader.onerror = () => {
-                        showGlobalStatus('Gagal membaca file.', false);
-                    };
                 });
             }
 
@@ -8916,9 +8931,22 @@
 
             if (selectedCount > 0) {
                 countSpan.textContent = `${selectedCount} siswa dipilih`;
+                // Pertama, hapus class 'hidden' agar elemen bisa dianimasikan
                 actionBar.classList.remove('hidden');
+                // Gunakan jeda singkat agar transisi berjalan mulus
+                setTimeout(() => {
+                    // Ubah opacity dan transform untuk animasi muncul
+                    actionBar.style.opacity = '1';
+                    actionBar.style.transform = 'translate(-50%, 0)';
+                }, 10);
             } else {
-                actionBar.classList.add('hidden');
+                // Animasi menghilang
+                actionBar.style.opacity = '0';
+                actionBar.style.transform = 'translate(-50%, 150%)';
+                // Sembunyikan elemen sepenuhnya setelah animasi selesai
+                setTimeout(() => {
+                    actionBar.classList.add('hidden');
+                }, 300); // Sesuaikan dengan durasi transisi (duration-300)
             }
         }
 
