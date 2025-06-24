@@ -787,7 +787,7 @@ function getSchoolData(spreadsheetId) {
  * @param {string} spreadsheetId ID spreadsheet target.
  * @returns {Array<object>} Array objek data siswa.
  */
-function getStudents(spreadsheetId, cacheBuster) {
+function getStudents(spreadsheetId) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
@@ -957,30 +957,27 @@ function updateStudent(spreadsheetId, studentData) {
   }
 }
 
-// GANTI FUNGSI LAMA DENGAN VERSI BARU INI
 /**
- * [DIPERBARUI] Menghapus data siswa DAN mengembalikan daftar siswa terbaru.
+ * Menghapus data siswa dari sheet 'Data Siswa'.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {number} rowNumber Nomor baris yang akan dihapus.
+ * @returns {{status: string, message: string}} Status penghapusan.
  */
 function deleteStudent(spreadsheetId, rowNumber) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
     sheet.deleteRow(rowNumber);
-    
-    SpreadsheetApp.flush(); // Pastikan penghapusan selesai
-    
-    // Baca kembali dan kirim daftar siswa yang sudah diperbarui
+    // -- PERUBAHAN INTI --
+    SpreadsheetApp.flush();
     const updatedStudentList = getStudents(spreadsheetId);
 
     return { 
       status: "success", 
       message: "Data siswa berhasil dihapus.",
-      updatedStudentList: updatedStudentList // <-- DATA BARU DILAMPIRKAN DI SINI
+      updatedStudentList: updatedStudentList
     };
-  } catch (e) { 
-    Logger.log(e); 
-    return { status: "error", message: "Gagal menghapus data: " + e.message }; 
-  }
+  } catch (e) { Logger.log(e); return { status: "error", message: "Gagal menghapus data: " + e.message }; }
 }
 
 /**
@@ -4557,9 +4554,10 @@ function getImpersonationData_Superadmin(adminEmail, targetUserRow) {
   }
 }
 
-// GANTI FUNGSI LAMA DENGAN VERSI BARU INI
+// ===== GANTI KEMBALI KEDUA FUNGSI INI DI Kode.gs =====
+
 /**
- * [DIPERBARUI] Menghapus beberapa siswa DAN mengembalikan daftar siswa terbaru.
+ * [AKSI MASSAL] Menghapus beberapa siswa berdasarkan nomor baris mereka.
  */
 function bulkDeleteStudents(spreadsheetId, rowNumbers) {
   try {
@@ -4575,15 +4573,14 @@ function bulkDeleteStudents(spreadsheetId, rowNumbers) {
       sheet.deleteRow(rowNum);
     });
     
-    SpreadsheetApp.flush(); // Pastikan penghapusan selesai
-
-    // Baca kembali dan kirim daftar siswa yang sudah diperbarui
+    SpreadsheetApp.flush();
+    // Ambil dan kirim kembali daftar siswa yang sudah fresh
     const updatedStudentList = getStudents(spreadsheetId);
 
     return { 
       status: "success", 
       message: `${rowNumbers.length} data siswa berhasil dihapus.`,
-      updatedStudentList: updatedStudentList // <-- DATA BARU DILAMPIRKAN DI SINI
+      updatedStudentList: updatedStudentList 
     };
   } catch (e) {
     Logger.log(e);
