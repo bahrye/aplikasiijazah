@@ -787,7 +787,7 @@ function getSchoolData(spreadsheetId) {
  * @param {string} spreadsheetId ID spreadsheet target.
  * @returns {Array<object>} Array objek data siswa.
  */
-function getStudents(spreadsheetId) {
+function getStudents(spreadsheetId, cacheBuster) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
@@ -957,27 +957,30 @@ function updateStudent(spreadsheetId, studentData) {
   }
 }
 
+// GANTI FUNGSI LAMA DENGAN VERSI BARU INI
 /**
- * Menghapus data siswa dari sheet 'Data Siswa'.
- * @param {string} spreadsheetId ID spreadsheet target.
- * @param {number} rowNumber Nomor baris yang akan dihapus.
- * @returns {{status: string, message: string}} Status penghapusan.
+ * [DIPERBARUI] Menghapus data siswa DAN mengembalikan daftar siswa terbaru.
  */
 function deleteStudent(spreadsheetId, rowNumber) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
     sheet.deleteRow(rowNumber);
-    // -- PERUBAHAN INTI --
-    SpreadsheetApp.flush();
+    
+    SpreadsheetApp.flush(); // Pastikan penghapusan selesai
+    
+    // Baca kembali dan kirim daftar siswa yang sudah diperbarui
     const updatedStudentList = getStudents(spreadsheetId);
 
     return { 
       status: "success", 
       message: "Data siswa berhasil dihapus.",
-      updatedStudentList: updatedStudentList
+      updatedStudentList: updatedStudentList // <-- DATA BARU DILAMPIRKAN DI SINI
     };
-  } catch (e) { Logger.log(e); return { status: "error", message: "Gagal menghapus data: " + e.message }; }
+  } catch (e) { 
+    Logger.log(e); 
+    return { status: "error", message: "Gagal menghapus data: " + e.message }; 
+  }
 }
 
 /**
@@ -4554,10 +4557,9 @@ function getImpersonationData_Superadmin(adminEmail, targetUserRow) {
   }
 }
 
-// ===== GANTI KEMBALI KEDUA FUNGSI INI DI Kode.gs =====
-
+// GANTI FUNGSI LAMA DENGAN VERSI BARU INI
 /**
- * [AKSI MASSAL] Menghapus beberapa siswa berdasarkan nomor baris mereka.
+ * [DIPERBARUI] Menghapus beberapa siswa DAN mengembalikan daftar siswa terbaru.
  */
 function bulkDeleteStudents(spreadsheetId, rowNumbers) {
   try {
@@ -4573,14 +4575,15 @@ function bulkDeleteStudents(spreadsheetId, rowNumbers) {
       sheet.deleteRow(rowNum);
     });
     
-    SpreadsheetApp.flush();
-    // Ambil dan kirim kembali daftar siswa yang sudah fresh
+    SpreadsheetApp.flush(); // Pastikan penghapusan selesai
+
+    // Baca kembali dan kirim daftar siswa yang sudah diperbarui
     const updatedStudentList = getStudents(spreadsheetId);
 
     return { 
       status: "success", 
       message: `${rowNumbers.length} data siswa berhasil dihapus.`,
-      updatedStudentList: updatedStudentList 
+      updatedStudentList: updatedStudentList // <-- DATA BARU DILAMPIRKAN DI SINI
     };
   } catch (e) {
     Logger.log(e);
@@ -4620,5 +4623,188 @@ function bulkUpdateTahunLulus(spreadsheetId, rowNumbers, tahunLulus) {
   } catch (e) {
     Logger.log(e);
     return { status: "error", message: "Gagal mengupdate tahun lulus secara massal: " + e.message };
+  }
+}
+
+// GANTI FUNGSI generateNilaiTemplate DENGAN VERSI FINAL INI
+/**
+ * [FINAL v2] Menghasilkan file template Excel untuk upload nilai.
+ * Menambahkan sheet '_validation_' tersembunyi yang berisi 'uploadType' untuk validasi.
+ */
+function generateNilaiTemplate(spreadsheetId, templateName) {
+  let tempFile;
+  try {
+    const ss = SpreadsheetApp.create(`Template_Upload_${templateName}_${new Date().getTime()}`);
+    tempFile = DriveApp.getFileById(ss.getId());
+
+    const students = getStudents(spreadsheetId);
+    const studentData = (students || []).map(s => ["'" + s.nisn, s.nama.toUpperCase()]);
+
+    const populateSheet = (sheet, mapel) => {
+      if (!mapel || mapel.length === 0) {
+        sheet.appendRow(["Tidak ada mata pelajaran yang dikonfigurasi untuk jenis ini."]);
+        return;
+      }
+      const headers = ["NISN", "Nama Lengkap", ...mapel.map(m => m.kode)];
+      sheet.appendRow(headers);
+      sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#d9ead3");
+      if (studentData.length > 0) {
+        sheet.getRange(2, 1, studentData.length, 2).setValues(studentData);
+      }
+      sheet.getRange("A:A").setNumberFormat('@');
+      sheet.setColumnWidth(1, 120);
+      sheet.setColumnWidth(2, 250);
+    };
+
+    let uploadTypeIdentifier = ''; // Kode unik untuk validasi
+
+    if (templateName.startsWith('Rapor_')) {
+      const sheetP = ss.getSheets()[0].setName('Pengetahuan');
+      const sheetK = ss.insertSheet('Keterampilan');
+      const allMapel = getMapel(spreadsheetId);
+      populateSheet(sheetP, allMapel);
+      populateSheet(sheetK, allMapel);
+      uploadTypeIdentifier = templateName.toLowerCase(); // contoh: 'rapor_k7_ganjil'
+
+    } else if (templateName === 'UjianGabungan') {
+      const sheetUM = ss.getSheets()[0].setName('Ujian Madrasah');
+      const sheetUP = ss.insertSheet('Ujian Praktek');
+      const mapelUM = getMapelByJenis(spreadsheetId, 'madrasah');
+      const mapelUP = getMapelByJenis(spreadsheetId, 'praktek');
+      populateSheet(sheetUM, mapelUM);
+      populateSheet(sheetUP, mapelUP);
+      uploadTypeIdentifier = 'ujian_gabungan';
+    
+    } else {
+      throw new Error(`Nama template "${templateName}" tidak valid.`);
+    }
+
+    // --- [VALIDASI BARU] ---
+    // Buat sheet tersembunyi yang berisi kode identifikasi unik.
+    const validationSheet = ss.insertSheet('_validation_');
+    validationSheet.getRange("A1").setValue(uploadTypeIdentifier);
+    validationSheet.hideSheet(); // Sembunyikan dari pengguna
+    // --- [AKHIR VALIDASI BARU] ---
+    
+    SpreadsheetApp.flush();
+
+    const url = `https://www.googleapis.com/drive/v3/files/${ss.getId()}/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`;
+    const response = UrlFetchApp.fetch(url, { headers: { Authorization: `Bearer ${ScriptApp.getOAuthToken()}` }, muteHttpExceptions: true });
+    const blob = response.getBlob();
+
+    return {
+      fileName: `Template_${templateName}.xlsx`,
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      base64Data: Utilities.base64Encode(blob.getBytes())
+    };
+  } catch (e) {
+    Logger.log(`generateNilaiTemplate Error: ${e.stack}`);
+    return { error: e.toString() };
+  } finally {
+    if (tempFile) tempFile.setTrashed(true);
+  }
+}
+
+
+// GANTI FUNGSI uploadNilaiFromExcel DENGAN VERSI FINAL INI
+/**
+ * [FINAL v2] Menerima file Excel dan mengimpor nilai ke sheet yang sesuai.
+ * Kini melakukan validasi berdasarkan sheet '_validation_' yang tersembunyi.
+ */
+function uploadNilaiFromExcel(spreadsheetId, fileData, uploadType) {
+  let tempFile;
+  try {
+    const decoded = Utilities.base64Decode(fileData.content, Utilities.Charset.UTF_8);
+    const blob = Utilities.newBlob(decoded, fileData.mimeType, fileData.fileName);
+    const tempSpreadsheetFile = Drive.Files.insert({ title: `temp_upload_${uploadType}` }, blob, { convert: true });
+    tempFile = DriveApp.getFileById(tempSpreadsheetFile.id);
+    const importSs = SpreadsheetApp.openById(tempFile.getId());
+
+    // --- [VALIDASI BARU BERDASARKAN SHEET] ---
+    const validationSheet = importSs.getSheetByName('_validation_');
+    if (!validationSheet) {
+      throw new Error("File tidak valid. Harap gunakan template yang diunduh langsung dari aplikasi.");
+    }
+    const fileIdentifier = validationSheet.getRange("A1").getValue().toString().trim();
+    if (fileIdentifier !== uploadType) {
+      // Helper untuk membuat teks lebih mudah dibaca
+      const formatTypeName = (typeStr) => typeStr.replace(/_/g, ' ').replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase());
+      throw new Error(`Kesalahan Upload: Anda mencoba mengunggah template untuk "${formatTypeName(fileIdentifier)}" ke slot "${formatTypeName(uploadType)}". Harap gunakan file yang benar.`);
+    }
+    // --- [AKHIR VALIDASI BARU] ---
+
+    const targetSs = getSpreadsheet(spreadsheetId);
+    
+    const processSheetImport = (sourceSheetName, targetSheetName) => {
+      // ... (Isi fungsi processSheetImport tidak perlu diubah, biarkan seperti yang sudah ada)
+        const importSheet = importSs.getSheetByName(sourceSheetName);
+        if (!importSheet) throw new Error(`Sheet "${sourceSheetName}" tidak ditemukan di dalam file Excel.`);
+        if (importSheet.getLastRow() <= 1) return 0;
+
+        const data = importSheet.getDataRange().getValues();
+        const headers = data.shift();
+        const nisnIndex = headers.indexOf("NISN");
+        if (nisnIndex === -1) throw new Error(`Kolom 'NISN' tidak ditemukan di sheet "${sourceSheetName}".`);
+
+        const uploadedDataMap = new Map();
+        data.forEach(row => {
+            const nisn = row[nisnIndex].toString().trim();
+            if (nisn) {
+                const scores = new Map();
+                headers.forEach((header, index) => { if (index > 1) scores.set(header.toString().trim(), row[index]); });
+                uploadedDataMap.set(nisn, scores);
+            }
+        });
+
+        let targetSheet = targetSs.getSheetByName(targetSheetName);
+        if (!targetSheet) throw new Error(`Sheet tujuan '${targetSheetName}' tidak ditemukan.`);
+
+        if (targetSheet.getLastRow() < 2) return 0;
+        const existingDataRange = targetSheet.getRange(2, 1, targetSheet.getLastRow() - 1, targetSheet.getLastColumn());
+        const existingValues = existingDataRange.getValues();
+        const existingHeaders = targetSheet.getRange(1, 1, 1, targetSheet.getLastColumn()).getValues()[0];
+        
+        let updatedCount = 0;
+        const updatedValues = existingValues.map(row => {
+            const nisn = row[0].toString().trim();
+            if (uploadedDataMap.has(nisn)) {
+                const uploadedScores = uploadedDataMap.get(nisn);
+                return existingHeaders.map((header, index) => {
+                    const headerKey = header.toString().trim();
+                    if (uploadedScores.has(headerKey)) {
+                        const newValue = uploadedScores.get(headerKey);
+                        if (String(row[index]) != String(newValue)) updatedCount++;
+                        return newValue;
+                    }
+                    return row[index];
+                });
+            }
+            return row;
+        });
+
+        if (updatedCount > 0) existingDataRange.setValues(updatedValues);
+        return updatedCount;
+    };
+
+    if (uploadType.startsWith('rapor_')) {
+      const semesterKey = uploadType.split('_').slice(1).join('_');
+      const countP = processSheetImport('Pengetahuan', `Rapor_Pengetahuan_${semesterKey}`);
+      const countK = processSheetImport('Keterampilan', `Rapor_Keterampilan_${semesterKey}`);
+      return { status: "success", message: `Impor Rapor Selesai. Pengetahuan: ${countP} nilai diupdate. Keterampilan: ${countK} nilai diupdate.` };
+    
+    } else if (uploadType === 'ujian_gabungan') {
+      const countUM = processSheetImport('Ujian Madrasah', SHEET_NILAI_UJIAN_MADRASAH);
+      const countUP = processSheetImport('Ujian Praktek', SHEET_NILAI_UJIAN_PRAKTEK);
+      return { status: "success", message: `Impor Ujian Selesai. U. Madrasah: ${countUM} nilai diupdate. U. Praktek: ${countUP} nilai diupdate.` };
+
+    } else {
+      throw new Error("Tipe upload tidak dikenali.");
+    }
+
+  } catch (e) {
+    Logger.log(`uploadNilaiFromExcel Error: ${e.stack}`);
+    return { status: "error", message: e.toString() };
+  } finally {
+    if (tempFile) tempFile.setTrashed(true);
   }
 }
