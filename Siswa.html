@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Siswa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg {
+            background-color: #f3f4f6;
+            background-image: 
+                radial-gradient(at 0% 0%, rgb(229, 231, 235) 0px, transparent 50%),
+                radial-gradient(at 95% 95%, rgb(219, 234, 254) 0px, transparent 50%);
+        }
+        .content-view { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Letakkan ini di dalam tag <style> di Siswa.html */
+        .loading-animation::after {
+            display: inline-block;
+            animation: loading-dots 1.4s infinite;
+            content: '.';
+            width: 1em;
+            text-align: left;
+        }
+        @keyframes loading-dots {
+            0% { content: '.'; }
+            33% { content: '..'; }
+            66% { content: '...'; }
+        }
+    </style>
+</head>
+<body class="gradient-bg text-gray-800">
+
+    <div id="app" class="min-h-screen flex flex-col items-center justify-center p-4">
+
+        <div id="login-container" class="w-full max-w-md content-view">
+            <div class="bg-white rounded-2xl shadow-xl p-8">
+                <div class="text-center mb-6">
+                    <h1 class="text-3xl font-bold text-gray-800">Portal Siswa</h1>
+                    <p class="text-gray-500 mt-2">Cek Transkrip Nilai Anda</p>
+                </div>
+                <form id="loginFormSiswa">
+                    <div class="space-y-5">
+                        <div>
+                            <label for="kode_sekolah" class="text-sm font-medium text-gray-700 block mb-2">Kode Sekolah</label>
+                            <input type="text" id="kode_sekolah" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm uppercase" placeholder="MINTA KODE DARI SEKOLAH ANDA" required>
+                        </div>
+                        <div>
+                            <label for="nisn" class="text-sm font-medium text-gray-700 block mb-2">NISN</label>
+                            <input type="text" id="nisn" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm" placeholder="Masukkan NISN Anda" required>
+                        </div>
+                        <div>
+                            <label for="tanggal_lahir" class="text-sm font-medium text-gray-700 block mb-2">Tanggal Lahir</label>
+                            <input type="date" id="tanggal_lahir" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm" required>
+                        </div>
+                        <div>
+                            <button type="submit" id="loginButtonSiswa" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition shadow-lg">
+                                <span id="loginBtnText">Masuk</span>
+                                <span id="loginSpinner" class="hidden loading-animation">Memverifikasi</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                <div id="login-error-message" class="mt-4 text-center text-red-600 text-sm h-4"></div>
+            </div>
+        </div>
+
+        <div id="data-container" class="w-full max-w-4xl hidden content-view">
+            <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+                <div class="flex justify-between items-start mb-6 pb-6 border-b">
+                    <div>
+                        <h2 class="text-2xl font-bold">Selamat Datang, <span id="nama-siswa-display"></span>!</h2>
+                        <p class="text-gray-600">Berikut adalah transkrip nilai akhir Anda.</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="downloadPdfBtn" class="hidden bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-opacity">
+                            <span id="pdfBtnText">Unduh PDF</span>
+                            <span id="pdfSpinner" class="hidden loading-animation">Mengunduh</span>
+                        </button>
+                        <button id="logoutButtonSiswa" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg text-sm">Logout</button>
+                    </div>
+                </div>
+                
+                <div id="transcript-content-container">
+                    <p id="transcript-loader" class="text-center text-gray-500 py-8">Memuat data transkrip...</p>
+                    <div id="transcript-printable-area"></div>
+                    <div id="chart-container" class="mt-8 pt-6 border-t hidden">
+                        <h3 class="text-xl font-bold text-center mb-4">Grafik Perkembangan Nilai</h3>
+                        <canvas id="gradeProgressChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    
+    <div id="broadcast-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg transform">
+            <div class="p-6">
+                <h3 class="text-xl leading-6 font-bold text-gray-900" id="broadcast-modal-title">Pemberitahuan</h3>
+                <p class="mt-2 text-sm text-gray-600 whitespace-pre-wrap" id="broadcast-modal-body"></p>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 text-right rounded-b-lg">
+                <button type="button" id="broadcast-modal-close-btn" class="w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700">OK</button>
+            </div>
+        </div>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const loginContainer = document.getElementById('login-container');
+        const dataContainer = document.getElementById('data-container');
+        const loginForm = document.getElementById('loginFormSiswa');
+        const logoutButton = document.getElementById('logoutButtonSiswa');
+
+        // Cek jika sesi sudah ada
+        const loggedInNisn = sessionStorage.getItem('siswa_nisn');
+        if (loggedInNisn) {
+            loginContainer.classList.add('hidden');
+            dataContainer.classList.remove('hidden');
+            loadSiswaData();
+        } else {
+        }
+
+        loginForm.addEventListener('submit', handleSiswaLogin);
+        logoutButton.addEventListener('click', handleSiswaLogout);
+
+        // Ganti seluruh fungsi handleSiswaLogin dengan versi ini
+        function handleSiswaLogin(e) {
+            e.preventDefault();
+            const kodeSekolah = document.getElementById('kode_sekolah').value;
+            const nisn = document.getElementById('nisn').value;
+            const tglLahir = document.getElementById('tanggal_lahir').value;
+            const errorDiv = document.getElementById('login-error-message');
+            
+            // --- Elemen Tombol untuk Animasi ---
+            const btn = document.getElementById('loginButtonSiswa');
+            const btnText = document.getElementById('loginBtnText');
+            const spinner = document.getElementById('loginSpinner');
+
+            if (!kodeSekolah || !nisn || !tglLahir) {
+                errorDiv.textContent = 'Kode Sekolah, NISN, dan Tanggal Lahir harus diisi.';
+                return;
+            }
+
+            // --- AWAL KONTROL ANIMASI ---
+            btn.disabled = true;
+            btnText.classList.add('hidden');
+            spinner.classList.remove('hidden');
+            errorDiv.textContent = '';
+            // --- AKHIR KONTROL ANIMASI ---
+
+            google.script.run
+                .withSuccessHandler(response => {
+                    // Kembalikan tombol ke keadaan normal
+                    btn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    spinner.classList.add('hidden');
+
+                    if (response.status === 'success') {
+                        sessionStorage.setItem('siswa_nisn', response.nisn);
+                        sessionStorage.setItem('siswa_nama', response.namaSiswa);
+                        sessionStorage.setItem('siswa_ssId', response.spreadsheetId);
+                        
+                        loginContainer.classList.add('hidden');
+                        dataContainer.classList.remove('hidden');
+                        loadSiswaData();
+                    } else {
+                        errorDiv.textContent = response.message;
+                    }
+                })
+                .withFailureHandler(err => {
+                    // Kembalikan tombol ke keadaan normal jika gagal
+                    btn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    spinner.classList.add('hidden');
+                    errorDiv.textContent = "Error: " + err.message;
+                })
+                .loginSiswa(kodeSekolah, nisn, tglLahir);
+        }
+        
+        // GANTI fungsi loadSiswaData() yang lama dengan yang ini:
+        function loadSiswaData() {
+            document.getElementById('nama-siswa-display').textContent = sessionStorage.getItem('siswa_nama');
+            const nisn = sessionStorage.getItem('siswa_nisn');
+            const ssId = sessionStorage.getItem('siswa_ssId');
+
+            const loader = document.getElementById('transcript-loader');
+            const printableArea = document.getElementById('transcript-printable-area');
+
+            loader.classList.remove('hidden');
+            printableArea.innerHTML = '';
+
+            // 1. Ambil data transkrip
+            google.script.run
+                .withSuccessHandler(response => {
+                    loader.classList.add('hidden');
+                    if (response.status === 'success') {
+                        renderTranscript(response.data);
+
+                        // [MODIFIKASI] Setelah transkrip berhasil dirender, panggil data untuk grafik
+                        loadGradeProgressChart(ssId, nisn);
+
+                    } else {
+                        printableArea.innerHTML = `<p class="text-red-500 text-center">${response.message}</p>`;
+                    }
+                })
+                .withFailureHandler(err => {
+                    loader.classList.add('hidden');
+                    printableArea.innerHTML = `<p class="text-red-500 text-center">Gagal memuat transkrip: ${err.message}</p>`;
+                })
+                .getTranscriptData(ssId, nisn);
+        }
+        
+        function renderTranscript(data) {
+            const { student, school, subjects } = data;
+            const printableArea = document.getElementById('transcript-printable-area');
+            const formatScore = (score) => { if (score === null || score === undefined || isNaN(score)) return '-'; const rounded = Math.round(score); const decimal = score.toFixed(2).replace('.', ','); return `${rounded} (${decimal})`; };
+            const totalNilaiIjazah = subjects.reduce((sum, s) => sum + (s.nilaiIjazah !== null ? Math.round(s.nilaiIjazah) : 0), 0);
+            const mapelCount = subjects.filter(s => s.nilaiIjazah !== null).length;
+            const rataRataIjazah = mapelCount > 0 ? totalNilaiIjazah / mapelCount : 0;
+            const nomorIndukGabungan = (school.nsm || '') + (student.nis || '');
+
+            printableArea.innerHTML = `
+                <div class="font-sans p-2 border rounded-lg">
+                    <div class="text-center border-b-2 border-gray-300 pb-2 mb-4">
+                        <h3 class="text-lg font-bold uppercase">TRANSKRIP NILAI AKHIR</h3>
+                        <h4 class="text-md font-semibold uppercase">${school.namaSekolah || 'NAMA SEKOLAH'}</h4>
+                    </div>
+                    <div class="w-full text-sm mb-4">
+                        <div class="flex"><div class="w-48 font-medium shrink-0">Nama Peserta Didik</div>: ${student.nama.toUpperCase()}</div>
+                        <div class="flex"><div class="w-48 font-medium shrink-0">Tempat, Tanggal Lahir</div>: ${student.tempatLahir ? student.tempatLahir + ', ' : ''}${new Date(student.tanggalLahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                        <div class="flex"><div class="w-48 font-medium shrink-0">Nomor Induk / NISN</div>: ${nomorIndukGabungan || '-'} / ${student.nisn}</div>
+                    </div>
+                    <table class="w-full text-xs sm:text-sm border-collapse border border-gray-400">
+                        <thead class="bg-gray-100 font-bold">
+                            <tr>
+                                <th class="border border-gray-400 p-2" rowspan="2">No</th>
+                                <th class="border border-gray-400 p-2 text-left" rowspan="2">Mata Pelajaran</th>
+                                <th class="border border-gray-400 p-2" colspan="3">Nilai</th>
+                            </tr>
+                            <tr>
+                                <th class="border border-gray-400 p-1 font-semibold">Rata-Rata Rapor</th>
+                                <th class="border border-gray-400 p-1 font-semibold">Ujian Madrasah</th>
+                                <th class="border border-gray-400 p-1 font-semibold">Nilai Ijazah</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${subjects.map((s, index) => `
+                                <tr class="bg-white">
+                                    <td class="border border-gray-400 p-2 text-center">${index + 1}</td>
+                                    <td class="border border-gray-400 p-2">${s.nama}</td>
+                                    <td class="border border-gray-400 p-2 text-center">${formatScore(s.nilaiRapor)}</td>
+                                    <td class="border border-gray-400 p-2 text-center">${formatScore(s.nilaiUjian)}</td>
+                                    <td class="border border-gray-400 p-2 text-center font-bold">${formatScore(s.nilaiIjazah)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                        <tfoot class="font-bold">
+                            <tr>
+                                <td class="border border-gray-400 p-2 text-center" colspan="4">Rata-rata Nilai Akhir Ijazah</td>
+                                <td class="border border-gray-400 p-2 text-center bg-gray-100">${rataRataIjazah.toFixed(2).replace('.', ',')}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>`;
+
+            // [MODIFIKASI] Tambahkan ini di akhir fungsi
+            const downloadBtn = document.getElementById('downloadPdfBtn');
+            downloadBtn.classList.remove('hidden');
+            downloadBtn.onclick = handleDownloadPdf;
+        }
+
+        function handleSiswaLogout() {
+            sessionStorage.removeItem('siswa_nisn');
+            sessionStorage.removeItem('siswa_nama');
+            sessionStorage.removeItem('siswa_ssId');
+            dataContainer.classList.add('hidden');
+            loginContainer.classList.remove('hidden');
+        }
+    });
+
+    /**
+     * [BARU] Menangani klik tombol unduh PDF.
+     */
+    function handleDownloadPdf() {
+        const nisn = sessionStorage.getItem('siswa_nisn');
+        const ssId = sessionStorage.getItem('siswa_ssId');
+
+        const btn = document.getElementById('downloadPdfBtn');
+        const btnText = document.getElementById('pdfBtnText');
+        const spinner = document.getElementById('pdfSpinner');
+
+        // Tampilkan status loading
+        btn.disabled = true;
+        btnText.classList.add('hidden');
+        spinner.classList.remove('hidden');
+
+        google.script.run
+            .withSuccessHandler(response => {
+                if (response.status === 'success') {
+                    // Buat link sementara untuk men-trigger download
+                    const link = document.createElement('a');
+                    link.href = 'data:application/pdf;base64,' + response.pdfData;
+                    link.download = response.fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    alert('Gagal membuat PDF: ' + response.message);
+                }
+                // Kembalikan tombol ke keadaan normal
+                btn.disabled = false;
+                btnText.classList.remove('hidden');
+                spinner.classList.add('hidden');
+            })
+            .withFailureHandler(err => {
+                alert('Error saat mengunduh PDF: ' + err.message);
+                // Kembalikan tombol ke keadaan normal
+                btn.disabled = false;
+                btnText.classList.remove('hidden');
+                spinner.classList.add('hidden');
+            })
+            .generateTranscriptPdfForSiswa(ssId, nisn);
+    }
+
+    /**
+     * [BARU] Memuat data dan merender grafik perkembangan nilai.
+     */
+    function loadGradeProgressChart(ssId, nisn) {
+        google.script.run
+            .withSuccessHandler(response => {
+                if (response.status === 'success') {
+                    const chartContainer = document.getElementById('chart-container');
+                    chartContainer.classList.remove('hidden');
+
+                    const ctx = document.getElementById('gradeProgressChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: response.labels,
+                            datasets: response.datasets
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { position: 'top' },
+                                title: { display: true, text: 'Perkembangan Nilai per Semester' }
+                            },
+                            scales: {
+                                y: { beginAtZero: false, suggestedMax: 100 }
+                            }
+                        }
+                    });
+                } else {
+                    // Jangan tampilkan apa-apa jika tidak ada data atau error
+                    console.log('Info Grafik: ' + response.message);
+                }
+            })
+            .withFailureHandler(err => {
+                console.error('Gagal memuat data grafik: ' + err.message);
+            })
+            .getStudentGradeProgress(ssId, nisn);
+    }
+</script>
+
+</body>
+</html>
