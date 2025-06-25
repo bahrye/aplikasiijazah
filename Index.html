@@ -321,13 +321,21 @@
                             </div>
                         </form>
                         <div id="login-error-message" class="mt-4 text-center text-red-600 text-sm h-4"></div>
-                        <div class="text-center text-sm mt-4">
-                            <a href="#" id="forgot-password-link" class="text-gray-500 hover:text-blue-600">Lupa Password?</a>
+
+                        <div class="mt-4 text-center text-sm"> <div class="mb-4">
+                                <button id="goToSiswaLoginBtn" class="inline-block w-full py-3 px-4 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors shadow-md">
+                                    Login sebagai Siswa
+                                </button>
+                            </div>
+
+                            <div class="flex justify-between items-center text-gray-600">
+                                <a href="#" id="forgot-password-link" class="hover:text-blue-600">Lupa Password?</a>
+                                <span>
+                                    Belum punya akun? 
+                                    <a href="#" id="show-signup" class="font-medium text-blue-600 hover:text-blue-500">Daftar</a>
+                                </span>
+                            </div>
                         </div>
-                        <p class="text-center text-sm text-gray-600 mt-6">
-                            Belum punya akun? 
-                            <a href="#" id="show-signup" class="font-medium text-blue-600 hover:text-blue-500">Daftar sekarang</a>
-                        </p>
                     </div>
                 </div>
 
@@ -463,6 +471,20 @@
                     <a href="#" class="nav-link flex justify-between items-center" data-page="pengajuan"><span class="flex items-center space-x-3 p-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span>Pengajuan</span></span><span id="pengajuan-indicator-container" class="pr-3"></span></a>
                     <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="backup-restore"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 20h5v-5M20 4h-5v5" /></svg><span>Backup & Restore</span></a>
                     <a href="#" id="nav-update" class="nav-link flex justify-between items-center space-x-3 p-2 rounded-md" data-page="update-info"><span class="flex items-center space-x-3"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span>Info & Update</span></span></a>
+                    <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="bantuan">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Bantuan & Panduan</span>
+                    </a>
+                    <a href="#" id="nav-broadcast" class="nav-link flex items-center space-x-3 p-2 rounded-md hidden" data-page="broadcast">
+                        <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.34 15.84c-.688 0-1.25-.562-1.25-1.25s.562-1.25 1.25-1.25c.688 0 1.25.562 1.25 1.25s-.562 1.25-1.25 1.25z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.07 4.93a10 10 0 00-14.14 0" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.24 7.76a6 6 0 00-8.48 0" />
+                        </svg>
+                        <span>Broadcast Pesan</span>
+                    </a>
                     
                     <div class="border-t border-blue-700 my-2"></div>
                     <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="ubah-password">
@@ -509,6 +531,24 @@
                                 <div>
                                     <p class="text-sm text-gray-500">Jumlah Mata Pelajaran</p>
                                     <p id="mapelCount" class="text-3xl font-bold text-gray-800">0</p>
+                                </div>
+                            </div>
+                            <div id="school-code-card" class="bg-white p-6 rounded-2xl shadow-lg flex items-center space-x-4 transition-colors duration-300">
+                                <div class="bg-purple-100 p-4 rounded-full">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h-1m-1 6l-1-1M5 12H4m1 6l-1-1M12 19v-1m0-11V5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                    </svg>
+                                </div>
+                                <div class="flex-grow">
+                                    <p class="text-sm text-gray-500">Kode Login Siswa</p>
+                                    <div class="flex items-center justify-between">
+                                        <p id="schoolCodeDisplay" class="text-3xl font-bold text-gray-800 font-mono tracking-widest">...</p>
+                                        <button id="copySchoolCodeBtn" title="Salin Kode" class="ml-4 p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-blue-600 transition">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                              <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <a id="hubungi-admin-card" href="https://wa.me/qr/FMVS3NLDIRUAA1" target="_blank" rel="noopener noreferrer" class="bg-white p-6 rounded-2xl shadow-lg flex items-center space-x-4 transition-transform transform hover:scale-105 cursor-pointer">
@@ -670,12 +710,39 @@
                     </div>
 
                     <div id="page-manajemen-akun" class="content-page hidden">
-                        <h1 class="text-3xl font-bold text-gray-800">Manajemen Akun Pengguna</h1>
-                        <p class="mt-2 text-gray-600 mb-8">Kelola semua akun yang terdaftar di sistem.</p>
-                        <div class="bg-white p-4 rounded-lg shadow-md mt-8">
-                            <div id="userManagementTableContainer" class="overflow-x-auto">
+                        <div id="user-bulk-action-bar" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-auto bg-gray-800 text-white rounded-full shadow-2xl p-2 z-40 transition-all duration-300 ease-out transform">
+                            <div class="flex items-center justify-between gap-4 px-4">
+                                <span id="selected-user-count" class="font-semibold whitespace-nowrap">0 akun dipilih</span>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" id="bulk-limit-input" placeholder="Set Batas" class="p-2 border border-gray-500 bg-gray-700 text-white rounded-full w-28 text-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <button id="bulk-update-limit-btn" class="bg-blue-600 hover:bg-blue-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Update Limit</button>
+                                    <div class="h-6 border-l border-gray-500"></div>
+                                    <button id="bulk-generate-code-btn" class="hidden bg-purple-600 hover:bg-purple-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Generate Kode</button>
+                                    <div id="bulk-action-separator" class="h-6 border-l border-gray-500 hidden"></div>
+                                    <button id="bulk-activate-btn" class="bg-green-600 hover:bg-green-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Aktifkan</button>
+                                    <button id="bulk-deactivate-btn" class="bg-red-600 hover:bg-red-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Nonaktifkan</button>
                                 </div>
+                            </div>
                         </div>
+
+                        <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
+                            <div>
+                                <h1 class="text-3xl font-bold text-gray-800">Manajemen Akun Pengguna</h1>
+                                <p class="mt-2 text-gray-600">Kelola semua akun yang terdaftar di sistem.</p>
+                            </div>
+                            <div class="text-right">
+                                <button id="refreshUserCacheBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 text-sm transition-colors shadow-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M4 4l7 7m0 0l7 7m-7-7l7-7m-7 7H4m16 0h-5m-4 12v-5h5m-5 0l7-7" />
+                                    </svg>
+                                    <span id="refreshBtnText">Perbarui Data Cache</span>
+                                </button>
+                                <p id="userCacheLastUpdatedText" class="text-xs text-gray-500 mt-1 h-4"></p>
+                            </div>
+                        </div>
+                        
+                        <div id="userManagementTableContainer" class="bg-white p-4 rounded-lg shadow-md mt-8">
+                            </div>
                     </div>
 
                     <div id="page-daftar-pengajuan" class="content-page hidden">
@@ -1253,6 +1320,97 @@
                             </div>
                     </div>
 
+                    <div id="page-bantuan" class="content-page hidden">
+                        <h1 class="text-3xl font-bold text-gray-800">Pusat Bantuan & Panduan Pengguna</h1>
+                        <p class="mt-2 text-gray-600 mb-8">Temukan jawaban atas pertanyaan umum dan pelajari cara menggunakan fitur-fitur aplikasi secara maksimal.</p>
+
+                        <div class="space-y-6">
+                            <div class="bg-white p-6 rounded-lg shadow-md">
+                                <h2 class="text-xl font-bold text-gray-700 mb-3">Langkah-Langkah Penggunaan Dasar</h2>
+                                <p class="text-sm text-gray-600 mb-4">Untuk mendapatkan hasil akhir (Nilai Ijazah), ikuti alur kerja yang direkomendasikan berikut ini:</p>
+                                <ol class="list-decimal list-inside space-y-3">
+                                    <li>
+                                        <strong>Lengkapi Data Sekolah</strong>: Buka menu <code class="bg-gray-200 p-1 rounded">Data Sekolah</code> dan pastikan semua informasi, terutama <code class="bg-gray-200 p-1 rounded">Jenjang Sekolah</code>, sudah terisi dengan benar.
+                                    </li>
+                                    <li>
+                                        <strong>Atur Mata Pelajaran</strong>: Pindah ke menu <code class="bg-gray-200 p-1 rounded">Mapel & Bobot</code>.
+                                        <ul class="list-disc list-inside ml-5 mt-2 space-y-1">
+                                            <li>Gunakan tombol "Import Mapel by System" untuk memuat daftar mata pelajaran standar sesuai jenjang.</li>
+                                            <li>Atur persentase "Bobot Nilai Ujian" dan "Bobot Nilai Rapor". Pastikan totalnya 100%.</li>
+                                        </ul>
+                                    </li>
+                                    <li>
+                                        <strong>Input Data Siswa</strong>: Buka menu <code class="bg-gray-200 p-1 rounded">Data Siswa</code>. Anda bisa menambahkan siswa satu per satu atau mengunggah data massal menggunakan template Excel yang disediakan.
+                                    </li>
+                                    <li>
+                                        <strong>Isi Semua Nilai</strong>: Lanjutkan ke menu <code class="bg-gray-200 p-1 rounded">Input Nilai Ujian</code> dan <code class="bg-gray-200 p-1 rounded">Input Nilai Rapor</code> untuk semua semester. Anda juga bisa menggunakan fitur <code class="bg-gray-200 p-1 rounded">Upload Nilai</code> untuk impor massal.
+                                    </li>
+                                    <li>
+                                        <strong>Validasi & Rekapitulasi</strong>:
+                                        <ul class="list-disc list-inside ml-5 mt-2 space-y-1">
+                                            <li>Gunakan menu <code class="bg-gray-200 p-1 rounded">Validasi Nilai</code> untuk memastikan tidak ada nilai yang terlewat.</li>
+                                            <li>Terakhir, buka menu <code class="bg-gray-200 p-1 rounded">Rekapitulasi</code> dan klik tombol "Perbarui & Muat Ulang Data" untuk melihat hasil akhir.</li>
+                                        </ul>
+                                    </li>
+                                </ol>
+                            </div>
+
+                            <div class="bg-white p-6 rounded-lg shadow-md">
+                                <h2 class="text-xl font-bold text-gray-700 mb-4">Pertanyaan yang Sering Diajukan (FAQ)</h2>
+                                <div class="space-y-4">
+                                    <div>
+                                        <h3 class="font-semibold text-gray-800">T: Mengapa pada tabel rekapitulasi, nilai siswa saya kosong?</h3>
+                                        <p class="text-gray-600 mt-1"><strong>J:</strong> Pastikan Anda telah menekan tombol <code class="bg-green-100 text-green-800 p-1 rounded">Perbarui & Muat Ulang Data</code> di halaman Rekapitulasi. Tombol ini akan memproses semua nilai yang telah Anda input dan menampilkannya di tabel.</p>
+                                    </div>
+                                    <div class="border-t pt-4">
+                                        <h3 class="font-semibold text-gray-800">T: Saya sudah menginput nilai, mengapa indikator "rekap perlu update" masih muncul?</h3>
+                                        <p class="text-gray-600 mt-1"><strong>J:</strong> Indikator tersebut akan selalu muncul setiap kali ada perubahan pada data nilai (siswa, mapel, atau skor). Ini adalah pengingat bahwa data di halaman Rekapitulasi mungkin belum yang paling baru. Indikator akan hilang setelah Anda menekan tombol "Perbarui & Muat Ulang Data".</p>
+                                    </div>
+                                    <div class="border-t pt-4">
+                                        <h3 class="font-semibold text-gray-800">T: Bagaimana cara memperbaiki data siswa atau mapel yang salah input?</h3>
+                                        <p class="text-gray-600 mt-1"><strong>J:</strong> Buka menu <code class="bg-gray-200 p-1 rounded">Data Siswa</code> atau <code class="bg-gray-200 p-1 rounded">Mapel & Bobot</code>, cari data yang ingin diperbaiki, lalu klik tombol "Edit" di ujung kanan baris tersebut.</p>
+                                    </div>
+                                    <div class="border-t pt-4">
+                                        <h3 class="font-semibold text-gray-800">T: Apakah data saya aman?</h3>
+                                        <p class="text-gray-600 mt-1"><strong>J:</strong> Ya, setiap sekolah mendapatkan file spreadsheet-nya sendiri yang terpisah dan tidak dapat diakses oleh sekolah lain. Untuk keamanan tambahan, gunakan fitur <code class="bg-gray-200 p-1 rounded">Backup & Restore</code> secara berkala untuk membuat salinan data Anda.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="page-broadcast" class="content-page hidden">
+                        <h1 class="text-3xl font-bold text-gray-800">Broadcast Pesan Pengumuman</h1>
+                        <p class="mt-2 text-gray-600 mb-8">Kirim pesan atau pengumuman ke semua pengguna (non-admin). Pesan akan muncul sebagai pop-up saat mereka login.</p>
+                        <div class="bg-white p-8 rounded-lg shadow-md max-w-2xl">
+                            <form id="broadcastForm">
+                                <div class="space-y-6">
+                                    <div>
+                                        <label for="broadcast-title" class="block text-sm font-medium text-gray-700">Judul Pesan</label>
+                                        <input type="text" id="broadcast-title" class="mt-1 w-full p-2 border border-gray-300 rounded-md" required>
+                                    </div>
+                                    <div>
+                                        <label for="broadcast-message" class="block text-sm font-medium text-gray-700">Isi Pesan (mendukung baris baru)</label>
+                                        <textarea id="broadcast-message" rows="8" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Tuliskan pengumuman Anda di sini..." required></textarea>
+                                    </div>
+                                </div>
+                                <div class="mt-8 pt-5 border-t">
+                                    <button type="submit" id="sendBroadcastBtn" class="w-full md:w-auto flex justify-center py-2 px-8 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400">
+                                        <span id="broadcastBtnText">Kirim Pesan</span>
+                                        <span id="broadcastSpinner" class="hidden loading-animation">Mengirim</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="mt-12 pt-8 border-t">
+                            <h2 class="text-2xl font-bold text-gray-800">Riwayat Pengumuman</h2>
+                            <div id="broadcastHistoryContainer" class="mt-4 bg-white p-4 rounded-lg shadow-md overflow-x-auto">
+                                <p class="text-center text-gray-500 py-4">Memuat riwayat...</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="version-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
                         <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-2xl transform scale-95 flex flex-col max-h-[90vh]">
                             <div class="flex-shrink-0 flex justify-between items-center border-b p-6">
@@ -1316,12 +1474,12 @@
                     <div class="space-y-4">
                         <div>
                             <label for="nama" class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
-                            <input type="text" id="nama" name="nama" class="mt-1 w-full p-2 border rounded-md" required>
+                            <input type="text" id="nama" name="nama" class="mt-1 w-full p-2 border rounded-md" required oninvalid="this.setCustomValidity('Mohon lengkapi data ini.')" oninput="this.setCustomValidity('')">
                         </div>
 
                         <div>
                             <label for="nisn" class="block text-sm font-medium text-gray-700">NISN</label>
-                            <input type="text" id="nisn" name="nisn" class="mt-1 w-full p-2 border rounded-md" required>
+                            <input type="text" id="nisn" name="nisn" class="mt-1 w-full p-2 border rounded-md" required oninvalid="this.setCustomValidity('Mohon lengkapi data ini.')" oninput="this.setCustomValidity('')">
                             <div id="nisn-error-msg" class="text-red-600 text-sm mt-1 h-4"></div>
                         </div>
                         
@@ -1350,7 +1508,7 @@
                         
                         <div>
                             <label for="tanggalLahir" class="block text-sm font-medium text-gray-700">Tanggal Lahir</label>
-                            <input type="date" id="tanggalLahir" name="tanggalLahir" class="mt-1 w-full p-2 border rounded-md">
+                            <input type="date" id="tanggalLahir" name="tanggalLahir" class="mt-1 w-full p-2 border rounded-md" required oninvalid="this.setCustomValidity('Mohon lengkapi data ini.')" oninput="this.setCustomValidity('')">
                         </div>
                         
                         <div>
@@ -1963,8 +2121,10 @@
                         <p class="text-sm font-medium">
                             <strong class="font-bold">PENTING:</strong> Wajib mengisi 
                             <span class="bg-red-100 text-red-800 font-bold border border-red-300 rounded px-2 py-0.5">NISN</span> 
+                            , 
+                            <span class="bg-red-100 text-red-800 font-bold border border-red-300 rounded px-2 py-0.5">NAMA LENGKAP</span>
                             dan 
-                            <span class="bg-red-100 text-red-800 font-bold border border-red-300 rounded px-2 py-0.5">NAMA LENGKAP</span> 
+                            <span class="bg-red-100 text-red-800 font-bold border border-red-300 rounded px-2 py-0.5">TANGGAL LAHIR</span>  
                             pada template. Kolom lain boleh dikosongkan.
                         </p>
                     </div>
@@ -1979,6 +2139,59 @@
             <div class="flex-shrink-0 mt-auto p-4 border-t flex justify-end">
                 <button id="closeSiswaUploadModalBtn2" type="button" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">Tutup</button>
             </div>
+        </div>
+    </div>
+
+    <div id="broadcast-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-[75]">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-lg transform scale-95">
+            <div class="p-6">
+                <div class="flex items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                      <svg class="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                        <h3 class="text-xl leading-6 font-bold text-gray-900" id="broadcast-modal-title">Pemberitahuan dari Admin</h3>
+                        <div class="mt-2">
+                            <p class="text-sm text-gray-600 whitespace-pre-wrap" id="broadcast-modal-body">
+                                Isi pesan akan muncul di sini.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse rounded-b-lg">
+                <button type="button" id="broadcast-modal-close-btn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                    OK, Saya Mengerti
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-broadcast-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-2xl transform scale-95 flex flex-col max-h-[90vh]">
+            <div class="flex-shrink-0 flex justify-between items-center border-b p-6">
+                <h2 class="text-2xl font-bold text-gray-800">Edit Pengumuman</h2>
+                <button id="closeEditBroadcastModalBtn" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <form id="editBroadcastForm" class="flex flex-col flex-grow min-h-0">
+                <input type="hidden" id="edit-broadcast-id">
+                <div class="flex-grow overflow-y-auto p-6 space-y-4">
+                    <div>
+                        <label for="edit-broadcast-title" class="block text-sm font-medium text-gray-700">Judul Pesan</label>
+                        <input type="text" id="edit-broadcast-title" class="mt-1 w-full p-2 border rounded-md" required>
+                    </div>
+                    <div>
+                        <label for="edit-broadcast-message" class="block text-sm font-medium text-gray-700">Isi Pesan</label>
+                        <textarea id="edit-broadcast-message" rows="8" class="mt-1 w-full p-2 border rounded-md" required></textarea>
+                    </div>
+                </div>
+                <div class="flex-shrink-0 mt-auto p-6 border-t flex justify-end">
+                    <button type="button" id="cancelEditBroadcastBtn" class="bg-gray-300 text-gray-700 py-2 px-4 rounded-md mr-3">Batal</button>
+                    <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md">Simpan Perubahan</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -1999,9 +2212,11 @@
     <script src="https://cdn.jsdelivr.net/npm/shepherd.js@10.0.1/dist/js/shepherd.min.js"></script>
 
     <script>
+        const WEB_APP_URL = "<?= webAppUrl ?>";
         let isChangelogLoaded = false; 
         // Global variable to hold the user's spreadsheet ID and chart instance
         let userSpreadsheetId = null;
+        let allUsersCache = []; // <-- TAMBAHKAN BARIS INI
         let allStudentsData = [];
         let inactivityTimer;
         let mapelChartInstance = null; // Untuk menyimpan instance grafik
@@ -2027,6 +2242,7 @@
         const selectedCells = new Set();
         let activeTableKey = null; 
         let selectedStudentRows = new Set();
+        let selectedUserRows = new Set();
 
         // [TAMBAHKAN] Inisialisasi Dropzone.js (letakan di scope global)
         let nilaiDropzone;
@@ -2084,91 +2300,32 @@
                 setTimeout(() => modal.classList.add('hidden'), 300);
             });
 
-            /*
-            document.getElementById('printTranscriptBtn').addEventListener('click', () => {
-                const printableArea = document.getElementById('transcript-printable-area');
-                if (!printableArea) {
-                    alert('Area untuk dicetak tidak ditemukan!');
-                    return;
-                }
-                const contentToPrint = printableArea.innerHTML;
-                const deployUrl = sessionStorage.getItem('webAppUrl') || '';
-                const appTitle = "Aplikasi Pengolahan Nilai Ijazah by Syamsul Bahri";
+            // GANTI BLOK JAVASCRIPT UNTUK TOMBOL SISWA DENGAN KODE FINAL INI
 
-                const printWindow = window.open('', '', 'height=800,width=800');
-                printWindow.document.write(`<html><head><title>${appTitle}</title>`);
-                
-                Array.from(document.styleSheets).forEach(styleSheet => {
-                    try {
-                        const cssRules = Array.from(styleSheet.cssRules).map(rule => rule.cssText).join('');
-                        printWindow.document.write(`<style>${cssRules}</style>`);
-                    } catch (e) {
-                        if (styleSheet.href) {
-                            printWindow.document.write(`<link rel="stylesheet" href="${styleSheet.href}">`);
-                        }
+            // ===== AWAL KODE BARU UNTUK NAVIGASI SISWA VIA JAVASCRIPT (VERSI FINAL 2.0) =====
+            const goToSiswaBtn = document.getElementById('goToSiswaLoginBtn');
+            if (goToSiswaBtn) {
+                goToSiswaBtn.addEventListener('click', function() {
+                    // Beri feedback visual ke pengguna
+                    this.textContent = 'Mengarahkan...';
+                    this.disabled = true;
+
+                    // PERBAIKAN UTAMA: Gunakan konstanta global WEB_APP_URL yang diinjeksi dari server
+                    if (typeof WEB_APP_URL !== 'undefined' && WEB_APP_URL) {
+                        // Buat URL lengkap untuk halaman siswa
+                        const siswaUrl = WEB_APP_URL + '?page=siswa';
+                        
+                        // Arahkan ke URL baru yang benar
+                        window.top.location.href = siswaUrl;
+                    } else {
+                        // Fallback jika karena suatu alasan URL tidak terdefinisi
+                        alert("Gagal mengarahkan. Konfigurasi URL aplikasi tidak ditemukan.");
+                        this.textContent = 'Login sebagai Siswa';
+                        this.disabled = false;
                     }
                 });
-
-                printWindow.document.write(`
-                    <style>
-                        @page { size: A4; margin: 15mm; }
-                        body { margin: 0; font-family: 'Inter', sans-serif; font-size: 13px; padding-bottom: 25px; }
-                        .print-footer { position: fixed; width: 95%; left: 2.5%; bottom: 5mm; display: flex; align-items: center; font-size: 9px; color: #888; }
-                        .qr-code-img { width: 70px; height: 70px; margin-right: 10px; }
-                        .p-2 { padding: 0.25rem 0.5rem !important; }
-                        .mb-4 { margin-bottom: 0.75rem !important; }
-                        .mt-8 { margin-top: 1.25rem !important; }
-                        .h-20 { height: 3.5rem !important; }
-                    </style>
-                `);
-                
-                printWindow.document.write('</head><body style="position: relative;">');
-                printWindow.document.write(contentToPrint);
-                
-                if (deployUrl) {
-                    const encodedUrl = encodeURIComponent(deployUrl);
-                    const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=70x70&data=${encodedUrl}`;
-                    // Beri ID pada gambar QR Code agar bisa kita pantau
-                    printWindow.document.write(`
-                        <div class="print-footer">
-                            <img id="print-qr-code" src="${qrCodeApiUrl}" alt="QR Code Link Aplikasi" class="qr-code-img" />
-                            <span>Scan untuk validasi online</span>
-                        </div>
-                    `);
-                }
-                
-                printWindow.document.write('</body></html>');
-                printWindow.document.close();
-
-                // --- [PERUBAHAN UTAMA] Logika baru untuk menunggu gambar selesai dimuat ---
-                const qrImage = printWindow.document.getElementById('print-qr-code');
-
-                if (qrImage) {
-                    // Jika gambar ada, tunggu sampai 'onload' terpanggil
-                    qrImage.onload = function() {
-                        printWindow.focus();
-                        printWindow.print();
-                        printWindow.close();
-                    };
-                    // Fallback jika gambar gagal dimuat, tetap cetak setelah 2 detik
-                    setTimeout(function() {
-                        printWindow.focus();
-                        printWindow.print();
-                        printWindow.close();
-                    }, 2000);
-                } else {
-                    // Jika tidak ada QR code, langsung cetak setelah jeda singkat
-                    setTimeout(function() {
-                        printWindow.focus();
-                        printWindow.print();
-                        printWindow.close();
-                    }, 500);
-                }
-            });
-            */
-            // ==========================================================
-            // ===== AKHIR DARI BLOK TAMBAHAN =====
-            // ==========================================================
+            }
+            // ===== AKHIR KODE BARU =====
 
             // --- Event listener untuk Login, Signup, Logout ---
             if (loginForm) loginForm.addEventListener('submit', handleLogin);
@@ -2662,39 +2819,33 @@
                     loginSpinner.classList.add('hidden');
 
                     if (response && response.status === 'success') {
-                        // Simpan data sesi dasar
                         sessionStorage.setItem('userEmail', response.email);
                         sessionStorage.setItem('userRole', response.role);
-
                         sessionStorage.setItem('webAppUrl', response.webAppUrl);
 
                         document.getElementById('auth-wrapper').classList.add('hidden');
                         document.getElementById('app-container').classList.remove('hidden');
 
-                        // === LOGIKA PEMILIHAN TAMPILAN ===
                         if (response.role === 'Superadmin') {
-                            // Jika Superadmin, panggil fungsi inisialisasi khusus superadmin
                             initializeSuperadminApp();
                         } else {
-                            // Jika pengguna biasa, simpan spreadsheetId dan panggil inisialisasi normal
                             userSpreadsheetId = response.spreadsheetId;
                             sessionStorage.setItem('userSpreadsheetId', userSpreadsheetId);
                             initializeApp('dashboard');
                         }
-
-                        // ===========================================
-                        // ===== TAMBAHKAN BLOK IF DI BAWAH INI =====
-                        // ===========================================
-                        // Cek apakah server mengirimkan data changelog baru
-                        if (response.newChangelog) {
-                            // Tunda sedikit agar transisi halaman selesai, lalu tampilkan pop-up
-                            setTimeout(() => {
+                        
+                        // Jeda sedikit agar transisi halaman selesai
+                        setTimeout(() => {
+                            // Cek changelog baru
+                            if (response.newChangelog) {
                                 showNewChangelogPopup(response.newChangelog);
-                            }, 500); // jeda 0.5 detik
-                        }
-                        // =======================================
-                        // ===== AKHIR DARI BLOK TAMBAHAN =====
-                        // =======================================
+                            }
+                            // ===== TAMBAHAN BARU: Cek broadcast baru =====
+                            if (response.newBroadcast) {
+                                showBroadcastModal(response.newBroadcast);
+                            }
+                            // ==========================================
+                        }, 500);
 
                     } else {
                         errorMessageDiv.textContent = response ? response.message : 'Login gagal.';
@@ -2935,6 +3086,26 @@
                         // --- Kode untuk kartu statistik (tidak berubah) ---
                         document.getElementById('studentCount').textContent = response.studentCount || 0;
                         document.getElementById('mapelCount').textContent = response.mapelCount || 0;
+
+                        // --- AWAL LOGIKA BARU UNTUK KARTU KODE SEKOLAH ---
+                        const schoolCodeCard = document.getElementById('school-code-card');
+                        const codeDisplay = document.getElementById('schoolCodeDisplay');
+                        const copyBtn = document.getElementById('copySchoolCodeBtn');
+                        
+                        if (response.schoolCode && response.schoolCode !== 'TIDAK ADA') {
+                            // JIKA SUDAH PUNYA KODE: Tampilkan kode dan buat kartu tidak bisa diklik
+                            codeDisplay.textContent = response.schoolCode;
+                            copyBtn.style.display = 'flex'; // Tampilkan tombol salin
+                            schoolCodeCard.classList.remove('cursor-pointer', 'hover:bg-blue-50');
+                            schoolCodeCard.onclick = null; // Hapus event klik untuk generate
+                        } else {
+                            // JIKA BELUM PUNYA KODE: Tampilkan ajakan dan buat kartu bisa diklik
+                            codeDisplay.innerHTML = `<span class="text-sm font-medium text-blue-600">Klik untuk generate kode</span>`;
+                            copyBtn.style.display = 'none'; // Sembunyikan tombol salin
+                            schoolCodeCard.classList.add('cursor-pointer', 'hover:bg-blue-50');
+                            schoolCodeCard.onclick = handleGenerateSchoolCode; // Pasang event klik
+                        }
+                        // --- AKHIR LOGIKA BARU ---
 
                         // --- Kode untuk grafik distribusi jenis ujian (tidak berubah) ---
                         let madrasahCount = 0, praktekCount = 0, keduanyaCount = 0;
@@ -3182,7 +3353,7 @@
             const allowedUserPages = [
                 'dashboard', 'data-sekolah', 'data-siswa', 'mapel',
                 'input-ujian', 'input-rapor', 'upload-nilai', 'rekapitulasi', 'pengajuan',
-                'ubah-password', 'backup-restore', 'update-info', 'validasi-nilai', 'pengaturan'
+                'ubah-password', 'backup-restore', 'update-info', 'validasi-nilai', 'pengaturan', 'bantuan'
             ];
 
             document.querySelectorAll('.nav-link').forEach(link => {
@@ -3236,6 +3407,10 @@
                 if (targetPageId === 'update-info') loadFullChangelog();
                 if (targetPageId === 'pengajuan') loadPengajuanPage();
                 if (targetPageId === 'upload-nilai') initUploadNilaiPage(); 
+                if (targetPageId === 'bantuan') {
+                    // Tidak perlu memanggil fungsi khusus karena halaman ini statis
+                    console.log("Halaman Bantuan dimuat.");
+                }
             });
             // --- AKHIR PERUBAHAN UTAMA ---
 
@@ -3617,11 +3792,15 @@
                 setupConflictDetailListeners();
             }
 
-
-            // Ganti seluruh event listener 'siswaForm' Anda dengan ini:
+            // GANTI SELURUH BLOK EVENT LISTENER INI DENGAN VERSI BARU YANG LEBIH RINGKAS
             if (siswaForm) {
                 siswaForm.addEventListener('submit', e => {
                     e.preventDefault();
+
+                    // Blok validasi JavaScript untuk kolom kosong TELAH DIHAPUS,
+                    // karena sekarang ditangani oleh atribut 'required' di HTML.
+
+                    // Kita tetap mempertahankan validasi untuk duplikasi NISN
                     if (document.getElementById('nisn-error-msg').textContent) {
                         showGlobalStatus('Form belum valid. Periksa kembali pesan error yang ada.', false);
                         return;
@@ -3630,7 +3809,6 @@
                     const studentData = Object.fromEntries(new FormData(e.target).entries());
                     const isEditing = !!studentData.studentRow;
                     
-                    // Atur pesan dinamis untuk overlay
                     const overlay = document.getElementById('loading-overlay');
                     const overlayTitle = document.getElementById('overlay-title');
                     const overlaySubtitle = document.getElementById('overlay-subtitle');
@@ -3645,11 +3823,11 @@
                     
                     google.script.run
                         .withSuccessHandler(response => {
-                            overlay.classList.add('hidden'); // Sembunyikan overlay
+                            overlay.classList.add('hidden');
                             showGlobalStatus(response.message, response.status !== 'error');
 
                             if (response.status === 'success' && response.updatedStudentList) {
-                                sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
+                                sessionStorage.setItem('rekapNeedsUpdate', 'true');
                                 checkAndApplyRekapIndicator();   
                                 closeSiswaModal();
                                 allStudentsData = response.updatedStudentList;
@@ -4944,6 +5122,27 @@
                     enableScoreEditing(activeTableKey);
                 }
             });
+
+            // ===== AWAL KODE TAMBAHAN UNTUK TOMBOL SALIN =====
+            const copyCodeBtn = document.getElementById('copySchoolCodeBtn');
+            if (copyCodeBtn) {
+                copyCodeBtn.addEventListener('click', () => {
+                    const codeDisplay = document.getElementById('schoolCodeDisplay');
+                    const codeToCopy = codeDisplay.textContent.trim();
+                    
+                    if (codeToCopy && codeToCopy !== '...' && codeToCopy !== 'TIDAK ADA') {
+                        navigator.clipboard.writeText(codeToCopy).then(() => {
+                            showGlobalStatus('Kode berhasil disalin!', true); // Menggunakan notifikasi global yang sudah ada
+                        }).catch(err => {
+                            showGlobalStatus('Gagal menyalin kode.', false);
+                            console.error('Error menyalin kode: ', err);
+                        });
+                    } else {
+                        showGlobalStatus('Kode sekolah belum tersedia.', false);
+                    }
+                });
+            }
+            // ===== AKHIR KODE TAMBAHAN UNTUK TOMBOL SALIN =====
         }
 
         /**
@@ -5962,22 +6161,72 @@
         // Letakkan ini di dalam event listener DOMContentLoaded atau di area fungsi-fungsi utama
         // --- SUPERADMIN FUNCTIONS ---
 
-        // Panggil fungsi ini saat menu 'Manajemen Akun' diklik
-        // GANTI FUNGSI INI
+        // GANTI FUNGSI loadUserManagementPage() LAMA DENGAN VERSI BARU INI
         function loadUserManagementPage() {
             const container = document.getElementById('userManagementTableContainer');
-            container.innerHTML = `<p class="text-center p-8 loading-animation">Memuat data pengguna</p>`;
-            
+            const lastUpdatedText = document.getElementById('userCacheLastUpdatedText');
+            container.innerHTML = `<p class="text-center p-8 loading-animation">Memuat data pengguna dari cache</p>`;
+            lastUpdatedText.innerHTML = `<span class="loading-animation"></span>`;
+
             const adminEmail = sessionStorage.getItem('userEmail');
             if (!adminEmail) {
                 container.innerHTML = `<p class="text-center text-red-500 p-4">Error: Sesi admin tidak valid.</p>`;
                 return;
             }
-            
-            google.script.run
-                .withSuccessHandler(users => { renderUserManagementTable(users); })
-                .withFailureHandler(err => { container.innerHTML = `<p class="text-center text-red-500 p-4">Gagal memuat pengguna: ${err.message}</p>`; })
-                .getAllUsers_Superadmin(adminEmail);
+
+            const refreshBtn = document.getElementById('refreshUserCacheBtn');
+            const refreshBtnText = document.getElementById('refreshBtnText');
+
+            refreshBtn.onclick = () => {
+                refreshBtn.disabled = true;
+                refreshBtnText.textContent = 'Memperbarui...';
+                showGlobalStatus("Memulai pembaruan cache, ini mungkin memakan waktu...", 'info');
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        showGlobalStatus(response.message, response.status === 'success');
+                        refreshBtn.disabled = false;
+                        refreshBtnText.textContent = 'Perbarui Data Cache';
+                        // Muat ulang seluruh data halaman setelah cache diperbarui
+                        loadUserManagementPage(); 
+                    })
+                    .withFailureHandler(err => {
+                        showGlobalStatus(`Gagal: ${err.message}`, false);
+                        refreshBtn.disabled = false;
+                        refreshBtnText.textContent = 'Perbarui Data Cache';
+                    })
+                    .updateUserCache_Superadmin(adminEmail);
+            };
+
+            // Panggil data utama dan data timestamp secara bersamaan
+            Promise.all([
+                new Promise((resolve, reject) => google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).getAllUsers_Superadmin(adminEmail)),
+                new Promise((resolve, reject) => google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).getUserCacheLastUpdated_Superadmin())
+            ]).then(([users, timeResponse]) => {
+                allUsersCache = users || [];
+
+                // Render tabel
+                if (!allUsersCache || allUsersCache.length === 0) {
+                    container.innerHTML = `<div class="text-center p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p class="font-semibold text-yellow-800">Cache data pengguna masih kosong.</p>
+                        <p class="text-yellow-700 mt-1">Silakan klik tombol "Perbarui Data Cache" di atas untuk memuat data pertama kali.</p>
+                    </div>`;
+                } else {
+                    renderUserManagementTable(allUsersCache);
+                    attachUserTableCheckboxListeners();
+                }
+
+                // Tampilkan timestamp
+                if (timeResponse.status === 'success' && timeResponse.lastUpdated) {
+                    lastUpdatedText.textContent = 'Diperbarui: ' + new Date(timeResponse.lastUpdated).toLocaleString('id-ID');
+                } else {
+                    lastUpdatedText.textContent = 'Cache belum pernah dibuat.';
+                }
+
+            }).catch(err => {
+                container.innerHTML = `<p class="text-center text-red-500 p-4">Gagal memuat pengguna: ${err.message}</p>`;
+                lastUpdatedText.textContent = 'Gagal memuat status.';
+            });
         }
 
         // TAMBAHKAN FUNGSI BARU INI
@@ -5997,7 +6246,11 @@
                 .getChangeRequests_Superadmin(adminEmail);
         }
 
-        // Render tabel semua pengguna
+        /**
+         * [REVISI] Merender tabel manajemen pengguna.
+         * Menampilkan tombol "Generate" jika kode sekolah belum ada.
+         * @param {Array<object>} users - Array berisi data pengguna dari cache.
+         */
         function renderUserManagementTable(users) {
             const container = document.getElementById('userManagementTableContainer');
             if (!users || users.length === 0) {
@@ -6008,9 +6261,11 @@
             let tableHtml = `<table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Sekolah</th>
-                        <!-- KOLOM BARU -->
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            <input type="checkbox" id="select-all-users-checkbox" class="h-4 w-4 rounded border-gray-300">
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sekolah & Email</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kode Sekolah (u/ Siswa)</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Siswa (Saat Ini / Batas)</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aksi</th>
@@ -6024,13 +6279,32 @@
                 const statusBtnText = user.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan';
                 const statusBtnClass = user.status === 'Aktif' ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900';
                 
-                // --- PERUBAHAN DI SINI: Menambahkan tombol "Masuk sebagai" ---
+                // ===== AWAL LOGIKA BARU UNTUK KODE SEKOLAH (VERSI FINAL) =====
+                let schoolCodeCellHtml = '';
+                // Cek jika user adalah Superadmin
+                if (user.role === 'Superadmin') {
+                    schoolCodeCellHtml = '<span class="text-gray-400">—</span>'; // Tampilkan tanda strip untuk Superadmin
+                } 
+                // Jika bukan Superadmin, cek apakah sudah punya kode
+                else if (user.schoolCode && user.schoolCode.trim() !== '') {
+                    schoolCodeCellHtml = `<div class="font-mono font-bold text-blue-700">${user.schoolCode}</div>`;
+                } 
+                // Jika bukan Superadmin dan belum punya kode, tampilkan tombol Generate
+                else {
+                    schoolCodeCellHtml = `<button class="text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded-md" onclick="handleGenerateSingleCode(${user.row}, this)">Generate</button>`;
+                }
+                // ===== AKHIR LOGIKA BARU KODE SEKOLAH (VERSI FINAL) =====
+
                 tableHtml += `<tr>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        ${user.email} ${user.role === 'Superadmin' ? '<span class="text-xs font-bold text-blue-600">(Superadmin)</span>' : ''}
+                    <td class="px-4 py-4 whitespace-nowrap">
+                        ${!isSelf ? `<input type="checkbox" class="user-checkbox h-4 w-4 rounded border-gray-300" data-row="${user.row}">` : ''}
                     </td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ${user.namaSekolah}
+                    <td class="px-4 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${user.namaSekolah}</div>
+                        <div class="text-sm text-gray-500">${user.email}</div>
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-center">
+                        ${schoolCodeCellHtml}
                     </td>
                     <td class="px-4 py-4 whitespace-nowrap text-sm text-center font-mono">
                         ${user.currentStudentCount} / ${user.studentLimit}
@@ -6110,25 +6384,21 @@
             const newNav = oldNav.cloneNode(true);
             oldNav.parentNode.replaceChild(newNav, oldNav);
 
-            // TAMBAHKAN BLOK KODE DI BAWAH INI
-            // Menyembunyikan semua garis pemisah untuk tampilan Superadmin yang lebih bersih
             document.querySelectorAll('#main-nav > .border-t').forEach(separator => {
                 separator.classList.add('hidden');
             });
-            // AKHIR DARI BLOK TAMBAHAN
-
+            
             checkForImpersonation();
 
             const allowedAdminPages = [
                 'superadmin-dashboard', 'manajemen-akun', 'daftar-pengajuan', 
-                'admin-tools', 'kelola-update', 'ubah-password'
+                'admin-tools', 'kelola-update', 'ubah-password', 'broadcast' // <-- Tambahkan 'broadcast'
             ];
 
             const pageToLinkMap = { 'dashboard': 'superadmin-dashboard' };
 
             document.querySelectorAll('.nav-link').forEach(link => {
                 const page = link.dataset.page;
-                // PERBAIKAN: Cek apakah 'page' ada di dalam 'pageToLinkMap'
                 if (page && (allowedAdminPages.includes(page) || (page in pageToLinkMap))) {
                     link.classList.remove('hidden');
                 } else {
@@ -6141,7 +6411,6 @@
             const navContainer = document.getElementById('main-nav');
             const contentPages = document.querySelectorAll('.content-page');
 
-            // --- AWAL PERUBAHAN UTAMA (EVENT DELEGATION) ---
             navContainer.addEventListener('click', (e) => {
                 const navLink = e.target.closest('.nav-link');
                 if (!navLink) return;
@@ -6164,10 +6433,9 @@
                 if (targetPageId === 'manajemen-akun') loadUserManagementPage();
                 if (targetPageId === 'daftar-pengajuan') loadPengajuanListPage_Superadmin();
                 if (targetPageId === 'kelola-update') loadVersionManagementPage();
+                if (targetPageId === 'broadcast') loadBroadcastPage(); // <-- Tambahkan pemicu fungsi
             });
-            // --- AKHIR PERUBAHAN UTAMA ---
 
-            // Inisiasi event listener untuk elemen lain di halaman superadmin
             const totalAkunCard = document.getElementById('sa-card-total-akun');
             if (totalAkunCard) {
                 totalAkunCard.addEventListener('click', () => {
@@ -9577,6 +9845,446 @@
                 })
                 .generateNilaiTemplate(userSpreadsheetId, templateName);
         });
+
+        // ===== AWAL KODE TAMBAHAN (JavaScript untuk Broadcast) =====
+
+        /**
+         * Memuat halaman broadcast untuk Superadmin dan memasang event listener.
+         */
+        function loadBroadcastPage() {
+            const form = document.getElementById('broadcastForm');
+            const btn = document.getElementById('sendBroadcastBtn');
+            const btnText = document.getElementById('broadcastBtnText');
+            const spinner = document.getElementById('broadcastSpinner');
+            const titleInput = document.getElementById('broadcast-title');
+            const messageInput = document.getElementById('broadcast-message');
+
+            form.onsubmit = function(event) {
+                event.preventDefault();
+                const adminEmail = sessionStorage.getItem('userEmail');
+                const title = document.getElementById('broadcast-title').value.trim();
+                const message = document.getElementById('broadcast-message').value.trim();
+
+                if (!title || !message) {
+                    showGlobalStatus("Judul dan Isi Pesan tidak boleh kosong.", false);
+                    return;
+                }
+
+                const btn = document.getElementById('sendBroadcastBtn');
+                const btnText = document.getElementById('broadcastBtnText');
+                const spinner = document.getElementById('broadcastSpinner');
+                btn.disabled = true;
+                btnText.classList.add('hidden');
+                spinner.classList.remove('hidden');
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+                        showGlobalStatus(response.message, response.status === 'success');
+                        if (response.status === 'success') {
+                            form.reset();
+                            loadBroadcastHistory(); // <-- TAMBAHAN: Muat ulang riwayat setelah berhasil mengirim
+                        }
+                    })
+                    .withFailureHandler(error => {
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+                        showGlobalStatus('Gagal: ' + error.message, false);
+                    })
+                    .sendBroadcast_Superadmin(adminEmail, title, message);
+            };
+
+            // Panggil fungsi untuk memuat tabel riwayat saat halaman dibuka
+            loadBroadcastHistory();
+        }
+
+        /**
+         * Menampilkan modal broadcast kepada pengguna.
+         * @param {object} broadcastData - Objek berisi data pesan ({id, title, message}).
+         */
+        function showBroadcastModal(broadcastData) {
+            const modal = document.getElementById('broadcast-modal');
+            if (!modal) return;
+
+            document.getElementById('broadcast-modal-title').textContent = broadcastData.title;
+            document.getElementById('broadcast-modal-body').textContent = broadcastData.message;
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.querySelector('.modal-content').style.transform = 'scale(1)';
+            }, 10);
+
+            const closeBtn = document.getElementById('broadcast-modal-close-btn');
+            closeBtn.onclick = () => {
+                modal.querySelector('.modal-content').style.transform = 'scale(0.95)';
+                setTimeout(() => modal.classList.add('hidden'), 300);
+
+                // Tandai pesan sudah dibaca di backend
+                const userEmail = sessionStorage.getItem('userEmail');
+                google.script.run
+                    .withSuccessHandler(r => console.log('Status broadcast "telah dibaca" diperbarui.'))
+                    .withFailureHandler(e => console.error('Gagal menandai broadcast sebagai telah dibaca:', e.message))
+                    .markBroadcastAsRead(userEmail);
+            };
+        }
+
+        /**
+         * [BARU] Memuat riwayat broadcast dan merendernya ke tabel.
+         */
+        function loadBroadcastHistory() {
+            const container = document.getElementById('broadcastHistoryContainer');
+            container.innerHTML = `<p class="text-center text-gray-500 py-4 loading-animation">Memuat riwayat</p>`;
+
+            const adminEmail = sessionStorage.getItem('userEmail');
+            google.script.run
+                .withSuccessHandler(renderBroadcastHistoryTable)
+                .withFailureHandler(err => {
+                    container.innerHTML = `<p class="text-center text-red-500 py-4">Gagal memuat riwayat: ${err.message}</p>`;
+                })
+                .getBroadcastHistory_Superadmin(adminEmail);
+        }
+
+        /**
+         * [DIPERBARUI] Merender data riwayat ke dalam tabel HTML.
+         * @param {Array<object>} historyData - Array data riwayat dari backend.
+         */
+        function renderBroadcastHistoryTable(historyData) {
+            const container = document.getElementById('broadcastHistoryContainer');
+            if (!historyData || historyData.length === 0) {
+                container.innerHTML = `<p class="text-center text-gray-500 py-4">Belum ada pengumuman yang dikirim.</p>`;
+                return;
+            }
+
+            let tableHtml = `<table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Judul</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Telah Dibaca</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">`;
+
+            historyData.forEach(item => {
+                // PERUBAHAN: Sekarang data tanggal (item.date) adalah string ISO,
+                // new Date() akan mengubahnya kembali menjadi objek tanggal yang valid di browser.
+                const itemDataString = JSON.stringify(item).replace(/"/g, '&quot;');
+                tableHtml += `<tr data-broadcast='${itemDataString}'>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(item.date).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric', hour: '2-digit', minute: '2-digit'})}</td>
+                    <td class="px-4 py-4 text-sm font-medium text-gray-900">${item.title}</td>
+                    <td class="px-4 py-4 text-sm text-gray-700 font-bold">${item.readByCount} orang</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button class="edit-broadcast-btn text-indigo-600 hover:text-indigo-900">Edit</button>
+                        <button class="delete-broadcast-btn ml-4 text-red-600 hover:text-red-900">Hapus</button>
+                    </td>
+                </tr>`;
+            });
+            tableHtml += `</tbody></table>`;
+            container.innerHTML = tableHtml;
+
+            container.onclick = function(event) {
+                const target = event.target;
+                if (!target.closest('tr[data-broadcast]')) return;
+                
+                const broadcastData = JSON.parse(target.closest('tr').dataset.broadcast.replace(/&quot;/g, '"'));
+
+                if (target.classList.contains('edit-broadcast-btn')) {
+                    handleEditBroadcast(broadcastData);
+                } else if (target.classList.contains('delete-broadcast-btn')) {
+                    handleDeleteBroadcast(broadcastData.id);
+                }
+            };
+        }
+
+        /**
+         * [BARU] Menangani klik tombol edit: mengisi dan menampilkan modal edit.
+         * @param {object} broadcastData - Data dari baris yang diklik.
+         */
+        function handleEditBroadcast(broadcastData) {
+            const modal = document.getElementById('edit-broadcast-modal');
+            const form = document.getElementById('editBroadcastForm');
+            
+            document.getElementById('edit-broadcast-id').value = broadcastData.id;
+            document.getElementById('edit-broadcast-title').value = broadcastData.title;
+            document.getElementById('edit-broadcast-message').value = broadcastData.message;
+
+            modal.classList.remove('hidden');
+
+            document.getElementById('closeEditBroadcastModalBtn').onclick = () => modal.classList.add('hidden');
+            document.getElementById('cancelEditBroadcastBtn').onclick = () => modal.classList.add('hidden');
+
+            form.onsubmit = function(e) {
+                e.preventDefault();
+                const updatedData = {
+                    id: document.getElementById('edit-broadcast-id').value,
+                    title: document.getElementById('edit-broadcast-title').value,
+                    message: document.getElementById('edit-broadcast-message').value,
+                };
+                const adminEmail = sessionStorage.getItem('userEmail');
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        showGlobalStatus(response.message, response.status === 'success');
+                        if (response.status === 'success') {
+                            modal.classList.add('hidden');
+                            loadBroadcastHistory();
+                        }
+                    })
+                    .updateBroadcast_Superadmin(adminEmail, updatedData);
+            };
+        }
+
+        /**
+         * [BARU] Menangani klik tombol hapus: menampilkan konfirmasi dan memanggil backend.
+         * @param {string} broadcastId - ID broadcast yang akan dihapus.
+         */
+        function handleDeleteBroadcast(broadcastId) {
+            showConfirmationModal({
+                title: "Konfirmasi Hapus",
+                body: "Anda yakin ingin menghapus pengumuman ini? Tindakan ini tidak dapat dibatalkan.",
+                onConfirm: () => {
+                    const adminEmail = sessionStorage.getItem('userEmail');
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            showGlobalStatus(response.message, response.status === 'success');
+                            loadBroadcastHistory();
+                        })
+                        .deleteBroadcast_Superadmin(adminEmail, broadcastId);
+                }
+            });
+        }
+        // ===== AKHIR KODE TAMBAHAN (JavaScript untuk Broadcast) =====
+
+        function updateUserBulkActionBar() {
+            const actionBar = document.getElementById('user-bulk-action-bar');
+            const countSpan = document.getElementById('selected-user-count');
+            const generateBtn = document.getElementById('bulk-generate-code-btn');
+            const separator = document.getElementById('bulk-action-separator');
+            const selectedCount = selectedUserRows.size;
+
+            if (selectedCount > 0) {
+                countSpan.textContent = `${selectedCount} akun dipilih`;
+
+                // Cek apakah ada di antara yang dipilih yang belum punya kode
+                let needsGeneration = false;
+                if (allUsersCache.length > 0) {
+                    const selectedRowsSet = new Set(selectedUserRows);
+                    needsGeneration = allUsersCache.some(user => 
+                        selectedRowsSet.has(user.row) && !user.schoolCode
+                    );
+                }
+
+                if (needsGeneration) {
+                    generateBtn.classList.remove('hidden');
+                    separator.classList.remove('hidden');
+                } else {
+                    generateBtn.classList.add('hidden');
+                    separator.classList.add('hidden');
+                }
+
+                actionBar.classList.remove('hidden');
+                setTimeout(() => {
+                    actionBar.style.opacity = '1';
+                    actionBar.style.transform = 'translate(-50%, 0)';
+                }, 10);
+            } else {
+                actionBar.style.opacity = '0';
+                actionBar.style.transform = 'translate(-50%, 150%)';
+                setTimeout(() => actionBar.classList.add('hidden'), 300);
+            }
+        }
+
+        function attachUserTableCheckboxListeners() {
+            const selectAllCheckbox = document.getElementById('select-all-users-checkbox');
+            const userCheckboxes = document.querySelectorAll('.user-checkbox');
+
+            // Ganti semua .onclick dengan .addEventListener untuk praktik terbaik
+            if (selectAllCheckbox) {
+                selectAllCheckbox.onchange = (e) => {
+                    const isChecked = e.target.checked;
+                    userCheckboxes.forEach(cb => {
+                        cb.checked = isChecked;
+                        const rowNum = parseInt(cb.dataset.row);
+                        if (isChecked) selectedUserRows.add(rowNum);
+                        else selectedUserRows.delete(rowNum);
+                    });
+                    updateUserBulkActionBar();
+                };
+            }
+
+            userCheckboxes.forEach(cb => {
+                const rowNum = parseInt(cb.dataset.row);
+                cb.checked = selectedUserRows.has(rowNum);
+                cb.onchange = (e) => {
+                    if (e.target.checked) selectedUserRows.add(rowNum);
+                    else selectedUserRows.delete(rowNum);
+                    updateUserBulkActionBar();
+                };
+            });
+
+            // Pasang listener untuk tombol-tombol di menu aksi massal
+            document.getElementById('bulk-update-limit-btn').onclick = handleBulkUpdateLimit;
+            document.getElementById('bulk-activate-btn').onclick = () => handleBulkSetStatus('Aktif');
+            document.getElementById('bulk-deactivate-btn').onclick = () => handleBulkSetStatus('Nonaktif');
+            document.getElementById('bulk-generate-code-btn').onclick = handleBulkGenerateCode; // Listener baru
+        }
+
+        function handleBulkUpdateLimit() {
+            const rowsToUpdate = Array.from(selectedUserRows);
+            if (rowsToUpdate.length === 0) return;
+            
+            const newLimit = document.getElementById('bulk-limit-input').value;
+            if (!newLimit || isNaN(parseInt(newLimit))) {
+                showGlobalStatus("Harap isi batas siswa dengan angka yang valid.", false);
+                return;
+            }
+
+            showConfirmationModal({
+                title: "Konfirmasi Update Limit",
+                body: `Anda yakin ingin mengubah batas siswa menjadi <strong>${newLimit}</strong> untuk <strong>${rowsToUpdate.length} akun</strong> yang dipilih?`,
+                confirmText: "Ya, Update",
+                confirmColor: "bg-blue-600 hover:bg-blue-700",
+                onConfirm: () => {
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            showGlobalStatus(response.message, response.status === 'success');
+                            selectedUserRows.clear();
+                            updateUserBulkActionBar();
+                            loadUserManagementPage();
+                        })
+                        .bulkUpdateLimit_Superadmin(sessionStorage.getItem('userEmail'), rowsToUpdate, newLimit);
+                }
+            });
+        }
+
+        function handleBulkSetStatus(newStatus) {
+            const rowsToUpdate = Array.from(selectedUserRows);
+            if (rowsToUpdate.length === 0) return;
+
+            showConfirmationModal({
+                title: `Konfirmasi Ubah Status`,
+                body: `Anda yakin ingin mengubah status menjadi <strong>${newStatus}</strong> untuk <strong>${rowsToUpdate.length} akun</strong> yang dipilih?`,
+                confirmText: "Ya, Lanjutkan",
+                confirmColor: newStatus === 'Aktif' ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700",
+                onConfirm: () => {
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            showGlobalStatus(response.message, response.status === 'success');
+                            selectedUserRows.clear();
+                            updateUserBulkActionBar();
+                            loadUserManagementPage();
+                        })
+                        .bulkSetStatus_Superadmin(sessionStorage.getItem('userEmail'), rowsToUpdate, newStatus);
+                }
+            });
+        }
+
+        /**
+         * [BARU] Menangani klik pada kartu kode sekolah untuk men-generate kode baru.
+         */
+        function handleGenerateSchoolCode() {
+            const card = document.getElementById('school-code-card');
+            const codeDisplay = document.getElementById('schoolCodeDisplay');
+            const copyBtn = document.getElementById('copySchoolCodeBtn');
+
+            // Tampilkan status loading
+            codeDisplay.innerHTML = `<span class="text-sm font-medium text-gray-500 loading-animation">Membuat kode</span>`;
+            card.classList.remove('cursor-pointer', 'hover:bg-blue-50');
+            card.onclick = null; // Nonaktifkan klik sementara
+
+            google.script.run
+                .withSuccessHandler(response => {
+                    if (response.status === 'success' && response.newCode) {
+                        showGlobalStatus("Kode Sekolah berhasil dibuat!", true);
+                        // Panggil kembali loadDashboardData untuk me-refresh seluruh kartu
+                        // dan memastikan statusnya (clickable/not) sudah benar.
+                        loadDashboardData();
+                    } else {
+                        showGlobalStatus(response.message, false);
+                        // Jika gagal, kembalikan kartu ke keadaan semula
+                        codeDisplay.innerHTML = `<span class="text-sm font-medium text-blue-600">Klik untuk generate kode</span>`;
+                        card.classList.add('cursor-pointer', 'hover:bg-blue-50');
+                        card.onclick = handleGenerateSchoolCode;
+                    }
+                })
+                .withFailureHandler(err => {
+                    showGlobalStatus(`Error: ${err.message}`, false);
+                    // Jika gagal, kembalikan kartu ke keadaan semula
+                    codeDisplay.innerHTML = `<span class="text-sm font-medium text-blue-600">Klik untuk generate kode</span>`;
+                    card.classList.add('cursor-pointer', 'hover:bg-blue-50');
+                    card.onclick = handleGenerateSchoolCode;
+                })
+                .generateSchoolCodeForUser(userSpreadsheetId);
+        }
+
+        /**
+         * Menangani klik pada tombol "Generate" untuk satu user.
+         */
+        function handleGenerateSingleCode(rowNumber, btnElement) {
+            if (confirm("Anda yakin ingin membuat Kode Sekolah untuk pengguna ini?")) {
+                btnElement.disabled = true;
+                btnElement.textContent = '...';
+
+                const adminEmail = sessionStorage.getItem('userEmail');
+                google.script.run
+                    .withSuccessHandler(response => {
+                        showGlobalStatus(response.message, response.status !== 'error');
+                        if (response.status === 'success') {
+                            // Tidak perlu memuat ulang seluruh tabel, cukup perbarui cache
+                            const userIndex = allUsersCache.findIndex(u => u.row === rowNumber);
+                            if(userIndex !== -1) {
+                              // Idealnya backend mengembalikan kode baru, lalu kita update di sini.
+                              // Tapi untuk simple, kita muat ulang saja agar konsisten.
+                            }
+                            loadUserManagementPage();
+                        } else {
+                            btnElement.disabled = false;
+                            btnElement.textContent = 'Generate';
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        showGlobalStatus(err.message, false);
+                        btnElement.disabled = false;
+                        btnElement.textContent = 'Generate';
+                    })
+                    .generateSchoolCodeForSingleUser_Superadmin(adminEmail, rowNumber);
+            }
+        }
+
+        /**
+         * Menangani klik pada tombol "Generate Kode" di menu aksi massal.
+         */
+        function handleBulkGenerateCode() {
+            const rowsToUpdate = Array.from(selectedUserRows);
+            if (rowsToUpdate.length === 0) return;
+
+            showConfirmationModal({
+                title: "Konfirmasi Generate Kode Massal",
+                body: `Anda akan membuat kode untuk akun-akun terpilih yang belum memilikinya. Akun yang sudah punya kode akan diabaikan. Lanjutkan?`,
+                confirmText: "Ya, Generate",
+                confirmColor: "bg-purple-600 hover:bg-purple-700",
+                onConfirm: () => {
+                    const adminEmail = sessionStorage.getItem('userEmail');
+                    showGlobalStatus(`Memproses ${rowsToUpdate.length} akun...`, 'info');
+
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            showGlobalStatus(response.message, response.status === 'success');
+                            selectedUserRows.clear();
+                            updateUserBulkActionBar();
+                            loadUserManagementPage();
+                        })
+                        .withFailureHandler(err => {
+                            showGlobalStatus(err.message, false);
+                        })
+                        .bulkGenerateSchoolCodes_Superadmin(adminEmail, rowsToUpdate);
+                }
+            });
+        }
     </script>
 </body>
 </html>
