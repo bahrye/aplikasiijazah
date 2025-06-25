@@ -267,6 +267,21 @@
             color: #6b7280;
         }
 
+        .dropzone .dz-upload {
+            background: #3b82f6 linear-gradient(to right, rgba(255,255,255,.2) 0%, rgba(255,255,255,.2) 50%, transparent 50%, transparent 100%);
+            background-size: 40px 40px;
+            animation: dz-progress-stripes 1s linear infinite;
+        }
+
+        @keyframes dz-progress-stripes {
+            from { background-position: 0 0; }
+            to { background-position: 40px 0; }
+        }
+
+        .dropzone .dz-success-mark, .dropzone .dz-error-mark {
+            z-index: 10; /* Pastikan tanda centang/silang di atas progress bar */
+        }
+
         /* ================================================= */
         /* PERBAIKAN UNTUK TOMBOL MODAL YG TIDAK BISA DIKLIK */
         /* ================================================= */
@@ -444,7 +459,7 @@
 
                     <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="data-sekolah"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg><span>Data Sekolah</span></a>
                     <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="data-siswa"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg><span>Data Siswa</span></a>
-                    <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="mapel"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg><span>Mapel & Bobot</span></a>
+                    <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="mapel"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg><span>Mapel & Bobot</span></a>
                     
                     <div class="border-t border-blue-700 my-2"></div>
 
@@ -477,6 +492,7 @@
                         </svg>
                         <span>Bantuan & Panduan</span>
                     </a>
+                    
                     <a href="#" id="nav-broadcast" class="nav-link flex items-center space-x-3 p-2 rounded-md hidden" data-page="broadcast">
                         <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M10.34 15.84c-.688 0-1.25-.562-1.25-1.25s.562-1.25 1.25-1.25c.688 0 1.25.562 1.25 1.25s-.562 1.25-1.25 1.25z" />
@@ -486,6 +502,16 @@
                         <span>Broadcast Pesan</span>
                     </a>
                     
+                    <a href="#" id="nav-saran" class="nav-link flex justify-between items-center space-x-3 p-2 rounded-md hidden" data-page="manajemen-saran">
+                        <span class="flex items-center space-x-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            <span>Manajemen Saran</span>
+                        </span>
+                        <span id="saran-admin-badge" class="hidden bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full"></span>
+                    </a>
+
                     <div class="border-t border-blue-700 my-2"></div>
                     <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="ubah-password">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a4 4 0 11-8 0 4 4 0 018 0zM9 15h6" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
@@ -562,6 +588,19 @@
                                     <p class="text-sm text-gray-500 mt-1">Jika ada saran atau menemukan masalah, klik di sini.</p>
                                 </div>
                             </a>
+                            <div id="saran-card" class="relative bg-white p-6 rounded-2xl shadow-lg flex items-center space-x-4 transition-transform transform hover:scale-105 cursor-pointer">
+                                <span id="saran-user-badge" class="hidden absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold ring-2 ring-white"></span>
+
+                                <div class="bg-yellow-100 p-4 rounded-full">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-lg font-bold text-gray-800">Kotak Saran</p>
+                                    <p class="text-sm text-gray-500 mt-1">Punya ide atau menemukan masalah? Beri tahu kami di sini.</p>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Grafik -->
@@ -623,14 +662,14 @@
                         <p class="mt-2 text-gray-600 mb-8">Gunakan formulir ini untuk mengisi atau memperbarui informasi detail mengenai sekolah Anda.</p>
                         <div class="bg-white p-8 rounded-lg shadow-md max-w-4xl">
                             <form id="schoolDataForm">
-                                <div class="mb-6 pb-6 border-b">
-                                <label for="jenjang" class="block text-sm font-medium text-gray-700">Jenjang Sekolah</label>
-                                <select id="jenjang" name="jenjang" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" disabled>
-                                    <option value="">-- Pilih Jenjang --</option>
-                                    <option value="MI">MI (Madrasah Ibtidaiyah)</option>
-                                    <option value="MTS">MTS (Madrasah Tsanawiyah)</option>
-                                    <option value="MA">MA (Madrasah Aliyah)</option>
-                                </select>
+                                <div id="jenjang-wrapper" class="mb-6 pb-6 border-b">
+                                    <label for="jenjang" class="block text-sm font-medium text-gray-700">Jenjang Sekolah</label>
+                                    <select id="jenjang" name="jenjang" class="pointer-events-none mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" disabled>
+                                        <option value="">-- Pilih Jenjang --</option>
+                                        <option value="MI">MI (Madrasah Ibtidaiyah)</option>
+                                        <option value="MTS">MTS (Madrasah Tsanawiyah)</option>
+                                        <option value="MA">MA (Madrasah Aliyah)</option>
+                                    </select>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                                     <div>
@@ -706,6 +745,37 @@
                                     </button>
                                 </div>
                             </form>
+                        </div>
+
+                        <div class="mt-10 pt-8 border-t">
+                            <h2 class="text-2xl font-bold text-gray-700">Pengaturan Pengumuman Kelulusan</h2>
+                            <p class="text-sm text-gray-500 mt-1 mb-4">Atur kapan siswa bisa melihat status kelulusan dan kontrol akses ke transkrip nilai.</p>
+
+                            <div class="bg-white p-8 rounded-lg shadow-md max-w-2xl">
+                                <form id="graduationSettingsForm" class="space-y-6">
+                                    <div>
+                                        <label for="announcementDate" class="block text-sm font-medium text-gray-700">Tanggal & Waktu Pengumuman</label>
+                                        <p class="text-xs text-gray-500 mt-1 mb-2">Siswa akan melihat hitung mundur sebelum waktu ini.</p>
+                                        <input type="datetime-local" id="announcementDate" class="mt-1 w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                                    </div>
+
+                                    <div class="pt-4 border-t">
+                                        <label class="block text-sm font-medium text-gray-700">Tampilkan Transkrip Nilai untuk Semua Siswa?</label>
+                                        <p class="text-xs text-gray-500 mt-1 mb-2">Jika "Tidak", Anda dapat mengatur visibilitas untuk masing-masing siswa di halaman Data Siswa.</p>
+                                        <div class="mt-2 flex items-center space-x-6">
+                                            <label class="flex items-center"><input type="radio" name="showTranscriptGlobal" value="YA" class="h-4 w-4"> <span class="ml-2">Ya, Tampilkan untuk semua</span></label>
+                                            <label class="flex items-center"><input type="radio" name="showTranscriptGlobal" value="TIDAK" class="h-4 w-4"> <span class="ml-2">Tidak, kontrol per siswa</span></label>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-8 pt-5 border-t">
+                                        <button type="submit" id="saveGraduationSettingsBtn" class="w-full md:w-auto flex justify-center py-2 px-8 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400">
+                                            <span id="gradSubmitBtnText">Simpan Pengaturan Kelulusan</span>
+                                            <span id="gradLoadingSpinner" class="hidden loading-animation">Menyimpan</span>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
 
@@ -904,6 +974,9 @@
                                 <div class="flex items-center gap-2">
                                     <input type="number" id="bulk-tahun-lulus-input" placeholder="Tahun Lulus" class="p-2 border border-gray-500 bg-gray-700 text-white rounded-full w-32 text-sm focus:ring-blue-500 focus:border-blue-500">
                                     <button id="bulk-update-tahun-lulus-btn" class="bg-blue-600 hover:bg-blue-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Update</button>
+                                    <div class="h-6 border-l border-gray-500"></div> <button id="bulk-show-transcript-btn" class="bg-green-600 hover:bg-green-700 font-semibold py-2 px-4 rounded-full text-sm">Tampilkan Transkrip</button>
+                                    <button id="bulk-hide-transcript-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-full text-sm">Sembunyikan</button>
+                                    <div class="h-6 border-l border-gray-500"></div>
                                     <button id="bulk-delete-btn" class="bg-red-600 hover:bg-red-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Hapus</button>
                                 </div>
                             </div>
@@ -1447,6 +1520,13 @@
                                 </div>
                             </form>
                         </div>
+                    </div>
+
+                    <div id="page-manajemen-saran" class="content-page hidden">
+                            <h1 class="text-3xl font-bold text-gray-800">Manajemen Saran & Masukan</h1>
+                            <p class="mt-2 text-gray-600 mb-8">Tinjau dan balas semua saran atau laporan masalah yang dikirim oleh pengguna.</p>
+                            <div id="saranAdminContainer" class="bg-white p-4 rounded-lg shadow-md mt-4">
+                                </div>
                     </div>
                 </div>
                 <footer class="text-center py-4 mt-8 border-t">
@@ -2195,7 +2275,73 @@
         </div>
     </div>
 
-    <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+    <div id="saran-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-2xl transform scale-95 flex flex-col max-h-[90vh]">
+            
+            <div class="flex-shrink-0 flex justify-between items-center border-b p-6">
+                <h2 class="text-2xl font-bold text-gray-800">Kotak Saran</h2>
+                <button id="closeSaranModalBtn" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            
+            <div class="flex-grow overflow-y-auto p-6 space-y-6">
+                <form id="saranForm" class="p-4 border rounded-lg bg-gray-50">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">Kirim Saran atau Laporan Baru</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="saran-judul" class="block text-sm font-medium text-gray-700">Judul Saran / Masalah</label>
+                            <input type="text" id="saran-judul" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Contoh: Usulan Fitur Ranking" required>
+                        </div>
+                        <div>
+                            <label for="saran-penjelasan" class="block text-sm font-medium text-gray-700">Penjelasan Detail</label>
+                            <textarea id="saran-penjelasan" rows="5" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Jelaskan masukan atau masalah yang Anda temukan di sini..." required></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-5 flex justify-end space-x-3">
+                        <button type="button" id="cancelSaranBtn" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300">Batal</button>
+                        <button type="submit" id="sendSaranBtn" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">
+                            <span class="btn-text">Kirim</span>
+                            <span class="btn-spinner hidden loading-animation">Mengirim</span>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="border-t pt-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Riwayat Saran & Balasan Anda</h3>
+                    <div id="saran-history-container" class="space-y-4">
+                        <p class="text-center text-gray-500 loading-animation">Memuat riwayat</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="saran-reply-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-2xl transform scale-95 flex flex-col max-h-[90vh]">
+            <div class="flex-shrink-0 flex justify-between items-center border-b p-6">
+                <h2 class="text-2xl font-bold text-gray-800">Lihat & Balas Saran</h2>
+                <button id="closeSaranReplyModalBtn" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <form id="saranReplyForm" class="flex flex-col flex-grow min-h-0">
+                <input type="hidden" id="reply-saran-id">
+                <div class="flex-grow overflow-y-auto p-6 space-y-5">
+                    <div class="p-4 border rounded-md bg-gray-50">
+                        <p class="text-sm text-gray-500">Dikirim oleh: <strong id="reply-saran-email" class="text-gray-700"></strong></p>
+                        <p class="text-sm text-gray-500">Pada: <strong id="reply-saran-tanggal" class="text-gray-700"></strong></p>
+                        <h3 id="reply-saran-judul" class="text-lg font-bold text-gray-900 mt-2"></h3>
+                        <p id="reply-saran-pesan" class="text-gray-800 whitespace-pre-wrap mt-1"></p>
+                    </div>
+                    <div>
+                        <label for="saran-balasan-admin" class="block text-sm font-medium text-gray-700">Balasan Anda</label>
+                        <textarea id="saran-balasan-admin" rows="6" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Tulis balasan Anda di sini..."></textarea>
+                    </div>
+                </div>
+                <div class="flex-shrink-0 mt-auto p-6 border-t flex justify-end">
+                    <button type="button" id="cancelSaranReplyBtn" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-md mr-3">Tutup</button>
+                    <button type="submit" id="sendSaranReplyBtn" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">Kirim Balasan</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <div id="data-viewer-tooltip" class="hidden absolute z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm"></div>
     <div id="globalStatusMessage"></div>
@@ -2208,6 +2354,7 @@
     </div>
 
     <!-- Tambahkan library Chart.js di dalam <head> -->
+    <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/shepherd.js@10.0.1/dist/js/shepherd.min.js"></script>
 
@@ -3368,6 +3515,8 @@
 
             loadSchoolData();
             setupCompletenessCheck();
+            updateSaranBadge_User();
+            setupDataSekolahClickHandlers(); 
 
             const navContainer = document.getElementById('main-nav');
             const contentPages = document.querySelectorAll('.content-page');
@@ -3912,65 +4061,68 @@
             }
 
             /**
-             * [MODIFIKASI] Menampilkan data siswa ke dalam tabel HTML, dengan tambahan kolom JK.
+             * [MODIFIKASI] Menampilkan data siswa ke dalam tabel HTML.
+             * Kini menyertakan kolom status visibilitas transkrip.
              * @param {Array<object>} studentsToRender - Array data siswa yang ingin ditampilkan.
              */
             function renderSiswaTable(studentsToRender) {
                 const container = document.getElementById('siswaTableContainer');
-                container.innerHTML = ''; 
+                container.innerHTML = ''; // Selalu bersihkan kontainer sebelum merender
 
-                if (studentsToRender && studentsToRender.length > 0) {
-                    const table = document.createElement('table');
-                    table.className = 'min-w-full divide-y divide-gray-200';
-                    table.innerHTML = `
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                    <input type="checkbox" id="select-all-students-checkbox" class="h-4 w-4 rounded border-gray-300">
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NISN</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Lengkap</th>
-                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">JK</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TEMPAT, TANGGAL LAHIR</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200"></tbody>`;
-                    
-                    const tbody = table.querySelector('tbody');
-                    studentsToRender.forEach(s => {
-                        const tr = document.createElement('tr');
-                        const formattedDate = formatIndonesianDate(s.tanggalLahir);
-                        const tempat = toProperCase(s.tempatLahir || '');
-                        const tanggal = formattedDate || '';
-                        let ttl = (!tempat && !tanggal) ? `<em class="text-gray-400">(data kosong)</em>` : (tempat && tanggal ? `${tempat}, ${tanggal}` : tempat || tanggal);
-
-                        tr.innerHTML = `
-                            <td class="px-4 py-4 whitespace-nowrap">
-                                <input type="checkbox" class="student-checkbox h-4 w-4 rounded border-gray-300" data-row="${s.row}">
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 nama-siswa-cell">${s.nama.toUpperCase()}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500 font-medium">${s.jenisKelamin || '-'}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ttl}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button class="text-green-600 hover:text-green-900 font-bold" data-action="transcript" title="Lihat Transkrip">Transkrip</button>
-                                <button class="text-indigo-600 hover:text-indigo-900 ml-4" data-action="edit">Edit</button>
-                                <button class="text-red-600 hover:text-red-900 ml-4" data-action="delete">Hapus</button>
-                            </td>`;
-                        
-                        tr.querySelector('[data-action="transcript"]').addEventListener('click', () => handleShowTranscript(s.nisn));
-                        tr.querySelector('[data-action="edit"]').addEventListener('click', () => handleEditStudent(s));
-                        tr.querySelector('[data-action="delete"]').addEventListener('click', (e) => handleDeleteStudent(s, e.target));
-                        
-                        tbody.appendChild(tr);
-                    });
-                    
-                    container.appendChild(table);
-                    attachTableCheckboxListeners();
-                } else {
+                if (!studentsToRender || studentsToRender.length === 0) {
                     container.innerHTML = `<p class="text-center text-gray-500 py-4">Belum ada data siswa atau data tidak ditemukan.</p>`;
+                    return;
                 }
+
+                const table = document.createElement('table');
+                table.className = 'min-w-full divide-y divide-gray-200';
+                table.innerHTML = `
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                <input type="checkbox" id="select-all-students-checkbox" class="h-4 w-4 rounded border-gray-300">
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NISN</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Lengkap</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" title="Apakah transkrip nilai dapat dilihat oleh siswa di portalnya?">Transkrip Terlihat</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200"></tbody>`;
+                
+                const tbody = table.querySelector('tbody');
+                studentsToRender.forEach(s => {
+                    const tr = document.createElement('tr');
+                    
+                    // Logika untuk menampilkan ikon status visibilitas transkrip
+                    const transcriptVisible = s.tampilkanTranskrip === 'YA';
+                    const statusIcon = transcriptVisible 
+                        ? `<span class="text-green-500" title="Ya, terlihat oleh siswa">✔️</span>` 
+                        : `<span class="text-red-500" title="Tidak, disembunyikan dari siswa">✖️</span>`;
+
+                    tr.innerHTML = `
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            <input type="checkbox" class="student-checkbox h-4 w-4 rounded border-gray-300" data-row="${s.row}" data-nisn="${s.nisn}">
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 nama-siswa-cell">${s.nama.toUpperCase()}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center">${statusIcon}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="text-green-600 hover:text-green-900 font-bold" data-action="transcript" title="Lihat Transkrip">Transkrip</button>
+                            <button class="text-indigo-600 hover:text-indigo-900 ml-4" data-action="edit">Edit</button>
+                            <button class="text-red-600 hover:text-red-900 ml-4" data-action="delete">Hapus</button>
+                        </td>`;
+                    
+                    // Pasang event listener untuk tombol aksi di setiap baris
+                    tr.querySelector('[data-action="transcript"]').addEventListener('click', () => handleShowTranscript(s.nisn));
+                    tr.querySelector('[data-action="edit"]').addEventListener('click', () => handleEditStudent(s));
+                    tr.querySelector('[data-action="delete"]').addEventListener('click', (e) => handleDeleteStudent(s, e.target));
+                    
+                    tbody.appendChild(tr);
+                });
+                
+                container.appendChild(table);
+                attachTableCheckboxListeners();
                 updateBulkActionBar();
             }
 
@@ -5143,6 +5295,86 @@
                 });
             }
             // ===== AKHIR KODE TAMBAHAN UNTUK TOMBOL SALIN =====
+
+            // ===== AWAL KODE BARU UNTUK KOTAK SARAN =====
+            const saranCard = document.getElementById('saran-card');
+            const saranModal = document.getElementById('saran-modal');
+            const closeSaranBtn = document.getElementById('closeSaranModalBtn');
+            const cancelSaranBtn = document.getElementById('cancelSaranBtn');
+            const saranForm = document.getElementById('saranForm');
+
+            const openSaranModal = () => {
+                saranModal.classList.remove('hidden');
+                setTimeout(() => saranModal.querySelector('.modal-content').style.transform = 'scale(1)', 10);
+
+                // Panggil backend untuk menandai semua balasan sebagai sudah dibaca
+                const userEmail = sessionStorage.getItem('userEmail');
+                google.script.run
+                    .withSuccessHandler(() => {
+                        // Setelah berhasil ditandai di backend, hilangkan badge di frontend
+                        const badge = document.getElementById('saran-user-badge');
+                        if(badge) badge.classList.add('hidden');
+                        console.log("Balasan baru telah ditandai sebagai sudah dibaca.");
+                    })
+                    .markAllSaranRepliesAsRead_User(userEmail);
+
+                // Lanjutkan untuk memuat riwayat seperti biasa
+                loadSaranHistory(); 
+            };
+
+            const closeSaranModal = () => {
+                saranModal.querySelector('.modal-content').style.transform = 'scale(0.95)';
+                setTimeout(() => saranModal.classList.add('hidden'), 300);
+            };
+
+            if (saranCard) saranCard.addEventListener('click', openSaranModal);
+            if (closeSaranBtn) closeSaranBtn.addEventListener('click', closeSaranModal);
+            if (cancelSaranBtn) cancelSaranBtn.addEventListener('click', () => {
+                saranForm.reset(); // Bersihkan form jika dibatalkan
+                closeSaranModal();
+            });
+
+            if (saranForm) {
+                saranForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const judul = document.getElementById('saran-judul').value.trim();
+                    const penjelasan = document.getElementById('saran-penjelasan').value.trim();
+                    if (!judul || !penjelasan) {
+                        showGlobalStatus("Judul dan Penjelasan harus diisi.", false);
+                        return;
+                    }
+
+                    const btn = document.getElementById('sendSaranBtn');
+                    const btnText = btn.querySelector('.btn-text');
+                    const spinner = btn.querySelector('.btn-spinner');
+                    btn.disabled = true;
+                    btnText.classList.add('hidden');
+                    spinner.classList.remove('hidden');
+
+                    const saranData = { judul, penjelasan };
+                    const userEmail = sessionStorage.getItem('userEmail');
+
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            btn.disabled = false;
+                            btnText.classList.remove('hidden');
+                            spinner.classList.add('hidden');
+                            showGlobalStatus(response.message, response.status === 'success');
+                            if (response.status === 'success') {
+                                saranForm.reset();
+                                loadSaranHistory(); // Muat ulang riwayat untuk menampilkan saran baru
+                            }
+                        })
+                        .withFailureHandler(err => {
+                            btn.disabled = false;
+                            btnText.classList.remove('hidden');
+                            spinner.classList.add('hidden');
+                            showGlobalStatus("Gagal mengirim: " + err.message, false);
+                        })
+                        .submitSaran(userEmail, saranData);
+                });
+            }
+            // ===== AKHIR KODE BARU UNTUK KOTAK SARAN =====
         }
 
         /**
@@ -5324,6 +5556,10 @@
                 scoreTable.addEventListener('input', handleScoreInput);
                 scoreTable.addEventListener('paste', handleSmartPaste);
                 document.getElementById(`form-nilai-${tableKey}`).addEventListener('submit', (e) => handleSaveRapor(e, semesterKey, jenisNilai));
+
+                // ▼▼▼ TAMBAHKAN BARIS DI BAWAH INI ▼▼▼
+                initializeCellSelection(`score-table-${sheetName}`, tableKey);
+                // ▲▲▲ AKHIR DARI PENAMBAHAN ▲▲▲
 
                 // ▼▼▼ BAGIAN YANG DIPERBAIKI ADA DI SINI ▼▼▼
                 tableWrapper.querySelector('.clear-scores-btn').addEventListener('click', (e) => {
@@ -6392,7 +6628,7 @@
 
             const allowedAdminPages = [
                 'superadmin-dashboard', 'manajemen-akun', 'daftar-pengajuan', 
-                'admin-tools', 'kelola-update', 'ubah-password', 'broadcast' // <-- Tambahkan 'broadcast'
+                'admin-tools', 'kelola-update', 'ubah-password', 'broadcast', 'manajemen-saran'
             ];
 
             const pageToLinkMap = { 'dashboard': 'superadmin-dashboard' };
@@ -6434,6 +6670,7 @@
                 if (targetPageId === 'daftar-pengajuan') loadPengajuanListPage_Superadmin();
                 if (targetPageId === 'kelola-update') loadVersionManagementPage();
                 if (targetPageId === 'broadcast') loadBroadcastPage(); // <-- Tambahkan pemicu fungsi
+                if (targetPageId === 'manajemen-saran') loadSaranAdminPage(); 
             });
 
             const totalAkunCard = document.getElementById('sa-card-total-akun');
@@ -6453,6 +6690,7 @@
 
             setupDefaultLimitManager();
             updatePengajuanBadge();
+            updateSaranBadge_Superadmin();
 
             const dashboardLink = document.querySelector('.nav-link[data-page="dashboard"]');
             if (dashboardLink) dashboardLink.click();
@@ -9268,6 +9506,10 @@
             // Pasang listener untuk tombol-tombol di menu aksi massal
             document.getElementById('bulk-delete-btn')?.addEventListener('click', handleBulkDelete);
             document.getElementById('bulk-update-tahun-lulus-btn')?.addEventListener('click', handleBulkUpdateTahunLulus);
+
+            // --- TAMBAHKAN LISTENER INI DI AKHIR FUNGSI ---
+            document.getElementById('bulk-show-transcript-btn')?.addEventListener('click', () => handleBulkTranscriptVisibility('YA'));
+            document.getElementById('bulk-hide-transcript-btn')?.addEventListener('click', () => handleBulkTranscriptVisibility('TIDAK'));
         }
 
         // ===== GANTI KEDUA FUNGSI INI DENGAN VERSI FINAL =====
@@ -9392,26 +9634,88 @@
         }
 
         /**
-         * [BARU] Memuat data untuk halaman Pengaturan.
+         * [VERSI FINAL 2.0 - FIX TIMEZONE]
+         * Memuat semua data untuk halaman Pengaturan dan memastikan form selalu aktif setelahnya.
          */
         function loadPengaturanPage() {
+            // --- Bagian 1: Memuat Pengaturan KKM (Tidak ada perubahan) ---
             const kkmInput = document.getElementById('kkmSekolah');
-            kkmInput.disabled = true; // Nonaktifkan input saat memuat
+            if (kkmInput) {
+                kkmInput.disabled = true;
+                google.script.run
+                    .withSuccessHandler(response => {
+                        if (response.status === 'success') {
+                            kkmInput.value = response.kkm;
+                        }
+                        kkmInput.disabled = false;
+                    })
+                    .withFailureHandler(err => {
+                        kkmInput.disabled = false;
+                    })
+                    .getKkm(userSpreadsheetId);
+            }
 
-            google.script.run
-                .withSuccessHandler(response => {
-                    if(response.status === 'success') {
-                        kkmInput.value = response.kkm;
-                    } else {
-                        showGlobalStatus("Gagal memuat pengaturan KKM.", false);
-                    }
-                    kkmInput.disabled = false; // Aktifkan kembali setelah selesai
-                })
-                .withFailureHandler(err => {
-                    showGlobalStatus("Error: " + err.message, false);
-                    kkmInput.disabled = false;
-                })
-                .getKkm(userSpreadsheetId);
+            // --- Bagian 2: Memuat Pengaturan Kelulusan (Dengan Perbaikan Timezone) ---
+            const announcementDateInput = document.getElementById('announcementDate');
+            const gradForm = document.getElementById('graduationSettingsForm');
+            const radioButtons = document.querySelectorAll('input[name="showTranscriptGlobal"]');
+
+            if (announcementDateInput && gradForm) {
+                const enableGraduationForm = () => {
+                    announcementDateInput.disabled = false;
+                    radioButtons.forEach(radio => radio.disabled = false);
+                };
+
+                announcementDateInput.disabled = true;
+                radioButtons.forEach(radio => radio.disabled = true);
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        if (response && response.status === 'success' && response.settings) {
+                            const settings = response.settings;
+
+                            // ==========================================================
+                            // ==== AWAL DARI BLOK KODE YANG DIPERBAIKI (TIMEZONE FIX) ====
+                            // ==========================================================
+                            if (settings.announcementDate) {
+                                const date = new Date(settings.announcementDate);
+
+                                // Ambil komponen tanggal & waktu berdasarkan zona waktu LOKAL browser
+                                const year = date.getFullYear();
+                                const month = String(date.getMonth() + 1).padStart(2, '0'); // +1 karena bulan 0-indexed
+                                const day = String(date.getDate()).padStart(2, '0');
+                                const hours = String(date.getHours()).padStart(2, '0');
+                                const minutes = String(date.getMinutes()).padStart(2, '0');
+                                
+                                // Buat string format YYYY-MM-DDTHH:mm yang dibutuhkan oleh input
+                                announcementDateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+                            } else {
+                                announcementDateInput.value = '';
+                            }
+                            // ========================================================
+                            // ==== AKHIR DARI BLOK KODE YANG DIPERBAIKI (TIMEZONE FIX) ====
+                            // ========================================================
+
+                            const valueToShow = settings.showTranscriptGlobal || 'TIDAK';
+                            const radioBtn = document.querySelector(`input[name="showTranscriptGlobal"][value="${valueToShow}"]`);
+                            if (radioBtn) {
+                                radioBtn.checked = true;
+                            }
+                        }
+                        enableGraduationForm();
+                    })
+                    .withFailureHandler(err => {
+                        showGlobalStatus("Error memuat pengaturan: " + err.message, false);
+                        enableGraduationForm();
+                    })
+                    .getGraduationSettings(userSpreadsheetId);
+                
+                const gradFormHandler = document.getElementById('graduationSettingsForm');
+                if (gradFormHandler) {
+                    gradFormHandler.removeEventListener('submit', handleSaveGraduationSettings);
+                    gradFormHandler.addEventListener('submit', handleSaveGraduationSettings);
+                }
+            }
         }
 
         /**
@@ -9509,51 +9813,57 @@
         }
 
         /**
-         * [MODIFIKASI FINAL] Merender data transkrip, dengan layout data siswa yang presisi dan anti-wrap.
+         * [PERBAIKAN RATA-RATA] Merender modal transkrip di akun admin dengan perhitungan yang benar.
          */
         function renderTranscriptModal(data) {
             const { student, school, subjects } = data;
             const printableArea = document.getElementById('transcript-printable-area');
 
-            // Bagian untuk membuat variabel `html` tidak berubah, Anda bisa biarkan seperti adanya.
-            const formatScore = (score) => { if (score === null || score === undefined || isNaN(score)) return '-'; const rounded = Math.round(score); const decimal = score.toFixed(2).replace('.', ','); return `${rounded} (${decimal})`; };
-            const totalNilaiIjazah = subjects.reduce((sum, s) => sum + (s.nilaiIjazah !== null ? Math.round(s.nilaiIjazah) : 0), 0);
-            const mapelCount = subjects.filter(s => s.nilaiIjazah !== null).length;
-            const rataRataIjazah = mapelCount > 0 ? totalNilaiIjazah / mapelCount : 0;
-            const nomorIndukGabungan = (school.nsm || '') + (student.nis || '');
+            // [PERBAIKAN] Helper format nilai: null/NaN menjadi 0
+            const formatScore = (score) => {
+                if (score === null || score === undefined || isNaN(score)) return '0'; // Diubah dari '-'
+                const rounded = Math.round(score);
+                const decimal = score.toFixed(2).replace('.', ',');
+                return `${rounded} (${decimal})`;
+            };
 
-            let html = `
-                <div class="font-sans p-4">
+            // [PERBAIKAN] Logika Perhitungan Rata-rata disamakan dengan backend dan portal siswa
+            let totalNilaiIjazah = 0;
+            const mapelCount = subjects.length; // Divisor adalah jumlah total mapel
+
+            subjects.forEach(s => {
+                // Tambahkan nilai jika valid, atau tambahkan 0 jika tidak valid
+                const scoreToAdd = (s.nilaiIjazah !== null && !isNaN(s.nilaiIjazah)) ? Math.round(s.nilaiIjazah) : 0;
+                totalNilaiIjazah += scoreToAdd;
+            });
+
+            // Pastikan tidak ada pembagian dengan nol
+            const rataRataIjazah = mapelCount > 0 ? (totalNilaiIjazah / mapelCount) : 0;
+            
+            const nomorIndukGabungan = (school.nsm || '') + (student.nis || '');
+            
+            const html = `
+                <div class="font-sans p-4" id="printable-transcript-content">
                     <div class="text-center border-b-4 border-black pb-2 mb-4">
                         <h3 class="text-xl font-bold uppercase">TRANSKRIP NILAI AKHIR</h3>
                         <h4 class="text-lg font-semibold uppercase">${school.namaSekolah || 'NAMA SEKOLAH'}</h4>
                         <p class="text-xs">${school.alamat || 'Alamat Sekolah'}</p>
                     </div>
-                    
-                    <div class="w-full text-sm mb-4">
-                        <div style="display: flex; align-items: baseline;">
-                            <div style="width: 185px; display: flex; justify-content: space-between; padding-right: 0.5rem;">
-                                <span class="font-medium">Nama Peserta Didik</span>
-                                <span>:</span>
-                            </div>
-                            <div>${student.nama.toUpperCase()}</div>
-                        </div>
-                        <div style="display: flex; align-items: baseline;">
-                            <div style="width: 185px; display: flex; justify-content: space-between; padding-right: 0.5rem;">
-                                <span class="font-medium">Tempat, Tanggal Lahir</span>
-                                <span>:</span>
-                            </div>
-                            <div>${toProperCase(student.tempatLahir)}, ${formatIndonesianDate(student.tanggalLahir)}</div>
-                        </div>
-                        <div style="display: flex; align-items: baseline;">
-                            <div style="width: 185px; display: flex; justify-content: space-between; padding-right: 0.5rem;">
-                                <span class="font-medium" style="white-space: nowrap;">Nomor Induk Siswa/NISN</span>
-                                <span>:</span>
-                            </div>
-                            <div>${nomorIndukGabungan || '-'} / ${student.nisn}</div>
+                    <div class="w-full text-sm mb-4 space-y-1">
+                        <div class="grid grid-cols-[max-content_auto_1fr] gap-x-2 gap-y-1 items-baseline">
+                            <div class="font-medium">Nama Peserta Didik</div>
+                            <div>:</div>
+                            <div class="font-semibold">${student.nama.toUpperCase()}</div>
+
+                            <div class="font-medium">Tempat, Tanggal Lahir</div>
+                            <div>:</div>
+                            <div class="font-semibold">${student.tempatLahir ? toProperCase(student.tempatLahir) + ', ' : ''}${formatIndonesianDate(student.tanggalLahir)}</div>
+
+                            <div class="font-medium">Nomor Induk Siswa/NISN</div>
+                            <div>:</div>
+                            <div class="font-semibold">${nomorIndukGabungan || '-'} / ${student.nisn}</div>
                         </div>
                     </div>
-
                     <table class="w-full text-sm border-collapse border border-black">
                         <thead class="bg-gray-200 font-bold">
                             <tr>
@@ -9585,7 +9895,6 @@
                             </tr>
                         </tfoot>
                     </table>
-
                     <div class="mt-8 flex justify-end">
                         <div class="w-2/5 text-center text-sm">
                             <p>${school.kabupaten || 'Tempat'}, ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
@@ -9595,9 +9904,8 @@
                             <p>NIP. ${school.nipKepsek || '-'}</p>
                         </div>
                     </div>
-                </div>
-            `;
-
+                </div>`;
+            
             printableArea.innerHTML = html;
 
             // --- PERUBAHAN UTAMA: Pasang listener multifungsi pada satu tombol ---
@@ -9724,40 +10032,46 @@
         }
 
         /**
-         * [TAMBAHKAN] Membuka dan mengkonfigurasi modal upload.
+         * [DIPERBAIKI] Membuka dan mengkonfigurasi modal upload.
+         * Selalu menghancurkan instance Dropzone lama untuk memastikan konfigurasi baru diterapkan.
          */
         function openUploadModal(uploadType, templateName, title) {
             const modal = document.getElementById('upload-nilai-modal');
             document.getElementById('upload-modal-title').textContent = title;
 
-            // Simpan tipe upload dan nama template di form untuk referensi
             const form = document.getElementById('nilai-dropzone-form');
             form.dataset.uploadType = uploadType;
             form.dataset.templateName = templateName;
 
             modal.classList.remove('hidden');
+            setTimeout(() => modal.querySelector('.modal-content').style.transform = 'scale(1)', 10);
 
-            // Inisialisasi Dropzone jika belum ada
-            if (!nilaiDropzone) {
-                nilaiDropzone = new Dropzone("#nilai-dropzone-form", {
-                    url: "#", // URL dummy, karena kita akan menangani upload via google.script.run
-                    autoProcessQueue: false,
-                    maxFiles: 1,
-                    acceptedFiles: '.xlsx, .xls, .csv',
-                    addRemoveLinks: true,
-                    dictDefaultMessage: "Letakkan File atau Klik Disini untuk upload",
-                    init: function() {
-                        this.on("maxfilesexceeded", function(file) {
-                            this.removeAllFiles();
-                            this.addFile(file);
-                        });
-                        this.on("addedfile", function(file) {
-                            // Mulai proses upload setelah file ditambahkan
-                            handleFileUpload(file, this);
-                        });
-                    }
-                });
+            // --- AWAL PERBAIKAN ---
+            // Hancurkan instance Dropzone yang ada sebelum membuat yang baru.
+            if (nilaiDropzone) {
+                nilaiDropzone.destroy();
             }
+            
+            // Selalu buat instance baru setiap kali modal dibuka.
+            nilaiDropzone = new Dropzone("#nilai-dropzone-form", {
+                url: "#", 
+                autoProcessQueue: false,
+                maxFiles: 1,
+                acceptedFiles: '.xlsx, .xls, .csv',
+                addRemoveLinks: true,
+                dictDefaultMessage: "Letakkan File atau Klik Disini untuk upload",
+                init: function() {
+                    this.on("maxfilesexceeded", function(file) {
+                        this.removeAllFiles();
+                        this.addFile(file);
+                    });
+                    this.on("addedfile", function(file) {
+                        // Panggil handler dengan uploadType yang benar dari dataset form
+                        handleFileUpload(file, this, form.dataset.uploadType); 
+                    });
+                }
+            });
+            // --- AKHIR PERBAIKAN ---
         }
 
         /**
@@ -9773,46 +10087,82 @@
         }
 
         /**
-         * [TAMBAHKAN] Menangani proses pembacaan file dan pengiriman ke server.
+         * [DIPERBARUI DENGAN ANIMASI & OVERLAY] Menangani proses pembacaan file dan pengiriman ke server.
          */
-        function handleFileUpload(file, dropzoneInstance) {
+        function handleFileUpload(file, dropzoneInstance, uploadType) {
             const reader = new FileReader();
+            
+            // --- [BARU] Ambil elemen UI & Tampilkan Overlay ---
+            const overlay = document.getElementById('loading-overlay');
+            const overlayTitle = document.getElementById('overlay-title');
+            const overlaySubtitle = document.getElementById('overlay-subtitle');
+            const modalButtons = [
+                document.getElementById('closeUploadModalBtn'),
+                document.getElementById('closeUploadModalBtn2'),
+                document.getElementById('downloadNilaiTemplateBtn')
+            ];
+
+            // Nonaktifkan tombol dan tampilkan overlay
+            modalButtons.forEach(btn => btn.disabled = true);
+            overlayTitle.textContent = "Mengunggah dan Memproses File";
+            overlayTitle.classList.add('loading-animation'); // Tambahkan kelas animasi
+            overlaySubtitle.textContent = "Mohon tunggu, proses ini mungkin memerlukan waktu beberapa saat. Jangan menutup jendela ini.";
+            document.getElementById('overlay-button-container').innerHTML = ''; // Kosongkan kontainer tombol overlay
+            overlay.classList.remove('hidden');
+            // --- Akhir dari bagian baru ---
+
             reader.onload = (e) => {
                 const fileData = {
                     fileName: file.name,
                     mimeType: file.type,
                     content: e.target.result.split(',')[1] // Ambil base64 content
                 };
-                
-                const form = document.getElementById('nilai-dropzone-form');
-                const uploadType = form.dataset.uploadType;
 
-                // Tampilkan status "Uploading..." di Dropzone
                 dropzoneInstance.emit("processing", file);
 
                 google.script.run
                     .withSuccessHandler(response => {
-                        if(response.status === 'success') {
+                        overlayTitle.classList.remove('loading-animation');
+                        // --- [BARU] Sembunyikan Overlay & Aktifkan Tombol ---
+                        overlay.classList.add('hidden');
+                        modalButtons.forEach(btn => btn.disabled = false);
+                        // --- Akhir dari bagian baru ---
+                        
+                        if (response.status === 'success') {
                             dropzoneInstance.emit("success", file);
                             dropzoneInstance.emit("complete", file);
                             showGlobalStatus(response.message, true);
-                            // Tandai bahwa rekap perlu diupdate setelah upload berhasil
                             sessionStorage.setItem('rekapNeedsUpdate', 'true');
                             checkAndApplyRekapIndicator();
+                            // [UX Improvement] Tutup modal secara otomatis setelah berhasil
+                            setTimeout(closeUploadModal, 1500); 
                         } else {
                             dropzoneInstance.emit("error", file, response.message);
                             showGlobalStatus(`Gagal: ${response.message}`, false);
                         }
                     })
                     .withFailureHandler(error => {
+                        overlayTitle.classList.remove('loading-animation'); 
+                        // --- [BARU] Sembunyikan Overlay & Aktifkan Tombol jika Gagal ---
+                        overlay.classList.add('hidden');
+                        modalButtons.forEach(btn => btn.disabled = false);
+                        // --- Akhir dari bagian baru ---
+                        
                         dropzoneInstance.emit("error", file, error.message);
                         showGlobalStatus(`Error: ${error.message}`, false);
                     })
                     .uploadNilaiFromExcel(userSpreadsheetId, fileData, uploadType);
             };
+            
             reader.onerror = (error) => {
-                dropzoneInstance.emit("error", file, "Gagal membaca file.");
+                overlayTitle.classList.remove('loading-animation');
+                // --- [BARU] Sembunyikan Overlay & Aktifkan Tombol jika Gagal Baca File ---
+                overlay.classList.add('hidden');
+                modalButtons.forEach(btn => btn.disabled = false);
+                // --- Akhir dari bagian baru ---
+                dropzoneInstance.emit("error", file, "Gagal membaca file di browser.");
             };
+
             reader.readAsDataURL(file);
         }
 
@@ -10282,6 +10632,378 @@
                             showGlobalStatus(err.message, false);
                         })
                         .bulkGenerateSchoolCodes_Superadmin(adminEmail, rowsToUpdate);
+                }
+            });
+        }
+
+        /**
+         * [BARU] Memuat riwayat saran dan balasan dari server.
+         */
+        function loadSaranHistory() {
+            const container = document.getElementById('saran-history-container');
+            container.innerHTML = `<p class="text-center text-gray-500 loading-animation">Memuat riwayat</p>`;
+            const userEmail = sessionStorage.getItem('userEmail');
+
+            google.script.run
+                .withSuccessHandler(history => {
+                    renderSaranHistory(history);
+                })
+                .withFailureHandler(err => {
+                    container.innerHTML = `<p class="text-center text-red-500">Gagal memuat riwayat: ${err.message}</p>`;
+                })
+                .getSaranForUser(userEmail);
+        }
+
+        /**
+         * [BARU] Merender riwayat saran dan balasan ke dalam kontainer.
+         */
+        function renderSaranHistory(history) {
+            const container = document.getElementById('saran-history-container');
+            if (!history || history.length === 0) {
+                container.innerHTML = `<p class="text-center text-gray-500 py-4">Anda belum pernah mengirim saran atau laporan.</p>`;
+                return;
+            }
+
+            let html = '';
+            history.forEach(item => {
+                const tglSaran = new Date(item.tanggal).toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
+                const statusClass = item.status === 'Baru' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800';
+                const tglBalasan = item.tanggalBalasan ? new Date(item.tanggalBalasan).toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' }) : '';
+
+                html += `
+                    <div class="border rounded-lg overflow-hidden">
+                        <div class="bg-gray-50 p-4 flex justify-between items-center">
+                            <div>
+                                <p class="font-bold text-gray-900">${item.judul}</p>
+                                <p class="text-xs text-gray-500">Dikirim pada: ${tglSaran}</p>
+                            </div>
+                            <span class="text-xs font-bold px-2 py-1 rounded-full ${statusClass}">${item.status}</span>
+                        </div>
+                        <div class="p-4 space-y-4">
+                            <div>
+                                <p class="font-semibold text-sm text-gray-600">Pesan Anda:</p>
+                                <p class="text-gray-800 whitespace-pre-wrap text-sm mt-1">${item.pesan}</p>
+                            </div>
+                            ${item.balasanAdmin ? `
+                            <div class="border-t pt-4">
+                                <p class="font-semibold text-sm text-green-700">Balasan Superadmin (${tglBalasan}):</p>
+                                <p class="text-gray-800 whitespace-pre-wrap text-sm mt-1">${item.balasanAdmin}</p>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // File: Index.html -> di dalam tag <script>
+
+        /**
+         * [SUPERADMIN] Memuat halaman manajemen saran.
+         */
+        function loadSaranAdminPage() {
+            const container = document.getElementById('saranAdminContainer');
+            container.innerHTML = `<p class="text-center p-8 loading-animation">Memuat semua saran pengguna</p>`;
+            const adminEmail = sessionStorage.getItem('userEmail');
+
+            google.script.run
+                .withSuccessHandler(renderSaranAdminTable)
+                .withFailureHandler(err => {
+                    container.innerHTML = `<p class="text-center text-red-500 p-8">Gagal memuat: ${err.message}</p>`;
+                })
+                .getAllSaran_Superadmin(adminEmail);
+        }
+
+        /**
+         * [SUPERADMIN] Merender tabel berisi semua saran dari pengguna.
+         */
+        function renderSaranAdminTable(saranList) {
+            const container = document.getElementById('saranAdminContainer');
+            if (!saranList || saranList.length === 0) {
+                container.innerHTML = `<p class="text-center text-gray-500 p-8">Tidak ada saran atau laporan yang masuk.</p>`;
+                return;
+            }
+
+            let tableHtml = `<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal & Pengirim</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Judul</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">`;
+
+            saranList.forEach(item => {
+                const tglSaran = new Date(item.tanggal).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'});
+                const statusClass = item.status === 'Baru' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800';
+                
+                tableHtml += `
+                    <tr data-saran='${JSON.stringify(item).replace(/'/g, "&apos;")}'>
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${tglSaran}</div>
+                            <div class="text-sm text-gray-500">${item.userEmail}</div>
+                        </td>
+                        <td class="px-4 py-4 text-sm text-gray-800 font-semibold">${item.judul}</td>
+                        <td class="px-4 py-4 text-center">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">${item.status}</span>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="reply-saran-btn text-indigo-600 hover:text-indigo-900">Lihat & Balas</button>
+                        </td>
+                    </tr>`;
+            });
+            tableHtml += `</tbody></table></div>`;
+            container.innerHTML = tableHtml;
+
+            // Pasang event listener untuk semua tombol "Lihat & Balas"
+            container.querySelectorAll('.reply-saran-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const saranData = JSON.parse(this.closest('tr').dataset.saran.replace(/&apos;/g, "'"));
+                    openSaranReplyModal(saranData);
+                });
+            });
+        }
+
+        /**
+         * [SUPERADMIN] Membuka dan mengisi modal untuk membalas saran.
+         */
+        function openSaranReplyModal(saranData) {
+            const modal = document.getElementById('saran-reply-modal');
+            const form = document.getElementById('saranReplyForm');
+
+            // Isi detail saran dari pengguna
+            document.getElementById('reply-saran-id').value = saranData.id;
+            document.getElementById('reply-saran-email').textContent = saranData.userEmail;
+            document.getElementById('reply-saran-tanggal').textContent = new Date(saranData.tanggal).toLocaleString('id-ID');
+            document.getElementById('reply-saran-judul').textContent = saranData.judul;
+            document.getElementById('reply-saran-pesan').textContent = saranData.pesan;
+            
+            // Isi textarea balasan dengan balasan yang sudah ada (jika mode edit)
+            document.getElementById('saran-balasan-admin').value = saranData.balasanAdmin || '';
+            
+            // Tampilkan modal
+            modal.classList.remove('hidden');
+
+            // Pasang listener untuk tombol-tombol modal
+            document.getElementById('closeSaranReplyModalBtn').onclick = () => modal.classList.add('hidden');
+            document.getElementById('cancelSaranReplyBtn').onclick = () => modal.classList.add('hidden');
+            
+            form.onsubmit = function(e) {
+                e.preventDefault();
+                const replyData = {
+                    saranId: document.getElementById('reply-saran-id').value,
+                    balasanText: document.getElementById('saran-balasan-admin').value.trim()
+                };
+                if (!replyData.balasanText) {
+                    showGlobalStatus("Teks balasan tidak boleh kosong.", false);
+                    return;
+                }
+
+                const adminEmail = sessionStorage.getItem('userEmail');
+                const sendBtn = document.getElementById('sendSaranReplyBtn');
+                sendBtn.disabled = true;
+                sendBtn.textContent = "Mengirim...";
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        sendBtn.disabled = false;
+                        sendBtn.textContent = "Kirim Balasan";
+                        showGlobalStatus(response.message, response.status === 'success');
+                        if (response.status === 'success') {
+                            modal.classList.add('hidden');
+                            loadSaranAdminPage(); // Muat ulang tabel untuk melihat status "Dibalas"
+                            updateSaranBadge_Superadmin();
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        sendBtn.disabled = false;
+                        sendBtn.textContent = "Kirim Balasan";
+                        showGlobalStatus("Gagal: " + err.message, false);
+                    })
+                    .replyToSaran_Superadmin(adminEmail, replyData);
+            };
+        }
+
+        /**
+         * [PENGGUNA] Memperbarui badge notifikasi balasan saran yang belum dibaca.
+         */
+        function updateSaranBadge_User() {
+            const userEmail = sessionStorage.getItem('userEmail');
+            if (!userEmail) return;
+
+            google.script.run
+                .withSuccessHandler(count => {
+                    const badge = document.getElementById('saran-user-badge');
+                    if (badge) {
+                        if (count > 0) {
+                            badge.textContent = count;
+                            badge.classList.remove('hidden');
+                        } else {
+                            badge.classList.add('hidden');
+                        }
+                    }
+                })
+                .getUnreadRepliesCount_User(userEmail);
+        }
+
+        /**
+         * [SUPERADMIN] Memperbarui badge notifikasi saran baru yang belum diproses.
+         */
+        function updateSaranBadge_Superadmin() {
+            const adminEmail = sessionStorage.getItem('userEmail');
+            if (!adminEmail) return;
+
+            google.script.run
+                .withSuccessHandler(count => {
+                    const badge = document.getElementById('saran-admin-badge');
+                    if (badge) {
+                        if (count > 0) {
+                            badge.textContent = count;
+                            badge.classList.remove('hidden');
+                        } else {
+                            badge.classList.add('hidden');
+                        }
+                    }
+                })
+                .getNewSaranCount_Superadmin(adminEmail);
+        }
+
+        /**
+         * [DIPERBARUI] Menambahkan event listener pada kolom Jenjang & Nama Sekolah
+         * agar bisa diklik untuk pindah ke halaman Pengajuan.
+         */
+        function setupDataSekolahClickHandlers() {
+          // Targetkan div pembungkus untuk Jenjang, dan input untuk Nama Sekolah
+          const jenjangWrapper = document.getElementById('jenjang-wrapper');
+          const namaSekolahEl = document.getElementById('namaSekolah');
+          const jenjangEl = document.getElementById('jenjang'); // Kita masih butuh ini
+
+          // Fungsi yang akan dijalankan ketika salah satu kolom diklik
+          const navigateToPengajuan = () => {
+            const pengajuanNavLink = document.querySelector('.nav-link[data-page="pengajuan"]');
+            if (pengajuanNavLink) {
+              pengajuanNavLink.click();
+            } else {
+              alert('Halaman Pengajuan tidak ditemukan.');
+            }
+          };
+
+          if (jenjangWrapper && namaSekolahEl && jenjangEl) {
+            // Tambahkan style agar terlihat bisa diklik
+            jenjangWrapper.classList.add('cursor-pointer', 'hover:bg-blue-50', 'transition-colors', 'rounded-md');
+            namaSekolahEl.classList.add('cursor-pointer', 'hover:bg-blue-50', 'hover:border-blue-300', 'transition-colors');
+
+            // Mencegah select box agar tidak bisa diklik sama sekali
+            jenjangEl.classList.add('pointer-events-none');
+            
+            // Pasang event listener pada pembungkusnya, bukan pada select-nya
+            jenjangWrapper.addEventListener('click', navigateToPengajuan);
+            namaSekolahEl.addEventListener('click', navigateToPengajuan);
+          }
+        }
+
+        /**
+         * [BARU] Memuat pengaturan kelulusan dari backend dan mengisinya ke form.
+         */
+        function loadGraduationSettings() {
+            google.script.run
+                .withSuccessHandler(response => {
+                    if (response.status === 'success' && response.settings) {
+                        const settings = response.settings;
+                        if (settings.announcementDate) {
+                            // Ubah format tanggal ISO ke format yang diterima input datetime-local
+                            const date = new Date(settings.announcementDate);
+                            date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+                            document.getElementById('announcementDate').value = date.toISOString().slice(0,16);
+                        }
+                        const radioBtn = document.querySelector(`input[name="showTranscriptGlobal"][value="${settings.showTranscriptGlobal}"]`);
+                        if (radioBtn) radioBtn.checked = true;
+                    }
+                })
+                .getGraduationSettings(userSpreadsheetId);
+        }
+
+        /**
+         * [VERSI SUPER FINAL - FIX UNTUK TOMBOL SIMPAN MACET]
+         * Menangani submit form pengaturan kelulusan dengan penanganan error yang benar.
+         */
+        function handleSaveGraduationSettings(event) {
+            event.preventDefault();
+            const btn = document.getElementById('saveGraduationSettingsBtn');
+            const btnText = document.getElementById('gradSubmitBtnText');
+            const spinner = document.getElementById('gradLoadingSpinner');
+            
+            const selectedRadio = document.querySelector('input[name="showTranscriptGlobal"]:checked');
+            if (!selectedRadio) {
+                showGlobalStatus("Pilihan 'Tampilkan Transkrip' harus dipilih (Ya atau Tidak).", false);
+                return;
+            }
+
+            // Ubah tombol ke mode loading
+            btn.disabled = true;
+            btnText.classList.add('hidden');
+            spinner.classList.remove('hidden');
+
+            const localDateString = document.getElementById('announcementDate').value;
+            
+            // Siapkan data dengan format tanggal yang benar (ISO String)
+            const settings = {
+                announcementDate: localDateString ? new Date(localDateString).toISOString() : '',
+                showTranscriptGlobal: selectedRadio.value
+            };
+
+            // Panggil fungsi backend TANPA .withFinally() yang salah
+            google.script.run
+                .withSuccessHandler(response => {
+                    showGlobalStatus(response.message, response.status === 'success');
+                    // Kembalikan tombol ke normal setelah ada balasan sukses
+                    btn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    spinner.classList.add('hidden');
+                })
+                .withFailureHandler(err => {
+                    showGlobalStatus(`Error: ${err.message}`, false);
+                    // Kembalikan tombol ke normal setelah ada balasan gagal
+                    btn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    spinner.classList.add('hidden');
+                })
+                .saveGraduationSettings(userSpreadsheetId, settings);
+        }
+
+        /**
+         * [BARU] Menangani aksi massal untuk menampilkan/menyembunyikan transkrip.
+         * @param {string} isVisible - Status yang diinginkan ('YA' atau 'TIDAK').
+         */
+        function handleBulkTranscriptVisibility(isVisible) {
+            const selectedRows = document.querySelectorAll('.student-checkbox:checked');
+            if (selectedRows.length === 0) {
+                showGlobalStatus("Tidak ada siswa yang dipilih.", false);
+                return;
+            }
+
+            const nisnList = Array.from(selectedRows).map(cb => cb.dataset.nisn);
+            const actionText = isVisible === 'YA' ? 'menampilkan' : 'menyembunyikan';
+
+            showConfirmationModal({
+                title: `Konfirmasi Aksi Massal`,
+                body: `Anda yakin ingin <strong><span class="math-inline">\{actionText\}</strong\> transkrip untuk <strong\></span>{nisnList.length} siswa</strong> yang dipilih?`,
+                confirmText: `Ya, ${actionText}`,
+                confirmColor: isVisible === 'YA' ? "bg-green-600 hover:bg-green-700" : "bg-gray-600 hover:bg-gray-700",
+                onConfirm: () => {
+                    showGlobalStatus(`Memproses permintaan untuk ${nisnList.length} siswa...`, 'info');
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            showGlobalStatus(response.message, response.status === 'success');
+                            if(response.status === 'success') {
+                                loadStudentsData(); // Muat ulang data untuk melihat perubahan
+                            }
+                        })
+                        .withFailureHandler(err => showGlobalStatus(`Error: ${err.message}`, false))
+                        .setPerStudentTranscriptVisibility(userSpreadsheetId, nisnList, isVisible);
                 }
             });
         }
