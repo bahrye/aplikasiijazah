@@ -5389,47 +5389,99 @@ function generateSchoolCodeForUser(spreadsheetId) {
 }
 
 /**
- * [BARU] Membuat file PDF dari transkrip seorang siswa dan mengembalikannya sebagai data base64.
- * @param {string} spreadsheetId ID spreadsheet sekolah.
- * @param {string} nisn NISN siswa yang akan dibuatkan transkrip.
- * @returns {object} Objek berisi status, nama file, dan data PDF dalam format base64.
+ * [FINAL v6 - FIX KONTEN KOSONG] Membuat PDF transkrip dengan TTD dan QR Code yang disematkan (embedded).
  */
 function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
   try {
-    // 1. Dapatkan data transkrip menggunakan fungsi yang sudah ada
+    // 1. Dapatkan semua data yang diperlukan
     const transcriptDataResponse = getTranscriptData(spreadsheetId, nisn);
     if (transcriptDataResponse.status !== 'success') {
       throw new Error(transcriptDataResponse.message);
     }
     const { student, school, subjects } = transcriptDataResponse.data;
 
-    // 2. Buat HTML dari data transkrip (mirip dengan renderTranscript di frontend)
+    // Unduh gambar QR Code terlebih dahulu
+    let qrCodeBase64 = '';
+    try {
+        const deployUrl = ScriptApp.getService().getUrl();
+        if (deployUrl) {
+            const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=125x125&data=${encodeURIComponent(deployUrl)}&ecc=L&margin=1`;
+            const qrCodeBlob = UrlFetchApp.fetch(qrCodeApiUrl).getBlob();
+            qrCodeBase64 = Utilities.base64Encode(qrCodeBlob.getBytes());
+        }
+    } catch (e) {
+        Logger.log("Gagal mengambil gambar QR Code dari API: " + e.message);
+    }
+
+    // 2. Helper untuk format data
+    const toProperCase = (str) => {
+        if (!str || typeof str !== 'string') return '';
+        return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+    };
+    const tglLahirFormatted = new Date(student.tanggalLahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    const ttdDateFormatted = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    const nomorIndukGabungan = (school.nsm || '') + (student.nis || '-');
+
     const formatScore = (score) => {
-      if (score === null || score === undefined || isNaN(score)) return '-';
+      if (score === null || score === undefined || isNaN(score)) return '0';
       const rounded = Math.round(score);
       const decimal = score.toFixed(2).replace('.', ',');
       return `${rounded} (${decimal})`;
     };
-    const totalNilaiIjazah = subjects.reduce((sum, s) => sum + (s.nilaiIjazah !== null ? Math.round(s.nilaiIjazah) : 0), 0);
-    const mapelCount = subjects.filter(s => s.nilaiIjazah !== null).length;
-    const rataRataIjazah = mapelCount > 0 ? (totalNilaiIjazah / mapelCount).toFixed(2).replace('.', ',') : '0,00';
-    const tglLahirFormatted = new Date(student.tanggalLahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
-    // 3. Rakit string HTML dengan CSS inline untuk rendering PDF
+    // 3. Logika perhitungan
+    let totalNilaiIjazah = 0;
+    const mapelCount = subjects.length;
+    subjects.forEach(s => {
+      const scoreToAdd = (s.nilaiIjazah !== null && !isNaN(s.nilaiIjazah)) ? Math.round(s.nilaiIjazah) : 0;
+      totalNilaiIjazah += scoreToAdd;
+    });
+    const rataRataIjazah = mapelCount > 0 ? (totalNilaiIjazah / mapelCount).toFixed(2).replace('.', ',') : '0,00';
+    
+    // ===== KODE HTML LENGKAP YANG SUDAH DIPERBAIKI =====
     const htmlContent = `
       <html>
-        <head><style>body{font-family: Arial, sans-serif; font-size: 10pt;} table{border-collapse: collapse; width: 100%;} th, td{border: 1px solid black; padding: 4px; text-align: left;} .text-center{text-align: center;} .font-bold{font-weight: bold;} .bg-gray{background-color: #f2f2f2;}</style></head>
+        <head>
+          <style>
+            body{font-family: Arial, sans-serif; font-size: 10pt;} 
+            table{border-collapse: collapse; width: 100%;} 
+            th, td{border: 1px solid black; padding: 4px; text-align: left; vertical-align: middle;} 
+            .no-border{border: none !important;}
+            .text-center{text-align: center;} 
+            .font-bold{font-weight: bold;} 
+            .bg-gray{background-color: #f2f2f2;}
+            .footer-container { position: absolute; bottom: 15mm; width: 100%; }
+            .ttd-block { float: right; width: 40%; text-align: left; font-size: 10pt; }
+            .qr-block { position: absolute; bottom: 0; left: 0; font-size: 8pt; color: #555; }
+          </style>
+        </head>
         <body>
           <div class="text-center">
             <h3 class="font-bold">TRANSKRIP NILAI AKHIR</h3>
             <h4 class="font-bold">${school.namaSekolah || 'NAMA SEKOLAH'}</h4>
           </div>
           <hr/>
-          <p>
-            Nama Peserta Didik: ${student.nama.toUpperCase()}<br/>
-            Tempat, Tanggal Lahir: ${student.tempatLahir || ''}, ${tglLahirFormatted}<br/>
-            Nomor Induk / NISN: ${student.nis || '-'} / ${student.nisn}
-          </p>
+          
+          <table class="no-border" style="margin-bottom: 1rem;">
+              <tbody>
+                  <tr>
+                      <td class="no-border" style="padding: 1px; width: 180px;">Nama Peserta Didik</td>
+                      <td class="no-border" style="padding: 1px; width: 10px;">:</td>
+                      <td class="no-border font-bold" style="padding: 1px;">${student.nama.toUpperCase()}</td>
+                  </tr>
+                  <tr>
+                      <td class="no-border" style="padding: 1px;">Tempat, Tanggal Lahir</td>
+                      <td class="no-border" style="padding: 1px;">:</td>
+                      <td class="no-border font-bold" style="padding: 1px;">${student.tempatLahir ? toProperCase(student.tempatLahir) + ', ' : ''}${tglLahirFormatted}</td>
+                  </tr>
+                  <tr>
+                      <td class="no-border" style="padding: 1px;">Nomor Induk / NISN</td>
+                      <td class="no-border" style="padding: 1px;">:</td>
+                      <td class="no-border font-bold" style="padding: 1px;">${nomorIndukGabungan} / ${student.nisn}</td>
+                  </tr>
+              </tbody>
+          </table>
+
           <table>
             <thead class="bg-gray">
               <tr><th class="text-center" rowspan="2">No</th><th rowspan="2">Mata Pelajaran</th><th class="text-center" colspan="3">Nilai</th></tr>
@@ -5446,15 +5498,30 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
                 </tr>
               `).join('')}
             </tbody>
-            <tfoot>
-              <tr><td class="font-bold text-center" colspan="4">Rata-rata Nilai Akhir Ijazah</td><td class="text-center font-bold bg-gray">${rataRataIjazah}</td></tr>
+            <tfoot class="font-bold">
+              <tr><td class="text-center" colspan="4">Rata-rata Nilai Akhir Ijazah</td><td class="text-center bg-gray">${rataRataIjazah}</td></tr>
             </tfoot>
           </table>
+
+          <div class="footer-container">
+            <div class="ttd-block">
+                <p>${school.kabupaten || '(Tempat)'}, ${ttdDateFormatted}</p>
+                <p>Kepala Madrasah,</p>
+                <div style="height: 60px;"></div>
+                <p style="font-weight: bold; text-decoration: underline;">${school.namaKepsek || '(Nama Kepala Sekolah)'}</p>
+                <p>NIP. ${school.nipKepsek || '-'}</p>
+            </div>
+            ${qrCodeBase64 ? `
+            <div class="qr-block">
+                <img src="data:image/png;base64,${qrCodeBase64}" alt="QR Code" style="width: 80px; height: 80px;" />
+            </div>
+            ` : ''}
+          </div>
         </body>
       </html>
     `;
 
-    // 4. Konversi HTML ke PDF dan encode ke base64
+    // 5. Konversi ke PDF
     const pdfBlob = Utilities.newBlob(htmlContent, MimeType.HTML).getAs(MimeType.PDF);
     pdfBlob.setName(`Transkrip - ${student.nama}.pdf`);
     
