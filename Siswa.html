@@ -20,10 +20,16 @@
         .content-view { animation: fadeIn 0.7s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         .loading-animation::after {
-            display: inline-block; animation: loading-dots 1.4s infinite; content: '.'; width: 1em; text-align: left;
+            display: inline-block;
+            animation: loading-dots 1.4s infinite;
+            content: '.';
+            width: 1em;
+            text-align: left;
         }
         @keyframes loading-dots {
-            0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; }
+            0% { content: '.'; }
+            33% { content: '..'; }
+            66% { content: '...'; }
         }
     </style>
 </head>
@@ -109,7 +115,10 @@
                         <p class="text-gray-600">Selamat, <span id="nama-siswa-display-transcript" class="font-bold"></span>!</p>
                     </div>
                     <div class="flex space-x-2">
-                        <button id="downloadPdfBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-sm">Unduh PDF</button>
+                        <button id="downloadPdfBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-sm w-32 flex justify-center items-center h-9">
+                            <span class="btn-text">Unduh PDF</span>
+                            <span class="btn-spinner hidden loading-animation">Memproses</span>
+                        </button>
                         <button id="backToResultBtn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg text-sm">Kembali</button>
                     </div>
                 </div>
@@ -444,14 +453,65 @@
             tfootCell.textContent = rataRataIjazah.toFixed(2).replace('.', ',');
         }
 
+        // Pastikan kedua tombol ini mendapat event listener setelah konten dirender
         document.getElementById('downloadPdfBtn').onclick = handleDownloadPdf;
+        
+        // ===== TAMBAHKAN BARIS DI BAWAH INI =====
+        document.getElementById('backToResultBtn').onclick = function() {
+            document.getElementById('transcript-container').classList.add('hidden');
+            document.getElementById('result-container').classList.remove('hidden');
+        };
+        // =========================================
     }
 
     function handleDownloadPdf() {
-        // (Tidak ada perubahan pada fungsi ini, biarkan seperti yang sudah ada)
-        const ssId = sessionStorage.getItem('siswa_ssId');
+        // Ambil data dari session storage
+        const ssId = sessionStorage.getItem('siswa_spreadsheetId');
         const nisn = sessionStorage.getItem('siswa_nisn');
-        google.script.run.generateTranscriptPdfForSiswa(ssId, nisn);
+
+        // Validasi sesi
+        if (!ssId || !nisn) {
+            alert('Sesi tidak valid. Silakan logout dan login kembali.');
+            return;
+        }
+
+        // Ambil elemen tombol, teks, dan spinner
+        const btn = document.getElementById('downloadPdfBtn');
+        const btnText = btn.querySelector('.btn-text');
+        const spinner = btn.querySelector('.btn-spinner');
+
+        // Aktifkan mode loading
+        btn.disabled = true;
+        btnText.classList.add('hidden');
+        spinner.classList.remove('hidden');
+
+        google.script.run
+            .withSuccessHandler(response => {
+                // Kembalikan tombol ke keadaan normal
+                btn.disabled = false;
+                btnText.classList.remove('hidden');
+                spinner.classList.add('hidden');
+
+                if (response.status === 'success') {
+                    // Buat link sementara untuk memicu download
+                    const link = document.createElement('a');
+                    link.href = `data:application/pdf;base64,${response.pdfData}`;
+                    link.download = response.fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    alert('Gagal membuat PDF: ' + response.message);
+                }
+            })
+            .withFailureHandler(err => {
+                // Kembalikan tombol ke keadaan normal jika error
+                btn.disabled = false;
+                btnText.classList.remove('hidden');
+                spinner.classList.add('hidden');
+                alert('Terjadi kesalahan saat menghubungi server: ' + err.message);
+            })
+            .generateTranscriptPdfForSiswa(ssId, nisn);
     }
 
     function handleSiswaLogout() {
