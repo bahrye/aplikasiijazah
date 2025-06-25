@@ -463,7 +463,7 @@
                     
                     <div class="border-t border-blue-700 my-2"></div>
 
-                    <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="pengaturan"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg><span>Pengaturan Nilai KKM</span></a>
+                    <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="pengaturan"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg><span>Pengaturan</span></a>
                     
                     <div class="border-t border-blue-700 my-2"></div>
                     
@@ -761,7 +761,7 @@
 
                                     <div class="pt-4 border-t">
                                         <label class="block text-sm font-medium text-gray-700">Tampilkan Transkrip Nilai untuk Semua Siswa?</label>
-                                        <p class="text-xs text-gray-500 mt-1 mb-2">Jika "Tidak", Anda dapat mengatur visibilitas untuk masing-masing siswa di halaman Data Siswa.</p>
+                                        <p class="text-xs text-gray-500 mt-1 mb-2">Jika "Tidak", Anda dapat mengatur visibilitas untuk masing-masing siswa di halaman Rekapitulasi Nilai Ijazah.</p>
                                         <div class="mt-2 flex items-center space-x-6">
                                             <label class="flex items-center"><input type="radio" name="showTranscriptGlobal" value="YA" class="h-4 w-4"> <span class="ml-2">Ya, Tampilkan untuk semua</span></label>
                                             <label class="flex items-center"><input type="radio" name="showTranscriptGlobal" value="TIDAK" class="h-4 w-4"> <span class="ml-2">Tidak, kontrol per siswa</span></label>
@@ -974,8 +974,6 @@
                                 <div class="flex items-center gap-2">
                                     <input type="number" id="bulk-tahun-lulus-input" placeholder="Tahun Lulus" class="p-2 border border-gray-500 bg-gray-700 text-white rounded-full w-32 text-sm focus:ring-blue-500 focus:border-blue-500">
                                     <button id="bulk-update-tahun-lulus-btn" class="bg-blue-600 hover:bg-blue-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Update</button>
-                                    <div class="h-6 border-l border-gray-500"></div> <button id="bulk-show-transcript-btn" class="bg-green-600 hover:bg-green-700 font-semibold py-2 px-4 rounded-full text-sm">Tampilkan Transkrip</button>
-                                    <button id="bulk-hide-transcript-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-full text-sm">Sembunyikan</button>
                                     <div class="h-6 border-l border-gray-500"></div>
                                     <button id="bulk-delete-btn" class="bg-red-600 hover:bg-red-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Hapus</button>
                                 </div>
@@ -2138,9 +2136,15 @@
         <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-4xl transform scale-95 flex flex-col max-h-[95vh]">
             <div class="flex-shrink-0 flex justify-between items-center border-b p-4">
                 <h2 class="text-xl font-bold text-gray-800">Transkrip Nilai Siswa</h2>
-                <div>
-                    <button id="printTranscriptBtn" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-md hover:bg-blue-700 transition-colors text-sm">Cetak / Simpan PDF</button>
-                    <button id="closeTranscriptModalBtn" class="text-gray-500 hover:text-gray-800 text-3xl ml-4">&times;</button>
+                <div class="flex items-center space-x-3">
+                    <button id="downloadTranscriptBtn" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-md hover:bg-blue-700 transition-colors text-sm w-32 h-9 flex justify-center items-center">
+                        <span class="btn-text">Unduh PDF</span>
+                        <span class="btn-spinner hidden loading-animation">Memproses</span>
+                    </button>
+                    <button id="printTranscriptBtn" class="bg-gray-600 text-white font-medium py-2 px-4 rounded-md hover:bg-gray-700 transition-colors text-sm">
+                        Cetak
+                    </button>
+                    <button id="closeTranscriptModalBtn" class="text-gray-500 hover:text-gray-800 text-3xl ml-2">&times;</button>
                 </div>
             </div>
             
@@ -4061,13 +4065,12 @@
             }
 
             /**
-             * [MODIFIKASI] Menampilkan data siswa ke dalam tabel HTML.
-             * Kini menyertakan kolom status visibilitas transkrip.
-             * @param {Array<object>} studentsToRender - Array data siswa yang ingin ditampilkan.
+             * [MODIFIKASI] Merender tabel data siswa dengan kolom tambahan 
+             * untuk Jenis Kelamin dan Tempat, Tanggal Lahir.
              */
             function renderSiswaTable(studentsToRender) {
                 const container = document.getElementById('siswaTableContainer');
-                container.innerHTML = ''; // Selalu bersihkan kontainer sebelum merender
+                container.innerHTML = ''; 
 
                 if (!studentsToRender || studentsToRender.length === 0) {
                     container.innerHTML = `<p class="text-center text-gray-500 py-4">Belum ada data siswa atau data tidak ditemukan.</p>`;
@@ -4076,6 +4079,7 @@
 
                 const table = document.createElement('table');
                 table.className = 'min-w-full divide-y divide-gray-200';
+                // ===== PERUBAHAN PADA HEADER TABEL =====
                 table.innerHTML = `
                     <thead class="bg-gray-50">
                         <tr>
@@ -4084,7 +4088,8 @@
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NISN</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Lengkap</th>
-                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" title="Apakah transkrip nilai dapat dilihat oleh siswa di portalnya?">Transkrip Terlihat</th>
+                            <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">L/P</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tempat, Tgl Lahir</th>
                             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                         </tr>
                     </thead>
@@ -4094,27 +4099,26 @@
                 studentsToRender.forEach(s => {
                     const tr = document.createElement('tr');
                     
-                    // Logika untuk menampilkan ikon status visibilitas transkrip
-                    const transcriptVisible = s.tampilkanTranskrip === 'YA';
-                    const statusIcon = transcriptVisible 
-                        ? `<span class="text-green-500" title="Ya, terlihat oleh siswa">✔️</span>` 
-                        : `<span class="text-red-500" title="Tidak, disembunyikan dari siswa">✖️</span>`;
-
+                    // Format data tanggal lahir dan tempat lahir
+                    const tglLahirFormatted = s.tanggalLahir ? formatIndonesianDate(s.tanggalLahir) : '-';
+                    const tempatLahirFormatted = s.tempatLahir ? toProperCase(s.tempatLahir) : '';
+                    const ttl = s.tempatLahir ? `${tempatLahirFormatted}, ${tglLahirFormatted}` : tglLahirFormatted;
+                    
+                    // ===== PERUBAHAN PADA ISI BARIS (ROW) TABEL =====
                     tr.innerHTML = `
                         <td class="px-4 py-4 whitespace-nowrap">
                             <input type="checkbox" class="student-checkbox h-4 w-4 rounded border-gray-300" data-row="${s.row}" data-nisn="${s.nisn}">
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 nama-siswa-cell">${s.nama.toUpperCase()}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center">${statusIcon}</td>
+                        <td class="px-3 py-4 whitespace-nowrap text-sm text-center text-gray-500">${s.jenisKelamin || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ttl}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button class="text-green-600 hover:text-green-900 font-bold" data-action="transcript" title="Lihat Transkrip">Transkrip</button>
                             <button class="text-indigo-600 hover:text-indigo-900 ml-4" data-action="edit">Edit</button>
                             <button class="text-red-600 hover:text-red-900 ml-4" data-action="delete">Hapus</button>
                         </td>`;
                     
                     // Pasang event listener untuk tombol aksi di setiap baris
-                    tr.querySelector('[data-action="transcript"]').addEventListener('click', () => handleShowTranscript(s.nisn));
                     tr.querySelector('[data-action="edit"]').addEventListener('click', () => handleEditStudent(s));
                     tr.querySelector('[data-action="delete"]').addEventListener('click', (e) => handleDeleteStudent(s, e.target));
                     
@@ -4892,36 +4896,31 @@
             });
 
             /**
-             * [DIPERBARUI] Menampilkan tabel rekapitulasi berdasarkan tipe yang dipilih.
-             * Kolom status Ijazah sekarang dihitung secara real-time di frontend dan teksnya tidak terpotong.
-             * @param {string} type Jenis rekap ('ujian', 'rapor', 'ijazah').
-             * @param {object} rekapData Objek data lengkap dari server.
+             * [FINAL v3] Menampilkan tabel rekapitulasi dengan logika default tahun ajaran yang benar.
              */
             function displayRekap(type, rekapData) {
-                const { students, mapel, bobot, kkm, rekapUjian, rekapRapor, rekapIjazah } = rekapData;
+                const { students, mapel, bobot, kkm } = rekapData;
                 const displayArea = document.getElementById('rekap-display-area');
                 
-                let dataToShow;
-                let title;
-                let subtitleHtml = '';
-                
+                let dataToShow, title, subtitleHtml;
                 const mapelCount = (mapel || []).length;
-                const kkmValue = kkm || 75; // Ambil KKM, fallback ke 75 jika tidak ada
+                const kkmValue = kkm || 75;
 
+                // ... (switch case untuk menentukan title, dll tidak berubah)
                 switch (type) {
                     case 'ujian':
-                        dataToShow = rekapUjian;
+                        dataToShow = rekapData.rekapUjian;
                         title = 'Rekapitulasi Nilai Ujian';
                         subtitleHtml = `<p class="text-sm font-normal text-gray-600 mt-1">Jumlah Mata Pelajaran: <strong>${mapelCount}</strong> | KKM: <strong>${kkmValue}</strong></p>`;
                         break;
                     case 'rapor':
-                        dataToShow = rekapRapor;
+                        dataToShow = rekapData.rekapRapor;
                         title = 'Rekapitulasi Nilai Rapor';
                         subtitleHtml = `<p class="text-sm font-normal text-gray-600 mt-1">Jumlah Mata Pelajaran: <strong>${mapelCount}</strong> | KKM: <strong>${kkmValue}</strong></p>`;
                         break;
                     case 'ijazah':
                     default:
-                        dataToShow = rekapIjazah;
+                        dataToShow = rekapData.rekapIjazah;
                         title = 'Rekapitulasi Nilai Ijazah';
                         if (bobot) {
                             subtitleHtml = `<p class="text-sm font-normal text-gray-600 mt-1">
@@ -4940,10 +4939,10 @@
                             ${subtitleHtml}
                         </div>
                         <div class="flex space-x-2">
-                            <button id="showExportModalButton" data-rekap-type="${type}" class="bg-blue-600 text-white font-medium py-2 px-3 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center space-x-1.5 text-sm">
+                            <button id="showExportModalButton" data-rekap-type="${type}" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 text-sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 btn-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
                                 <span class="btn-text">Pengaturan & Ekspor</span>
-                                <span class="btn-spinner hidden loading-animation">Memuat...</span>
+                                <span class="btn-spinner hidden loading-animation">Memuat</span>
                             </button>
                         </div>
                     </div>
@@ -4957,132 +4956,166 @@
                                     ${mapel.map(m => `<th class="border border-gray-300 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}
                                     <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th>
                                     <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-rata</th>
-                                    ${type === 'ujian' ? '<th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Pembulatan (Input PDUM)</th>' : ''}
                                     ${type === 'ijazah' ? '<th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>' : ''}
+                                    ${type === 'ijazah' ? '<th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="Tampilkan Transkrip di Portal Siswa?">Transkrip</th>' : ''}
+                                    ${type === 'ijazah' ? '<th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Aksi</th>' : ''}
                                 </tr>
                             </thead>
-                            <tbody>`;
+                            <tbody>
+                                ${students && students.length > 0 ? students.map((student, index) => {
+                                    const scores = dataToShow[student.nisn] || {};
+                                    let total = 0;
+                                    const mapelCount = mapel.length;
+                                    let rowHtml = `<tr>
+                                        <td class="border border-gray-300 px-3 py-2 text-center">${index + 1}</td>
+                                        <td class="border border-gray-300 px-4 py-2 text-center">${student.nisn}</td>
+                                        <td class="border border-gray-300 px-4 py-2 nama-siswa-cell">${student.nama.toUpperCase()}</td>`;
 
-                if (students && students.length > 0) {
-                    students.forEach((student, index) => {
-                        const scores = dataToShow[student.nisn] || {};
-                        let total = 0;
-                        // Kita tidak lagi memerlukan validScoresCount untuk perhitungan rata-rata
-                        
-                        // Dapatkan jumlah total mapel di awal
-                        const mapelCount = mapel.length;
+                                    mapel.forEach(m => {
+                                        const rawScore = scores[m.kode];
+                                        const numericScore = parseFloat(rawScore);
+                                        let displayValue = 0;
+                                        let kkmClass = '';
+                                        if (!isNaN(numericScore)) {
+                                            displayValue = Math.round(numericScore);
+                                            total += displayValue;
+                                            if (displayValue < kkmValue) kkmClass = 'text-red-600 font-bold';
+                                        }
+                                        rowHtml += `<td class="border border-gray-300 text-center ${kkmClass}">${displayValue}</td>`;
+                                    });
+                                    
+                                    const average = mapelCount > 0 ? (total / mapelCount) : 0;
+                                    
+                                    rowHtml += `<td class="border border-gray-300 text-center font-bold">${total}</td>
+                                                <td class="border border-gray-300 text-center font-bold">${average.toFixed(2).replace('.', ',')}</td>`;
+                                    
+                                    if (type === 'ijazah') {
+                                        const status = (mapelCount > 0 && average >= kkmValue) ? 'LULUS' : 'TIDAK LULUS';
+                                        const statusClass = status === 'LULUS' ? 'bg-green-100 text-green-800 font-bold' : 'bg-red-100 text-red-800 font-bold';
+                                        rowHtml += `<td class="border border-gray-300 text-center whitespace-nowrap ${statusClass}">${status}</td>`;
 
-                        let rowHtml = `<tr>
-                            <td class="border border-gray-300 px-3 py-2 text-center">${index + 1}</td>
-                            <td class="border border-gray-300 px-4 py-2 text-center">${student.nisn}</td>
-                            <td class="border border-gray-300 px-4 py-2 nama-siswa-cell">${student.nama.toUpperCase()}</td>`;
+                                        const isChecked = student.tampilkanTranskrip === 'YA' ? 'checked' : '';
+                                        rowHtml += `
+                                            <td class="border border-gray-300 text-center">
+                                                <input type="checkbox" class="rekap-transcript-checkbox h-5 w-5 rounded border-gray-400 text-blue-600 focus:ring-blue-500" data-nisn="${student.nisn}" ${isChecked}>
+                                            </td>
+                                            <td class="border border-gray-300 text-center">
+                                                <button class="rekap-show-transcript-btn text-green-600 hover:text-green-900 font-bold text-sm" data-nisn="${student.nisn}">Transkrip</button>
+                                            </td>`;
+                                    }
+                                    
+                                    rowHtml += `</tr>`;
+                                    return rowHtml;
+                                }).join('') : ''}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
 
-                        mapel.forEach(m => {
-                            const rawScore = scores[m.kode];
-                            const numericScore = parseFloat(rawScore);
+                displayArea.innerHTML = tableHtml;
+
+                if (type === 'ijazah') {
+                    displayArea.addEventListener('change', function(e) {
+                        if (e.target.classList.contains('rekap-transcript-checkbox')) {
+                            const nisn = e.target.dataset.nisn;
+                            const isVisible = e.target.checked ? 'YA' : 'TIDAK';
                             
-                            let displayValue = 0;
-                            let kkmClass = '';
-
-                            if (!isNaN(numericScore)) {
-                                displayValue = Math.round(numericScore);
-                                // Total tetap dihitung dari nilai yang ada
-                                total += displayValue; 
-                                
-                                if (displayValue < kkmValue) {
-                                    kkmClass = 'text-red-600 font-bold';
-                                }
-                            }
-                            
-                            rowHtml += `<td class="border border-gray-300 text-center ${kkmClass}">${displayValue}</td>`;
-                        });
-
-                        // =================================================================
-                        // PERUBAHAN UTAMA ADA DI SINI: RUMUS RATA-RATA BARU
-                        // Pembagi sekarang adalah jumlah total mapel (mapelCount)
-                        const average = mapelCount > 0 ? (total / mapelCount) : 0;
-                        // =================================================================
-                        
-                        rowHtml += `<td class="border border-gray-300 text-center font-bold">${total}</td>
-                                    <td class="border border-gray-300 text-center font-bold">${average.toFixed(2).replace('.', ',')}</td>`;
-                        
-                        if (type === 'ujian') {
-                            const roundedAverage = Math.round(average);
-                            rowHtml += `<td class="border border-gray-300 text-center font-bold text-blue-600">${roundedAverage}</td>`;
+                            google.script.run
+                                .withSuccessHandler(response => {
+                                    if (response.status === 'success') {
+                                        showGlobalStatus(`Visibilitas transkrip untuk NISN ${nisn} diupdate.`, true);
+                                        const studentIndex = rekapitulasiData.students.findIndex(s => s.nisn === nisn);
+                                        if (studentIndex !== -1) {
+                                            rekapitulasiData.students[studentIndex].tampilkanTranskrip = isVisible;
+                                        }
+                                    } else {
+                                        showGlobalStatus(response.message, false);
+                                        e.target.checked = !e.target.checked;
+                                    }
+                                })
+                                .setPerStudentTranscriptVisibility(userSpreadsheetId, [nisn], isVisible);
                         }
-                        
-                        if (type === 'ijazah') {
-                            let status = '-'; 
-                            // Cek jika ada setidaknya satu nilai untuk menentukan status
-                            if (mapelCount > 0) {
-                                status = (average >= kkmValue) ? 'LULUS' : 'TIDAK LULUS';
-                            }
+                    });
 
-                            let statusClass = 'text-gray-700';
-                            if (status === 'LULUS') {
-                                statusClass = 'bg-green-100 text-green-800 font-bold';
-                            } else if (status === 'TIDAK LULUS') {
-                                statusClass = 'bg-red-100 text-red-800 font-bold';
-                            }
-                            
-                            rowHtml += `<td class="border border-gray-300 text-center whitespace-nowrap ${statusClass}">${status}</td>`;
+                    displayArea.addEventListener('click', function(e) {
+                        if (e.target.classList.contains('rekap-show-transcript-btn')) {
+                            const nisn = e.target.dataset.nisn;
+                            handleShowTranscript(nisn);
                         }
-                        
-                        rowHtml += `</tr>`;
-                        tableHtml += rowHtml;
                     });
                 }
 
-                tableHtml += `</tbody></table></div></div>`;
-                displayArea.innerHTML = tableHtml;
-
                 document.getElementById('showExportModalButton')?.addEventListener('click', function() {
                     const btn = this;
-                    const btnIcon = btn.querySelector('.btn-icon');
-                    const btnText = btn.querySelector('.btn-text');
                     const spinner = btn.querySelector('.btn-spinner');
+                    const btnText = btn.querySelector('.btn-text');
                     btn.disabled = true;
-                    btnIcon.classList.add('hidden');
-                    btnText.textContent = '';
                     spinner.classList.remove('hidden');
+                    btnText.classList.add('hidden');
+                    
                     const rekapType = this.dataset.rekapType;
                     document.getElementById('exportForm').dataset.rekapType = rekapType;
                     const savedOptions = JSON.parse(localStorage.getItem('exportOptions'));
+
                     google.script.run
                         .withSuccessHandler(schoolData => {
-                            btn.disabled = false;
-                            btnIcon.classList.remove('hidden');
-                            btnText.textContent = 'Pengaturan & Ekspor';
                             spinner.classList.add('hidden');
+                            btnText.classList.remove('hidden');
+                            btn.disabled = false;
+                            
                             document.getElementById('exportNamaSekolah').value = schoolData.namaSekolah || '';
                             document.getElementById('exportNamaKamad').value = schoolData.namaKepsek || '';
                             document.getElementById('exportNip').value = schoolData.nipKepsek || '';
+                            
                             const tahunAjaranSelect = document.getElementById('exportTahunAjaran');
                             tahunAjaranSelect.innerHTML = '';
-                            const currentYear = new Date().getFullYear();
-                            const years = [`${currentYear - 2}/${currentYear - 1}`, `${currentYear - 1}/${currentYear}`, `${currentYear}/${currentYear + 1}`, `${currentYear + 1}/${currentYear + 2}`, `${currentYear + 2}/${currentYear + 3}`];
+                            
+                            // ===== AWAL LOGIKA BARU UNTUK TAHUN AJARAN =====
+                            const date = new Date();
+                            const currentYear = date.getFullYear();
+                            const currentMonth = date.getMonth(); // 0 = Januari, 6 = Juli
+                            
+                            // Opsi tahun ajaran yang akan ditampilkan
+                            const years = [
+                                `${currentYear - 2}/${currentYear - 1}`,
+                                `${currentYear - 1}/${currentYear}`,
+                                `${currentYear}/${currentYear + 1}`,
+                                `${currentYear + 1}/${currentYear + 2}`
+                            ];
+
+                            // Tentukan tahun ajaran default berdasarkan bulan
+                            let defaultAcademicYear;
+                            if (currentMonth < 6) { // Jika bulan Januari - Juni
+                                defaultAcademicYear = `${currentYear - 1}/${currentYear}`;
+                            } else { // Jika bulan Juli - Desember
+                                defaultAcademicYear = `${currentYear}/${currentYear + 1}`;
+                            }
+
                             years.forEach(year => {
                                 const option = document.createElement('option');
                                 option.value = year;
                                 option.textContent = year;
                                 tahunAjaranSelect.appendChild(option);
                             });
-                            if (savedOptions) {
-                                tahunAjaranSelect.value = savedOptions.tahunAjaran || years[2];
-                                document.getElementById('exportTempatTTD').value = savedOptions.tempatTTD || '';
-                                document.getElementById('exportTanggalTTD').value = savedOptions.tanggalTTD || new Date().toISOString().split('T')[0];
-                                document.getElementById('exportTipeKamad').value = savedOptions.tipeKamad || 'Kepala Madrasah';
+
+                            // Set nilai default-nya
+                            if (savedOptions && savedOptions.tahunAjaran) {
+                                tahunAjaranSelect.value = savedOptions.tahunAjaran;
                             } else {
-                                tahunAjaranSelect.value = years[2];
-                                document.getElementById('exportTanggalTTD').valueAsDate = new Date();
+                                tahunAjaranSelect.value = defaultAcademicYear;
                             }
+                            // ===== AKHIR LOGIKA BARU =====
+
+                            document.getElementById('exportTempatTTD').value = savedOptions?.tempatTTD || '';
+                            document.getElementById('exportTanggalTTD').value = savedOptions?.tanggalTTD || new Date().toISOString().split('T')[0];
+                            document.getElementById('exportTipeKamad').value = savedOptions?.tipeKamad || 'Kepala Madrasah';
+                            
                             document.getElementById('export-modal').classList.remove('hidden');
                         })
                         .withFailureHandler(error => {
-                            btn.disabled = false;
-                            btnIcon.classList.remove('hidden');
-                            btnText.textContent = 'Pengaturan & Ekspor';
                             spinner.classList.add('hidden');
+                            btnText.classList.remove('hidden');
+                            btn.disabled = false;
                             showGlobalStatus('Gagal memuat pengaturan: ' + error.message, false);
                         })
                         .getSchoolData(userSpreadsheetId);
@@ -9908,23 +9941,69 @@
             
             printableArea.innerHTML = html;
 
-            // --- PERUBAHAN UTAMA: Pasang listener multifungsi pada satu tombol ---
+            // ===== AWAL PEMASANGAN EVENT LISTENER UNTUK KEDUA TOMBOL =====
+
+            // 1. FUNGSI UNTUK TOMBOL "UNDUH PDF" (BARU)
+            const downloadBtn = document.getElementById('downloadTranscriptBtn');
+            if (downloadBtn) {
+                // Hapus listener lama jika ada dengan mengkloning
+                const newDownloadBtn = downloadBtn.cloneNode(true);
+                downloadBtn.parentNode.replaceChild(newDownloadBtn, downloadBtn);
+
+                newDownloadBtn.addEventListener('click', () => {
+                    const nisn = student.nisn;
+                    const ssId = userSpreadsheetId;
+
+                    if (!ssId || !nisn) {
+                        alert('Sesi tidak valid atau NISN tidak ditemukan.');
+                        return;
+                    }
+
+                    const btnText = newDownloadBtn.querySelector('.btn-text');
+                    const spinner = newDownloadBtn.querySelector('.btn-spinner');
+
+                    newDownloadBtn.disabled = true;
+                    btnText.classList.add('hidden');
+                    spinner.classList.remove('hidden');
+
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            newDownloadBtn.disabled = false;
+                            btnText.classList.remove('hidden');
+                            spinner.classList.add('hidden');
+                            if (response.status === 'success') {
+                                const link = document.createElement('a');
+                                link.href = `data:application/pdf;base64,${response.pdfData}`;
+                                link.download = response.fileName;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                            } else {
+                                alert('Gagal membuat PDF: ' + response.message);
+                            }
+                        })
+                        .withFailureHandler(err => {
+                            newDownloadBtn.disabled = false;
+                            btnText.classList.remove('hidden');
+                            spinner.classList.add('hidden');
+                            alert('Error saat menghubungi server: ' + err.message);
+                        })
+                        .generateTranscriptPdfForSiswa(ssId, nisn);
+                });
+            }
+
+            // 2. Tombol "Cetak" (Dengan penambahan kembali logika QR Code)
             const printBtn = document.getElementById('printTranscriptBtn');
             const newPrintBtn = printBtn.cloneNode(true);
             printBtn.parentNode.replaceChild(newPrintBtn, printBtn);
 
             newPrintBtn.addEventListener('click', () => {
                 const deployUrl = sessionStorage.getItem('webAppUrl') || '';
-                // Buat nama file dinamis berdasarkan data siswa
                 const fileName = `${student.nama.toUpperCase()} - ${student.nisn} - Transkrip Nilai`;
-
                 const printWindow = window.open('', '', 'height=800,width=800');
                 
-                // Gunakan 'fileName' sebagai judul dokumen
                 printWindow.document.write(`<html><head><title>${fileName}</title>`);
-                
                 Array.from(document.styleSheets).forEach(styleSheet => { try { const cssRules = Array.from(styleSheet.cssRules).map(rule => rule.cssText).join(''); printWindow.document.write(`<style>${cssRules}</style>`); } catch (e) { if (styleSheet.href) { printWindow.document.write(`<link rel="stylesheet" href="${styleSheet.href}">`); } } });
-
                 printWindow.document.write(`
                     <style>
                         @page { size: A4; margin: 15mm; }
@@ -9934,14 +10013,13 @@
                         .p-2 { padding: 0.25rem 0.5rem !important; } .mb-4 { margin-bottom: 0.75rem !important; } .mt-8 { margin-top: 1.25rem !important; } .h-20 { height: 3.5rem !important; }
                     </style>
                 `);
-                
                 printWindow.document.write('</head><body style="position: relative;">');
-                printWindow.document.write(printableArea.innerHTML);
+                printWindow.document.write(document.getElementById('printable-transcript-content').innerHTML);
                 
+                // ===== LOGIKA QR CODE YANG DIKEMBALIKAN =====
                 if (deployUrl) {
                     const encodedUrl = encodeURIComponent(deployUrl);
-                    // [DIUBAH] Perbesar ukuran gambar dan sederhanakan polanya (ecc=L)
-                    const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=85x85&data=${encodedUrl}&ecc=L`;
+                    const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=125x125&data=${encodedUrl}&ecc=L&margin=1`;
 
                     printWindow.document.write(`
                         <div class="print-footer">
@@ -9950,10 +10028,12 @@
                         </div>
                     `);
                 }
-                
+                // ===========================================
+
                 printWindow.document.write('</body></html>');
                 printWindow.document.close();
 
+                // Logika untuk trigger print (tidak berubah)
                 const qrImage = printWindow.document.getElementById('print-qr-code');
                 if (qrImage) {
                     let printTriggered = false;
