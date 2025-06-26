@@ -44,8 +44,11 @@ function doGet(e) {
   const webAppUrl = ScriptApp.getService().getUrl(); // Dapatkan URL publik
 
   if (page === 'siswa') {
-    // Untuk halaman siswa, kita tidak perlu menyisipkan URL karena tidak ada navigasi keluar
-    return HtmlService.createHtmlOutputFromFile('Siswa.html')
+    // PERUBAHAN: Gunakan template untuk halaman siswa agar bisa menyisipkan URL
+    const template = HtmlService.createTemplateFromFile('Siswa.html');
+    template.webAppUrl = webAppUrl; // Sisipkan URL ke dalam variabel 'webAppUrl'
+
+    return template.evaluate() // Gunakan .evaluate() untuk memproses template
       .setTitle('Portal Siswa')
       .setFaviconUrl("https://i.imgur.com/C0cZOT0.png")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
@@ -5151,6 +5154,11 @@ function loginSiswa(kodeSekolah, nisn, tanggalLahir) {
         const studentInfo = findStudentInSheet(spreadsheetId, nisn, tanggalLahir);
 
         if (studentInfo) {
+            // == AWAL PERUBAHAN ==
+            // Ambil data sekolah untuk mendapatkan nama sekolah
+            const schoolData = getSchoolData(spreadsheetId);
+            // == AKHIR PERUBAHAN ==
+
             // 1. Ambil pengaturan kelulusan
             const gradSettingsResponse = getGraduationSettings(spreadsheetId);
             const gradSettings = gradSettingsResponse.settings || { announcementDate: null, showTranscriptGlobal: 'TIDAK' };
@@ -5170,17 +5178,18 @@ function loginSiswa(kodeSekolah, nisn, tanggalLahir) {
             // 4. Gabungkan semua data dalam respons
             return {
                 status: "success",
-                webAppUrl: ScriptApp.getService().getUrl(), // <-- TAMBAHKAN BARIS INI
+                webAppUrl: ScriptApp.getService().getUrl(),
                 nisn: nisn,
                 spreadsheetId: spreadsheetId,
                 studentData: studentInfo,
+                schoolData: schoolData, // <-- DATA BARU YANG DIKIRIM
                 announcementDate: gradSettings.announcementDate,
                 showTranscriptGlobal: gradSettings.showTranscriptGlobal,
                 showTranscriptPerStudent: perStudentVisibility,
                 statusLulus: statusLulus
             };
         } else {
-            return { status: "error", message: "Login Gagal. Pastikan Kode Sekolah, NISN dan Tanggal Lahir Anda benar." };
+            return { status: "error", message: "Login Gagal. Pastikan NISN dan Tanggal Lahir Anda benar. Jika masih mengalami kendala login, silahkan hubungi Operator Sekolah/Madrasah." };
         }
 
     } catch (error) {
@@ -6260,4 +6269,112 @@ function setPerStudentTranscriptVisibility(spreadsheetId, nisnList, isVisible) {
     } catch (e) {
         return { status: "error", message: "Gagal mengupdate visibilitas: " + e.message };
     }
+}
+
+/**
+ * [SUPERADMIN] Menyimpan pengaturan kelulusan GLOBAL.
+ * @param {string} adminEmail - Email Superadmin untuk verifikasi.
+ * @param {object} settings - Objek berisi { announcementDate }.
+ * @returns {object} Status penyimpanan.
+ */
+function saveGlobalGraduationSettings_Superadmin(adminEmail, settings) {
+    if (!isSuperadmin(adminEmail)) {
+        return { status: "error", message: "Akses ditolak." };
+    }
+    try {
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        let sheet = ss.getSheetByName(SHEET_PENGATURAN);
+
+        if (!sheet) {
+            sheet = ss.insertSheet(SHEET_PENGATURAN);
+            sheet.getRange("A1:B1").setValues([['Nama Pengaturan', 'Value']]).setFontWeight('bold');
+        }
+
+        if (settings.announcementDate) {
+            const row = findOrCreateSettingRow(sheet, "Tanggal Pengumuman Kelulusan Global");
+            sheet.getRange(row, 2).setValue(settings.announcementDate);
+        } else {
+            const row = findOrCreateSettingRow(sheet, "Tanggal Pengumuman Kelulusan Global");
+            sheet.getRange(row, 2).clearContent();
+        }
+
+        return { status: "success", message: "Pengaturan pengumuman global berhasil disimpan." };
+    } catch (e) {
+        Logger.log("saveGlobalGraduationSettings_Superadmin Error: " + e.message);
+        return { status: "error", message: "Gagal menyimpan pengaturan: " + e.message };
+    }
+}
+
+/**
+ * [PUBLIC] Mengambil pengaturan kelulusan GLOBAL.
+ * Fungsi ini dapat diakses tanpa login untuk menampilkan countdown.
+ * @returns {object} Objek berisi pengaturan.
+ */
+function getGlobalGraduationSettings() {
+    try {
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        const sheet = ss.getSheetByName(SHEET_PENGATURAN);
+        if (!sheet) return { announcementDate: null };
+
+        const data = sheet.getDataRange().getValues();
+        const settings = { announcementDate: null }; 
+
+        data.forEach(row => {
+            if (row[0] === "Tanggal Pengumuman Kelulusan Global" && row[1]) {
+                settings.announcementDate = new Date(row[1]).toISOString();
+            }
+        });
+        return settings;
+    } catch (e) {
+        // Jika error, kembalikan null agar halaman login tetap tampil
+        return { announcementDate: null };
+    }
+}
+
+/**
+ * [PUBLIC BARU] Mengambil pengaturan sekolah berdasarkan Kode Sekolah.
+ * Fungsi ini digunakan untuk menampilkan countdown per sekolah sebelum login.
+ * @param {string} kodeSekolah - Kode unik sekolah yang dimasukkan siswa.
+ * @returns {object} Objek berisi nama sekolah dan tanggal pengumuman.
+ */
+function getSchoolSettingsByCode(kodeSekolah) {
+  try {
+    if (!kodeSekolah) {
+      return { status: "error", message: "Kode Sekolah tidak boleh kosong." };
+    }
+
+    const userSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PENGGUNA);
+    if (!userSheet || userSheet.getLastRow() < 2) {
+      return { status: "error", message: "Sistem tidak dapat menemukan data sekolah." };
+    }
+    
+    // Cari baris yang cocok dengan Kode Sekolah (kolom M, indeks 12)
+    const data = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 13).getValues();
+    const schoolRow = data.find(row => row[12] && row[12].toUpperCase() === kodeSekolah.toUpperCase());
+
+    if (!schoolRow) {
+      return { status: "error", message: "Kode Sekolah tidak valid atau tidak ditemukan." };
+    }
+    
+    const spreadsheetId = schoolRow[5]; // Kolom F adalah Spreadsheet ID
+    const namaSekolah = schoolRow[3];   // Kolom D adalah Nama Sekolah
+
+    if (!spreadsheetId) {
+      return { status: "error", message: "Konfigurasi untuk sekolah ini tidak lengkap." };
+    }
+
+    // Ambil pengaturan spesifik sekolah tersebut
+    const gradSettingsResponse = getGraduationSettings(spreadsheetId);
+    const gradSettings = gradSettingsResponse.settings || { announcementDate: null };
+
+    return {
+      status: "success",
+      namaSekolah: namaSekolah,
+      announcementDate: gradSettings.announcementDate
+    };
+
+  } catch (error) {
+    Logger.log("getSchoolSettingsByCode Error: " + error.message);
+    return { status: "error", message: "Terjadi kesalahan pada server saat memeriksa kode." };
+  }
 }
