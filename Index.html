@@ -337,19 +337,19 @@
                         </form>
                         <div id="login-error-message" class="mt-4 text-center text-red-600 text-sm h-4"></div>
 
-                        <div class="mt-4 text-center text-sm"> <div class="mb-4">
-                                <button id="goToSiswaLoginBtn" class="inline-block w-full py-3 px-4 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors shadow-md">
-                                    Login sebagai Siswa
-                                </button>
-                            </div>
-
-                            <div class="flex justify-between items-center text-gray-600">
-                                <a href="#" id="forgot-password-link" class="hover:text-blue-600">Lupa Password?</a>
-                                <span>
-                                    Belum punya akun? 
-                                    <a href="#" id="show-signup" class="font-medium text-blue-600 hover:text-blue-500">Daftar</a>
-                                </span>
-                            </div>
+                        <div class="mt-1">
+                            <button id="goToSiswaLoginBtn" class="w-full bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition shadow-md">
+                                <span id="goToSiswaBtnText">Login sebagai Siswa</span>
+                                <span id="goToSiswaSpinner" class="hidden loading-animation">Mengarahkan</span>
+                            </button>
+                        </div>
+                        
+                        <div class="mt-6 flex justify-between items-center text-sm text-gray-600">
+                            <a href="#" id="forgot-password-link" class="hover:text-blue-600">Lupa Password?</a>
+                            <span>
+                                Belum punya akun? 
+                                <a href="#" id="show-signup" class="font-medium text-blue-600 hover:text-blue-500">Daftar</a>
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -1349,6 +1349,22 @@
 
                     <div id="page-admin-tools" class="content-page hidden p-4 sm:p-6 lg:p-8">
                         <div class="max-w-4xl mx-auto">
+                            <div class="bg-white p-6 rounded-lg shadow-md border border-blue-200 mb-8">
+                                <h2 class="text-xl font-bold text-gray-800 mb-2">Pengaturan Pengumuman Global</h2>
+                                <p class="text-sm text-gray-600 mb-4">
+                                    Atur tanggal dan waktu pengumuman kelulusan yang akan berlaku untuk <strong>SEMUA</strong> sekolah.
+                                    Ini akan menampilkan hitung mundur di halaman login siswa sebelum waktu yang ditentukan.
+                                </p>
+                                <div id="global-grad-settings-form" class="space-y-4">
+                                    <div>
+                                        <label for="global-announcement-date" class="block text-sm font-medium text-gray-700">Tanggal & Waktu Pengumuman Global</label>
+                                        <input type="datetime-local" id="global-announcement-date" class="mt-1 w-full max-w-xs p-2 border border-gray-300 rounded-md shadow-sm">
+                                    </div>
+                                    <button id="save-global-grad-settings-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                                        Simpan Tanggal Global
+                                    </button>
+                                </div>
+                            </div>
                             <div class="flex items-center mb-6">
                                 <svg class="w-8 h-8 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                                 <h1 class="text-3xl font-bold text-gray-800">Alat Superadmin</h1>
@@ -2457,22 +2473,24 @@
             const goToSiswaBtn = document.getElementById('goToSiswaLoginBtn');
             if (goToSiswaBtn) {
                 goToSiswaBtn.addEventListener('click', function() {
-                    // Beri feedback visual ke pengguna
-                    this.textContent = 'Mengarahkan...';
-                    this.disabled = true;
+                    const btn = this;
+                    const btnText = document.getElementById('goToSiswaBtnText');
+                    const spinner = document.getElementById('goToSiswaSpinner');
 
-                    // PERBAIKAN UTAMA: Gunakan konstanta global WEB_APP_URL yang diinjeksi dari server
+                    // Tampilkan animasi loading
+                    btn.disabled = true;
+                    btnText.classList.add('hidden');
+                    spinner.classList.remove('hidden');
+
                     if (typeof WEB_APP_URL !== 'undefined' && WEB_APP_URL) {
-                        // Buat URL lengkap untuk halaman siswa
                         const siswaUrl = WEB_APP_URL + '?page=siswa';
-                        
-                        // Arahkan ke URL baru yang benar
                         window.top.location.href = siswaUrl;
                     } else {
-                        // Fallback jika karena suatu alasan URL tidak terdefinisi
                         alert("Gagal mengarahkan. Konfigurasi URL aplikasi tidak ditemukan.");
-                        this.textContent = 'Login sebagai Siswa';
-                        this.disabled = false;
+                        // Kembalikan tombol ke kondisi normal jika gagal
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
                     }
                 });
             }
@@ -2485,10 +2503,18 @@
             // Event listener BARU untuk tombol permintaan OTP
             if (requestOtpButton) requestOtpButton.addEventListener('click', handleRequestOtp);
 
-            if (logoutButton) logoutButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                logoutUser();
-            });
+            if (logoutButton) {
+                logoutButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showConfirmationModal({
+                        title: "Konfirmasi Logout",
+                        body: "Anda yakin ingin keluar dari aplikasi?",
+                        confirmText: "Ya, Logout",
+                        confirmColor: "bg-red-600 hover:bg-red-700",
+                        onConfirm: logoutUser // Memanggil fungsi logoutUser jika dikonfirmasi
+                    });
+                });
+            }
 
             // Event listener untuk beralih antara form login dan signup
             if (showSignupBtn) {
@@ -6724,6 +6750,7 @@
             setupDefaultLimitManager();
             updatePengajuanBadge();
             updateSaranBadge_Superadmin();
+            setupGlobalGraduationSettings();
 
             const dashboardLink = document.querySelector('.nav-link[data-page="dashboard"]');
             if (dashboardLink) dashboardLink.click();
@@ -11086,6 +11113,54 @@
                         .setPerStudentTranscriptVisibility(userSpreadsheetId, nisnList, isVisible);
                 }
             });
+        }
+
+        /**
+         * [SUPERADMIN] Mengelola UI untuk pengaturan pengumuman global.
+         */
+        function setupGlobalGraduationSettings() {
+            const adminEmail = sessionStorage.getItem('userEmail');
+            const input = document.getElementById('global-announcement-date');
+            const saveBtn = document.getElementById('save-global-grad-settings-btn');
+            
+            if (!input || !saveBtn) return;
+
+            // 1. Ambil nilai saat ini saat halaman dimuat
+            input.disabled = true;
+            google.script.run
+                .withSuccessHandler(settings => {
+                    if (settings && settings.announcementDate) {
+                        const date = new Date(settings.announcementDate);
+                        date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+                        input.value = date.toISOString().slice(0, 16);
+                    }
+                    input.disabled = false;
+                })
+                .getGlobalGraduationSettings();
+
+            // 2. Simpan nilai baru saat tombol diklik
+            saveBtn.onclick = () => {
+                const localDateString = input.value;
+                const settings = {
+                    announcementDate: localDateString ? new Date(localDateString).toISOString() : ''
+                };
+
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Menyimpan...';
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        showGlobalStatus(response.message, response.status === 'success');
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = 'Simpan Tanggal Global';
+                    })
+                    .withFailureHandler(err => {
+                        showGlobalStatus('Gagal menyimpan: ' + err.message, false);
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = 'Simpan Tanggal Global';
+                    })
+                    .saveGlobalGraduationSettings_Superadmin(adminEmail, settings);
+            };
         }
     </script>
 </body>
