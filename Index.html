@@ -1182,40 +1182,6 @@
                         </div>
                     </div>
 
-                    <div id="page-transcript-visibility" class="content-page hidden">
-                        <div class="flex justify-between items-center mb-6">
-                            <div>
-                                <h1 class="text-3xl font-bold text-gray-800">Pengaturan Visibilitas Transkrip Siswa</h1>
-                                <p class="mt-2 text-gray-600">Atur siswa mana saja yang dapat melihat transkrip nilainya di portal siswa.</p>
-                            </div>
-                            <button id="backToRekapBtn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">&larr; Kembali ke Rekapitulasi</button>
-                        </div>
-
-                        <div id="transcript-visibility-bulk-actions" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-auto bg-gray-800 text-white rounded-full shadow-2xl p-2 z-40 transition-all duration-300 ease-out transform">
-                            <div class="flex items-center justify-between gap-4 px-4">
-                                <span id="transcript-selected-count" class="font-semibold whitespace-nowrap">0 siswa dipilih</span>
-                                <div class="h-6 border-l border-gray-500"></div>
-                                <p class="text-sm font-medium">Aksi:</p>
-                                <div class="flex items-center gap-2">
-                                    <button id="bulk-show-transcript-btn" class="bg-green-600 hover:bg-green-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap flex items-center gap-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                                        Tampilkan Transkrip
-                                    </button>
-                                    <button id="bulk-hide-transcript-btn" class="bg-red-600 hover:bg-red-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap flex items-center gap-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                          <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                                        </svg>
-                                        Sembunyikan Transkrip
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-4 rounded-lg shadow-md mt-4">
-                            <div id="transcriptVisibilityTableContainer" class="overflow-x-auto"></div>
-                        </div>
-                    </div>
-
                     <div id="page-update-info" class="content-page hidden">
                         <h1 class="text-3xl font-bold text-gray-800">Informasi Pembaruan Aplikasi</h1>
                         <p class="mt-2 text-gray-600 mb-8">Berikut adalah riwayat perubahan dan fitur baru pada aplikasi.</p>
@@ -4966,6 +4932,7 @@
                 const mapelCount = (mapel || []).length;
                 const kkmValue = kkm || 75;
 
+                // ... (switch case untuk menentukan title, dll tidak berubah)
                 switch (type) {
                     case 'ujian':
                         dataToShow = rekapData.rekapUjian;
@@ -4991,7 +4958,6 @@
                         break;
                 }
 
-                // Perhatikan penambahan tombol Transkrip di sini
                 let tableHtml = `<div class="bg-white p-6 rounded-lg shadow-md">
                     <div class="flex justify-between items-start flex-wrap gap-2">
                         <div>
@@ -4999,12 +4965,6 @@
                             ${subtitleHtml}
                         </div>
                         <div class="flex space-x-2">
-                            ${type === 'ijazah' ? `
-                            <button id="showTranscriptVisibilityPageBtn" class="bg-purple-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2 text-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                                <span>Transkrip</span>
-                            </button>
-                            ` : ''}
                             <button id="showExportModalButton" data-rekap-type="${type}" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 text-sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 btn-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
                                 <span class="btn-text">Pengaturan & Ekspor</span>
@@ -5023,6 +4983,8 @@
                                     <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th>
                                     <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-rata</th>
                                     ${type === 'ijazah' ? '<th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>' : ''}
+                                    ${type === 'ijazah' ? '<th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="Tampilkan Transkrip di Portal Siswa?">Transkrip</th>' : ''}
+                                    ${type === 'ijazah' ? '<th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Aksi</th>' : ''}
                                 </tr>
                             </thead>
                             <tbody>
@@ -5057,6 +5019,15 @@
                                         const status = (mapelCount > 0 && average >= kkmValue) ? 'LULUS' : 'TIDAK LULUS';
                                         const statusClass = status === 'LULUS' ? 'bg-green-100 text-green-800 font-bold' : 'bg-red-100 text-red-800 font-bold';
                                         rowHtml += `<td class="border border-gray-300 text-center whitespace-nowrap ${statusClass}">${status}</td>`;
+
+                                        const isChecked = student.tampilkanTranskrip === 'YA' ? 'checked' : '';
+                                        rowHtml += `
+                                            <td class="border border-gray-300 text-center">
+                                                <input type="checkbox" class="rekap-transcript-checkbox h-5 w-5 rounded border-gray-400 text-blue-600 focus:ring-blue-500" data-nisn="${student.nisn}" ${isChecked}>
+                                            </td>
+                                            <td class="border border-gray-300 text-center">
+                                                <button class="rekap-show-transcript-btn text-green-600 hover:text-green-900 font-bold text-sm" data-nisn="${student.nisn}">Transkrip</button>
+                                            </td>`;
                                     }
                                     
                                     rowHtml += `</tr>`;
@@ -5069,18 +5040,37 @@
 
                 displayArea.innerHTML = tableHtml;
 
-                // =========================================================================
-                // ===== PENEMPATAN EVENT LISTENER YANG BENAR ADA DI SINI =====
-                // =========================================================================
-                // Setelah HTML di atas dimasukkan ke halaman, tombol-tombolnya sekarang ada di DOM.
-                // Baru setelah itu kita bisa memasang event listener-nya.
-                
-                // Pasang listener untuk tombol "Transkrip" (Hanya jika tipe rekap adalah 'ijazah')
                 if (type === 'ijazah') {
-                    document.getElementById('showTranscriptVisibilityPageBtn')?.addEventListener('click', showTranscriptVisibilityPage);
+                    displayArea.addEventListener('change', function(e) {
+                        if (e.target.classList.contains('rekap-transcript-checkbox')) {
+                            const nisn = e.target.dataset.nisn;
+                            const isVisible = e.target.checked ? 'YA' : 'TIDAK';
+                            
+                            google.script.run
+                                .withSuccessHandler(response => {
+                                    if (response.status === 'success') {
+                                        showGlobalStatus(`Visibilitas transkrip untuk NISN ${nisn} diupdate.`, true);
+                                        const studentIndex = rekapitulasiData.students.findIndex(s => s.nisn === nisn);
+                                        if (studentIndex !== -1) {
+                                            rekapitulasiData.students[studentIndex].tampilkanTranskrip = isVisible;
+                                        }
+                                    } else {
+                                        showGlobalStatus(response.message, false);
+                                        e.target.checked = !e.target.checked;
+                                    }
+                                })
+                                .setPerStudentTranscriptVisibility(userSpreadsheetId, [nisn], isVisible);
+                        }
+                    });
+
+                    displayArea.addEventListener('click', function(e) {
+                        if (e.target.classList.contains('rekap-show-transcript-btn')) {
+                            const nisn = e.target.dataset.nisn;
+                            handleShowTranscript(nisn);
+                        }
+                    });
                 }
 
-                // Pasang listener untuk tombol "Pengaturan & Ekspor"
                 document.getElementById('showExportModalButton')?.addEventListener('click', function() {
                     const btn = this;
                     const spinner = btn.querySelector('.btn-spinner');
@@ -5106,16 +5096,26 @@
                             const tahunAjaranSelect = document.getElementById('exportTahunAjaran');
                             tahunAjaranSelect.innerHTML = '';
                             
+                            // ===== AWAL LOGIKA BARU UNTUK TAHUN AJARAN =====
                             const date = new Date();
                             const currentYear = date.getFullYear();
-                            const currentMonth = date.getMonth();
+                            const currentMonth = date.getMonth(); // 0 = Januari, 6 = Juli
                             
+                            // Opsi tahun ajaran yang akan ditampilkan
                             const years = [
-                                `${currentYear - 2}/${currentYear - 1}`, `${currentYear - 1}/${currentYear}`,
-                                `${currentYear}/${currentYear + 1}`, `${currentYear + 1}/${currentYear + 2}`
+                                `${currentYear - 2}/${currentYear - 1}`,
+                                `${currentYear - 1}/${currentYear}`,
+                                `${currentYear}/${currentYear + 1}`,
+                                `${currentYear + 1}/${currentYear + 2}`
                             ];
 
-                            let defaultAcademicYear = (currentMonth < 6) ? `${currentYear - 1}/${currentYear}` : `${currentYear}/${currentYear + 1}`;
+                            // Tentukan tahun ajaran default berdasarkan bulan
+                            let defaultAcademicYear;
+                            if (currentMonth < 6) { // Jika bulan Januari - Juni
+                                defaultAcademicYear = `${currentYear - 1}/${currentYear}`;
+                            } else { // Jika bulan Juli - Desember
+                                defaultAcademicYear = `${currentYear}/${currentYear + 1}`;
+                            }
 
                             years.forEach(year => {
                                 const option = document.createElement('option');
@@ -5124,7 +5124,13 @@
                                 tahunAjaranSelect.appendChild(option);
                             });
 
-                            tahunAjaranSelect.value = (savedOptions && savedOptions.tahunAjaran) ? savedOptions.tahunAjaran : defaultAcademicYear;
+                            // Set nilai default-nya
+                            if (savedOptions && savedOptions.tahunAjaran) {
+                                tahunAjaranSelect.value = savedOptions.tahunAjaran;
+                            } else {
+                                tahunAjaranSelect.value = defaultAcademicYear;
+                            }
+                            // ===== AKHIR LOGIKA BARU =====
 
                             document.getElementById('exportTempatTTD').value = savedOptions?.tempatTTD || '';
                             document.getElementById('exportTanggalTTD').value = savedOptions?.tanggalTTD || new Date().toISOString().split('T')[0];
@@ -11155,169 +11161,6 @@
                     })
                     .saveGlobalGraduationSettings_Superadmin(adminEmail, settings);
             };
-        }
-
-        // Fungsi untuk menampilkan halaman visibilitas transkrip
-        function showTranscriptVisibilityPage() {
-            document.getElementById('page-rekapitulasi').classList.add('hidden');
-            document.getElementById('page-transcript-visibility').classList.remove('hidden');
-            renderTranscriptVisibilityTable();
-        }
-
-        // Pasang listener untuk tombol kembali
-        document.getElementById('backToRekapBtn').addEventListener('click', () => {
-            document.getElementById('page-transcript-visibility').classList.add('hidden');
-            document.getElementById('page-rekapitulasi').classList.remove('hidden');
-            // Panggil kembali initRekapitulasiPage untuk memastikan data rekap terbaru
-            initRekapitulasiPage();
-        });
-
-        // Ganti fungsi lama dengan versi baru ini
-        function renderTranscriptVisibilityTable() {
-            const container = document.getElementById('transcriptVisibilityTableContainer');
-            container.innerHTML = `<p class="text-center text-gray-500 py-8 loading-animation">Memuat data siswa dan nilai...</p>`;
-
-            // Panggil fungsi backend BARU yang sudah kita buat
-            google.script.run
-                .withSuccessHandler(students => {
-                    if (!students || students.length === 0) {
-                        container.innerHTML = `<p class="text-center text-gray-500 py-8">Tidak ada data siswa.</p>`;
-                        return;
-                    }
-
-                    let tableHtml = `<table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase">
-                                    <input type="checkbox" id="select-all-transcript-students" class="h-4 w-4 rounded border-gray-300">
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Lengkap</th>
-                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata<br>Nilai Ijazah</th>
-                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Visibilitas</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">`;
-
-                    students.forEach(s => {
-                        const isVisible = s.tampilkanTranskrip === 'YA';
-                        const visibilityIcon = isVisible 
-                            ? '<span class="text-green-500" title="Ditampilkan">✔</span>' 
-                            : '<span class="text-red-500" title="Disembunyikan">✖</span>';
-                        
-                        // Format nilai rata-rata
-                        const rataRataFormatted = typeof s.rataRataIjazah === 'number' 
-                            ? s.rataRataIjazah.toFixed(2).replace('.', ',') 
-                            : '-';
-
-                        tableHtml += `
-                            <tr data-nisn="${s.nisn}">
-                                <td class="px-4 py-4"><input type="checkbox" class="student-transcript-checkbox h-4 w-4 rounded border-gray-300" data-nisn="${s.nisn}"></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${s.nama.toUpperCase()}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-center font-semibold text-blue-800">${rataRataFormatted}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-center">${visibilityIcon}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button class="print-transcript-btn text-blue-600 hover:text-blue-900" data-nisn="${s.nisn}">Cetak</button>
-                                </td>
-                            </tr>`;
-                    });
-
-                    tableHtml += `</tbody></table>`;
-                    container.innerHTML = tableHtml;
-                    setupTranscriptVisibilityActions();
-                })
-                .withFailureHandler(err => {
-                    container.innerHTML = `<p class="text-center text-red-500 py-8">Gagal memuat data: ${err.message}</p>`;
-                })
-                .getStudentsWithIjazahAverage(userSpreadsheetId); // Panggil fungsi backend BARU
-        }
-
-        // Fungsi untuk memasang semua event listener di halaman visibilitas
-        function setupTranscriptVisibilityActions() {
-            const selectAllCheckbox = document.getElementById('select-all-transcript-students');
-            const studentCheckboxes = document.querySelectorAll('.student-transcript-checkbox');
-            const bulkActionBar = document.getElementById('transcript-visibility-bulk-actions');
-            const selectedCountSpan = document.getElementById('transcript-selected-count');
-
-            function updateBulkActionBar() {
-                const selectedCount = document.querySelectorAll('.student-transcript-checkbox:checked').length;
-                if (selectedCount > 0) {
-                    selectedCountSpan.textContent = `${selectedCount} siswa dipilih`;
-                    bulkActionBar.classList.remove('hidden');
-                } else {
-                    bulkActionBar.classList.add('hidden');
-                }
-            }
-
-            selectAllCheckbox.addEventListener('change', (e) => {
-                studentCheckboxes.forEach(cb => cb.checked = e.target.checked);
-                updateBulkActionBar();
-            });
-
-            studentCheckboxes.forEach(cb => {
-                cb.addEventListener('change', () => {
-                    const total = studentCheckboxes.length;
-                    const checkedCount = document.querySelectorAll('.student-transcript-checkbox:checked').length;
-                    selectAllCheckbox.checked = total === checkedCount;
-                    updateBulkActionBar();
-                });
-            });
-
-            document.querySelectorAll('.print-transcript-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    handleShowTranscript(this.dataset.nisn);
-                });
-            });
-            
-            document.getElementById('bulk-show-transcript-btn').addEventListener('click', () => handleBulkTranscriptVisibility('YA'));
-            document.getElementById('bulk-hide-transcript-btn').addEventListener('click', () => handleBulkTranscriptVisibility('TIDAK'));
-        }
-
-        // Fungsi BARU (dengan perbaikan)
-        function handleBulkTranscriptVisibility(isVisible) {
-            const selectedCheckboxes = document.querySelectorAll('.student-transcript-checkbox:checked');
-            if (selectedCheckboxes.length === 0) {
-                showGlobalStatus("Tidak ada siswa yang dipilih.", false);
-                return;
-            }
-
-            const nisnList = Array.from(selectedCheckboxes).map(cb => cb.dataset.nisn);
-            const actionText = isVisible === 'YA' ? 'MENAMPILKAN' : 'MENYEMBUNYIKAN';
-            
-            showConfirmationModal({
-                title: `Konfirmasi Aksi Massal`,
-                body: `Anda yakin ingin <strong>${actionText}</strong> transkrip untuk <strong>${nisnList.length} siswa</strong> yang dipilih?`,
-                confirmText: `Ya, Lanjutkan`,
-                onConfirm: () => {
-                    showGlobalStatus(`Memproses permintaan untuk ${nisnList.length} siswa...`, 'info');
-                    google.script.run
-                        .withSuccessHandler(response => {
-                            showGlobalStatus(response.message, response.status === 'success');
-                            if (response.status === 'success') {
-                                // Muat ulang tabel untuk melihat perubahan (ini sudah ada)
-                                renderTranscriptVisibilityTable(); 
-                                
-                                // ▼▼▼ AWAL PERBAIKAN BUG ▼▼▼
-                                // Secara manual sembunyikan floating action bar setelah aksi selesai.
-                                const bulkActionBar = document.getElementById('transcript-visibility-bulk-actions');
-                                if (bulkActionBar) {
-                                    bulkActionBar.classList.add('hidden');
-                                }
-
-                                // Pastikan juga checkbox "pilih semua" di header kembali tidak tercentang.
-                                const selectAll = document.getElementById('select-all-transcript-students');
-                                if(selectAll) {
-                                    selectAll.checked = false;
-                                }
-                                // ▲▲▲ AKHIR PERBAIKAN BUG ▲▲▲
-                            }
-                        })
-                        .withFailureHandler(err => showGlobalStatus(`Error: ${err.message}`, false))
-                        .setPerStudentTranscriptVisibility(userSpreadsheetId, nisnList, isVisible);
-                }
-            });
         }
     </script>
 </body>
