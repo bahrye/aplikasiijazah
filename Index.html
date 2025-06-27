@@ -11085,7 +11085,7 @@
          * @param {string} isVisible - Status yang diinginkan ('YA' atau 'TIDAK').
          */
         function handleBulkTranscriptVisibility(isVisible) {
-            const selectedRows = document.querySelectorAll('.student-checkbox:checked');
+            const selectedRows = document.querySelectorAll('.transcript-checkbox:checked');
             if (selectedRows.length === 0) {
                 showGlobalStatus("Tidak ada siswa yang dipilih.", false);
                 return;
@@ -11096,7 +11096,7 @@
 
             showConfirmationModal({
                 title: `Konfirmasi Aksi Massal`,
-                body: `Anda yakin ingin <strong><span class="math-inline">\{actionText\}</strong\> transkrip untuk <strong\></span>{nisnList.length} siswa</strong> yang dipilih?`,
+                body: `Anda yakin ingin <strong>${actionText}</strong> transkrip untuk <strong>${nisnList.length} siswa</strong> yang dipilih?`,
                 confirmText: `Ya, ${actionText}`,
                 confirmColor: isVisible === 'YA' ? "bg-green-600 hover:bg-green-700" : "bg-gray-600 hover:bg-gray-700",
                 onConfirm: () => {
@@ -11105,7 +11105,14 @@
                         .withSuccessHandler(response => {
                             showGlobalStatus(response.message, response.status === 'success');
                             if(response.status === 'success') {
-                                loadStudentsData(); // Muat ulang data untuk melihat perubahan
+                                // [BARIS BARU 1] Bersihkan set data siswa yang terpilih secara logis
+                                selectedTranscriptRows.clear();
+                                
+                                // [BARU BARIS 2] Perbarui tampilan menu aksi massal agar langsung hilang
+                                updateTranskripBulkActionBar();
+                                
+                                // Muat ulang tabel untuk melihat perubahan visibilitas
+                                loadTranskripPage(); 
                             }
                         })
                         .withFailureHandler(err => showGlobalStatus(`Error: ${err.message}`, false))
@@ -11165,28 +11172,42 @@
         // ===== AWAL KODE BARU UNTUK HALAMAN TRANSKRIP =====
 
         /**
-         * Memuat data siswa dan merendernya ke tabel manajemen transkrip.
+         * [MODIFIKASI] Memuat data siswa beserta rekap nilai ijazah mereka.
          */
         function loadTranskripPage() {
             const container = document.getElementById('transkripTableContainer');
-            container.innerHTML = `<p class="text-center text-gray-500 py-4 loading-animation">Memuat data siswa</p>`;
+            container.innerHTML = `<p class="text-center text-gray-500 py-4 loading-animation">Memuat data siswa dan nilai akhir</p>`;
 
-            // Panggil fungsi getStudents yang sudah ada untuk mendapatkan data siswa
-            google.script.run
-                .withSuccessHandler(students => {
-                    renderTranskripTable(students || []);
-                    selectedTranscriptRows.clear();
-                    updateTranskripBulkActionBar();
-                })
-                .withFailureHandler(err => {
-                    container.innerHTML = `<p class="text-center text-red-500 py-4">Gagal memuat data: ${err.message}</p>`;
-                })
-                .getStudents(userSpreadsheetId);
+            // Menggunakan Promise.all untuk memuat data siswa dan data rekap secara bersamaan
+            Promise.all([
+                new Promise(resolve => google.script.run.withSuccessHandler(resolve).getStudents(userSpreadsheetId)),
+                new Promise(resolve => google.script.run.withSuccessHandler(resolve).getSheetDataAsObject(userSpreadsheetId, 'Rekap Nilai Ijazah'))
+            ]).then(([students, rekapData]) => {
+                
+                // Menggabungkan data siswa dengan data rekap mereka
+                const studentsWithDetails = (students || []).map(student => {
+                    const rekap = rekapData[student.nisn] || {};
+                    return {
+                        ...student, // Salin semua data siswa yang ada
+                        rataRataIjazah: rekap['Rata-rata'] !== undefined ? parseFloat(rekap['Rata-rata']).toFixed(2) : 'N/A',
+                        statusLulus: rekap['Status'] || 'Belum Diproses'
+                    };
+                });
+                
+                // Render tabel dengan data yang sudah digabungkan
+                renderTranskripTable(studentsWithDetails);
+                
+                // Kosongkan pilihan dan sembunyikan menu aksi massal
+                selectedTranscriptRows.clear();
+                updateTranskripBulkActionBar();
+
+            }).catch(err => {
+                container.innerHTML = `<p class="text-center text-red-500 py-4">Gagal memuat data: ${err.message}</p>`;
+            });
         }
 
         /**
-         * Merender data siswa ke dalam tabel di halaman Transkrip.
-         * @param {Array<object>} students - Array objek data siswa.
+         * [MODIFIKASI] Merender tabel manajemen transkrip dengan kolom Rata-rata dan Status.
          */
         function renderTranskripTable(students) {
             const container = document.getElementById('transkripTableContainer');
@@ -11195,14 +11216,16 @@
                 return;
             }
 
+            // [MODIFIKASI] Tambahkan header untuk kolom baru
             let tableHtml = `<table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                             <input type="checkbox" id="select-all-transcripts-checkbox" class="h-4 w-4 rounded border-gray-300">
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Lengkap Siswa</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-rata Ijazah</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status Kelulusan</th>
                         <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Visibilitas di Portal Siswa</th>
                         <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Aksi</th>
                     </tr>
@@ -11210,20 +11233,35 @@
                 <tbody class="bg-white divide-y divide-gray-200">`;
 
             students.forEach(s => {
+                // Logika untuk styling status kelulusan
+                let statusClass = 'bg-gray-100 text-gray-800';
+                if (s.statusLulus === 'LULUS') {
+                    statusClass = 'bg-green-100 text-green-800';
+                } else if (s.statusLulus === 'TIDAK LULUS') {
+                    statusClass = 'bg-red-100 text-red-800';
+                }
+
                 const isVisible = s.tampilkanTranskrip === 'YA';
                 const visibilityIcon = isVisible
                     ? '<span title="Terlihat" class="text-green-500">✅</span>'
                     : '<span title="Tersembunyi" class="text-red-500">❌</span>';
                 
+                // [MODIFIKASI] Tambahkan <td> untuk data baru
                 tableHtml += `<tr>
                     <td class="px-4 py-4 whitespace-nowrap">
                         <input type="checkbox" class="transcript-checkbox h-4 w-4 rounded border-gray-300" data-nisn="${s.nisn}">
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${s.nama.toUpperCase()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <div class="font-medium text-gray-900">${s.nama.toUpperCase()}</div>
+                        <div class="text-gray-500">${s.nisn}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-blue-600">${s.rataRataIjazah}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">${s.statusLulus}</span>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-center">${visibilityIcon}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                        <button class="print-transcript-btn text-blue-600 hover:text-blue-900 flex items-center justify-center gap-2" data-nisn="${s.nisn}">
+                        <button class="print-transcript-btn text-blue-600 hover:text-blue-900 flex items-center justify-center gap-2 mx-auto" data-nisn="${s.nisn}">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v3a2 2 0 002 2h6a2 2 0 002-2v-3h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" /></svg>
                             Cetak
                         </button>
@@ -11233,7 +11271,7 @@
             
             tableHtml += `</tbody></table>`;
             container.innerHTML = tableHtml;
-            attachTranskripCheckboxListeners(); // Pasang listener setelah tabel dirender
+            attachTranskripCheckboxListeners();
         }
 
         /**
