@@ -282,6 +282,23 @@
             z-index: 10; /* Pastikan tanda centang/silang di atas progress bar */
         }
 
+        /* === MULAI KODE CSS BARU UNTUK HALAMAN BANTUAN === */
+        .help-item .help-header .chevron {
+            transition: transform 0.3s ease-in-out;
+        }
+        .help-item.active .help-header .chevron {
+            transform: rotate(180deg);
+        }
+        .help-code {
+            background-color: #e5e7eb; /* bg-gray-200 */
+            color: #1d4ed8; /* text-blue-700 */
+            font-family: monospace;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        /* === AKHIR KODE CSS BARU === */
+
         /* ================================================= */
         /* PERBAIKAN UNTUK TOMBOL MODAL YG TIDAK BISA DIKLIK */
         /* ================================================= */
@@ -609,6 +626,23 @@
                             </div>
                         </div>
 
+                        <div id="incomplete-scores-card" class="hidden col-span-1 md:col-span-2 lg:col-span-3 bg-yellow-50 border-l-4 border-yellow-400 p-5 rounded-r-lg shadow-md flex items-center justify-between space-x-4 transition-transform transform hover:scale-[1.02] cursor-pointer mb-8">
+                            <div class="flex items-center space-x-4">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-8 w-8 text-yellow-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                      <path fill-rule="evenodd" d="M8.257 3.099c.636-1.1 2.152-1.1 2.788 0l5.867 10.162c.636 1.1-.124 2.489-1.394 2.489H3.784c-1.27 0-2.03-1.39-1.394-2.489l5.867-10.162zM9 8a1 1 0 011 1v2a1 1 0 11-2 0V9a1 1 0 011-1zm1 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-yellow-800">Perhatian: Ada Data yang Belum Lengkap!</p>
+                                    <p id="incomplete-count-text" class="text-sm text-yellow-700">Ditemukan beberapa siswa dengan nilai yang masih kosong.</p>
+                                </div>
+                            </div>
+                            <div class="text-sm font-semibold text-yellow-800 hover:text-yellow-900">
+                                Cek Sekarang &rarr;
+                            </div>
+                        </div>
+
                         <!-- Grafik -->
                         <div class="bg-white p-6 rounded-2xl shadow-lg">
                             <h2 class="text-xl font-bold text-gray-800 mb-4">Distribusi Jenis Ujian Mata Pelajaran</h2>
@@ -783,6 +817,66 @@
                                 </form>
                             </div>
                         </div>
+
+                        <!-- === GANTI SELURUH BLOK INI === -->
+                        <div class="mt-10 pt-8 border-t">
+                            <h2 class="text-2xl font-bold text-gray-700">Pengaturan Kop Surat & Tanda Tangan</h2>
+                            <p class="text-sm text-gray-500 mt-1 mb-4">Unggah gambar logo, tanda tangan, dan stempel untuk ditampilkan pada dokumen ekspor (seperti Transkrip). Gunakan format PNG dengan latar transparan untuk hasil terbaik.</p>
+
+                            <div class="bg-white p-8 rounded-lg shadow-md max-w-4xl">
+                                <form id="documentSettingsForm" class="space-y-8">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+
+                                        <!-- Kolom Logo -->
+                                        <div class="text-center">
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Logo Sekolah</label>
+                                            <div class="w-32 h-32 mx-auto bg-gray-100 rounded-full flex items-center justify-center border overflow-hidden">
+                                                <img id="logoPreview" src="https://placehold.co/128x128/e2e8f0/64748b?text=Logo" alt="Pratinjau Logo" class="w-full h-full object-contain">
+                                            </div>
+                                            <div class="mt-3 space-x-4">
+                                                <input type="file" id="logoInput" accept="image/png, image/jpeg" class="hidden">
+                                                <button type="button" onclick="document.getElementById('logoInput').click()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Ganti Gambar</button>
+                                                <button type="button" data-delete-key="ID Logo Sekolah" data-preview-id="logoPreview" class="delete-asset-btn text-sm text-red-600 hover:text-red-800 font-medium">Hapus</button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Kolom Tanda Tangan -->
+                                        <div class="text-center">
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Tanda Tangan Kepala Sekolah</label>
+                                            <div class="w-48 h-32 mx-auto bg-gray-100 rounded-lg flex items-center justify-center border overflow-hidden">
+                                                <img id="signaturePreview" src="https://placehold.co/192x128/e2e8f0/64748b?text=Tanda+Tangan" alt="Pratinjau Tanda Tangan" class="max-w-full max-h-full object-contain p-2">
+                                            </div>
+                                            <div class="mt-3 space-x-4">
+                                                <input type="file" id="signatureInput" accept="image/png" class="hidden">
+                                                <button type="button" onclick="document.getElementById('signatureInput').click()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Ganti Gambar</button>
+                                                <button type="button" data-delete-key="ID Tanda Tangan" data-preview-id="signaturePreview" class="delete-asset-btn text-sm text-red-600 hover:text-red-800 font-medium">Hapus</button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Kolom Stempel -->
+                                        <div class="text-center">
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Stempel Sekolah</label>
+                                            <div class="w-32 h-32 mx-auto bg-gray-100 rounded-full flex items-center justify-center border overflow-hidden">
+                                                <img id="stampPreview" src="https://placehold.co/128x128/e2e8f0/64748b?text=Stempel" alt="Pratinjau Stempel" class="w-full h-full object-contain">
+                                            </div>
+                                            <div class="mt-3 space-x-4">
+                                                <input type="file" id="stampInput" accept="image/png" class="hidden">
+                                                <button type="button" onclick="document.getElementById('stampInput').click()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Ganti Gambar</button>
+                                                <button type="button" data-delete-key="ID Stempel" data-preview-id="stampPreview" class="delete-asset-btn text-sm text-red-600 hover:text-red-800 font-medium">Hapus</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-8 pt-5 border-t">
+                                        <button type="submit" id="saveDocSettingsBtn" class="w-full md:w-auto flex justify-center py-2 px-8 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400">
+                                            <span id="docSettingsBtnText">Simpan Pengaturan Dokumen</span>
+                                            <span id="docSettingsSpinner" class="hidden loading-animation">Menyimpan</span>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        <!-- === AKHIR BLOK === -->
                     </div>
 
                     <div id="page-manajemen-akun" class="content-page hidden">
@@ -1441,58 +1535,159 @@
                         <h1 class="text-3xl font-bold text-gray-800">Pusat Bantuan & Panduan Pengguna</h1>
                         <p class="mt-2 text-gray-600 mb-8">Temukan jawaban atas pertanyaan umum dan pelajari cara menggunakan fitur-fitur aplikasi secara maksimal.</p>
 
-                        <div class="space-y-6">
-                            <div class="bg-white p-6 rounded-lg shadow-md">
-                                <h2 class="text-xl font-bold text-gray-700 mb-3">Langkah-Langkah Penggunaan Dasar</h2>
-                                <p class="text-sm text-gray-600 mb-4">Untuk mendapatkan hasil akhir (Nilai Ijazah), ikuti alur kerja yang direkomendasikan berikut ini:</p>
-                                <ol class="list-decimal list-inside space-y-3">
-                                    <li>
-                                        <strong>Lengkapi Data Sekolah</strong>: Buka menu <code class="bg-gray-200 p-1 rounded">Data Sekolah</code> dan pastikan semua informasi, terutama <code class="bg-gray-200 p-1 rounded">Jenjang Sekolah</code>, sudah terisi dengan benar.
-                                    </li>
-                                    <li>
-                                        <strong>Atur Mata Pelajaran</strong>: Pindah ke menu <code class="bg-gray-200 p-1 rounded">Mapel & Bobot</code>.
-                                        <ul class="list-disc list-inside ml-5 mt-2 space-y-1">
-                                            <li>Gunakan tombol "Import Mapel by System" untuk memuat daftar mata pelajaran standar sesuai jenjang.</li>
-                                            <li>Atur persentase "Bobot Nilai Ujian" dan "Bobot Nilai Rapor". Pastikan totalnya 100%.</li>
-                                        </ul>
-                                    </li>
-                                    <li>
-                                        <strong>Input Data Siswa</strong>: Buka menu <code class="bg-gray-200 p-1 rounded">Data Siswa</code>. Anda bisa menambahkan siswa satu per satu atau mengunggah data massal menggunakan template Excel yang disediakan.
-                                    </li>
-                                    <li>
-                                        <strong>Isi Semua Nilai</strong>: Lanjutkan ke menu <code class="bg-gray-200 p-1 rounded">Input Nilai Ujian</code> dan <code class="bg-gray-200 p-1 rounded">Input Nilai Rapor</code> untuk semua semester. Anda juga bisa menggunakan fitur <code class="bg-gray-200 p-1 rounded">Upload Nilai</code> untuk impor massal.
-                                    </li>
-                                    <li>
-                                        <strong>Validasi & Rekapitulasi</strong>:
-                                        <ul class="list-disc list-inside ml-5 mt-2 space-y-1">
-                                            <li>Gunakan menu <code class="bg-gray-200 p-1 rounded">Validasi Nilai</code> untuk memastikan tidak ada nilai yang terlewat.</li>
-                                            <li>Terakhir, buka menu <code class="bg-gray-200 p-1 rounded">Rekapitulasi</code> dan klik tombol "Perbarui & Muat Ulang Data" untuk melihat hasil akhir.</li>
-                                        </ul>
-                                    </li>
-                                </ol>
-                            </div>
+                        <div id="help-accordion-container" class="space-y-4">
 
-                            <div class="bg-white p-6 rounded-lg shadow-md">
-                                <h2 class="text-xl font-bold text-gray-700 mb-4">Pertanyaan yang Sering Diajukan (FAQ)</h2>
-                                <div class="space-y-4">
-                                    <div>
-                                        <h3 class="font-semibold text-gray-800">T: Mengapa pada tabel rekapitulasi, nilai siswa saya kosong?</h3>
-                                        <p class="text-gray-600 mt-1"><strong>J:</strong> Pastikan Anda telah menekan tombol <code class="bg-green-100 text-green-800 p-1 rounded">Perbarui & Muat Ulang Data</code> di halaman Rekapitulasi. Tombol ini akan memproses semua nilai yang telah Anda input dan menampilkannya di tabel.</p>
+                            <div class="help-item bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+                                <div class="help-header flex justify-between items-center p-5 cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <div class="flex items-center">
+                                        <span class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-bold text-lg mr-4">1</span>
+                                        <div>
+                                            <h2 class="font-bold text-lg text-gray-800">Lengkapi Data Sekolah & Pengaturan Awal</h2>
+                                            <p class="text-sm text-gray-500">Langkah pertama yang paling penting.</p>
+                                        </div>
                                     </div>
-                                    <div class="border-t pt-4">
-                                        <h3 class="font-semibold text-gray-800">T: Saya sudah menginput nilai, mengapa indikator "rekap perlu update" masih muncul?</h3>
-                                        <p class="text-gray-600 mt-1"><strong>J:</strong> Indikator tersebut akan selalu muncul setiap kali ada perubahan pada data nilai (siswa, mapel, atau skor). Ini adalah pengingat bahwa data di halaman Rekapitulasi mungkin belum yang paling baru. Indikator akan hilang setelah Anda menekan tombol "Perbarui & Muat Ulang Data".</p>
-                                    </div>
-                                    <div class="border-t pt-4">
-                                        <h3 class="font-semibold text-gray-800">T: Bagaimana cara memperbaiki data siswa atau mapel yang salah input?</h3>
-                                        <p class="text-gray-600 mt-1"><strong>J:</strong> Buka menu <code class="bg-gray-200 p-1 rounded">Data Siswa</code> atau <code class="bg-gray-200 p-1 rounded">Mapel & Bobot</code>, cari data yang ingin diperbaiki, lalu klik tombol "Edit" di ujung kanan baris tersebut.</p>
-                                    </div>
-                                    <div class="border-t pt-4">
-                                        <h3 class="font-semibold text-gray-800">T: Apakah data saya aman?</h3>
-                                        <p class="text-gray-600 mt-1"><strong>J:</strong> Ya, setiap sekolah mendapatkan file spreadsheet-nya sendiri yang terpisah dan tidak dapat diakses oleh sekolah lain. Untuk keamanan tambahan, gunakan fitur <code class="bg-gray-200 p-1 rounded">Backup & Restore</code> secara berkala untuk membuat salinan data Anda.</p>
+                                    <svg class="w-6 h-6 text-gray-500 transform transition-transform chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                                <div class="help-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
+                                    <div class="p-5 border-t">
+                                        <p class="mb-4">Pastikan semua data identitas sekolah Anda sudah benar sebelum melanjutkan ke tahap lain. Ini akan digunakan untuk kop surat pada saat ekspor data.</p>
+                                        <ol class="list-decimal list-inside space-y-2 mb-4">
+                                            <li>Buka menu <code class="help-code">Data Sekolah</code>.</li>
+                                            <li>Pastikan field <code class="help-code">Jenjang Sekolah</code> dan <code class="help-code">Nama Sekolah</code> sudah sesuai. Jika tidak, Anda dapat mengajukan perubahan melalui menu <code class="help-code">Pengajuan</code>.</li>
+                                            <li>Isi semua field lainnya seperti <strong>NPSN, NSM, Alamat,</strong> dan <strong>data Kepala Sekolah</strong>.</li>
+                                            <li>Klik tombol <strong>"Simpan Data Sekolah"</strong> jika ada perubahan.</li>
+                                        </ol>
+                                        <div class="p-4 bg-gray-100 rounded-lg text-center">
+                                            <img src="https://i.imgur.com/wVVTeAV.gif" alt="Tutorial mengisi data sekolah" class="w-full rounded-md shadow-md">
+                                            <p class="text-xs text-gray-500 mt-2">Contoh: Tampilan Halaman Data Sekolah</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="help-item bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+                                <div class="help-header flex justify-between items-center p-5 cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <div class="flex items-center">
+                                        <span class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-bold text-lg mr-4">2</span>
+                                        <div>
+                                            <h2 class="font-bold text-lg text-gray-800">Atur Mata Pelajaran & Bobot Nilai</h2>
+                                            <p class="text-sm text-gray-500">Impor mapel standar dan tentukan persentase nilai akhir.</p>
+                                        </div>
+                                    </div>
+                                    <svg class="w-6 h-6 text-gray-500 transform transition-transform chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                                <div class="help-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
+                                    <div class="p-5 border-t">
+                                        <p class="mb-4">Di halaman <code class="help-code">Mapel & Bobot</code>, Anda bisa mengatur semua mata pelajaran dan menentukan perhitungan nilai ijazah.</p>
+                                        <ol class="list-decimal list-inside space-y-3 mb-4">
+                                            <li>
+                                                <strong>Impor Mapel:</strong> Cara termudah adalah klik tombol <code class="help-code">Import Mapel by System</code>. Ini akan membuka jendela baru dimana Anda bisa memilih mapel standar sesuai jenjang.
+                                            </li>
+                                            <li>
+                                                <strong>Atur Bobot:</strong> Tentukan persentase <code class="help-code">Bobot Nilai Ujian</code> dan <code class="help-code">Bobot Nilai Rapor</code>. Total dari keduanya <strong>harus 100%</strong>. Contoh: 40% Ujian dan 60% Rapor.
+                                            </li>
+                                            <li>
+                                                <strong>Simpan Bobot:</strong> Jangan lupa klik <strong>"Simpan Bobot"</strong>.
+                                            </li>
+                                            <li>
+                                                <strong>Urutan Mapel:</strong> Anda dapat mengubah urutan mapel di tabel dengan menekan tombol panah ▲ atau ▼. Urutan ini akan memengaruhi urutan kolom di halaman input nilai dan rekapitulasi.
+                                            </li>
+                                        </ol>
+                                        <div class="p-4 bg-gray-100 rounded-lg text-center">
+                                            <img src="https://i.imgur.com/l6K3Uq8.gif" alt="Tutorial impor mapel" class="w-full rounded-md shadow-md">
+                                            <p class="text-xs text-gray-500 mt-2">Contoh: Halaman Pengaturan Mapel & Bobot</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="help-item bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+                                <div class="help-header flex justify-between items-center p-5 cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <div class="flex items-center">
+                                        <span class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-bold text-lg mr-4">3</span>
+                                        <div>
+                                            <h2 class="font-bold text-lg text-gray-800">Input Data Siswa</h2>
+                                            <p class="text-sm text-gray-500">Menambahkan siswa secara manual atau massal.</p>
+                                        </div>
+                                    </div>
+                                    <svg class="w-6 h-6 text-gray-500 transform transition-transform chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                                <div class="help-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
+                                    <div class="p-5 border-t">
+                                        <p class="mb-4">Buka halaman <code class="help-code">Data Siswa</code>. Ada dua cara untuk menambahkan siswa:</p>
+                                        <ul class="list-disc list-inside space-y-3 mb-4">
+                                            <li><strong>Manual:</strong> Klik tombol <code class="help-code">+ Tambah Siswa</code> untuk membuka form dan mengisi data satu per satu.</li>
+                                            <li><strong>Massal (Direkomendasikan):</strong>
+                                                <ol class="list-decimal list-inside ml-5 mt-2 space-y-1">
+                                                    <li>Klik <code class="help-code">Upload Data Siswa</code>, lalu unduh template Excel yang disediakan.</li>
+                                                    <li>Isi data siswa Anda pada file template. Pastikan kolom <strong>NISN, NAMA,</strong> dan <strong>TANGGAL LAHIR</strong> terisi.</li>
+                                                    <li>Kembali ke aplikasi, klik lagi <code class="help-code">Upload Data Siswa</code> dan unggah file Excel yang sudah Anda isi.</li>
+                                                </ol>
+                                            </li>
+                                        </ul>
+                                        <div class="p-4 bg-gray-100 rounded-lg text-center">
+                                            <img src="https://i.imgur.com/AzjvVLX.gif" alt="Tutorial upload data siswa" class="w-full rounded-md shadow-md">
+                                            <p class="text-xs text-gray-500 mt-2">Contoh: Jendela untuk Upload Data Siswa Massal</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="help-item bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+                                <div class="help-header flex justify-between items-center p-5 cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <div class="flex items-center">
+                                        <span class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-bold text-lg mr-4">4</span>
+                                        <div>
+                                            <h2 class="font-bold text-lg text-gray-800">Isi Semua Nilai</h2>
+                                            <p class="text-sm text-gray-500">Input nilai ujian dan nilai rapor per semester.</p>
+                                        </div>
+                                    </div>
+                                    <svg class="w-6 h-6 text-gray-500 transform transition-transform chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                                <div class="help-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
+                                    <div class="p-5 border-t">
+                                        <p class="mb-4">Anda dapat mengisi nilai secara manual di dalam aplikasi atau menggunakan fitur upload massal via Excel untuk mempercepat proses.</p>
+                                        <ul class="list-disc list-inside space-y-3 mb-4">
+                                            <li><strong>Nilai Ujian:</strong> Buka menu <code class="help-code">Input Nilai Ujian</code>. Pilih jenis ujian (Madrasah/Praktek), klik "Ubah Nilai", lalu isi semua kolom. Klik "Simpan Nilai" jika sudah selesai.</li>
+                                            <li><strong>Nilai Rapor:</strong> Buka menu <code class="help-code">Input Nilai Rapor</code>. Untuk setiap semester, klik "Input Nilai Pengetahuan" dan "Input Nilai Keterampilan" untuk mengisi nilai.</li>
+                                            <li><strong>Upload Massal:</strong> Untuk cara yang lebih cepat, gunakan menu <code class="help-code">Upload Nilai</code>. Unduh template untuk Ujian atau Rapor per semester, isi, lalu unggah kembali.</li>
+                                        </ul>
+                                        <div class="p-4 bg-gray-100 rounded-lg text-center">
+                                            <img src="https://i.imgur.com/Xig84go.gif" alt="Tutorial mengisi nilai" class="w-full rounded-md shadow-md">
+                                            <p class="text-xs text-gray-500 mt-2">Contoh: Tampilan Input Nilai</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="help-item bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+                                <div class="help-header flex justify-between items-center p-5 cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <div class="flex items-center">
+                                        <span class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-bold text-lg mr-4">5</span>
+                                        <div>
+                                            <h2 class="font-bold text-lg text-gray-800">Validasi & Rekapitulasi</h2>
+                                            <p class="text-sm text-gray-500">Langkah final untuk memproses dan melihat hasil akhir.</p>
+                                        </div>
+                                    </div>
+                                    <svg class="w-6 h-6 text-gray-500 transform transition-transform chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                                <div class="help-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
+                                    <div class="p-5 border-t">
+                                        <p class="mb-4">Setelah semua nilai terisi, lakukan langkah terakhir ini.</p>
+                                        <ol class="list-decimal list-inside space-y-3 mb-4">
+                                            <li><strong>Validasi (Opsional tapi direkomendasikan):</strong> Buka menu <code class="help-code">Validasi Nilai</code> untuk memeriksa apakah ada nilai siswa yang terlewat. Ini membantu memastikan semua data lengkap.</li>
+                                            <li><strong>Rekapitulasi:</strong> Buka menu <code class="help-code">Rekapitulasi</code>.</li>
+                                            <li>Klik tombol hijau <code class="help-code bg-green-100 text-green-800">Perbarui & Muat Ulang Data</code>. Tombol ini akan memerintahkan aplikasi untuk menghitung semua nilai (rata-rata rapor, rata-rata ujian, dan nilai akhir ijazah).</li>
+                                            <li>Setelah proses selesai, Anda dapat melihat tabel <strong>Rekap Nilai Ujian, Rekap Nilai Rapor,</strong> dan <strong>Rekap Nilai Ijazah</strong>.</li>
+                                        </ol>
+                                        <div class="p-4 bg-gray-100 rounded-lg text-center">
+                                            <img src="https://i.imgur.com/pf9hQie.gif" alt="Tutorial rekapitulasi" class="w-full rounded-md shadow-md">
+                                            <p class="text-xs text-gray-500 mt-2">Tombol Kunci pada Halaman Rekapitulasi</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
 
@@ -2187,8 +2382,9 @@
                         <span class="btn-text">Unduh PDF</span>
                         <span class="btn-spinner hidden loading-animation">Memproses</span>
                     </button>
-                    <button id="printTranscriptBtn" class="bg-gray-600 text-white font-medium py-2 px-4 rounded-md hover:bg-gray-700 transition-colors text-sm">
-                        Cetak
+                    <button id="printTranscriptBtn" class="bg-gray-600 text-white font-medium py-2 px-4 rounded-md hover:bg-gray-700 transition-colors text-sm w-32 h-9 flex justify-center items-center">
+                        <span class="btn-text">Cetak</span>
+                        <span class="btn-spinner hidden loading-animation">Mencetak</span>
                     </button>
                     <button id="closeTranscriptModalBtn" class="text-gray-500 hover:text-gray-800 text-3xl ml-2">&times;</button>
                 </div>
@@ -2565,6 +2761,7 @@
             }
             
             setupPasswordToggles();
+            setupHelpAccordion();
 
             // Di dalam DOMContentLoaded
             const pengaturanForm = document.getElementById('pengaturanForm');
@@ -2955,6 +3152,62 @@
                     })
                     .resetPasswordWithOtp(email, otp, newPassword);
             });
+
+
+            setupImageInput('logoInput', 'logoPreview', 'logo');
+            setupImageInput('signatureInput', 'signaturePreview', 'signature');
+            setupImageInput('stampInput', 'stampPreview', 'stamp');
+
+            document.getElementById('documentSettingsForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const btn = document.getElementById('saveDocSettingsBtn');
+                const btnText = document.getElementById('docSettingsBtnText');
+                const spinner = document.getElementById('docSettingsSpinner');
+
+                btn.disabled = true;
+                btnText.classList.add('hidden');
+                spinner.classList.remove('hidden');
+
+                const settingsToSave = {};
+                if (newDocumentSettings.logo) settingsToSave.logo = newDocumentSettings.logo;
+                if (newDocumentSettings.signature) settingsToSave.signature = newDocumentSettings.signature;
+                if (newDocumentSettings.stamp) settingsToSave.stamp = newDocumentSettings.stamp;
+
+                if (Object.keys(settingsToSave).length === 0) {
+                    showGlobalStatus("Tidak ada gambar baru yang dipilih untuk disimpan.", 'info');
+                    btn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    spinner.classList.add('hidden');
+                    return;
+                }
+
+                google.script.run
+                    // --- AWAL PERBAIKAN ---
+                    .withSuccessHandler(response => {
+                        showGlobalStatus(response.message, response.status === 'success');
+                        if (response.status === 'success') {
+                            newDocumentSettings = { logo: null, signature: null, stamp: null };
+                        }
+                        // Kembalikan tombol ke normal setelah berhasil
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+                    })
+                    .withFailureHandler(err => {
+                        showGlobalStatus('Gagal menyimpan: ' + err.message, false);
+                        // Kembalikan tombol ke normal JIKA GAGAL
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+                    })
+                    // --- AKHIR PERBAIKAN (Metode .withFinally() dihapus) ---
+                    .saveDocumentSettings(userSpreadsheetId, settingsToSave);
+            });
+
+            // Pasang listener ke semua tombol hapus aset
+            document.querySelectorAll('.delete-asset-btn').forEach(btn => {
+                btn.addEventListener('click', handleDeleteAsset);
+            });
         });
 
         function setupPasswordToggles() {
@@ -3245,294 +3498,210 @@
         }
 
         function loadDashboardData() {
-            document.getElementById('studentCount').textContent = '...';
-            document.getElementById('mapelCount').textContent = '...';
+                    document.getElementById('studentCount').textContent = '...';
+                    document.getElementById('mapelCount').textContent = '...';
 
-            // Helper function untuk membuat grafik batang horizontal
-            const createAverageChart = (canvasId, chartInstance, chartData, chartLabel) => {
-                if (chartInstance) {
-                    chartInstance.destroy();
-                }
-                if (!chartData || !chartData.labels || !chartData.data) return null;
-
-                const ctx = document.getElementById(canvasId).getContext('2d');
-                return new Chart(ctx, {
-                    type: 'bar', // Menggunakan grafik batang
-                    data: {
-                        labels: chartData.labels,
-                        datasets: [{
-                            label: chartLabel,
-                            data: chartData.data,
-                            backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                            borderColor: 'rgba(59, 130, 246, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        indexAxis: 'y', // Membuat grafik menjadi horizontal
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            x: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function(value) { if (value % 1 === 0) { return value; } } // Tampilkan hanya integer
-                                }
-                            }
-                        },
-                        plugins: {
-                            legend: {
-                                display: false // Sembunyikan legenda karena sudah ada di judul
-                            }
+                    // Helper function untuk membuat grafik batang horizontal
+                    const createAverageChart = (canvasId, chartInstance, chartData, chartLabel) => {
+                        if (chartInstance) {
+                            chartInstance.destroy();
                         }
-                    }
-                });
-            };
+                        if (!chartData || !chartData.labels || !chartData.data) return null;
 
-            google.script.run
-                .withSuccessHandler(response => {
-                    if (response && response.status === 'success') {
-                        // --- Kode untuk kartu statistik (tidak berubah) ---
-                        document.getElementById('studentCount').textContent = response.studentCount || 0;
-                        document.getElementById('mapelCount').textContent = response.mapelCount || 0;
-
-                        // --- AWAL LOGIKA BARU UNTUK KARTU KODE SEKOLAH ---
-                        const schoolCodeCard = document.getElementById('school-code-card');
-                        const codeDisplay = document.getElementById('schoolCodeDisplay');
-                        const copyBtn = document.getElementById('copySchoolCodeBtn');
-                        
-                        if (response.schoolCode && response.schoolCode !== 'TIDAK ADA') {
-                            // JIKA SUDAH PUNYA KODE: Tampilkan kode dan buat kartu tidak bisa diklik
-                            codeDisplay.textContent = response.schoolCode;
-                            copyBtn.style.display = 'flex'; // Tampilkan tombol salin
-                            schoolCodeCard.classList.remove('cursor-pointer', 'hover:bg-blue-50');
-                            schoolCodeCard.onclick = null; // Hapus event klik untuk generate
-                        } else {
-                            // JIKA BELUM PUNYA KODE: Tampilkan ajakan dan buat kartu bisa diklik
-                            codeDisplay.innerHTML = `<span class="text-sm font-medium text-blue-600">Klik untuk generate kode</span>`;
-                            copyBtn.style.display = 'none'; // Sembunyikan tombol salin
-                            schoolCodeCard.classList.add('cursor-pointer', 'hover:bg-blue-50');
-                            schoolCodeCard.onclick = handleGenerateSchoolCode; // Pasang event klik
-                        }
-                        // --- AKHIR LOGIKA BARU ---
-
-                        // --- Kode untuk grafik distribusi jenis ujian (tidak berubah) ---
-                        let madrasahCount = 0, praktekCount = 0, keduanyaCount = 0;
-                        if (response.mapelList && response.mapelList.length > 0) {
-                            response.mapelList.forEach(mapel => {
-                                if (mapel.jenisUjian === 'Ujian Madrasah') madrasahCount++;
-                                else if (mapel.jenisUjian === 'Ujian Praktek') praktekCount++;
-                                else if (mapel.jenisUjian === 'Keduanya') keduanyaCount++;
-                            });
-                        }
-                        const ctx = document.getElementById('mapelChart').getContext('2d');
-                        if (mapelChartInstance) {
-                            mapelChartInstance.destroy();
-                        }
-                        mapelChartInstance = new Chart(ctx, {
-                            type: 'bar',
+                        const ctx = document.getElementById(canvasId).getContext('2d');
+                        return new Chart(ctx, {
+                            type: 'bar', // Menggunakan grafik batang
                             data: {
-                                labels: ['Ujian Madrasah', 'Ujian Praktek', 'Keduanya'],
+                                labels: chartData.labels,
                                 datasets: [{
-                                    label: 'Jumlah Mapel',
-                                    data: [madrasahCount, praktekCount, keduanyaCount],
-                                    backgroundColor: ['rgba(59, 130, 246, 0.7)', 'rgba(16, 185, 129, 0.7)', 'rgba(249, 115, 22, 0.7)'],
-                                    borderColor: ['rgba(59, 130, 246, 1)', 'rgba(16, 185, 129, 1)', 'rgba(249, 115, 22, 1)'],
+                                    label: chartLabel,
+                                    data: chartData.data,
+                                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                                    borderColor: 'rgba(59, 130, 246, 1)',
                                     borderWidth: 1
                                 }]
                             },
                             options: {
+                                indexAxis: 'y', // Membuat grafik menjadi horizontal
                                 responsive: true,
                                 maintainAspectRatio: false,
-                                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-                                plugins: { legend: { display: false } }
+                                scales: {
+                                    x: {
+                                        beginAtZero: true,
+                                        ticks: {
+                                            callback: function(value) { if (value % 1 === 0) { return value; } } // Tampilkan hanya integer
+                                        }
+                                    }
+                                },
+                                plugins: {
+                                    legend: {
+                                        display: false // Sembunyikan legenda karena sudah ada di judul
+                                    }
+                                }
                             }
                         });
+                    };
 
-                        // --- [BARU] Kode untuk membuat grafik rata-rata nilai ---
-                        if (response.subjectAverages) {
-                            ujianChartInstance = createAverageChart('ujianAverageChart', ujianChartInstance, response.subjectAverages.ujian, 'Rata-rata Nilai Ujian');
-                            raporChartInstance = createAverageChart('raporAverageChart', raporChartInstance, response.subjectAverages.rapor, 'Rata-rata Nilai Rapor');
-                            ijazahChartInstance = createAverageChart('ijazahAverageChart', ijazahChartInstance, response.subjectAverages.ijazah, 'Rata-rata Nilai Ijazah');
-                        }
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            if (response && response.status === 'success') {
+                                // --- Kode untuk kartu statistik (tidak berubah) ---
+                                document.getElementById('studentCount').textContent = response.studentCount || 0;
+                                document.getElementById('mapelCount').textContent = response.mapelCount || 0;
 
-
-                        // [MODIFIKASI] Seluruh blok ini diubah untuk mendukung grafik vertikal dan scrolling
-                        if (response.examScoreShare) {
-                            // 1. Filter dan Urutkan Data (High to Low)
-                            // Kabar baiknya, kode Anda sudah mengurutkan data dari skor tertinggi ke terendah,
-                            // jadi kita tidak perlu mengubah bagian ini.
-                            const studentData = response.examScoreShare
-                                .filter(s => s.nama && s.nama.trim() !== '')
-                                .sort((a, b) => b.skor - a.skor);
-
-                            // [MODIFIKASI] Tambahkan nomor peringkat pada label nama siswa
-                            const studentLabels = studentData.map((s, index) => {
-                                return `${index + 1}. ${s.nama.toUpperCase()}`;
-                            });
-                            const studentScores = studentData.map(s => s.skor);
-
-                            // 2. [MODIFIKASI] Atur lebar dinamis untuk scrolling
-                            const numStudents = studentData.length;
-                            // Beri lebar 60px untuk setiap siswa, dengan lebar minimum 600px
-                            const chartWidth = Math.max(600, numStudents * 60); 
-                            
-                            const wrapper = document.getElementById('examScoreChartWrapper');
-                            if (wrapper) {
-                                wrapper.style.width = `${chartWidth}px`;
-                            }
-
-                            // 3. Buat atau perbarui grafik
-                            const ctxBar = document.getElementById('examScoreDistributionChart').getContext('2d');
-                            if (examScoreShareChartInstance) {
-                                examScoreShareChartInstance.destroy();
-                            }
-                            
-                            examScoreShareChartInstance = new Chart(ctxBar, {
-                                type: 'bar', // Tipe grafik tetap bar
-                                data: {
-                                    labels: studentLabels,
-                                    datasets: [{
-                                        label: 'Rata-rata Nilai Ujian',
-                                        data: studentScores,
-                                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                                        borderColor: 'rgba(59, 130, 246, 1)',
-                                        borderWidth: 1
-                                    }]
-                                },
-                                options: {
-                                    // [MODIFIKASI] Hapus indexAxis: 'y' untuk menjadikannya bar vertikal
-                                    responsive: true,
-                                    maintainAspectRatio: false, // Penting untuk scrolling
-                                    scales: {
-                                        x: { // Ini sekarang adalah sumbu Nama Siswa
-                                            ticks: {
-                                                // [MODIFIKASI] Atur rotasi label nama siswa
-                                                maxRotation: 45,
-                                                minRotation: 45,
-                                                autoSkip: false, // Pastikan semua nama ditampilkan
-                                                font: {
-                                                    size: 10
-                                                }
-                                            }
-                                        },
-                                        y: { // Ini sekarang adalah sumbu Nilai
-                                            beginAtZero: true
-                                        }
-                                    },
-                                    plugins: {
-                                        legend: {
-                                            display: false // Sembunyikan legenda
-                                        },
-                                        tooltip: {
-                                            callbacks: {
-                                                label: function(context) {
-                                                    let label = context.dataset.label || '';
-                                                    if (label) { label += ': '; }
-                                                    if (context.parsed.y !== null) {
-                                                        label += parseFloat(context.parsed.y.toFixed(2));
-                                                    }
-                                                    return label;
-                                                }
-                                            }
-                                        }
-                                    }
+                                // --- AWAL LOGIKA BARU UNTUK KARTU KODE SEKOLAH ---
+                                const schoolCodeCard = document.getElementById('school-code-card');
+                                const codeDisplay = document.getElementById('schoolCodeDisplay');
+                                const copyBtn = document.getElementById('copySchoolCodeBtn');
+                                
+                                if (response.schoolCode && response.schoolCode !== 'TIDAK ADA') {
+                                    codeDisplay.textContent = response.schoolCode;
+                                    copyBtn.style.display = 'flex';
+                                    schoolCodeCard.classList.remove('cursor-pointer', 'hover:bg-blue-50');
+                                    schoolCodeCard.onclick = null;
+                                } else {
+                                    codeDisplay.innerHTML = `<span class="text-sm font-medium text-blue-600">Klik untuk generate kode</span>`;
+                                    copyBtn.style.display = 'none';
+                                    schoolCodeCard.classList.add('cursor-pointer', 'hover:bg-blue-50');
+                                    schoolCodeCard.onclick = handleGenerateSchoolCode;
                                 }
-                            });
-                        }
+                                // --- AKHIR LOGIKA BARU ---
 
-                        // --- [DIUBAH] Kode untuk grafik peringkat siswa berdasarkan nilai rata-rata ijazah (Bar Chart) ---
-                        // [MODIFIKASI] Seluruh blok ini diubah untuk mendukung grafik vertikal dan scrolling
-                        if (response.ijazahRanking) {
-                            // Data dari backend sudah diurutkan dari tertinggi ke terendah.
-                            const peringkatData = response.ijazahRanking.map(item => parseFloat(item.nilai.toFixed(2)));
-                            // [MODIFIKASI] Tambahkan nomor peringkat pada label nama siswa
-                            const namaSiswa = response.ijazahRanking.map((item, index) => {
-                                return `${index + 1}. ${item.nama.toUpperCase()}`;
-                            });
+                                // === MULAI KODE BARU UNTUK KARTU PERINGATAN ===
+                                const incompleteCard = document.getElementById('incomplete-scores-card');
+                                const incompleteText = document.getElementById('incomplete-count-text');
 
-                            // [MODIFIKASI] Atur lebar dinamis untuk scrolling
-                            const numStudents = response.ijazahRanking.length;
-                            const chartWidth = Math.max(600, numStudents * 60); // 60px per siswa
-                            
-                            const wrapper = document.getElementById('ijazahRankingChartWrapper');
-                            if (wrapper) {
-                                wrapper.style.width = `${chartWidth}px`;
-                            }
-
-                            // Buat atau perbarui grafik
-                            const ctxRanking = document.getElementById('ijazahRankingChart').getContext('2d');
-                            if (ijazahRankingChartInstance) {
-                                ijazahRankingChartInstance.destroy();
-                            }
-                            
-                            ijazahRankingChartInstance = new Chart(ctxRanking, {
-                                type: 'bar',
-                                data: {
-                                    labels: namaSiswa,
-                                    datasets: [{
-                                        label: 'Rata-rata Nilai Ijazah',
-                                        data: peringkatData,
-                                        // [MODIFIKASI] Warna diubah agar berbeda dari grafik sebelumnya
-                                        backgroundColor: 'rgba(255, 159, 64, 0.7)', 
-                                        borderColor: 'rgba(255, 159, 64, 1)',
-                                        borderWidth: 1
-                                    }]
-                                },
-                                options: {
-                                    // [MODIFIKASI] Hapus indexAxis: 'y' untuk menjadikannya bar vertikal
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    scales: {
-                                        x: { // Sumbu Nama Siswa
-                                            ticks: {
-                                                // [MODIFIKASI] Atur rotasi label nama siswa
-                                                maxRotation: 45,
-                                                minRotation: 45,
-                                                autoSkip: false,
-                                                font: {
-                                                    size: 10
-                                                }
-                                            }
-                                        },
-                                        y: { // Sumbu Nilai
-                                            beginAtZero: true
-                                        }
-                                    },
-                                    plugins: {
-                                        legend: {
-                                            display: false
-                                        }
-                                    }
+                                if (incompleteCard && incompleteText && response.incompleteCount > 0) {
+                                    incompleteText.textContent = `Ditemukan ${response.incompleteCount} siswa dengan nilai yang masih kosong. Klik di sini untuk memvalidasi.`;
+                                    incompleteCard.classList.remove('hidden');
+                                    // Tambahkan aksi klik untuk pindah ke halaman validasi
+                                    incompleteCard.onclick = () => {
+                                        document.querySelector('.nav-link[data-page="validasi-nilai"]').click();
+                                    };
+                                } else if (incompleteCard) {
+                                    incompleteCard.classList.add('hidden');
+                                    incompleteCard.onclick = null; // Hapus aksi klik jika tidak ada masalah
                                 }
-                            });
-                        }
+                                // === AKHIR KODE BARU ===
 
-                        // PENAMBAHAN KODE DIMULAI DI SINI
-                        const studentCard = document.getElementById('student-card');
-                        const mapelCard = document.getElementById('mapel-card');
+                                // --- Kode untuk semua grafik (tidak berubah) ---
+                                let madrasahCount = 0, praktekCount = 0, keduanyaCount = 0;
+                                if (response.mapelList && response.mapelList.length > 0) {
+                                    response.mapelList.forEach(mapel => {
+                                        if (mapel.jenisUjian === 'Ujian Madrasah') madrasahCount++;
+                                        else if (mapel.jenisUjian === 'Ujian Praktek') praktekCount++;
+                                        else if (mapel.jenisUjian === 'Keduanya') keduanyaCount++;
+                                    });
+                                }
+                                const ctx = document.getElementById('mapelChart').getContext('2d');
+                                if (mapelChartInstance) {
+                                    mapelChartInstance.destroy();
+                                }
+                                mapelChartInstance = new Chart(ctx, {
+                                    type: 'bar',
+                                    data: {
+                                        labels: ['Ujian Madrasah', 'Ujian Praktek', 'Keduanya'],
+                                        datasets: [{
+                                            label: 'Jumlah Mapel',
+                                            data: [madrasahCount, praktekCount, keduanyaCount],
+                                            backgroundColor: ['rgba(59, 130, 246, 0.7)', 'rgba(16, 185, 129, 0.7)', 'rgba(249, 115, 22, 0.7)'],
+                                            borderColor: ['rgba(59, 130, 246, 1)', 'rgba(16, 185, 129, 1)', 'rgba(249, 115, 22, 1)'],
+                                            borderWidth: 1
+                                        }]
+                                    },
+                                    options: {
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+                                        plugins: { legend: { display: false } }
+                                    }
+                                });
 
-                        if (studentCard) {
-                          studentCard.onclick = () => {
-                            document.querySelector('.nav-link[data-page="data-siswa"]').click();
-                          };
-                        }
+                                if (response.subjectAverages) {
+                                    ujianChartInstance = createAverageChart('ujianAverageChart', ujianChartInstance, response.subjectAverages.ujian, 'Rata-rata Nilai Ujian');
+                                    raporChartInstance = createAverageChart('raporAverageChart', raporChartInstance, response.subjectAverages.rapor, 'Rata-rata Nilai Rapor');
+                                    ijazahChartInstance = createAverageChart('ijazahAverageChart', ijazahChartInstance, response.subjectAverages.ijazah, 'Rata-rata Nilai Ijazah');
+                                }
 
-                        if (mapelCard) {
-                          mapelCard.onclick = () => {
-                            document.querySelector('.nav-link[data-page="mapel"]').click();
-                          };
-                        }
-                        // PENAMBAHAN KODE BERAKHIR DI SINI
-                    } else {
-                        showGlobalStatus(response ? response.message : 'Gagal memuat data dashboard.', false);
-                    }
-                })
-                .withFailureHandler(error => {
-                    showGlobalStatus(`Gagal memuat dashboard: ${error.message}`, false);
-                })
-                .getDashboardData(userSpreadsheetId);
-        }
+                                if (response.examScoreShare) {
+                                    const studentData = response.examScoreShare
+                                        .filter(s => s.nama && s.nama.trim() !== '')
+                                        .sort((a, b) => b.skor - a.skor);
+                                    const studentLabels = studentData.map((s, index) => `${index + 1}. ${s.nama.toUpperCase()}`);
+                                    const studentScores = studentData.map(s => s.skor);
+                                    const chartWidth = Math.max(600, studentData.length * 60); 
+                                    const wrapper = document.getElementById('examScoreChartWrapper');
+                                    if (wrapper) wrapper.style.width = `${chartWidth}px`;
+                                    const ctxBar = document.getElementById('examScoreDistributionChart').getContext('2d');
+                                    if (examScoreShareChartInstance) examScoreShareChartInstance.destroy();
+                                    examScoreShareChartInstance = new Chart(ctxBar, {
+                                        type: 'bar',
+                                        data: {
+                                            labels: studentLabels,
+                                            datasets: [{
+                                                label: 'Rata-rata Nilai Ujian',
+                                                data: studentScores,
+                                                backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                                                borderColor: 'rgba(59, 130, 246, 1)',
+                                                borderWidth: 1
+                                            }]
+                                        },
+                                        options: {
+                                            responsive: true,
+                                            maintainAspectRatio: false,
+                                            scales: {
+                                                x: { ticks: { maxRotation: 45, minRotation: 45, autoSkip: false, font: { size: 10 } } },
+                                                y: { beginAtZero: true }
+                                            },
+                                            plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.dataset.label || ''}: ${parseFloat(c.parsed.y.toFixed(2))}` } } }
+                                        }
+                                    });
+                                }
+
+                                if (response.ijazahRanking) {
+                                    const peringkatData = response.ijazahRanking.map(item => parseFloat(item.nilai.toFixed(2)));
+                                    const namaSiswa = response.ijazahRanking.map((item, index) => `${index + 1}. ${item.nama.toUpperCase()}`);
+                                    const chartWidth = Math.max(600, response.ijazahRanking.length * 60);
+                                    const wrapper = document.getElementById('ijazahRankingChartWrapper');
+                                    if (wrapper) wrapper.style.width = `${chartWidth}px`;
+                                    const ctxRanking = document.getElementById('ijazahRankingChart').getContext('2d');
+                                    if (ijazahRankingChartInstance) ijazahRankingChartInstance.destroy();
+                                    ijazahRankingChartInstance = new Chart(ctxRanking, {
+                                        type: 'bar',
+                                        data: {
+                                            labels: namaSiswa,
+                                            datasets: [{
+                                                label: 'Rata-rata Nilai Ijazah',
+                                                data: peringkatData,
+                                                backgroundColor: 'rgba(255, 159, 64, 0.7)', 
+                                                borderColor: 'rgba(255, 159, 64, 1)',
+                                                borderWidth: 1
+                                            }]
+                                        },
+                                        options: {
+                                            responsive: true,
+                                            maintainAspectRatio: false,
+                                            scales: {
+                                                x: { ticks: { maxRotation: 45, minRotation: 45, autoSkip: false, font: { size: 10 } } },
+                                                y: { beginAtZero: true }
+                                            },
+                                            plugins: { legend: { display: false } }
+                                        }
+                                    });
+                                }
+
+                                document.getElementById('student-card').onclick = () => document.querySelector('.nav-link[data-page="data-siswa"]').click();
+                                document.getElementById('mapel-card').onclick = () => document.querySelector('.nav-link[data-page="mapel"]').click();
+
+                            } else {
+                                showGlobalStatus(response ? response.message : 'Gagal memuat data dashboard.', false);
+                            }
+                        })
+                        .withFailureHandler(error => {
+                            showGlobalStatus(`Gagal memuat dashboard: ${error.message}`, false);
+                        })
+                        .getDashboardData(userSpreadsheetId);
+                }
 
         // ===== GANTI FUNGSI LAMA DENGAN VERSI BARU INI =====
         function initializeApp(lastPage = 'dashboard') {
@@ -3613,7 +3782,10 @@
                 if (targetPageId === 'input-rapor') initRaporPage();
                 if (targetPageId === 'rekapitulasi') initRekapitulasiPage();
                 if (targetPageId === 'transkrip') loadTranskripPage();
-                if (targetPageId === 'pengaturan') loadPengaturanPage();
+                if (targetPageId === 'pengaturan') {
+                    loadPengaturanPage();
+                    loadDocumentSettings(); // <-- TAMBAHKAN PEMANGGILAN FUNGSI INI
+                }
                 if (targetPageId === 'validasi-nilai') initValidationPage();
                 if (targetPageId === 'backup-restore') loadBackupRestorePage();
                 if (targetPageId === 'update-info') loadFullChangelog();
@@ -3893,8 +4065,7 @@
                                 .withSuccessHandler(response => {
                                     showGlobalStatus(response.message, response.status === 'success' ? 'success' : 'error');
                                     if (response.status === 'success') {
-                                        sessionStorage.setItem('rekapNeedsUpdate', 'true');
-                                        checkAndApplyRekapIndicator();
+                                        syncRekapIndicator();
                                     }
                                     loadStudentsData();
                                     btn.disabled = false;
@@ -3968,8 +4139,7 @@
                         .withSuccessHandler(res => {
                             showGlobalStatus(res.message, res.status === 'success');
                             if (res.status === 'success') { // <-- Tambahkan pengecekan ini
-                                sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                                checkAndApplyRekapIndicator();                   // <-- TAMBAHKAN
+                                syncRekapIndicator();                   // <-- TAMBAHKAN
                             }
                             const importStatusDiv = document.getElementById('importStatus');
                             importStatusDiv.innerHTML = `<p class="p-4 bg-green-100 text-green-800 rounded-md">${res.message}. Memuat ulang data siswa...</p>`;
@@ -4039,8 +4209,7 @@
                             showGlobalStatus(response.message, response.status !== 'error');
 
                             if (response.status === 'success' && response.updatedStudentList) {
-                                sessionStorage.setItem('rekapNeedsUpdate', 'true');
-                                checkAndApplyRekapIndicator();   
+                                syncRekapIndicator();   
                                 closeSiswaModal();
                                 allStudentsData = response.updatedStudentList;
                                 renderSiswaTable(response.updatedStudentList);
@@ -4241,8 +4410,7 @@
                             overlay.classList.add('hidden');
                             showGlobalStatus(response.message, response.status === 'success');
                             if (response.status === 'success' && response.updatedStudentList) {
-                                sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                                checkAndApplyRekapIndicator();  
+                                syncRekapIndicator();  
                                 allStudentsData = response.updatedStudentList;
                                 renderSiswaTable(response.updatedStudentList);
                             }
@@ -4304,8 +4472,7 @@
                         .withSuccessHandler(response => {
                             showGlobalStatus(response.message, response.status === 'success');
                             if (response.status === 'success') {
-                                sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                                checkAndApplyRekapIndicator();                   // <-- TAMBAHKAN
+                                syncRekapIndicator();                   // <-- TAMBAHKAN
                             }
                             saveBtn.disabled = false;
                             saveBtn.textContent = 'Simpan Bobot';
@@ -4377,8 +4544,7 @@
                                 .withSuccessHandler(response => {
                                     showGlobalStatus(response.message, response.status === 'success');
                                     if (response.status === 'success') { // <-- Tambahkan pengecekan ini
-                                        sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                                        checkAndApplyRekapIndicator();                   // <-- TAMBAHKAN
+                                        syncRekapIndicator();                   // <-- TAMBAHKAN
                                     }
                                     loadMapelData();
                                     btn.disabled = false;
@@ -4523,8 +4689,7 @@
                             showGlobalStatus(response.message, response.status === 'success');
                             
                             if (response.status === 'success' && response.updatedMapelList) {
-                                sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                                checkAndApplyRekapIndicator();   
+                                syncRekapIndicator();   
                                 closeMapelModal();
                                 // Langsung render data baru dari server
                                 allMapelData = response.updatedMapelList;
@@ -4718,8 +4883,7 @@
                     .withSuccessHandler(response => {
                         showGlobalStatus(response.message, response.status === 'success');
                         if (response.status === 'success') { // <-- Tambahkan pengecekan ini
-                            sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                            checkAndApplyRekapIndicator();                   // <-- TAMBAHKAN
+                            syncRekapIndicator();                   // <-- TAMBAHKAN
                             disableScoreEditing(jenisUjian); 
                         }
                         saveBtn.disabled = false;
@@ -4934,10 +5098,10 @@
                 google.script.run
                     .withSuccessHandler(response => {
                         if (response.status === 'success') {
-                            sessionStorage.setItem('rekapNeedsUpdate', 'false'); // <-- TAMBAHKAN
-                            checkAndApplyRekapIndicator();   
+                            syncRekapIndicator();   
                             showGlobalStatus(response.message, true);
                             initRekapitulasiPage();
+                            syncRekapIndicator();
                         } else {
                             showGlobalStatus(response.message, false);
                         }
@@ -5249,8 +5413,7 @@
                                 .withSuccessHandler(response => {
                                     showGlobalStatus(response.message, response.status !== 'error');
                                     if (response.status !== 'error') { // <-- Kondisi sudah tepat
-                                        sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                                        checkAndApplyRekapIndicator();                   // <-- TAMBAHKAN
+                                        syncRekapIndicator();                   // <-- TAMBAHKAN
                                     }
                                     document.getElementById('input-ujian-container').innerHTML = '';
                                 })
@@ -5284,8 +5447,7 @@
                                     .withSuccessHandler(response => {
                                         showGlobalStatus(response.message, response.status !== 'error');
                                         if (response.status !== 'error') { // <-- Kondisi sudah tepat
-                                            sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                                            checkAndApplyRekapIndicator();                   // <-- TAMBAHKAN
+                                            syncRekapIndicator();                   // <-- TAMBAHKAN
                                         }
                                         const tableContainer = document.getElementById(`table-container-${semesterKey}`);
                                         if(tableContainer) tableContainer.innerHTML = '';
@@ -5433,6 +5595,7 @@
                 });
             }
             // ===== AKHIR KODE BARU UNTUK KOTAK SARAN =====
+            syncRekapIndicator();
         }
 
         /**
@@ -5500,8 +5663,7 @@
                 .withSuccessHandler(response => {
                     showGlobalStatus(response.message, response.status === 'success');
                     if (response.status === 'success') { 
-                        sessionStorage.setItem('rekapNeedsUpdate', 'true');
-                        checkAndApplyRekapIndicator();
+                        syncRekapIndicator();
                         const tableKey = `${semesterKey}-${jenisNilai}`;
                         disableScoreEditing(tableKey); 
                     }
@@ -8374,8 +8536,7 @@
                     showGlobalStatus(response.message, response.status === 'success');
 
                     if (response.status === 'success' && response.updatedMapelList) {
-                        sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                        checkAndApplyRekapIndicator(); 
+                        syncRekapIndicator(); 
                         closeMapelImportModal();
                         
                         // =========================================================
@@ -8469,8 +8630,7 @@
                         showGlobalStatus(response.message, response.status === 'success');
 
                         if (response.status === 'success' && response.updatedMapelList) {
-                            sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                            checkAndApplyRekapIndicator();  
+                            syncRekapIndicator();  
                             allMapelData = response.updatedMapelList;
                             renderMapelTable(response.updatedMapelList);
                         }
@@ -8563,8 +8723,7 @@
                     showGlobalStatus(response.message, response.status === 'success');
                     
                     if (response.status === 'success' && response.updatedMapelList) {
-                        sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                        checkAndApplyRekapIndicator();  
+                        syncRekapIndicator();  
                         closeEditMapelModal();
                         allMapelData = response.updatedMapelList;
                         renderMapelTable(response.updatedMapelList);
@@ -8619,8 +8778,7 @@
                         // Tampilkan notifikasi hijau setelah berhasil disimpan
                         showGlobalStatus(response.message, response.status === 'success');
                         if (response.status === 'success') { // <-- Tambahkan pengecekan ini
-                            sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                            checkAndApplyRekapIndicator();                   // <-- TAMBAHKAN
+                            syncRekapIndicator();                   // <-- TAMBAHKAN
                         }
                     })
                     .withFailureHandler(err => {
@@ -8885,18 +9043,28 @@
         // ===== [BARU] FUNGSI UNTUK INDIKATOR REKAPITULASI =====
 
         /**
-         * Memeriksa status 'rekapNeedsUpdate' dari sessionStorage
-         * dan menampilkan/menyembunyikan indikator animasi.
+         * [VERSI BARU] Memanggil backend untuk memeriksa status sinkronisasi rekapitulasi
+         * dan menampilkan/menyembunyikan indikator notifikasi berdasarkan hasilnya.
          */
-        function checkAndApplyRekapIndicator() {
+        function syncRekapIndicator() {
             const indicator = document.getElementById('rekap-indicator');
             if (!indicator) return;
 
-            if (sessionStorage.getItem('rekapNeedsUpdate') === 'true') {
-                indicator.classList.remove('hidden');
-            } else {
-                indicator.classList.add('hidden');
-            }
+            // Panggil fungsi backend yang baru
+            google.script.run
+                .withSuccessHandler(response => {
+                    if (response && response.needsUpdate) {
+                        indicator.classList.remove('hidden');
+                    } else {
+                        indicator.classList.add('hidden');
+                    }
+                })
+                .withFailureHandler(err => {
+                    // Jika gagal memeriksa, lebih baik tampilkan indikator untuk jaga-jaga
+                    indicator.classList.remove('hidden');
+                    console.error("Gagal memeriksa status rekap:", err);
+                })
+                .checkRekapSyncStatus(userSpreadsheetId);
         }
 
         /**
@@ -9841,7 +10009,8 @@
         }
 
         /**
-         * [BARU] Menangani klik tombol "Transkrip" untuk menampilkan modal.
+         * [FINAL] Menangani klik tombol "Transkrip" untuk menampilkan modal.
+         * Kini mengirimkan elemen target langsung ke fungsi render.
          */
         function handleShowTranscript(nisn) {
             const modal = document.getElementById('transcript-modal');
@@ -9856,7 +10025,8 @@
             google.script.run
                 .withSuccessHandler(response => {
                     if (response.status === 'success') {
-                        renderTranscriptModal(response.data);
+                        // [PERUBAIKAN] Kirim elemen 'printableArea' sebagai argumen
+                        renderTranscriptModal(response.data, printableArea);
                         loader.classList.add('hidden');
                         printableArea.classList.remove('hidden');
                     } else {
@@ -9871,127 +10041,193 @@
                 .getTranscriptData(userSpreadsheetId, nisn);
         }
 
+
         /**
-         * [PERBAIKAN RATA-RATA] Merender modal transkrip di akun admin dengan perhitungan yang benar.
+         * [MODIFIKASI FINAL v7] Menambahkan animasi loading pada tombol Cetak.
          */
-        function renderTranscriptModal(data) {
-            const { student, school, subjects } = data;
-            const printableArea = document.getElementById('transcript-printable-area');
+        function renderTranscriptModal(data, printableArea) {
+            try {
+                const { student, school, subjects } = data;
 
-            // [PERBAIKAN] Helper format nilai: null/NaN menjadi 0
-            const formatScore = (score) => {
-                if (score === null || score === undefined || isNaN(score)) return '0'; // Diubah dari '-'
-                const rounded = Math.round(score);
-                const decimal = score.toFixed(2).replace('.', ',');
-                return `${rounded} (${decimal})`;
-            };
+                // Helper dan perhitungan (tidak ada perubahan)
+                const toProperCase = (str) => {
+                    if (!str || typeof str !== 'string') return '';
+                    return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+                };
+                const formatIndonesianDate = (dateStr) => {
+                    if (!dateStr) return '';
+                    return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                };
+                const formatScore = (score) => {
+                    if (score === null || score === undefined || isNaN(score)) return '0';
+                    const rounded = Math.round(score);
+                    const decimal = score.toFixed(2).replace('.', ',');
+                    return `${rounded} (${decimal})`;
+                };
+                let totalNilaiIjazah = 0;
+                const mapelCount = subjects.length;
+                subjects.forEach(s => {
+                    const scoreToAdd = (s.nilaiIjazah !== null && !isNaN(s.nilaiIjazah)) ? Math.round(s.nilaiIjazah) : 0;
+                    totalNilaiIjazah += scoreToAdd;
+                });
+                const rataRataIjazah = mapelCount > 0 ? (totalNilaiIjazah / mapelCount).toFixed(2).replace('.', ',') : '0,00';
+                const nomorIndukGabungan = (school.nsm || '') + (student.nis || '-');
+                const alamatUtama = `${(school.alamat || '').toUpperCase()}, KEL. ${(school.kelurahan || '').toUpperCase()}`;
+                const alamatLengkap = [
+                    `Kecamatan ${toProperCase(school.kecamatan || '')}`,
+                    `Kabupaten ${toProperCase(school.kabupaten || '')}`,
+                    toProperCase(school.provinsi || ''),
+                    school.kodePos || ''
+                ].filter(Boolean).join(' - ');
 
-            // [PERBAIKAN] Logika Perhitungan Rata-rata disamakan dengan backend dan portal siswa
-            let totalNilaiIjazah = 0;
-            const mapelCount = subjects.length; // Divisor adalah jumlah total mapel
-
-            subjects.forEach(s => {
-                // Tambahkan nilai jika valid, atau tambahkan 0 jika tidak valid
-                const scoreToAdd = (s.nilaiIjazah !== null && !isNaN(s.nilaiIjazah)) ? Math.round(s.nilaiIjazah) : 0;
-                totalNilaiIjazah += scoreToAdd;
-            });
-
-            // Pastikan tidak ada pembagian dengan nol
-            const rataRataIjazah = mapelCount > 0 ? (totalNilaiIjazah / mapelCount) : 0;
-            
-            const nomorIndukGabungan = (school.nsm || '') + (student.nis || '');
-            
-            const html = `
-                <div class="font-sans p-4" id="printable-transcript-content">
-                    <div class="text-center border-b-4 border-black pb-2 mb-4">
-                        <h3 class="text-xl font-bold uppercase">TRANSKRIP NILAI AKHIR</h3>
-                        <h4 class="text-lg font-semibold uppercase">${school.namaSekolah || 'NAMA SEKOLAH'}</h4>
-                        <p class="text-xs">${school.alamat || 'Alamat Sekolah'}</p>
-                    </div>
-                    <div class="w-full text-sm mb-4 space-y-1">
-                        <div class="grid grid-cols-[max-content_auto_1fr] gap-x-2 gap-y-1 items-baseline">
-                            <div class="font-medium">Nama Peserta Didik</div>
-                            <div>:</div>
-                            <div class="font-semibold">${student.nama.toUpperCase()}</div>
-
-                            <div class="font-medium">Tempat, Tanggal Lahir</div>
-                            <div>:</div>
-                            <div class="font-semibold">${student.tempatLahir ? toProperCase(student.tempatLahir) + ', ' : ''}${formatIndonesianDate(student.tanggalLahir)}</div>
-
-                            <div class="font-medium">Nomor Induk Siswa/NISN</div>
-                            <div>:</div>
-                            <div class="font-semibold">${nomorIndukGabungan || '-'} / ${student.nisn}</div>
+                // Struktur HTML (tidak ada perubahan)
+                const html = `
+                    <div class="font-sans p-4" id="printable-transcript-content">
+                        <div style="display: flex; align-items: flex-start; padding-bottom: 5px; border-bottom: 3px solid black; margin-bottom: 10px;">
+                            <div id="print-logo-placeholder" style="width: 75px; height: 75px; margin-right: 20px;"></div>
+                            <div style="text-align: center; flex-grow: 1; line-height: 1.4;">
+                                <div style="font-size: 14pt; font-weight: bold;">KEMENTERIAN AGAMA REPUBLIK INDONESIA</div>
+                                <div style="font-size: 16pt; font-weight: bold;">${school.namaSekolah || 'NAMA SEKOLAH'}</div>
+                                <div style="font-size: 11pt;">${alamatUtama}</div>
+                                <div style="font-size: 9pt; font-style: italic;">${alamatLengkap}</div>
+                            </div>
                         </div>
-                    </div>
-                    <table class="w-full text-sm border-collapse border border-black">
-                        <thead class="bg-gray-200 font-bold">
-                            <tr>
-                                <th class="border border-black p-2 w-10" rowspan="2">No</th>
-                                <th class="border border-black p-2 text-left" rowspan="2">Mata Pelajaran</th>
-                                <th class="border border-black p-2" colspan="3">Nilai</th>
-                            </tr>
-                            <tr>
-                                <th class="border border-black p-1 text-xs font-semibold w-32">Rata-Rata<br>Rapor</th>
-                                <th class="border border-black p-1 text-xs font-semibold w-32">Ujian<br>Madrasah</th>
-                                <th class="border border-black p-1 text-xs font-semibold w-32">Nilai<br>Ijazah</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${subjects.map((s, index) => `
-                                <tr class="bg-white">
-                                    <td class="border border-black p-2 text-center">${index + 1}</td>
-                                    <td class="border border-black p-2">${s.nama}</td>
-                                    <td class="border border-black p-2 text-center">${formatScore(s.nilaiRapor)}</td>
-                                    <td class="border border-black p-2 text-center">${formatScore(s.nilaiUjian)}</td>
-                                    <td class="border border-black p-2 text-center font-bold">${formatScore(s.nilaiIjazah)}</td>
+                        <div class="text-center" style="margin-top: 10px;">
+                            <h3 class="font-bold" style="text-decoration: underline; font-size: 14pt;">TRANSKRIP NILAI AKHIR</h3>
+                        </div>
+                        <table class="no-border" style="width:100%; margin-top: 1rem; margin-bottom: 1rem; font-size:10pt;">
+                          <tbody>
+                              <tr><td style="border:none; padding: 1px; width: 180px;">Nama Peserta Didik</td><td style="border:none; padding: 1px; width: 10px;">:</td><td style="border:none; font-weight:bold; padding: 1px;">${student.nama.toUpperCase()}</td></tr>
+                              <tr><td style="border:none; padding: 1px;">Tempat, Tanggal Lahir</td><td style="border:none; padding: 1px;">:</td><td style="border:none; font-weight:bold; padding: 1px;">${student.tempatLahir ? toProperCase(student.tempatLahir) + ', ' : ''}${formatIndonesianDate(student.tanggalLahir)}</td></tr>
+                              <tr><td style="border:none; padding: 1px;">Nomor Induk Siswa/NISN</td><td style="border:none; padding: 1px;">:</td><td style="border:none; font-weight:bold; padding: 1px;">${nomorIndukGabungan} / ${student.nisn}</td></tr>
+                          </tbody>
+                        </table>
+                        <table class="w-full text-sm border-collapse border border-black" style="border: 1px solid black;">
+                            <thead class="bg-gray-200 font-bold" style="background-color: #f2f2f2; font-weight: bold;">
+                                <tr>
+                                    <th class="border border-black p-2 w-10 text-center" rowspan="2">No</th>
+                                    <th class="border border-black p-2 text-left" rowspan="2">Mata Pelajaran</th>
+                                    <th class="border border-black p-2 text-center" colspan="3">Nilai</th>
                                 </tr>
-                            `).join('')}
-                        </tbody>
-                        <tfoot class="font-bold">
-                            <tr>
-                                <td class="border border-black p-2 text-center" colspan="4">Rata-rata Nilai Akhir Ijazah</td>
-                                <td class="border border-black p-2 text-center bg-gray-200">${rataRataIjazah.toFixed(2).replace('.', ',')}</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                    <div class="mt-8 flex justify-end">
-                        <div class="w-2/5 text-center text-sm">
-                            <p>${school.kabupaten || 'Tempat'}, ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
-                            <p>Kepala Madrasah,</p>
-                            <div class="h-20"></div>
-                            <p class="font-bold underline">${school.namaKepsek || '(Nama Kepala Sekolah)'}</p>
-                            <p>NIP. ${school.nipKepsek || '-'}</p>
+                                <tr>
+                                    <th class="border border-black p-1 text-xs font-semibold w-32 text-center">Rata-Rata Rapor</th>
+                                    <th class="border border-black p-1 text-xs font-semibold w-32 text-center">Ujian Madrasah</th>
+                                    <th class="border border-black p-1 text-xs font-semibold w-32 text-center">Nilai Ijazah</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${subjects.map((s, index) => `
+                                    <tr class="bg-white">
+                                        <td class="border border-black p-2 text-center">${index + 1}</td>
+                                        <td class="border border-black p-2">${s.nama}</td>
+                                        <td class="border border-black p-2 text-center">${formatScore(s.nilaiRapor)}</td>
+                                        <td class="border border-black p-2 text-center">${formatScore(s.nilaiUjian)}</td>
+                                        <td class="border border-black p-2 text-center font-bold">${formatScore(s.nilaiIjazah)}</td>
+                                    </tr>
+                                `).join('')}
+                                <tr class="font-bold" style="font-weight: bold; background-color: #f2f2f2;">
+                                    <td class="border border-black p-2 text-center" colspan="4">Rata-rata Nilai Akhir Ijazah</td>
+                                    <td class="border border-black p-2 text-center">${rataRataIjazah}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div style="margin-top: 40px; width: 100%; display: flex; justify-content: space-between; align-items: flex-end;">
+                          <div id="print-qr-placeholder" style="text-align: center; font-size: 8pt; color: #555;"></div>
+                          <div style="width: 45%; text-align: center; font-size: 10pt;">
+                              <p>${toProperCase(school.kabupaten) || '(Tempat)'}, ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                              <p>Kepala Madrasah,</p>
+                              <div id="print-signature-area" style="position: relative; height: 80px; margin-top: 10px; margin-bottom: 5px;">
+                              </div>
+                              <p style="font-weight: bold; text-decoration: underline; margin:0;">${school.namaKepsek || '(Nama Kepala Sekolah)'}</p>
+                              <p style="margin:0;">NIP. ${school.nipKepsek || '-'}</p>
+                          </div>
                         </div>
-                    </div>
-                </div>`;
-            
-            printableArea.innerHTML = html;
+                    </div>`;
+                
+                printableArea.innerHTML = html;
 
-            // ===== AWAL PEMASANGAN EVENT LISTENER UNTUK KEDUA TOMBOL =====
+                // Menangani tombol cetak
+                const printBtn = document.getElementById('printTranscriptBtn');
+                const newPrintBtn = printBtn.cloneNode(true);
+                printBtn.parentNode.replaceChild(newPrintBtn, printBtn);
 
-            // 1. FUNGSI UNTUK TOMBOL "UNDUH PDF" (BARU)
-            const downloadBtn = document.getElementById('downloadTranscriptBtn');
-            if (downloadBtn) {
-                // Hapus listener lama jika ada dengan mengkloning
-                const newDownloadBtn = downloadBtn.cloneNode(true);
-                downloadBtn.parentNode.replaceChild(newDownloadBtn, downloadBtn);
+                newPrintBtn.addEventListener('click', () => {
+                    // === [PERUBAHAN 1] Ambil elemen tombol dan span-nya ===
+                    const btnText = newPrintBtn.querySelector('.btn-text');
+                    const spinner = newPrintBtn.querySelector('.btn-spinner');
 
-                newDownloadBtn.addEventListener('click', () => {
-                    const nisn = student.nisn;
-                    const ssId = userSpreadsheetId;
-
-                    if (!ssId || !nisn) {
-                        alert('Sesi tidak valid atau NISN tidak ditemukan.');
-                        return;
-                    }
-
-                    const btnText = newDownloadBtn.querySelector('.btn-text');
-                    const spinner = newDownloadBtn.querySelector('.btn-spinner');
-
-                    newDownloadBtn.disabled = true;
+                    // === [PERUBAHAN 2] Aktifkan mode loading ===
+                    newPrintBtn.disabled = true;
                     btnText.classList.add('hidden');
                     spinner.classList.remove('hidden');
 
+                    Promise.all([
+                        new Promise(resolve => google.script.run.withSuccessHandler(resolve).getDocumentSettings(userSpreadsheetId)),
+                        new Promise(resolve => google.script.run.withSuccessHandler(resolve).getQrCodeAsBase64())
+                    ]).then(([settingsResponse, qrCodeBase64]) => {
+                        
+                        const docSettings = (settingsResponse && settingsResponse.status === 'success') ? settingsResponse.settings : {};
+                        const { logo, signature, stamp } = docSettings;
+                        
+                        const printWindowTitle = `${student.nama} - ${student.nisn} - Aplikasi Ijazah by Syamsul Bahri`;
+                        const printWindow = window.open('', '', 'height=800,width=800');
+                        printWindow.document.write(`<html><head><title>${printWindowTitle}</title>`);
+                        
+                        Array.from(document.styleSheets).forEach(styleSheet => {
+                            try {
+                                const cssRules = Array.from(styleSheet.cssRules).map(rule => rule.cssText).join('');
+                                printWindow.document.write(`<style>${cssRules}</style>`);
+                            } catch (e) {
+                                if (styleSheet.href) {
+                                    printWindow.document.write(`<link rel="stylesheet" href="${styleSheet.href}">`);
+                                }
+                            }
+                        });
+
+                        printWindow.document.write(`<style>@media print { thead { display: table-header-group; } tr { page-break-inside: avoid; } }</style>`);
+                        printWindow.document.write('</head><body></body></html>');
+                        printWindow.document.close();
+                        
+                        const contentToPrint = document.getElementById('printable-transcript-content').cloneNode(true);
+                        
+                        if (logo) contentToPrint.querySelector('#print-logo-placeholder').innerHTML = `<img src="${logo}" style="width:75px; height:75px;" alt="Logo">`;
+                        const signatureArea = contentToPrint.querySelector('#print-signature-area');
+                        if (signature) signatureArea.innerHTML += `<img src="${signature}" style="position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); max-width:150px; max-height:100px; z-index:1;" alt="TTD">`;
+                        if (stamp) signatureArea.innerHTML += `<img src="${stamp}" style="position:absolute; left:50%; top:50%; transform:translate(-50%, -50%) rotate(-15deg); opacity:0.75; max-width:120px; max-height:120px; z-index:2;" alt="Stempel">`;
+                        if(qrCodeBase64) contentToPrint.querySelector('#print-qr-placeholder').innerHTML = `<img src="data:image/png;base64,${qrCodeBase64}" alt="QR Code"><br><span>Scan untuk validasi</span>`;
+                        
+                        printWindow.document.body.appendChild(contentToPrint);
+
+                        // === [PERUBAHAN 3] Non-aktifkan mode loading sebelum dialog cetak muncul ===
+                        newPrintBtn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+
+                        setTimeout(() => {
+                            printWindow.focus();
+                            printWindow.print();
+                            printWindow.close();
+                        }, 250);
+                    }).catch(error => { // Tangani jika promise gagal
+                        console.error("Gagal mempersiapkan data cetak:", error);
+                        newPrintBtn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+                    });
+                });
+
+                // Event listener untuk tombol download (tidak ada perubahan)
+                const downloadBtn = document.getElementById('downloadTranscriptBtn');
+                const newDownloadBtn = downloadBtn.cloneNode(true);
+                downloadBtn.parentNode.replaceChild(newDownloadBtn, downloadBtn);
+                newDownloadBtn.addEventListener('click', () => {
+                    const nisn = student.nisn;
+                    const ssId = userSpreadsheetId;
+                    const btnText = newDownloadBtn.querySelector('.btn-text');
+                    const spinner = newDownloadBtn.querySelector('.btn-spinner');
+                    newDownloadBtn.disabled = true;
+                    btnText.classList.add('hidden');
+                    spinner.classList.remove('hidden');
                     google.script.run
                         .withSuccessHandler(response => {
                             newDownloadBtn.disabled = false;
@@ -10016,68 +10252,10 @@
                         })
                         .generateTranscriptPdfForSiswa(ssId, nisn);
                 });
+
+            } catch (error) {
+                alert("Gagal menampilkan transkrip. Error: " + error.message);
             }
-
-            // 2. Tombol "Cetak" (Dengan penambahan kembali logika QR Code)
-            const printBtn = document.getElementById('printTranscriptBtn');
-            const newPrintBtn = printBtn.cloneNode(true);
-            printBtn.parentNode.replaceChild(newPrintBtn, printBtn);
-
-            newPrintBtn.addEventListener('click', () => {
-                const deployUrl = sessionStorage.getItem('webAppUrl') || '';
-                const fileName = `${student.nama.toUpperCase()} - ${student.nisn} - Transkrip Nilai`;
-                const printWindow = window.open('', '', 'height=800,width=800');
-                
-                printWindow.document.write(`<html><head><title>${fileName}</title>`);
-                Array.from(document.styleSheets).forEach(styleSheet => { try { const cssRules = Array.from(styleSheet.cssRules).map(rule => rule.cssText).join(''); printWindow.document.write(`<style>${cssRules}</style>`); } catch (e) { if (styleSheet.href) { printWindow.document.write(`<link rel="stylesheet" href="${styleSheet.href}">`); } } });
-                printWindow.document.write(`
-                    <style>
-                        @page { size: A4; margin: 15mm; }
-                        body { margin: 0; font-family: 'Inter', sans-serif; font-size: 13px; padding-bottom: 25px; }
-                        .print-footer { position: fixed; width: 95%; left: 2.5%; bottom: 5mm; display: flex; align-items: center; font-size: 9px; color: #888; }
-                        .qr-code-img { width: 70px; height: 70px; margin-right: 10px; }
-                        .p-2 { padding: 0.25rem 0.5rem !important; } .mb-4 { margin-bottom: 0.75rem !important; } .mt-8 { margin-top: 1.25rem !important; } .h-20 { height: 3.5rem !important; }
-                    </style>
-                `);
-                printWindow.document.write('</head><body style="position: relative;">');
-                printWindow.document.write(document.getElementById('printable-transcript-content').innerHTML);
-                
-                // ===== LOGIKA QR CODE YANG DIKEMBALIKAN =====
-                if (deployUrl) {
-                    const encodedUrl = encodeURIComponent(deployUrl);
-                    const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=125x125&data=${encodedUrl}&ecc=L&margin=1`;
-
-                    printWindow.document.write(`
-                        <div class="print-footer">
-                            <img id="print-qr-code" src="${qrCodeApiUrl}" alt="QR Code Link Aplikasi" class="qr-code-img" />
-                            <span>Scan untuk validasi online</span>
-                        </div>
-                    `);
-                }
-                // ===========================================
-
-                printWindow.document.write('</body></html>');
-                printWindow.document.close();
-
-                // Logika untuk trigger print (tidak berubah)
-                const qrImage = printWindow.document.getElementById('print-qr-code');
-                if (qrImage) {
-                    let printTriggered = false;
-                    const triggerPrint = () => {
-                        if (!printTriggered) {
-                            printTriggered = true;
-                            printWindow.focus();
-                            printWindow.print();
-                            printWindow.close();
-                        }
-                    };
-                    qrImage.onload = triggerPrint;
-                    qrImage.onerror = () => { setTimeout(triggerPrint, 500); };
-                    setTimeout(triggerPrint, 3000);
-                } else {
-                    setTimeout(() => { printWindow.focus(); printWindow.print(); printWindow.close(); }, 500);
-                }
-            });
         }
 
         // GANTI FUNGSI LAMA DENGAN VERSI BARU INI
@@ -10238,8 +10416,7 @@
                             dropzoneInstance.emit("success", file);
                             dropzoneInstance.emit("complete", file);
                             showGlobalStatus(response.message, true);
-                            sessionStorage.setItem('rekapNeedsUpdate', 'true');
-                            checkAndApplyRekapIndicator();
+                            syncRekapIndicator();
                             // [UX Improvement] Tutup modal secara otomatis setelah berhasil
                             setTimeout(closeUploadModal, 1500); 
                         } else {
@@ -11338,6 +11515,127 @@
             }
         }
         // ===== AKHIR KODE BARU UNTUK HALAMAN TRANSKRIP =====
+
+        // === MULAI KODE JAVASCRIPT BARU UNTUK HALAMAN BANTUAN ===
+        function setupHelpAccordion() {
+            const helpContainer = document.getElementById('help-accordion-container');
+            if (!helpContainer) return;
+
+            // Gunakan event delegation untuk efisiensi
+            helpContainer.addEventListener('click', function(event) {
+                const header = event.target.closest('.help-header');
+                if (!header) return; // Jika yang diklik bukan header, abaikan
+
+                const item = header.parentElement;
+                const content = header.nextElementSibling;
+                const isActive = item.classList.contains('active');
+
+                // Tutup semua item lain (jika Anda ingin hanya satu yang terbuka pada satu waktu)
+                // Hapus blok ini jika Anda ingin beberapa item bisa terbuka bersamaan
+                document.querySelectorAll('#help-accordion-container .help-item').forEach(otherItem => {
+                    if (otherItem !== item) {
+                        otherItem.classList.remove('active');
+                        otherItem.querySelector('.help-content').style.maxHeight = '0px';
+                    }
+                });
+
+                // Toggle item yang diklik
+                if (isActive) {
+                    item.classList.remove('active');
+                    content.style.maxHeight = '0px';
+                } else {
+                    item.classList.add('active');
+                    // Atur maxHeight sesuai dengan tinggi konten aslinya
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                }
+            });
+        }
+        // === AKHIR KODE JAVASCRIPT BARU ===
+
+        // ===== AWAL JAVASCRIPT UNTUK PENGATURAN KOP SURAT =====
+
+        // Objek untuk menyimpan data Base64 gambar yang baru dipilih
+        let newDocumentSettings = {
+          logo: null,
+          signature: null,
+          stamp: null
+        };
+
+        // Fungsi ini akan dipanggil saat halaman Pengaturan dibuka
+        function loadDocumentSettings() {
+          // Tampilkan placeholder saat loading
+          document.getElementById('logoPreview').src = "https://placehold.co/128x128/e2e8f0/64748b?text=Logo";
+          document.getElementById('signaturePreview').src = "https://placehold.co/192x128/e2e8f0/64748b?text=TTD";
+          document.getElementById('stampPreview').src = "https://placehold.co/128x128/e2e8f0/64748b?text=Stempel";
+          
+          google.script.run
+            .withSuccessHandler(response => {
+              if (response.status === 'success' && response.settings) {
+                const { logo, signature, stamp } = response.settings;
+                if (logo) document.getElementById('logoPreview').src = logo;
+                if (signature) document.getElementById('signaturePreview').src = signature;
+                if (stamp) document.getElementById('stampPreview').src = stamp;
+              }
+            })
+            .withFailureHandler(err => {
+              showGlobalStatus("Gagal memuat pengaturan dokumen: " + err.message, false);
+            })
+            .getDocumentSettings(userSpreadsheetId);
+        }
+
+        // Fungsi helper untuk membaca file gambar yang dipilih pengguna
+        function setupImageInput(inputId, previewId, settingKey) {
+          const input = document.getElementById(inputId);
+          const preview = document.getElementById(previewId);
+
+          input.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              const base64String = e.target.result;
+              preview.src = base64String;
+              newDocumentSettings[settingKey] = base64String; // Simpan data baru ke objek sementara
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+
+        /**
+         * [BARU] Menangani klik pada tombol hapus aset.
+         */
+        function handleDeleteAsset(event) {
+            const button = event.target;
+            const settingKey = button.dataset.deleteKey;
+            const previewId = button.dataset.previewId;
+
+            if (!settingKey) return;
+
+            // Gunakan modal konfirmasi yang sudah ada
+            showConfirmationModal({
+                title: "Konfirmasi Hapus",
+                body: `Anda yakin ingin menghapus gambar ${settingKey.replace('ID ', '')}? Tindakan ini tidak dapat dibatalkan.`,
+                confirmText: "Ya, Hapus",
+                confirmColor: "bg-red-600 hover:bg-red-700",
+                onConfirm: () => {
+                    showGlobalStatus('Menghapus gambar...', 'info');
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            showGlobalStatus(response.message, response.status === 'success');
+                            if(response.status === 'success') {
+                                // Reset pratinjau ke gambar placeholder
+                                const previewImage = document.getElementById(previewId);
+                                previewImage.src = previewImage.src.split('?')[0] + `?text=${settingKey.replace('ID ','')}&t=` + new Date().getTime();
+                            }
+                        })
+                        .withFailureHandler(err => {
+                            showGlobalStatus('Gagal menghapus: ' + err.message, false);
+                        })
+                        .deleteDocumentAsset(userSpreadsheetId, settingKey);
+                }
+            });
+        }
     </script>
 </body>
 </html>
