@@ -329,8 +329,8 @@ function registerUser(userData, otp) {
 
     // ===== PERUBAHAN UTAMA DI SINI (13 KOLOM) =====
     userSheet.appendRow([
-        userId, storedPasswordString, namaSekolah, jenjang, newSpreadsheetId,
-        'Pengguna', 'Aktif', defaultLimit, latestVersion, '', '', schoolCode // <-- TAMBAHAN BARU di kolom M
+        userId, email, storedPasswordString, namaSekolah, jenjang, newSpreadsheetId,
+        'Pengguna', 'Aktif', defaultLimit, latestVersion, '', '', schoolCode, ''
     ]);
     
     CacheService.getScriptCache().remove(email.toLowerCase());
@@ -2520,7 +2520,7 @@ function getIjazahRanking(spreadsheetId) {
 
 /**
  * [MODIFIKASI] Mengambil data agregat untuk halaman dashboard.
- * Kini juga menyertakan Kode Sekolah.
+ * Kini juga menyertakan jumlah siswa dengan nilai yang belum lengkap.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @returns {object} Objek berisi data untuk dashboard.
  */
@@ -2551,6 +2551,21 @@ function getDashboardData(spreadsheetId) {
     const examScoreShare = getExamScoreShare(spreadsheetId);
     const ijazahRanking = getIjazahRanking(spreadsheetId);
 
+    // --- AWAL FITUR BARU: VALIDASI DI DASHBOARD ---
+    let incompleteStudentsCount = 0;
+    try {
+        // Memanggil fungsi validasi yang sudah ada untuk memeriksa kelengkapan
+        const validationResponse = validateAllScores(spreadsheetId);
+        // Jika validasi berhasil dan ada data, hitung jumlah siswa dengan nilai hilang
+        if (validationResponse.status === 'success' && validationResponse.data) {
+            incompleteStudentsCount = validationResponse.data.filter(student => student.missingCount > 0).length;
+        }
+    } catch (e) {
+        Logger.log(`Validasi di dashboard gagal: ${e.message}`);
+        // Abaikan error validasi, jangan sampai menggagalkan seluruh dashboard
+    }
+    // --- AKHIR FITUR BARU ---
+
     return {
       status: "success",
       studentCount: students.length,
@@ -2560,7 +2575,8 @@ function getDashboardData(spreadsheetId) {
       subjectAverages: subjectAverages,
       examScoreShare: examScoreShare,
       ijazahRanking: ijazahRanking,
-      schoolCode: schoolCode // <-- DATA BARU DITAMBAHKAN DI SINI
+      schoolCode: schoolCode,
+      incompleteCount: incompleteStudentsCount // <-- Kirim data baru ini ke frontend
     };
   } catch (e) {
     Logger.log(e);
@@ -5398,18 +5414,22 @@ function generateSchoolCodeForUser(spreadsheetId) {
 }
 
 /**
- * [FINAL v6 - FIX KONTEN KOSONG] Membuat PDF transkrip dengan TTD dan QR Code yang disematkan (embedded).
+ * [MODIFIKASI FINAL v5] Membuat PDF transkrip dengan TTD dan QR Code yang disematkan,
+ * menggunakan format KOP SURAT RESMI dan posisi TTD & Stempel yang presisi.
  */
 function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
   try {
-    // 1. Dapatkan semua data yang diperlukan
+    // 1. Dapatkan semua data yang diperlukan (tidak ada perubahan di sini)
     const transcriptDataResponse = getTranscriptData(spreadsheetId, nisn);
     if (transcriptDataResponse.status !== 'success') {
       throw new Error(transcriptDataResponse.message);
     }
     const { student, school, subjects } = transcriptDataResponse.data;
+    
+    const docSettingsResponse = getDocumentSettings(spreadsheetId);
+    const docSettings = docSettingsResponse.settings || {};
+    const { logo, signature, stamp } = docSettings;
 
-    // Unduh gambar QR Code terlebih dahulu
     let qrCodeBase64 = '';
     try {
         const deployUrl = ScriptApp.getService().getUrl();
@@ -5422,7 +5442,7 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
         Logger.log("Gagal mengambil gambar QR Code dari API: " + e.message);
     }
 
-    // 2. Helper untuk format data
+    // 2. Helper dan perhitungan (tidak ada perubahan di sini)
     const toProperCase = (str) => {
         if (!str || typeof str !== 'string') return '';
         return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
@@ -5430,15 +5450,12 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
     const tglLahirFormatted = new Date(student.tanggalLahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     const ttdDateFormatted = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     const nomorIndukGabungan = (school.nsm || '') + (student.nis || '-');
-
     const formatScore = (score) => {
       if (score === null || score === undefined || isNaN(score)) return '0';
       const rounded = Math.round(score);
       const decimal = score.toFixed(2).replace('.', ',');
       return `${rounded} (${decimal})`;
     };
-
-    // 3. Logika perhitungan
     let totalNilaiIjazah = 0;
     const mapelCount = subjects.length;
     subjects.forEach(s => {
@@ -5447,7 +5464,16 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
     });
     const rataRataIjazah = mapelCount > 0 ? (totalNilaiIjazah / mapelCount).toFixed(2).replace('.', ',') : '0,00';
     
-    // ===== KODE HTML LENGKAP YANG SUDAH DIPERBAIKI =====
+    const alamatUtama = `${(school.alamat || '').toUpperCase()}, KEL. ${(school.kelurahan || '').toUpperCase()}`;
+    const alamatLengkap = [
+        `Kecamatan ${toProperCase(school.kecamatan || '')}`,
+        `Kabupaten ${toProperCase(school.kabupaten || '')}`,
+        toProperCase(school.provinsi || ''),
+        school.kodePos || ''
+    ].filter(Boolean).join(' - ');
+
+
+    // 3. Template HTML dengan KOP SURAT BARU dan CSS Footer yang diperbaiki
     const htmlContent = `
       <html>
         <head>
@@ -5459,35 +5485,60 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
             .text-center{text-align: center;} 
             .font-bold{font-weight: bold;} 
             .bg-gray{background-color: #f2f2f2;}
-            .footer-container { position: absolute; bottom: 15mm; width: 100%; }
-            .ttd-block { float: right; width: 40%; text-align: left; font-size: 10pt; }
-            .qr-block { position: absolute; bottom: 0; left: 0; font-size: 8pt; color: #555; }
+            
+            .kop-surat-container { display: flex; align-items: flex-start; padding-bottom: 5px; border-bottom: 3px solid black; }
+            .kop-logo { width: 75px; height: 75px; margin-right: 20px; }
+            .kop-teks { text-align: center; flex-grow: 1; line-height: 1.4; }
+            .kop-teks .kementerian { font-size: 14pt; font-weight: bold; }
+            .kop-teks .nama-sekolah { font-size: 16pt; font-weight: bold; }
+            .kop-teks .alamat-utama { font-size: 11pt; }
+            .kop-teks .alamat-wilayah { font-size: 9pt; font-style: italic; }
+
+            .footer-container { margin-top: 40px; width: 100%; display: flex; justify-content: space-between; align-items: flex-end; }
+            .ttd-block { width: 45%; text-align: center; font-size: 10pt; }
+            .qr-block { text-align: center; font-size: 8pt; color: #555; }
+            
+            .ttd-signature-area { position: relative; height: 80px; margin-top: 10px; margin-bottom: 5px; }
+
+            /* --- [PERUBAHAN CSS Z-INDEX DI SINI] --- */
+            .ttd-signature {
+                position: absolute; left: 50%; top: 50%;
+                transform: translate(-50%, -50%);
+                max-width: 150px; max-height: 100px;
+                z-index: 1; /* Tanda Tangan sekarang di lapisan belakang */
+            }
+            .ttd-stamp {
+                position: absolute; left: 50%; top: 50%;
+                transform: translate(-50%, -50%) rotate(-15deg);
+                opacity: 0.75; max-width: 120px; max-height: 120px;
+                z-index: 2; /* Stempel sekarang di lapisan depan */
+            }
+            /* --- AKHIR PERUBAHAN CSS --- */
+
+            .ttd-name-nip { position: absolute; bottom: -25px; width: 100%; left: 0; }
+            .ttd-name { font-weight: bold; text-decoration: underline; margin-bottom: 2px; margin-top: 0; }
+            .ttd-nip { margin-top: 0; }
           </style>
         </head>
         <body>
-          <div class="text-center">
-            <h3 class="font-bold">TRANSKRIP NILAI AKHIR</h3>
-            <h4 class="font-bold">${school.namaSekolah || 'NAMA SEKOLAH'}</h4>
+          <div class="kop-surat-container">
+            ${logo ? `<img src="${logo}" alt="Logo Sekolah" class="kop-logo">` : '<div class="kop-logo"></div>'}
+            <div class="kop-teks">
+              <div class="kementerian">KEMENTERIAN AGAMA REPUBLIK INDONESIA</div>
+              <div class="nama-sekolah">${school.namaSekolah || 'NAMA SEKOLAH'}</div>
+              <div class="alamat-utama">${alamatUtama}</div>
+              <div class="alamat-wilayah">${alamatLengkap}</div>
+            </div>
           </div>
-          <hr/>
+          <div class="text-center" style="margin-top: 10px;">
+             <h3 class="font-bold" style="text-decoration: underline; font-size: 14pt;">TRANSKRIP NILAI AKHIR</h3>
+          </div>
           
-          <table class="no-border" style="margin-bottom: 1rem;">
+          <table class="no-border" style="margin-top: 1rem; margin-bottom: 1rem;">
               <tbody>
-                  <tr>
-                      <td class="no-border" style="padding: 1px; width: 180px;">Nama Peserta Didik</td>
-                      <td class="no-border" style="padding: 1px; width: 10px;">:</td>
-                      <td class="no-border font-bold" style="padding: 1px;">${student.nama.toUpperCase()}</td>
-                  </tr>
-                  <tr>
-                      <td class="no-border" style="padding: 1px;">Tempat, Tanggal Lahir</td>
-                      <td class="no-border" style="padding: 1px;">:</td>
-                      <td class="no-border font-bold" style="padding: 1px;">${student.tempatLahir ? toProperCase(student.tempatLahir) + ', ' : ''}${tglLahirFormatted}</td>
-                  </tr>
-                  <tr>
-                      <td class="no-border" style="padding: 1px;">Nomor Induk / NISN</td>
-                      <td class="no-border" style="padding: 1px;">:</td>
-                      <td class="no-border font-bold" style="padding: 1px;">${nomorIndukGabungan} / ${student.nisn}</td>
-                  </tr>
+                  <tr><td class="no-border" style="padding: 1px; width: 180px;">Nama Peserta Didik</td><td class="no-border" style="padding: 1px; width: 10px;">:</td><td class="no-border font-bold" style="padding: 1px;">${student.nama.toUpperCase()}</td></tr>
+                  <tr><td class="no-border" style="padding: 1px;">Tempat, Tanggal Lahir</td><td class="no-border" style="padding: 1px;">:</td><td class="no-border font-bold" style="padding: 1px;">${student.tempatLahir ? toProperCase(student.tempatLahir) + ', ' : ''}${tglLahirFormatted}</td></tr>
+                  <tr><td class="no-border" style="padding: 1px;">Nomor Induk / NISN</td><td class="no-border" style="padding: 1px;">:</td><td class="no-border font-bold" style="padding: 1px;">${nomorIndukGabungan} / ${student.nisn}</td></tr>
               </tbody>
           </table>
 
@@ -5496,41 +5547,32 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
               <tr><th class="text-center" rowspan="2">No</th><th rowspan="2">Mata Pelajaran</th><th class="text-center" colspan="3">Nilai</th></tr>
               <tr><th class="text-center">Rata-Rata Rapor</th><th class="text-center">Ujian Madrasah</th><th class="text-center">Nilai Ijazah</th></tr>
             </thead>
-            <tbody>
-              ${subjects.map((s, index) => `
-                <tr>
-                  <td class="text-center">${index + 1}</td>
-                  <td>${s.nama}</td>
-                  <td class="text-center">${formatScore(s.nilaiRapor)}</td>
-                  <td class="text-center">${formatScore(s.nilaiUjian)}</td>
-                  <td class="text-center font-bold">${formatScore(s.nilaiIjazah)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-            <tfoot class="font-bold">
-              <tr><td class="text-center" colspan="4">Rata-rata Nilai Akhir Ijazah</td><td class="text-center bg-gray">${rataRataIjazah}</td></tr>
-            </tfoot>
+            <tbody>${subjects.map((s, index) => `<tr><td class="text-center">${index + 1}</td><td>${s.nama}</td><td class="text-center">${formatScore(s.nilaiRapor)}</td><td class="text-center">${formatScore(s.nilaiUjian)}</td><td class="text-center font-bold">${formatScore(s.nilaiIjazah)}</td></tr>`).join('')}</tbody>
+            <tfoot class="font-bold"><tr><td class="text-center" colspan="4">Rata-rata Nilai Akhir Ijazah</td><td class="text-center bg-gray">${rataRataIjazah}</td></tr></tfoot>
           </table>
 
           <div class="footer-container">
-            <div class="ttd-block">
-                <p>${school.kabupaten || '(Tempat)'}, ${ttdDateFormatted}</p>
-                <p>Kepala Madrasah,</p>
-                <div style="height: 60px;"></div>
-                <p style="font-weight: bold; text-decoration: underline;">${school.namaKepsek || '(Nama Kepala Sekolah)'}</p>
-                <p>NIP. ${school.nipKepsek || '-'}</p>
-            </div>
-            ${qrCodeBase64 ? `
-            <div class="qr-block">
-                <img src="data:image/png;base64,${qrCodeBase64}" alt="QR Code" style="width: 80px; height: 80px;" />
-            </div>
-            ` : ''}
+              <div class="qr-block">
+                ${qrCodeBase64 ? `<img src="data:image/png;base64,${qrCodeBase64}" alt="QR Code" style="width: 80px; height: 80px;" /><br><span>Scan untuk validasi</span>` : ''}
+              </div>
+              <div class="ttd-block">
+                  <p>${toProperCase(school.kabupaten) || '(Tempat)'}, ${ttdDateFormatted}</p>
+                  <p>Kepala Madrasah,</p>
+                  <div class="ttd-signature-area">
+                      ${stamp ? `<img src="${stamp}" alt="Stempel" class="ttd-stamp">` : ''}
+                      ${signature ? `<img src="${signature}" alt="Tanda Tangan" class="ttd-signature">` : ''}
+                      <div class="ttd-name-nip">
+                        <p class="ttd-name">${school.namaKepsek || '(Nama Kepala Sekolah)'}</p>
+                        <p class="ttd-nip">NIP. ${school.nipKepsek || '-'}</p>
+                      </div>
+                  </div>
+              </div>
           </div>
         </body>
       </html>
     `;
 
-    // 5. Konversi ke PDF
+    // 4. Konversi ke PDF
     const pdfBlob = Utilities.newBlob(htmlContent, MimeType.HTML).getAs(MimeType.PDF);
     pdfBlob.setName(`Transkrip - ${student.nama}.pdf`);
     
@@ -6332,6 +6374,43 @@ function getGlobalGraduationSettings() {
 }
 
 /**
+ * [BARU] Menghapus aset dokumen tertentu (logo, ttd, atau stempel).
+ * @param {string} spreadsheetId - ID spreadsheet pengguna.
+ * @param {string} settingKey - Kunci pengaturan yang akan dihapus (misal: 'ID Logo Sekolah').
+ * @returns {object} Status penghapusan.
+ */
+function deleteDocumentAsset(spreadsheetId, settingKey) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    let sheet = ss.getSheetByName(SHEET_PENGATURAN);
+    if (!sheet) {
+      return { status: 'info', message: 'Tidak ada pengaturan untuk dihapus.' };
+    }
+
+    const settingRow = findOrCreateSettingRow(sheet, settingKey);
+    const fileIdCell = sheet.getRange(settingRow, 2);
+    const fileId = fileIdCell.getValue();
+
+    if (fileId) {
+      try {
+        DriveApp.getFileById(fileId).setTrashed(true);
+      } catch (e) {
+        Logger.log(`File dengan ID ${fileId} tidak dapat dihapus (mungkin sudah dihapus manual): ${e.message}`);
+      }
+      fileIdCell.clearContent(); // Hapus ID dari sel
+    }
+    
+    // Konversi nama kunci menjadi nama yang lebih ramah pengguna untuk pesan sukses
+    const assetName = settingKey.replace('ID ', '').replace(' Sekolah', '');
+    return { status: 'success', message: `${assetName} berhasil dihapus.` };
+
+  } catch (e) {
+    Logger.log('deleteDocumentAsset Error: ' + e.message);
+    return { status: 'error', message: 'Gagal menghapus aset: ' + e.message };
+  }
+}
+
+/**
  * [PUBLIC BARU] Mengambil pengaturan sekolah berdasarkan Kode Sekolah.
  * Fungsi ini digunakan untuk menampilkan countdown per sekolah sebelum login.
  * @param {string} kodeSekolah - Kode unik sekolah yang dimasukkan siswa.
@@ -6376,5 +6455,237 @@ function getSchoolSettingsByCode(kodeSekolah) {
   } catch (error) {
     Logger.log("getSchoolSettingsByCode Error: " + error.message);
     return { status: "error", message: "Terjadi kesalahan pada server saat memeriksa kode." };
+  }
+}
+
+// ===== AWAL FITUR BARU: PENGATURAN KOP SURAT =====
+
+// ===== AWAL DARI KODE BARU UNTUK PENYIMPANAN GAMBAR DI DRIVE =====
+
+/**
+ * [BARU] Helper untuk mencari atau membuat folder 'Aset Aplikasi' di Google Drive
+ * tempat spreadsheet pengguna berada.
+ * @param {string} spreadsheetId - ID spreadsheet pengguna.
+ * @returns {DriveApp.Folder} Objek folder aset.
+ */
+function getOrCreateAssetFolder(spreadsheetId) {
+  try {
+    const userSpreadsheetFile = DriveApp.getFileById(spreadsheetId);
+    const parentFolder = userSpreadsheetFile.getParents().next();
+    const assetFolderName = `_Aset Aplikasi Ijazah [JANGAN DIHAPUS]`;
+    
+    let assetFolderIterator = parentFolder.getFoldersByName(assetFolderName);
+
+    if (assetFolderIterator.hasNext()) {
+      return assetFolderIterator.next();
+    } else {
+      return parentFolder.createFolder(assetFolderName);
+    }
+  } catch (e) {
+    Logger.log(`Gagal mendapatkan folder induk untuk SS ID: ${spreadsheetId}. Membuat di Root. Error: ${e.message}`);
+    const rootFolder = DriveApp.getRootFolder();
+    const fallbackFolderName = `_Aset Aplikasi Ijazah - ${spreadsheetId}`;
+    let fallbackFolderIterator = rootFolder.getFoldersByName(fallbackFolderName);
+    if (fallbackFolderIterator.hasNext()) {
+      return fallbackFolderIterator.next();
+    } else {
+      return rootFolder.createFolder(fallbackFolderName);
+    }
+  }
+}
+
+/**
+ * [VERSI BARU] Menyimpan gambar ke Google Drive dan menyimpan ID filenya ke sheet Pengaturan.
+ * @param {string} spreadsheetId - ID spreadsheet pengguna.
+ * @param {object} settings - Objek berisi data gambar Base64 { logo, signature, stamp }.
+ * @returns {object} Status penyimpanan.
+ */
+function saveDocumentSettings(spreadsheetId, settings) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    let sheet = ss.getSheetByName(SHEET_PENGATURAN);
+    if (!sheet) {
+        sheet = ss.insertSheet(SHEET_PENGATURAN);
+        sheet.appendRow(['Nama Pengaturan', 'Value']);
+    }
+
+    const assetFolder = getOrCreateAssetFolder(spreadsheetId);
+
+    // Helper untuk menyimpan satu file
+    const saveFile = (settingKey, base64Data, fileName) => {
+      if (!base64Data) return;
+
+      const decoded = Utilities.base64Decode(base64Data.split(',')[1]);
+      const blob = Utilities.newBlob(decoded, MimeType.PNG, fileName);
+      
+      // Hapus file lama jika ada untuk mencegah penumpukan file
+      const oldFileIdRow = findOrCreateSettingRow(sheet, settingKey);
+      const oldFileId = sheet.getRange(oldFileIdRow, 2).getValue();
+      if (oldFileId) {
+        try { DriveApp.getFileById(oldFileId).setTrashed(true); } catch(e) { Logger.log(`File lama ${oldFileId} tidak ditemukan untuk dihapus.`);}
+      }
+
+      const newFile = assetFolder.createFile(blob);
+      const newFileId = newFile.getId();
+      sheet.getRange(oldFileIdRow, 2).setValue(newFileId);
+    };
+
+    saveFile('ID Logo Sekolah', settings.logo, 'logo_sekolah.png');
+    saveFile('ID Tanda Tangan', settings.signature, 'tanda_tangan.png');
+    saveFile('ID Stempel', settings.stamp, 'stempel_sekolah.png');
+
+    return { status: 'success', message: 'Pengaturan kop surat dan tanda tangan berhasil disimpan.' };
+  } catch (e) {
+    Logger.log('saveDocumentSettings Error: ' + e.message);
+    return { status: 'error', message: 'Gagal menyimpan pengaturan dokumen: ' + e.message };
+  }
+}
+
+/**
+ * [VERSI BARU] Mengambil ID file dari sheet Pengaturan, lalu mengambil data gambar
+ * dari Google Drive dan mengubahnya menjadi Base64.
+ * @param {string} spreadsheetId - ID spreadsheet pengguna.
+ * @returns {object} Objek berisi data gambar Base64.
+ */
+function getDocumentSettings(spreadsheetId) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheet = ss.getSheetByName(SHEET_PENGATURAN);
+    const settings = { logo: null, signature: null, stamp: null };
+    if (!sheet) return { status: 'success', settings: settings };
+    
+    const data = sheet.getDataRange().getValues();
+    
+    const settingsMap = new Map(data.map(row => [row[0], row[1]]));
+
+    const getBase64 = (fileId) => {
+      if (!fileId) return null;
+      try {
+        const file = DriveApp.getFileById(fileId);
+        return `data:image/png;base64,${Utilities.base64Encode(file.getBlob().getBytes())}`;
+      } catch (e) {
+        Logger.log(`Gagal mengambil file gambar dengan ID ${fileId}: ${e.message}`);
+        return null;
+      }
+    };
+    
+    settings.logo = getBase64(settingsMap.get('ID Logo Sekolah'));
+    settings.signature = getBase64(settingsMap.get('ID Tanda Tangan'));
+    settings.stamp = getBase64(settingsMap.get('ID Stempel'));
+
+    return { status: 'success', settings: settings };
+  } catch (e) {
+    Logger.log('getDocumentSettings Error: ' + e.message);
+    return { status: 'error', settings: {} };
+  }
+}
+
+// ===== AKHIR DARI KODE BARU =====
+
+/**
+ * [BARU] Mengambil QR code sebagai data Base64 untuk disematkan di HTML.
+ * @returns {string|null} String Base64 dari gambar QR code atau null jika gagal.
+ */
+function getQrCodeAsBase64() {
+  try {
+    const deployUrl = ScriptApp.getService().getUrl();
+    if (deployUrl) {
+      const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(deployUrl)}&ecc=L&margin=1`;
+      const qrCodeBlob = UrlFetchApp.fetch(qrCodeApiUrl).getBlob();
+      return Utilities.base64Encode(qrCodeBlob.getBytes());
+    }
+    return null;
+  } catch (e) {
+    Logger.log("Gagal membuat QR Code Base64: " + e.message);
+    return null; // Kembalikan null jika ada error
+  }
+}
+
+/**
+ * [VERSI FINAL] Membandingkan nilai JUMLAH ijazah yang dihitung secara live
+ * dengan nilai JUMLAH yang tersimpan di sheet rekapitulasi untuk deteksi yang lebih akurat.
+ * @param {string} spreadsheetId - ID spreadsheet pengguna.
+ * @returns {{needsUpdate: boolean}} Objek yang berisi status apakah rekap perlu diperbarui.
+ */
+function checkRekapSyncStatus(spreadsheetId) {
+  try {
+    // 1. Ambil data rekap yang tersimpan saat ini
+    const storedRekapData = getSheetDataAsObject(spreadsheetId, SHEET_REKAP_IJAZAH);
+
+    // 2. Lakukan perhitungan live
+    const students = getStudents(spreadsheetId);
+    if (!students || students.length === 0) return { needsUpdate: false }; 
+
+    const mapel = getMapel(spreadsheetId);
+    if (!mapel || mapel.length === 0) return { needsUpdate: false };
+
+    const bobot = getBobot(spreadsheetId);
+    const jenjang = (getSchoolData(spreadsheetId) || {}).jenjang;
+    if (!jenjang) return { needsUpdate: true }; 
+
+    const semesterKeys = { MI: ['k4_ganjil', 'k4_genap', 'k5_ganjil', 'k5_genap', 'k6_ganjil'], MTS: ['k7_ganjil', 'k7_genap', 'k8_ganjil', 'k8_genap', 'k9_ganjil'], MA: ['k10_ganjil', 'k10_genap', 'k11_ganjil', 'k11_genap', 'k12_ganjil'] };
+    const semestersForJenjang = semesterKeys[jenjang] || [];
+
+    const sheetsToRead = [SHEET_NILAI_UJIAN_MADRASAH, SHEET_NILAI_UJIAN_PRAKTEK, ...semestersForJenjang.flatMap(smKey => [`Rapor_Pengetahuan_${smKey}`, `Rapor_Keterampilan_${smKey}`])];
+    const allData = {};
+    sheetsToRead.forEach(sheetName => { allData[sheetName] = getSheetDataAsObject(spreadsheetId, sheetName); });
+
+    // 3. Bandingkan nilai untuk setiap siswa
+    for (const student of students) {
+        const nisn = student.nisn.toString().trim();
+        const storedStudentData = storedRekapData[nisn];
+        
+        // Jika data siswa tidak ada di rekap, berarti perlu update
+        if (!storedStudentData) {
+          Logger.log(`Siswa baru ditemukan (${nisn}), rekap perlu diupdate.`);
+          return { needsUpdate: true };
+        }
+
+        let liveTotalNilaiIjazah = 0;
+
+        mapel.forEach(m => {
+            const kode = m.kode;
+            const nilaiUM = parseFloat((allData[SHEET_NILAI_UJIAN_MADRASAH][nisn] || {})[kode]);
+            const nilaiUP = parseFloat((allData[SHEET_NILAI_UJIAN_PRAKTEK][nisn] || {})[kode]);
+
+            let rataUjian = null;
+            if (!isNaN(nilaiUM) && !isNaN(nilaiUP)) rataUjian = (nilaiUM + nilaiUP) / 2;
+            else if (!isNaN(nilaiUM)) rataUjian = nilaiUM;
+            else if (!isNaN(nilaiUP)) rataUjian = nilaiUP;
+            
+            let totalNilaiRapor = 0;
+            let semesterCount = 0;
+            semestersForJenjang.forEach(smKey => {
+                const nilaiP = parseFloat(((allData[`Rapor_Pengetahuan_${smKey}`] || {})[nisn] || {})[kode]);
+                const nilaiK = parseFloat(((allData[`Rapor_Keterampilan_${smKey}`] || {})[nisn] || {})[kode]);
+                if (!isNaN(nilaiP) && !isNaN(nilaiK)) { totalNilaiRapor += (nilaiP + nilaiK) / 2; semesterCount++; }
+                else if (!isNaN(nilaiP)) { totalNilaiRapor += nilaiP; semesterCount++; }
+                else if (!isNaN(nilaiK)) { totalNilaiRapor += nilaiK; semesterCount++; }
+            });
+            const rataRapor = semesterCount > 0 ? totalNilaiRapor / semesterCount : null;
+
+            if (rataUjian !== null || rataRapor !== null) {
+                const finalRataUjian = rataUjian !== null ? rataUjian : 0;
+                const finalRataRapor = rataRapor !== null ? rataRapor : 0;
+                const nilaiIjazah = (finalRataUjian * (bobot.bobotUjian / 100)) + (finalRataRapor * (bobot.bobotRapor / 100));
+                // Nilai total adalah penjumlahan dari setiap nilai ijazah yang DIBULATKAN
+                liveTotalNilaiIjazah += Math.round(nilaiIjazah);
+            }
+        });
+        
+        // [PERUBAHAN UTAMA] Bandingkan nilai 'Jumlah' (bilangan bulat)
+        const storedTotal = parseInt(storedStudentData['Jumlah']) || 0;
+
+        if (liveTotalNilaiIjazah !== storedTotal) {
+            Logger.log(`Data tidak sinkron untuk NISN ${nisn}. Live Total: ${liveTotalNilaiIjazah}, Stored Total: ${storedTotal}`);
+            return { needsUpdate: true }; // Ditemukan perbedaan, langsung hentikan dan kirim status
+        }
+    }
+    
+    // Jika loop selesai tanpa menemukan perbedaan, data sudah sinkron
+    return { needsUpdate: false };
+  } catch (e) {
+    Logger.log("Error di checkRekapSyncStatus: " + e.message);
+    return { needsUpdate: true }; // Jika terjadi error, lebih aman untuk menampilkan notifikasi
   }
 }
