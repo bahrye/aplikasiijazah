@@ -159,6 +159,7 @@
                 <div id="transcript-content-container">
                     <p id="transcript-loader" class="text-center text-gray-500 py-8 loading-animation">Memuat data transkrip</p>
                     <div id="transcript-printable-area"></div>
+                    <!-- KONTENER GRAFIK DIHAPUS DARI SINI -->
                 </div>
             </div>
         </div>
@@ -184,7 +185,6 @@
         showView('login-container');
     }
 
-    // Fungsi baru untuk menyembunyikan loader utama dan menampilkan view yang benar
     function showView(viewId) {
         document.getElementById('page-loader').classList.add('hidden');
         document.querySelectorAll('.content-view').forEach(el => el.classList.add('hidden'));
@@ -203,7 +203,6 @@
             showSchoolCodeForm();
         }
 
-        // Pasang semua event listener seperti biasa
         document.getElementById('schoolCodeForm').addEventListener('submit', handleSchoolCodeSubmit);
         document.getElementById('loginFormSiswa').addEventListener('submit', handleSiswaLogin);
         
@@ -304,8 +303,6 @@
                 spinner.classList.add('hidden');
 
                 if (response.status === 'success') {
-                    // Logika yang Diperbaiki:
-                    // 1. Simpan semua data dari respons ke session storage
                     Object.keys(response).forEach(key => {
                         const value = typeof response[key] === 'object' && response[key] !== null 
                             ? JSON.stringify(response[key]) 
@@ -313,7 +310,6 @@
                         sessionStorage.setItem(`siswa_${key}`, value);
                     });
                     
-                    // 2. Langsung panggil fungsi untuk menampilkan hasilnya (amplop)
                     renderStudentView(response); 
                 } else {
                     errorDiv.textContent = response.message;
@@ -442,30 +438,33 @@
     function handleSiswaLogout() {
         clearInterval(countdownInterval);
         sessionStorage.clear();
-        // Alih-alih memuat ulang, kita langsung panggil fungsi untuk menampilkan form awal
         showSchoolCodeForm();
     }
-
+    
+    // FUNGSI INI SEKARANG HANYA MEMANGGIL DATA TRANSKRIP (TANPA GRAFIK)
     function loadAndShowTranscript() {
-        document.getElementById('result-container').classList.add('hidden');
-        document.getElementById('transcript-container').classList.remove('hidden');
+        showView('transcript-container');
         const studentName = JSON.parse(sessionStorage.getItem('siswa_studentData')).nama;
         const nisn = sessionStorage.getItem('siswa_nisn');
-        const ssId = sessionStorage.getItem('siswa_spreadsheetId'); 
+        const ssId = sessionStorage.getItem('siswa_spreadsheetId');
         document.getElementById('nama-siswa-display-transcript').textContent = studentName;
+        
         const loader = document.getElementById('transcript-loader');
         const printableArea = document.getElementById('transcript-printable-area');
+        
         if (!ssId) {
             printableArea.innerHTML = `<p class="text-red-500 text-center">Error: ID Sesi tidak valid. Silakan logout dan login kembali.</p>`;
             return;
         }
+
         loader.classList.remove('hidden');
         printableArea.innerHTML = '';
+
         google.script.run
             .withSuccessHandler(response => {
                 loader.classList.add('hidden');
                 if (response.status === 'success') {
-                    renderTranscript(response.data);
+                    renderTranscriptSiswa(response.data, printableArea);
                 } else {
                     printableArea.innerHTML = `<p class="text-red-500 text-center">${response.message}</p>`;
                 }
@@ -477,42 +476,58 @@
             .getTranscriptData(ssId, nisn);
     }
     
-    function renderTranscript(data) {
+    // FUNGSI INI SEKARANG SAMA SEPERTI DI PORTAL ADMIN
+    function renderTranscriptSiswa(data, printableArea) {
         const { student, school, subjects } = data;
-        const printableArea = document.getElementById('transcript-printable-area');
-        const formatScore = (score) => { 
+        
+        const toProperCase = (str) => {
+            if (!str || typeof str !== 'string') return '';
+            return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+        };
+        const tglLahirFormatted = new Date(student.tanggalLahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        const nomorIndukGabungan = (school.nsm || '') + (student.nis || '-');
+        const formatScore = (score) => {
             if (score === null || score === undefined || isNaN(score)) return '0';
-            const rounded = Math.round(score); 
-            const decimal = score.toFixed(2).replace('.', ','); 
-            return `${rounded} (${decimal})`; 
+            const rounded = Math.round(score);
+            const decimal = score.toFixed(2).replace('.', ',');
+            return `${rounded} (${decimal})`;
         };
         let totalNilaiIjazah = 0;
         const mapelCount = subjects.length;
         subjects.forEach(s => {
-            const scoreToAdd = (s.nilaiIjazah !== null && !isNaN(s.nilaiIjazah)) ? Math.round(s.nilaiIjazah) : 0;
-            totalNilaiIjazah += scoreToAdd;
+            totalNilaiIjazah += (s.nilaiIjazah !== null && !isNaN(s.nilaiIjazah)) ? Math.round(s.nilaiIjazah) : 0;
         });
-        const rataRataIjazah = mapelCount > 0 ? (totalNilaiIjazah / mapelCount) : 0;
-        const nomorIndukGabungan = (school.nsm || '') + (student.nis || '-');
-        const studentInfoHtml = `
-            <div class="grid grid-cols-[max-content_auto_1fr] gap-x-2 gap-y-1 items-baseline">
-                <div class="font-medium">Nama Peserta Didik</div>
-                <div>:</div>
-                <div class="font-semibold">${student.nama.toUpperCase()}</div>
-                <div class="font-medium">Tempat, Tanggal Lahir</div>
-                <div>:</div>
-                <div class="font-semibold">${student.tempatLahir ? student.tempatLahir + ', ' : ''}${new Date(student.tanggalLahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
-                <div class="font-medium">Nomor Induk Siswa/NISN</div>
-                <div>:</div>
-                <div class="font-semibold">${nomorIndukGabungan || '-'} / ${student.nisn}</div>
-            </div>`;
+        const rataRataIjazah = mapelCount > 0 ? (totalNilaiIjazah / mapelCount).toFixed(2).replace('.', ',') : '0,00';
+        
+        const alamatUtama = `${(school.alamat || '').toUpperCase()}, KEL. ${(school.kelurahan || '').toUpperCase()}`;
+        const alamatLengkap = [
+            `Kecamatan ${toProperCase(school.kecamatan || '')}`,
+            `Kabupaten ${toProperCase(school.kabupaten || '')}`,
+            toProperCase(school.provinsi || ''),
+            school.kodePos || ''
+        ].filter(Boolean).join(' - ');
+        
         printableArea.innerHTML = `
             <div class="font-sans p-2">
-                <div class="text-center border-b-2 border-gray-300 pb-2 mb-4">
-                    <h3 class="text-lg font-bold uppercase">TRANSKRIP NILAI AKHIR</h3>
-                    <h4 class="text-md font-semibold uppercase">${school.namaSekolah || 'NAMA SEKOLAH'}</h4>
+                <div style="display: flex; align-items: flex-start; padding-bottom: 5px; border-bottom: 3px solid black; margin-bottom: 10px;">
+                    <div style="width: 75px; height: 75px; margin-right: 20px;"></div>
+                    <div style="text-align: center; flex-grow: 1; line-height: 1.4;">
+                        <div style="font-size: 14pt; font-weight: bold;">KEMENTERIAN AGAMA REPUBLIK INDONESIA</div>
+                        <div style="font-size: 16pt; font-weight: bold;">${school.namaSekolah || 'NAMA SEKOLAH'}</div>
+                        <div style="font-size: 11pt;">${alamatUtama}</div>
+                        <div style="font-size: 9pt; font-style: italic;">${alamatLengkap}</div>
+                    </div>
                 </div>
-                <div class="w-full text-sm mb-4">${studentInfoHtml}</div>
+                <div class="text-center" style="margin-top: 10px;">
+                     <h3 class="font-bold" style="text-decoration: underline; font-size: 14pt;">TRANSKRIP NILAI AKHIR</h3>
+                </div>
+                <div class="w-full text-sm my-4 space-y-1">
+                    <div class="grid grid-cols-[max-content_auto_1fr] gap-x-2">
+                        <div>Nama Peserta Didik</div><div>:</div><div class="font-semibold">${student.nama.toUpperCase()}</div>
+                        <div>Tempat, Tanggal Lahir</div><div>:</div><div class="font-semibold">${student.tempatLahir ? toProperCase(student.tempatLahir) + ', ' : ''}${tglLahirFormatted}</div>
+                        <div>Nomor Induk Siswa/NISN</div><div>:</div><div class="font-semibold">${nomorIndukGabungan} / ${student.nisn}</div>
+                    </div>
+                </div>
                 <table class="w-full text-xs sm:text-sm border-collapse border border-gray-400">
                     <thead class="bg-gray-100 font-bold">
                         <tr><th class="border border-gray-400 p-2" rowspan="2">No</th><th class="border border-gray-400 p-2 text-left" rowspan="2">Mata Pelajaran</th><th class="border border-gray-400 p-2" colspan="3">Nilai</th></tr>
@@ -524,22 +539,19 @@
                     <tfoot class="font-bold">
                         <tr>
                             <td class="border border-gray-400 p-2 text-center" colspan="4">Rata-rata Nilai Akhir Ijazah</td>
-                            <td class="border border-gray-400 p-2 text-center bg-gray-100">${rataRataIjazah.toFixed(2).replace('.', ',')}</td>
+                            <td class="border border-gray-400 p-2 text-center bg-gray-100">${rataRataIjazah}</td>
                         </tr>
                     </tfoot>
                 </table>
             </div>`;
-        const tfootCell = printableArea.querySelector('tfoot td:last-child');
-        if(tfootCell) {
-            tfootCell.textContent = rataRataIjazah.toFixed(2).replace('.', ',');
-        }
+
         document.getElementById('downloadPdfBtn').onclick = handleDownloadPdf;
         document.getElementById('backToResultBtn').onclick = function() {
-            document.getElementById('transcript-container').classList.add('hidden');
-            document.getElementById('result-container').classList.remove('hidden');
+            showView('result-container');
         };
     }
 
+    // FUNGSI INI TIDAK BERUBAH
     function handleDownloadPdf() {
         const ssId = sessionStorage.getItem('siswa_spreadsheetId');
         const nisn = sessionStorage.getItem('siswa_nisn');
@@ -547,12 +559,14 @@
             alert('Sesi tidak valid. Silakan logout dan login kembali.');
             return;
         }
+
         const btn = document.getElementById('downloadPdfBtn');
         const btnText = btn.querySelector('.btn-text');
         const spinner = btn.querySelector('.btn-spinner');
         btn.disabled = true;
         btnText.classList.add('hidden');
         spinner.classList.remove('hidden');
+
         google.script.run
             .withSuccessHandler(response => {
                 btn.disabled = false;
@@ -577,7 +591,6 @@
             })
             .generateTranscriptPdfForSiswa(ssId, nisn);
     }
-
 </script>
 </body>
 </html>
