@@ -818,6 +818,7 @@
                             </div>
                         </div>
 
+                        <!-- === GANTI SELURUH BLOK INI === -->
                         <div class="mt-10 pt-8 border-t">
                             <h2 class="text-2xl font-bold text-gray-700">Pengaturan Kop Surat & Tanda Tangan</h2>
                             <p class="text-sm text-gray-500 mt-1 mb-4">Unggah gambar logo, tanda tangan, dan stempel untuk ditampilkan pada dokumen ekspor (seperti Transkrip). Gunakan format PNG dengan latar transparan untuk hasil terbaik.</p>
@@ -826,31 +827,43 @@
                                 <form id="documentSettingsForm" class="space-y-8">
                                     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
 
+                                        <!-- Kolom Logo -->
                                         <div class="text-center">
                                             <label class="block text-sm font-medium text-gray-700 mb-2">Logo Sekolah</label>
                                             <div class="w-32 h-32 mx-auto bg-gray-100 rounded-full flex items-center justify-center border overflow-hidden">
                                                 <img id="logoPreview" src="https://placehold.co/128x128/e2e8f0/64748b?text=Logo" alt="Pratinjau Logo" class="w-full h-full object-contain">
                                             </div>
-                                            <input type="file" id="logoInput" accept="image/png, image/jpeg" class="hidden">
-                                            <button type="button" onclick="document.getElementById('logoInput').click()" class="mt-3 text-sm text-blue-600 hover:text-blue-800">Ganti Gambar</button>
+                                            <div class="mt-3 space-x-4">
+                                                <input type="file" id="logoInput" accept="image/png, image/jpeg" class="hidden">
+                                                <button type="button" onclick="document.getElementById('logoInput').click()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Ganti Gambar</button>
+                                                <button type="button" data-delete-key="ID Logo Sekolah" data-preview-id="logoPreview" class="delete-asset-btn text-sm text-red-600 hover:text-red-800 font-medium">Hapus</button>
+                                            </div>
                                         </div>
 
+                                        <!-- Kolom Tanda Tangan -->
                                         <div class="text-center">
                                             <label class="block text-sm font-medium text-gray-700 mb-2">Tanda Tangan Kepala Sekolah</label>
                                             <div class="w-48 h-32 mx-auto bg-gray-100 rounded-lg flex items-center justify-center border overflow-hidden">
                                                 <img id="signaturePreview" src="https://placehold.co/192x128/e2e8f0/64748b?text=Tanda+Tangan" alt="Pratinjau Tanda Tangan" class="max-w-full max-h-full object-contain p-2">
                                             </div>
-                                            <input type="file" id="signatureInput" accept="image/png" class="hidden">
-                                            <button type="button" onclick="document.getElementById('signatureInput').click()" class="mt-3 text-sm text-blue-600 hover:text-blue-800">Ganti Gambar</button>
+                                            <div class="mt-3 space-x-4">
+                                                <input type="file" id="signatureInput" accept="image/png" class="hidden">
+                                                <button type="button" onclick="document.getElementById('signatureInput').click()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Ganti Gambar</button>
+                                                <button type="button" data-delete-key="ID Tanda Tangan" data-preview-id="signaturePreview" class="delete-asset-btn text-sm text-red-600 hover:text-red-800 font-medium">Hapus</button>
+                                            </div>
                                         </div>
 
+                                        <!-- Kolom Stempel -->
                                         <div class="text-center">
                                             <label class="block text-sm font-medium text-gray-700 mb-2">Stempel Sekolah</label>
                                             <div class="w-32 h-32 mx-auto bg-gray-100 rounded-full flex items-center justify-center border overflow-hidden">
                                                 <img id="stampPreview" src="https://placehold.co/128x128/e2e8f0/64748b?text=Stempel" alt="Pratinjau Stempel" class="w-full h-full object-contain">
                                             </div>
-                                            <input type="file" id="stampInput" accept="image/png" class="hidden">
-                                            <button type="button" onclick="document.getElementById('stampInput').click()" class="mt-3 text-sm text-blue-600 hover:text-blue-800">Ganti Gambar</button>
+                                            <div class="mt-3 space-x-4">
+                                                <input type="file" id="stampInput" accept="image/png" class="hidden">
+                                                <button type="button" onclick="document.getElementById('stampInput').click()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Ganti Gambar</button>
+                                                <button type="button" data-delete-key="ID Stempel" data-preview-id="stampPreview" class="delete-asset-btn text-sm text-red-600 hover:text-red-800 font-medium">Hapus</button>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -863,6 +876,7 @@
                                 </form>
                             </div>
                         </div>
+                        <!-- === AKHIR BLOK === -->
                     </div>
 
                     <div id="page-manajemen-akun" class="content-page hidden">
@@ -2830,50 +2844,16 @@
 
             // ===== GANTI SELURUH BLOK EVENT LISTENER INI DENGAN VERSI BARU =====
             document.addEventListener('keydown', (e) => {
-                // Cek apakah ada tabel nilai yang sedang aktif
-                if (activeTableKey) {
-                    const editBtn = document.getElementById(`edit-scores-btn-${activeTableKey}`);
-                    const isViewMode = editBtn && !editBtn.classList.contains('hidden');
-
-                    // Logika untuk Ctrl + Z (Undo)
-                    if (e.ctrlKey && e.key.toLowerCase() === 'z') {
-                        e.preventDefault();
-                        if (!isViewMode) { // Hanya jalankan jika tidak dalam mode view
-                            performUndo();
-                        }
-                    }
-                    // Logika untuk Ctrl + Y (Redo)
-                    if (e.ctrlKey && e.key.toLowerCase() === 'y') {
-                        e.preventDefault();
-                        if (!isViewMode) { // Hanya jalankan jika tidak dalam mode view
-                            performRedo();
-                        }
-                    }
+                // Logika untuk Ctrl + Z (Undo)
+                if (e.ctrlKey && e.key.toLowerCase() === 'z') {
+                    e.preventDefault();
+                    performUndo();
                 }
-                
-                // Logika untuk Ctrl + S (Save)
-                if (e.ctrlKey && e.key.toLowerCase() === 's') {
-                    e.preventDefault(); // Mencegah browser menyimpan halaman
-                    
-                    // Cek apakah ada tabel nilai yang sedang aktif dan tidak dalam mode view
-                    if (activeTableKey) {
-                        const editBtn = document.getElementById(`edit-scores-btn-${activeTableKey}`);
-                        const isViewMode = editBtn && !editBtn.classList.contains('hidden');
-
-                        if (!isViewMode) {
-                            // Temukan tombol "Simpan" yang sesuai dan klik secara virtual
-                            const form = document.getElementById(`form-nilai-${activeTableKey}`);
-                            if (form) {
-                                const saveButton = form.querySelector('button[type="submit"]');
-                                if (saveButton) {
-                                    showGlobalStatus("Menyimpan perubahan...", 'info'); // Tampilkan pesan
-                                    saveButton.click(); // Picu fungsi simpan yang sudah ada
-                                }
-                            }
-                        }
-                    }
+                // Logika untuk Ctrl + Y (Redo)
+                if (e.ctrlKey && e.key.toLowerCase() === 'y') {
+                    e.preventDefault();
+                    performRedo();
                 }
-
                 // Logika untuk Ctrl + A (Select All)
                 if (e.ctrlKey && e.key.toLowerCase() === 'a') {
                     const activeElement = document.activeElement;
@@ -2914,6 +2894,18 @@
             // Letakkan di dalam DOMContentLoaded
             document.getElementById('undo-btn').addEventListener('click', performUndo);
             document.getElementById('redo-btn').addEventListener('click', performRedo);
+
+            // Tambahkan shortcut keyboard
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'z') {
+                    e.preventDefault();
+                    performUndo();
+                }
+                if (e.ctrlKey && e.key === 'y') {
+                    e.preventDefault();
+                    performRedo();
+                }
+            });
 
             // Pendaftaran
             setupRealtimePasswordValidation(document.getElementById('signup-password'), document.getElementById('signup-password-req'));
@@ -3210,6 +3202,11 @@
                     })
                     // --- AKHIR PERBAIKAN (Metode .withFinally() dihapus) ---
                     .saveDocumentSettings(userSpreadsheetId, settingsToSave);
+            });
+
+            // Pasang listener ke semua tombol hapus aset
+            document.querySelectorAll('.delete-asset-btn').forEach(btn => {
+                btn.addEventListener('click', handleDeleteAsset);
             });
         });
 
@@ -4068,8 +4065,7 @@
                                 .withSuccessHandler(response => {
                                     showGlobalStatus(response.message, response.status === 'success' ? 'success' : 'error');
                                     if (response.status === 'success') {
-                                        sessionStorage.setItem('rekapNeedsUpdate', 'true');
-                                        checkAndApplyRekapIndicator();
+                                        syncRekapIndicator();
                                     }
                                     loadStudentsData();
                                     btn.disabled = false;
@@ -4143,8 +4139,7 @@
                         .withSuccessHandler(res => {
                             showGlobalStatus(res.message, res.status === 'success');
                             if (res.status === 'success') { // <-- Tambahkan pengecekan ini
-                                sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                                checkAndApplyRekapIndicator();                   // <-- TAMBAHKAN
+                                syncRekapIndicator();                   // <-- TAMBAHKAN
                             }
                             const importStatusDiv = document.getElementById('importStatus');
                             importStatusDiv.innerHTML = `<p class="p-4 bg-green-100 text-green-800 rounded-md">${res.message}. Memuat ulang data siswa...</p>`;
@@ -4214,8 +4209,7 @@
                             showGlobalStatus(response.message, response.status !== 'error');
 
                             if (response.status === 'success' && response.updatedStudentList) {
-                                sessionStorage.setItem('rekapNeedsUpdate', 'true');
-                                checkAndApplyRekapIndicator();   
+                                syncRekapIndicator();   
                                 closeSiswaModal();
                                 allStudentsData = response.updatedStudentList;
                                 renderSiswaTable(response.updatedStudentList);
@@ -4416,8 +4410,7 @@
                             overlay.classList.add('hidden');
                             showGlobalStatus(response.message, response.status === 'success');
                             if (response.status === 'success' && response.updatedStudentList) {
-                                sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                                checkAndApplyRekapIndicator();  
+                                syncRekapIndicator();  
                                 allStudentsData = response.updatedStudentList;
                                 renderSiswaTable(response.updatedStudentList);
                             }
@@ -4479,8 +4472,7 @@
                         .withSuccessHandler(response => {
                             showGlobalStatus(response.message, response.status === 'success');
                             if (response.status === 'success') {
-                                sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                                checkAndApplyRekapIndicator();                   // <-- TAMBAHKAN
+                                syncRekapIndicator();                   // <-- TAMBAHKAN
                             }
                             saveBtn.disabled = false;
                             saveBtn.textContent = 'Simpan Bobot';
@@ -4552,8 +4544,7 @@
                                 .withSuccessHandler(response => {
                                     showGlobalStatus(response.message, response.status === 'success');
                                     if (response.status === 'success') { // <-- Tambahkan pengecekan ini
-                                        sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                                        checkAndApplyRekapIndicator();                   // <-- TAMBAHKAN
+                                        syncRekapIndicator();                   // <-- TAMBAHKAN
                                     }
                                     loadMapelData();
                                     btn.disabled = false;
@@ -4698,8 +4689,7 @@
                             showGlobalStatus(response.message, response.status === 'success');
                             
                             if (response.status === 'success' && response.updatedMapelList) {
-                                sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                                checkAndApplyRekapIndicator();   
+                                syncRekapIndicator();   
                                 closeMapelModal();
                                 // Langsung render data baru dari server
                                 allMapelData = response.updatedMapelList;
@@ -4893,8 +4883,7 @@
                     .withSuccessHandler(response => {
                         showGlobalStatus(response.message, response.status === 'success');
                         if (response.status === 'success') { // <-- Tambahkan pengecekan ini
-                            sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                            checkAndApplyRekapIndicator();                   // <-- TAMBAHKAN
+                            syncRekapIndicator();                   // <-- TAMBAHKAN
                             disableScoreEditing(jenisUjian); 
                         }
                         saveBtn.disabled = false;
@@ -5109,10 +5098,10 @@
                 google.script.run
                     .withSuccessHandler(response => {
                         if (response.status === 'success') {
-                            sessionStorage.setItem('rekapNeedsUpdate', 'false'); // <-- TAMBAHKAN
-                            checkAndApplyRekapIndicator();   
+                            syncRekapIndicator();   
                             showGlobalStatus(response.message, true);
                             initRekapitulasiPage();
+                            syncRekapIndicator();
                         } else {
                             showGlobalStatus(response.message, false);
                         }
@@ -5424,8 +5413,7 @@
                                 .withSuccessHandler(response => {
                                     showGlobalStatus(response.message, response.status !== 'error');
                                     if (response.status !== 'error') { // <-- Kondisi sudah tepat
-                                        sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                                        checkAndApplyRekapIndicator();                   // <-- TAMBAHKAN
+                                        syncRekapIndicator();                   // <-- TAMBAHKAN
                                     }
                                     document.getElementById('input-ujian-container').innerHTML = '';
                                 })
@@ -5459,8 +5447,7 @@
                                     .withSuccessHandler(response => {
                                         showGlobalStatus(response.message, response.status !== 'error');
                                         if (response.status !== 'error') { // <-- Kondisi sudah tepat
-                                            sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                                            checkAndApplyRekapIndicator();                   // <-- TAMBAHKAN
+                                            syncRekapIndicator();                   // <-- TAMBAHKAN
                                         }
                                         const tableContainer = document.getElementById(`table-container-${semesterKey}`);
                                         if(tableContainer) tableContainer.innerHTML = '';
@@ -5608,6 +5595,7 @@
                 });
             }
             // ===== AKHIR KODE BARU UNTUK KOTAK SARAN =====
+            syncRekapIndicator();
         }
 
         /**
@@ -5675,8 +5663,7 @@
                 .withSuccessHandler(response => {
                     showGlobalStatus(response.message, response.status === 'success');
                     if (response.status === 'success') { 
-                        sessionStorage.setItem('rekapNeedsUpdate', 'true');
-                        checkAndApplyRekapIndicator();
+                        syncRekapIndicator();
                         const tableKey = `${semesterKey}-${jenisNilai}`;
                         disableScoreEditing(tableKey); 
                     }
@@ -8549,8 +8536,7 @@
                     showGlobalStatus(response.message, response.status === 'success');
 
                     if (response.status === 'success' && response.updatedMapelList) {
-                        sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                        checkAndApplyRekapIndicator(); 
+                        syncRekapIndicator(); 
                         closeMapelImportModal();
                         
                         // =========================================================
@@ -8644,8 +8630,7 @@
                         showGlobalStatus(response.message, response.status === 'success');
 
                         if (response.status === 'success' && response.updatedMapelList) {
-                            sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                            checkAndApplyRekapIndicator();  
+                            syncRekapIndicator();  
                             allMapelData = response.updatedMapelList;
                             renderMapelTable(response.updatedMapelList);
                         }
@@ -8738,8 +8723,7 @@
                     showGlobalStatus(response.message, response.status === 'success');
                     
                     if (response.status === 'success' && response.updatedMapelList) {
-                        sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                        checkAndApplyRekapIndicator();  
+                        syncRekapIndicator();  
                         closeEditMapelModal();
                         allMapelData = response.updatedMapelList;
                         renderMapelTable(response.updatedMapelList);
@@ -8794,8 +8778,7 @@
                         // Tampilkan notifikasi hijau setelah berhasil disimpan
                         showGlobalStatus(response.message, response.status === 'success');
                         if (response.status === 'success') { // <-- Tambahkan pengecekan ini
-                            sessionStorage.setItem('rekapNeedsUpdate', 'true'); // <-- TAMBAHKAN
-                            checkAndApplyRekapIndicator();                   // <-- TAMBAHKAN
+                            syncRekapIndicator();                   // <-- TAMBAHKAN
                         }
                     })
                     .withFailureHandler(err => {
@@ -8825,29 +8808,11 @@
         }
 
         /**
-         * [GANTI FUNGSI LAMA DENGAN INI]
          * Memperbarui status disabled/enabled pada tombol undo/redo.
-         * Kini juga menonaktifkan tombol saat dalam mode view (tidak sedang edit).
          */
         function updateUndoRedoButtonsState() {
-            const undoBtn = document.getElementById('undo-btn');
-            const redoBtn = document.getElementById('redo-btn');
-
-            // Tentukan apakah form dalam mode view
-            let isViewMode = true; // Anggap mode view secara default
-            if (activeTableKey) {
-                const editBtn = document.getElementById(`edit-scores-btn-${activeTableKey}`);
-                // Jika tombol edit tidak ada atau sedang tersembunyi, berarti kita di mode edit
-                if (!editBtn || editBtn.classList.contains('hidden')) {
-                    isViewMode = false;
-                }
-            }
-
-            // Tombol undo dinonaktifkan jika history kosong ATAU sedang dalam mode view
-            undoBtn.disabled = undoHistory.length === 0 || isViewMode;
-
-            // Tombol redo dinonaktifkan jika history kosong ATAU sedang dalam mode view
-            redoBtn.disabled = redoHistory.length === 0 || isViewMode;
+            document.getElementById('undo-btn').disabled = undoHistory.length === 0;
+            document.getElementById('redo-btn').disabled = redoHistory.length === 0;
         }
 
         /**
@@ -9078,18 +9043,28 @@
         // ===== [BARU] FUNGSI UNTUK INDIKATOR REKAPITULASI =====
 
         /**
-         * Memeriksa status 'rekapNeedsUpdate' dari sessionStorage
-         * dan menampilkan/menyembunyikan indikator animasi.
+         * [VERSI BARU] Memanggil backend untuk memeriksa status sinkronisasi rekapitulasi
+         * dan menampilkan/menyembunyikan indikator notifikasi berdasarkan hasilnya.
          */
-        function checkAndApplyRekapIndicator() {
+        function syncRekapIndicator() {
             const indicator = document.getElementById('rekap-indicator');
             if (!indicator) return;
 
-            if (sessionStorage.getItem('rekapNeedsUpdate') === 'true') {
-                indicator.classList.remove('hidden');
-            } else {
-                indicator.classList.add('hidden');
-            }
+            // Panggil fungsi backend yang baru
+            google.script.run
+                .withSuccessHandler(response => {
+                    if (response && response.needsUpdate) {
+                        indicator.classList.remove('hidden');
+                    } else {
+                        indicator.classList.add('hidden');
+                    }
+                })
+                .withFailureHandler(err => {
+                    // Jika gagal memeriksa, lebih baik tampilkan indikator untuk jaga-jaga
+                    indicator.classList.remove('hidden');
+                    console.error("Gagal memeriksa status rekap:", err);
+                })
+                .checkRekapSyncStatus(userSpreadsheetId);
         }
 
         /**
@@ -10441,8 +10416,7 @@
                             dropzoneInstance.emit("success", file);
                             dropzoneInstance.emit("complete", file);
                             showGlobalStatus(response.message, true);
-                            sessionStorage.setItem('rekapNeedsUpdate', 'true');
-                            checkAndApplyRekapIndicator();
+                            syncRekapIndicator();
                             // [UX Improvement] Tutup modal secara otomatis setelah berhasil
                             setTimeout(closeUploadModal, 1500); 
                         } else {
@@ -11626,6 +11600,41 @@
             };
             reader.readAsDataURL(file);
           });
+        }
+
+        /**
+         * [BARU] Menangani klik pada tombol hapus aset.
+         */
+        function handleDeleteAsset(event) {
+            const button = event.target;
+            const settingKey = button.dataset.deleteKey;
+            const previewId = button.dataset.previewId;
+
+            if (!settingKey) return;
+
+            // Gunakan modal konfirmasi yang sudah ada
+            showConfirmationModal({
+                title: "Konfirmasi Hapus",
+                body: `Anda yakin ingin menghapus gambar ${settingKey.replace('ID ', '')}? Tindakan ini tidak dapat dibatalkan.`,
+                confirmText: "Ya, Hapus",
+                confirmColor: "bg-red-600 hover:bg-red-700",
+                onConfirm: () => {
+                    showGlobalStatus('Menghapus gambar...', 'info');
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            showGlobalStatus(response.message, response.status === 'success');
+                            if(response.status === 'success') {
+                                // Reset pratinjau ke gambar placeholder
+                                const previewImage = document.getElementById(previewId);
+                                previewImage.src = previewImage.src.split('?')[0] + `?text=${settingKey.replace('ID ','')}&t=` + new Date().getTime();
+                            }
+                        })
+                        .withFailureHandler(err => {
+                            showGlobalStatus('Gagal menghapus: ' + err.message, false);
+                        })
+                        .deleteDocumentAsset(userSpreadsheetId, settingKey);
+                }
+            });
         }
     </script>
 </body>
