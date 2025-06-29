@@ -6374,6 +6374,43 @@ function getGlobalGraduationSettings() {
 }
 
 /**
+ * [BARU] Menghapus aset dokumen tertentu (logo, ttd, atau stempel).
+ * @param {string} spreadsheetId - ID spreadsheet pengguna.
+ * @param {string} settingKey - Kunci pengaturan yang akan dihapus (misal: 'ID Logo Sekolah').
+ * @returns {object} Status penghapusan.
+ */
+function deleteDocumentAsset(spreadsheetId, settingKey) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    let sheet = ss.getSheetByName(SHEET_PENGATURAN);
+    if (!sheet) {
+      return { status: 'info', message: 'Tidak ada pengaturan untuk dihapus.' };
+    }
+
+    const settingRow = findOrCreateSettingRow(sheet, settingKey);
+    const fileIdCell = sheet.getRange(settingRow, 2);
+    const fileId = fileIdCell.getValue();
+
+    if (fileId) {
+      try {
+        DriveApp.getFileById(fileId).setTrashed(true);
+      } catch (e) {
+        Logger.log(`File dengan ID ${fileId} tidak dapat dihapus (mungkin sudah dihapus manual): ${e.message}`);
+      }
+      fileIdCell.clearContent(); // Hapus ID dari sel
+    }
+    
+    // Konversi nama kunci menjadi nama yang lebih ramah pengguna untuk pesan sukses
+    const assetName = settingKey.replace('ID ', '').replace(' Sekolah', '');
+    return { status: 'success', message: `${assetName} berhasil dihapus.` };
+
+  } catch (e) {
+    Logger.log('deleteDocumentAsset Error: ' + e.message);
+    return { status: 'error', message: 'Gagal menghapus aset: ' + e.message };
+  }
+}
+
+/**
  * [PUBLIC BARU] Mengambil pengaturan sekolah berdasarkan Kode Sekolah.
  * Fungsi ini digunakan untuk menampilkan countdown per sekolah sebelum login.
  * @param {string} kodeSekolah - Kode unik sekolah yang dimasukkan siswa.
@@ -6423,20 +6460,79 @@ function getSchoolSettingsByCode(kodeSekolah) {
 
 // ===== AWAL FITUR BARU: PENGATURAN KOP SURAT =====
 
+// ===== AWAL DARI KODE BARU UNTUK PENYIMPANAN GAMBAR DI DRIVE =====
+
 /**
- * [BARU] Menyimpan data gambar (logo, ttd, stempel) sebagai Base64 string
- * ke dalam PropertiesService yang spesifik untuk pengguna.
+ * [BARU] Helper untuk mencari atau membuat folder 'Aset Aplikasi' di Google Drive
+ * tempat spreadsheet pengguna berada.
  * @param {string} spreadsheetId - ID spreadsheet pengguna.
- * @param {object} settings - Objek berisi { logo, signature, stamp }.
+ * @returns {DriveApp.Folder} Objek folder aset.
+ */
+function getOrCreateAssetFolder(spreadsheetId) {
+  try {
+    const userSpreadsheetFile = DriveApp.getFileById(spreadsheetId);
+    const parentFolder = userSpreadsheetFile.getParents().next();
+    const assetFolderName = `_Aset Aplikasi Ijazah [JANGAN DIHAPUS]`;
+    
+    let assetFolderIterator = parentFolder.getFoldersByName(assetFolderName);
+
+    if (assetFolderIterator.hasNext()) {
+      return assetFolderIterator.next();
+    } else {
+      return parentFolder.createFolder(assetFolderName);
+    }
+  } catch (e) {
+    Logger.log(`Gagal mendapatkan folder induk untuk SS ID: ${spreadsheetId}. Membuat di Root. Error: ${e.message}`);
+    const rootFolder = DriveApp.getRootFolder();
+    const fallbackFolderName = `_Aset Aplikasi Ijazah - ${spreadsheetId}`;
+    let fallbackFolderIterator = rootFolder.getFoldersByName(fallbackFolderName);
+    if (fallbackFolderIterator.hasNext()) {
+      return fallbackFolderIterator.next();
+    } else {
+      return rootFolder.createFolder(fallbackFolderName);
+    }
+  }
+}
+
+/**
+ * [VERSI BARU] Menyimpan gambar ke Google Drive dan menyimpan ID filenya ke sheet Pengaturan.
+ * @param {string} spreadsheetId - ID spreadsheet pengguna.
+ * @param {object} settings - Objek berisi data gambar Base64 { logo, signature, stamp }.
  * @returns {object} Status penyimpanan.
  */
 function saveDocumentSettings(spreadsheetId, settings) {
   try {
-    const userProperties = PropertiesService.getUserProperties();
-    // Kita gunakan prefix agar kunci properti unik per spreadsheet
-    if (settings.logo) userProperties.setProperty(`docSetting_logo_${spreadsheetId}`, settings.logo);
-    if (settings.signature) userProperties.setProperty(`docSetting_signature_${spreadsheetId}`, settings.signature);
-    if (settings.stamp) userProperties.setProperty(`docSetting_stamp_${spreadsheetId}`, settings.stamp);
+    const ss = getSpreadsheet(spreadsheetId);
+    let sheet = ss.getSheetByName(SHEET_PENGATURAN);
+    if (!sheet) {
+        sheet = ss.insertSheet(SHEET_PENGATURAN);
+        sheet.appendRow(['Nama Pengaturan', 'Value']);
+    }
+
+    const assetFolder = getOrCreateAssetFolder(spreadsheetId);
+
+    // Helper untuk menyimpan satu file
+    const saveFile = (settingKey, base64Data, fileName) => {
+      if (!base64Data) return;
+
+      const decoded = Utilities.base64Decode(base64Data.split(',')[1]);
+      const blob = Utilities.newBlob(decoded, MimeType.PNG, fileName);
+      
+      // Hapus file lama jika ada untuk mencegah penumpukan file
+      const oldFileIdRow = findOrCreateSettingRow(sheet, settingKey);
+      const oldFileId = sheet.getRange(oldFileIdRow, 2).getValue();
+      if (oldFileId) {
+        try { DriveApp.getFileById(oldFileId).setTrashed(true); } catch(e) { Logger.log(`File lama ${oldFileId} tidak ditemukan untuk dihapus.`);}
+      }
+
+      const newFile = assetFolder.createFile(blob);
+      const newFileId = newFile.getId();
+      sheet.getRange(oldFileIdRow, 2).setValue(newFileId);
+    };
+
+    saveFile('ID Logo Sekolah', settings.logo, 'logo_sekolah.png');
+    saveFile('ID Tanda Tangan', settings.signature, 'tanda_tangan.png');
+    saveFile('ID Stempel', settings.stamp, 'stempel_sekolah.png');
 
     return { status: 'success', message: 'Pengaturan kop surat dan tanda tangan berhasil disimpan.' };
   } catch (e) {
@@ -6446,18 +6542,37 @@ function saveDocumentSettings(spreadsheetId, settings) {
 }
 
 /**
- * [BARU] Mengambil data gambar (logo, ttd, stempel) dari PropertiesService.
+ * [VERSI BARU] Mengambil ID file dari sheet Pengaturan, lalu mengambil data gambar
+ * dari Google Drive dan mengubahnya menjadi Base64.
  * @param {string} spreadsheetId - ID spreadsheet pengguna.
- * @returns {object} Objek berisi data gambar dalam format Base64.
+ * @returns {object} Objek berisi data gambar Base64.
  */
 function getDocumentSettings(spreadsheetId) {
   try {
-    const userProperties = PropertiesService.getUserProperties();
-    const settings = {
-      logo: userProperties.getProperty(`docSetting_logo_${spreadsheetId}`) || null,
-      signature: userProperties.getProperty(`docSetting_signature_${spreadsheetId}`) || null,
-      stamp: userProperties.getProperty(`docSetting_stamp_${spreadsheetId}`) || null,
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheet = ss.getSheetByName(SHEET_PENGATURAN);
+    const settings = { logo: null, signature: null, stamp: null };
+    if (!sheet) return { status: 'success', settings: settings };
+    
+    const data = sheet.getDataRange().getValues();
+    
+    const settingsMap = new Map(data.map(row => [row[0], row[1]]));
+
+    const getBase64 = (fileId) => {
+      if (!fileId) return null;
+      try {
+        const file = DriveApp.getFileById(fileId);
+        return `data:image/png;base64,${Utilities.base64Encode(file.getBlob().getBytes())}`;
+      } catch (e) {
+        Logger.log(`Gagal mengambil file gambar dengan ID ${fileId}: ${e.message}`);
+        return null;
+      }
     };
+    
+    settings.logo = getBase64(settingsMap.get('ID Logo Sekolah'));
+    settings.signature = getBase64(settingsMap.get('ID Tanda Tangan'));
+    settings.stamp = getBase64(settingsMap.get('ID Stempel'));
+
     return { status: 'success', settings: settings };
   } catch (e) {
     Logger.log('getDocumentSettings Error: ' + e.message);
@@ -6465,7 +6580,7 @@ function getDocumentSettings(spreadsheetId) {
   }
 }
 
-// ===== AKHIR FITUR BARU =====
+// ===== AKHIR DARI KODE BARU =====
 
 /**
  * [BARU] Mengambil QR code sebagai data Base64 untuk disematkan di HTML.
@@ -6483,5 +6598,94 @@ function getQrCodeAsBase64() {
   } catch (e) {
     Logger.log("Gagal membuat QR Code Base64: " + e.message);
     return null; // Kembalikan null jika ada error
+  }
+}
+
+/**
+ * [VERSI FINAL] Membandingkan nilai JUMLAH ijazah yang dihitung secara live
+ * dengan nilai JUMLAH yang tersimpan di sheet rekapitulasi untuk deteksi yang lebih akurat.
+ * @param {string} spreadsheetId - ID spreadsheet pengguna.
+ * @returns {{needsUpdate: boolean}} Objek yang berisi status apakah rekap perlu diperbarui.
+ */
+function checkRekapSyncStatus(spreadsheetId) {
+  try {
+    // 1. Ambil data rekap yang tersimpan saat ini
+    const storedRekapData = getSheetDataAsObject(spreadsheetId, SHEET_REKAP_IJAZAH);
+
+    // 2. Lakukan perhitungan live
+    const students = getStudents(spreadsheetId);
+    if (!students || students.length === 0) return { needsUpdate: false }; 
+
+    const mapel = getMapel(spreadsheetId);
+    if (!mapel || mapel.length === 0) return { needsUpdate: false };
+
+    const bobot = getBobot(spreadsheetId);
+    const jenjang = (getSchoolData(spreadsheetId) || {}).jenjang;
+    if (!jenjang) return { needsUpdate: true }; 
+
+    const semesterKeys = { MI: ['k4_ganjil', 'k4_genap', 'k5_ganjil', 'k5_genap', 'k6_ganjil'], MTS: ['k7_ganjil', 'k7_genap', 'k8_ganjil', 'k8_genap', 'k9_ganjil'], MA: ['k10_ganjil', 'k10_genap', 'k11_ganjil', 'k11_genap', 'k12_ganjil'] };
+    const semestersForJenjang = semesterKeys[jenjang] || [];
+
+    const sheetsToRead = [SHEET_NILAI_UJIAN_MADRASAH, SHEET_NILAI_UJIAN_PRAKTEK, ...semestersForJenjang.flatMap(smKey => [`Rapor_Pengetahuan_${smKey}`, `Rapor_Keterampilan_${smKey}`])];
+    const allData = {};
+    sheetsToRead.forEach(sheetName => { allData[sheetName] = getSheetDataAsObject(spreadsheetId, sheetName); });
+
+    // 3. Bandingkan nilai untuk setiap siswa
+    for (const student of students) {
+        const nisn = student.nisn.toString().trim();
+        const storedStudentData = storedRekapData[nisn];
+        
+        // Jika data siswa tidak ada di rekap, berarti perlu update
+        if (!storedStudentData) {
+          Logger.log(`Siswa baru ditemukan (${nisn}), rekap perlu diupdate.`);
+          return { needsUpdate: true };
+        }
+
+        let liveTotalNilaiIjazah = 0;
+
+        mapel.forEach(m => {
+            const kode = m.kode;
+            const nilaiUM = parseFloat((allData[SHEET_NILAI_UJIAN_MADRASAH][nisn] || {})[kode]);
+            const nilaiUP = parseFloat((allData[SHEET_NILAI_UJIAN_PRAKTEK][nisn] || {})[kode]);
+
+            let rataUjian = null;
+            if (!isNaN(nilaiUM) && !isNaN(nilaiUP)) rataUjian = (nilaiUM + nilaiUP) / 2;
+            else if (!isNaN(nilaiUM)) rataUjian = nilaiUM;
+            else if (!isNaN(nilaiUP)) rataUjian = nilaiUP;
+            
+            let totalNilaiRapor = 0;
+            let semesterCount = 0;
+            semestersForJenjang.forEach(smKey => {
+                const nilaiP = parseFloat(((allData[`Rapor_Pengetahuan_${smKey}`] || {})[nisn] || {})[kode]);
+                const nilaiK = parseFloat(((allData[`Rapor_Keterampilan_${smKey}`] || {})[nisn] || {})[kode]);
+                if (!isNaN(nilaiP) && !isNaN(nilaiK)) { totalNilaiRapor += (nilaiP + nilaiK) / 2; semesterCount++; }
+                else if (!isNaN(nilaiP)) { totalNilaiRapor += nilaiP; semesterCount++; }
+                else if (!isNaN(nilaiK)) { totalNilaiRapor += nilaiK; semesterCount++; }
+            });
+            const rataRapor = semesterCount > 0 ? totalNilaiRapor / semesterCount : null;
+
+            if (rataUjian !== null || rataRapor !== null) {
+                const finalRataUjian = rataUjian !== null ? rataUjian : 0;
+                const finalRataRapor = rataRapor !== null ? rataRapor : 0;
+                const nilaiIjazah = (finalRataUjian * (bobot.bobotUjian / 100)) + (finalRataRapor * (bobot.bobotRapor / 100));
+                // Nilai total adalah penjumlahan dari setiap nilai ijazah yang DIBULATKAN
+                liveTotalNilaiIjazah += Math.round(nilaiIjazah);
+            }
+        });
+        
+        // [PERUBAHAN UTAMA] Bandingkan nilai 'Jumlah' (bilangan bulat)
+        const storedTotal = parseInt(storedStudentData['Jumlah']) || 0;
+
+        if (liveTotalNilaiIjazah !== storedTotal) {
+            Logger.log(`Data tidak sinkron untuk NISN ${nisn}. Live Total: ${liveTotalNilaiIjazah}, Stored Total: ${storedTotal}`);
+            return { needsUpdate: true }; // Ditemukan perbedaan, langsung hentikan dan kirim status
+        }
+    }
+    
+    // Jika loop selesai tanpa menemukan perbedaan, data sudah sinkron
+    return { needsUpdate: false };
+  } catch (e) {
+    Logger.log("Error di checkRekapSyncStatus: " + e.message);
+    return { needsUpdate: true }; // Jika terjadi error, lebih aman untuk menampilkan notifikasi
   }
 }
