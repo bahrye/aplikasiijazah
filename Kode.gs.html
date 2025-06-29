@@ -1850,11 +1850,6 @@ function updateRekapitulasi(spreadsheetId) {
  * [PERBAIKAN RATA-RATA v2] Menyimpan data rekapitulasi ke sheet yang ditentukan.
  * Rata-rata kini DIHITUNG DARI TOTAL NILAI DIBAGI JUMLAH TOTAL MAPEL.
  * Nilai kosong dianggap 0.
- * @param {string} spreadsheetId ID spreadsheet target.
- * @param {string} sheetName Nama sheet rekap.
- * @param {Array<object>} students Daftar siswa.
- * @param {Array<object>} mapel Daftar mata pelajaran.
- * @param {object} data Data rekapitulasi.
  */
 function saveRekapSheet(spreadsheetId, sheetName, students, mapel, data) {
     const ss = getSpreadsheet(spreadsheetId);
@@ -1864,16 +1859,22 @@ function saveRekapSheet(spreadsheetId, sheetName, students, mapel, data) {
     }
     sheet.clear();
 
+    // [PERUBAHAN DIMULAI] - Menambahkan header baru secara dinamis
     const headers = ["NISN", "Nama Lengkap", ...mapel.map(m => m.kode), "Jumlah", "Rata-rata"];
     if (sheetName === SHEET_REKAP_IJAZAH) {
         headers.push("Status");
+    } else if (sheetName === SHEET_REKAP_UJIAN) {
+        // Tambahkan header baru untuk rekap ujian
+        headers.push("Rata-Rata AM (PDUM)");
     }
+    // [PERUBAHAN SELESAI]
 
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
     sheet.getRange("A:A").setNumberFormat("@");
 
     const isIjazahSheet = sheetName === SHEET_REKAP_IJAZAH;
+    const isUjianSheet = sheetName === SHEET_REKAP_UJIAN; // Tambahkan flag ini
     const kkm = isIjazahSheet ? (getKkm(spreadsheetId).kkm || 75) : 0;
 
     const rows = students.map(student => {
@@ -1881,25 +1882,21 @@ function saveRekapSheet(spreadsheetId, sheetName, students, mapel, data) {
         const rowData = [nisn, student.nama];
         
         let roundedTotal = 0;
-        // [PERBAIKAN] Pembagi sekarang adalah jumlah total mapel.
         const mapelCount = mapel.length; 
 
         mapel.forEach(m => {
             const rawScore = (data[nisn] || {})[m.kode];
             let numericScore = parseFloat(rawScore);
 
-            // [PERBAIKAN] Jika nilai tidak valid atau kosong, anggap sebagai 0.
             if (isNaN(numericScore)) {
                 numericScore = 0;
             }
             
             const roundedScore = Math.round(numericScore);
             roundedTotal += roundedScore;
-            // Selalu tampilkan angka (0 jika kosong)
             rowData.push(roundedScore);
         });
 
-        // [PERBAIKAN] Rata-rata selalu dibagi dengan jumlah total mapel.
         const average = mapelCount > 0 ? (roundedTotal / mapelCount) : 0;
         
         rowData.push(roundedTotal);
@@ -1912,6 +1909,13 @@ function saveRekapSheet(spreadsheetId, sheetName, students, mapel, data) {
             }
             rowData.push(status);
         }
+
+        // [PERUBAHAN DIMULAI] - Menambahkan data untuk kolom baru
+        if (isUjianSheet) {
+            // Hitung dan tambahkan nilai pembulatan
+            rowData.push(Math.round(average));
+        }
+        // [PERUBAHAN SELESAI]
 
         return rowData;
     });
