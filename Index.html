@@ -2844,6 +2844,27 @@
 
             // ===== GANTI SELURUH BLOK EVENT LISTENER INI DENGAN VERSI BARU =====
             document.addEventListener('keydown', (e) => {
+                // Logika untuk Ctrl + S (Simpan) - [MODIFIKASI BARU]
+                if (e.ctrlKey && e.key.toLowerCase() === 's') {
+                    e.preventDefault(); // Mencegah aksi default browser (Save As...)
+                    
+                    // Cek apakah ada tabel nilai yang sedang aktif
+                    if (activeTableKey) {
+                        const form = document.getElementById(`form-nilai-${activeTableKey}`);
+                        const actionsContainer = document.getElementById(`actions-container-${activeTableKey}`);
+                        
+                        // Pastikan form ada dan sedang dalam mode edit (tombol simpan terlihat)
+                        if (form && actionsContainer && !actionsContainer.classList.contains('hidden')) {
+                            // Tampilkan notifikasi hijau "Menyimpan..."
+                            showGlobalStatus('Menyimpan...', 'success');
+                            
+                            // Kirimkan form secara programmatic untuk memicu proses penyimpanan
+                            form.requestSubmit();
+                        }
+                    }
+                    return; // Hentikan eksekusi lebih lanjut
+                }
+
                 // Logika untuk Ctrl + Z (Undo)
                 if (e.ctrlKey && e.key.toLowerCase() === 'z') {
                     e.preventDefault();
@@ -2861,10 +2882,8 @@
                     if (activeTable && activeElement.classList.contains('score-input')) {
                         e.preventDefault();
                         
-                        // --- PERUBAHAN DI SINI: Cek apakah form terkunci ---
                         const editBtn = document.getElementById(`edit-scores-btn-${activeTableKey}`);
-                        if (editBtn && !editBtn.classList.contains('hidden')) return; // Jika terkunci, jangan lakukan apa-apa
-                        // --- AKHIR PERUBAHAN ---
+                        if (editBtn && !editBtn.classList.contains('hidden')) return; 
 
                         clearSelection();
                         const allInputs = activeTable.querySelectorAll('.score-input');
@@ -2878,15 +2897,13 @@
                 if (e.key === 'Delete' && selectedCells.size > 0) {
                     e.preventDefault();
 
-                    // --- PERUBAHAN DI SINI: Cek apakah form terkunci ---
-                    if (!activeTableKey) return; // Jika tidak ada tabel aktif, hentikan.
+                    if (!activeTableKey) return; 
                     const editBtn = document.getElementById(`edit-scores-btn-${activeTableKey}`);
-                    // Jika tombol edit ada dan terlihat (tidak ada class hidden), berarti form terkunci.
+                    
                     if (editBtn && !editBtn.classList.contains('hidden')) {
-                        return; // Hentikan fungsi hapus.
+                        return; 
                     }
-                    // --- AKHIR PERUBAHAN ---
-
+                    
                     handleSelectionDeletion();
                 }
             });
@@ -2894,18 +2911,6 @@
             // Letakkan di dalam DOMContentLoaded
             document.getElementById('undo-btn').addEventListener('click', performUndo);
             document.getElementById('redo-btn').addEventListener('click', performRedo);
-
-            // Tambahkan shortcut keyboard
-            document.addEventListener('keydown', (e) => {
-                if (e.ctrlKey && e.key === 'z') {
-                    e.preventDefault();
-                    performUndo();
-                }
-                if (e.ctrlKey && e.key === 'y') {
-                    e.preventDefault();
-                    performRedo();
-                }
-            });
 
             // Pendaftaran
             setupRealtimePasswordValidation(document.getElementById('signup-password'), document.getElementById('signup-password-req'));
