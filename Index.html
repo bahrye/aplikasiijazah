@@ -5134,7 +5134,6 @@
                 const mapelCount = (mapel || []).length;
                 const kkmValue = kkm || 75;
 
-                // ... (switch case untuk menentukan title, dll tidak berubah)
                 switch (type) {
                     case 'ujian':
                         dataToShow = rekapData.rekapUjian;
@@ -5160,6 +5159,7 @@
                         break;
                 }
 
+                // [PERUBAHAN DIMULAI] - Menambahkan header baru secara dinamis
                 let tableHtml = `<div class="bg-white p-6 rounded-lg shadow-md">
                     <div class="flex justify-between items-start flex-wrap gap-2">
                         <div>
@@ -5185,6 +5185,7 @@
                                     <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th>
                                     <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-rata</th>
                                     ${type === 'ijazah' ? '<th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>' : ''}
+                                    ${type === 'ujian' ? '<th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata AM (PDUM)</th>' : ''}
                                 </tr>
                             </thead>
                             <tbody>
@@ -5197,25 +5198,18 @@
                                         <td class="border border-gray-300 px-4 py-2 text-center">${student.nisn}</td>
                                         <td class="border border-gray-300 px-4 py-2 nama-siswa-cell">${student.nama.toUpperCase()}</td>`;
 
-                                    // [AWAL PERUBAHAN]
                                     mapel.forEach(m => {
                                         const rawScore = scores[m.kode];
                                         const numericScore = parseFloat(rawScore);
                                         let displayValue = 0;
-                                        // let kkmClass = ''; // Baris ini tidak diperlukan lagi
                                         if (!isNaN(numericScore)) {
                                             displayValue = Math.round(numericScore);
                                             total += displayValue;
-                                            // if (displayValue < kkmValue) kkmClass = 'text-red-600 font-bold'; // Logika ini dihapus dari sini
                                         }
-                                        // Kelas kkmClass dihapus dari <td> ini
                                         rowHtml += `<td class="border border-gray-300 text-center">${displayValue}</td>`;
                                     });
-                                    // [AKHIR PERUBAHAN]
 
                                     const average = mapelCount > 0 ? (total / mapelCount) : 0;
-                                    
-                                    // Logika untuk memberi warna pada kolom RATA-RATA tetap dipertahankan
                                     const avgClass = (average < kkmValue && mapelCount > 0) ? 'text-red-600 font-bold' : 'font-bold';
 
                                     rowHtml += `<td class="border border-gray-300 text-center font-bold">${total}</td>
@@ -5226,6 +5220,13 @@
                                         const statusClass = status === 'LULUS' ? 'bg-green-100 text-green-800 font-bold' : 'bg-red-100 text-red-800 font-bold';
                                         rowHtml += `<td class="border border-gray-300 text-center whitespace-nowrap ${statusClass}">${status}</td>`;
                                     }
+
+                                    // Tambahkan sel data untuk kolom baru
+                                    if (type === 'ujian') {
+                                        const roundedAverage = Math.round(average);
+                                        const roundedAvgClass = (roundedAverage < kkmValue && mapelCount > 0) ? 'text-red-600 font-bold' : 'text-blue-600 font-bold';
+                                        rowHtml += `<td class="border border-gray-300 text-center ${roundedAvgClass}">${roundedAverage}</td>`;
+                                    }
                                     
                                     rowHtml += `</tr>`;
                                     return rowHtml;
@@ -5234,6 +5235,7 @@
                         </table>
                     </div>
                 </div>`;
+                // [PERUBAHAN SELESAI]
 
                 displayArea.innerHTML = tableHtml;
 
@@ -5270,12 +5272,10 @@
                             const tahunAjaranSelect = document.getElementById('exportTahunAjaran');
                             tahunAjaranSelect.innerHTML = '';
                             
-                            // ===== AWAL LOGIKA BARU UNTUK TAHUN AJARAN =====
                             const date = new Date();
                             const currentYear = date.getFullYear();
-                            const currentMonth = date.getMonth(); // 0 = Januari, 6 = Juli
+                            const currentMonth = date.getMonth();
                             
-                            // Opsi tahun ajaran yang akan ditampilkan
                             const years = [
                                 `${currentYear - 2}/${currentYear - 1}`,
                                 `${currentYear - 1}/${currentYear}`,
@@ -5283,11 +5283,10 @@
                                 `${currentYear + 1}/${currentYear + 2}`
                             ];
 
-                            // Tentukan tahun ajaran default berdasarkan bulan
                             let defaultAcademicYear;
-                            if (currentMonth < 6) { // Jika bulan Januari - Juni
+                            if (currentMonth < 6) { 
                                 defaultAcademicYear = `${currentYear - 1}/${currentYear}`;
-                            } else { // Jika bulan Juli - Desember
+                            } else { 
                                 defaultAcademicYear = `${currentYear}/${currentYear + 1}`;
                             }
 
@@ -5298,13 +5297,11 @@
                                 tahunAjaranSelect.appendChild(option);
                             });
 
-                            // Set nilai default-nya
                             if (savedOptions && savedOptions.tahunAjaran) {
                                 tahunAjaranSelect.value = savedOptions.tahunAjaran;
                             } else {
                                 tahunAjaranSelect.value = defaultAcademicYear;
                             }
-                            // ===== AKHIR LOGIKA BARU =====
 
                             document.getElementById('exportTempatTTD').value = savedOptions?.tempatTTD || '';
                             document.getElementById('exportTanggalTTD').value = savedOptions?.tanggalTTD || new Date().toISOString().split('T')[0];
