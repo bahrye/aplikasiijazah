@@ -228,61 +228,6 @@
         document.getElementById('logoutButtonResult').addEventListener('click', handleSiswaLogout);
         document.getElementById('envelope-image').addEventListener('click', showResult);
         document.getElementById('open-envelope-btn').addEventListener('click', showResult);
-
-        // fungsi kunci login siswa
-        const schoolEmailInput = document.getElementById('email_sekolah');
-        const nisnInput = document.getElementById('nisn');
-        const submitButton = document.querySelector('button[type="submit"]');
-        const loginForm = document.getElementById('student-login-form');
-        const messageDiv = document.createElement('div');
-        messageDiv.id = 'lock-message';
-        messageDiv.className = 'text-center text-red-500 font-bold mb-4 hidden';
-        loginForm.prepend(messageDiv);
-
-        function checkLockStatus() {
-          const schoolEmail = schoolEmailInput.value;
-          if (!schoolEmail || !schoolEmail.includes('@')) {
-            // Jangan lakukan apa-apa jika email belum valid
-            return;
-          }
-
-          // Tampilkan loading di tombol
-          submitButton.disabled = true;
-          submitButton.textContent = 'Memeriksa...';
-          messageDiv.classList.add('hidden');
-
-          google.script.run
-            .withSuccessHandler(response => {
-              if (response.isLoginLocked) {
-                // Jika terkunci
-                messageDiv.textContent = `Login siswa untuk ${response.schoolName} saat ini sedang ditutup.`;
-                messageDiv.classList.remove('hidden');
-                submitButton.disabled = true;
-                nisnInput.disabled = true;
-                submitButton.textContent = 'Login Ditutup';
-                submitButton.classList.add('bg-gray-400', 'cursor-not-allowed');
-                submitButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-              } else {
-                // Jika tidak terkunci
-                messageDiv.classList.add('hidden');
-                submitButton.disabled = false;
-                nisnInput.disabled = false;
-                submitButton.textContent = 'Cari Data';
-                submitButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
-                submitButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
-              }
-            })
-            .withFailureHandler(err => {
-              messageDiv.textContent = 'Gagal memeriksa status login. Silakan coba lagi.';
-              messageDiv.classList.remove('hidden');
-              submitButton.disabled = true;
-              submitButton.textContent = 'Error';
-            })
-            .getLoginSettings(schoolEmail);
-        }
-
-        // Periksa status saat input email kehilangan fokus (selesai diketik)
-        schoolEmailInput.addEventListener('blur', checkLockStatus);
     });
 
     function handleSchoolCodeSubmit(e) {
@@ -310,14 +255,6 @@
                 spinner.classList.add('hidden');
 
                 if (response.status === 'success') {
-                    // --- AWAL DARI BLOK VALIDASI BARU DI FRONTEND ---
-                    if (response.isLoginLocked) {
-                        // Jika login dikunci, tampilkan pesan error dan jangan lanjutkan
-                        errorDiv.textContent = `Login siswa untuk ${response.namaSekolah} saat ini sedang ditutup.`;
-                        return; 
-                    }
-                    // --- AKHIR DARI BLOK VALIDASI BARU ---
-
                     sessionStorage.setItem('siswa_namaSekolah', response.namaSekolah);
                     const announcementDateStr = response.announcementDate;
                     if (announcementDateStr) {
