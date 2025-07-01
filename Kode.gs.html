@@ -32,6 +32,7 @@ const SHEET_BROADCAST_READ_STATUS = "Status Baca Broadcast";
 // ===== AKHIR KODE TAMBAHAN =====
 const SHEET_CACHE_AKUN = "Cache Akun";
 const SHEET_SARAN = "Saran & Masalah";
+const SHEET_WILAYAH = "Data Wilayah";
 
 
 /**
@@ -6691,5 +6692,101 @@ function checkRekapSyncStatus(spreadsheetId) {
   } catch (e) {
     Logger.log("Error di checkRekapSyncStatus: " + e.message);
     return { needsUpdate: true }; // Jika terjadi error, lebih aman untuk menampilkan notifikasi
+  }
+}
+
+// ===== AWAL KODE BARU UNTUK DATABASE WILAYAH DARI SHEET =====
+
+// HAPUS FUNGSI getWilayahData_, getProvinsiList, getKabupatenList, dll. LAMA
+// GANTI DENGAN SATU FUNGSI BARU INI
+
+function getWilayahData() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("Data Wilayah"); // Pastikan nama sheet sudah benar
+    if (!sheet) {
+      throw new Error("Sheet 'Data Wilayah' tidak ditemukan.");
+    }
+    const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 5).getValues(); // Ambil dari baris 2
+    
+    // Kelompokkan data untuk mempermudah frontend
+    const wilayah = {
+      provinsi: {},
+      kodepos: {}
+    };
+
+    data.forEach(row => {
+      const [prov, kab, kec, kel, pos] = row;
+      
+      if (!wilayah.provinsi[prov]) wilayah.provinsi[prov] = {};
+      if (!wilayah.provinsi[prov][kab]) wilayah.provinsi[prov][kab] = {};
+      if (!wilayah.provinsi[prov][kab][kec]) wilayah.provinsi[prov][kab][kec] = [];
+      
+      wilayah.provinsi[prov][kab][kec].push(kel);
+      
+      // Buat peta kodepos untuk pencarian cepat
+      const key = `${prov}-${kab}-${kec}-${kel}`;
+      wilayah.kodepos[key] = pos;
+    });
+
+    return { status: 'success', data: wilayah };
+
+  } catch (e) {
+    Logger.log("Error di getWilayahData: " + e.message);
+    return { status: 'error', message: e.message };
+  }
+}
+
+// Fungsi yang akan dipanggil dari frontend untuk mendapatkan daftar provinsi unik
+function getProvinsiList() {
+  try {
+    const data = getWilayahData_();
+    const provinsiSet = new Set(data.map(item => item.provinsi));
+    return [...provinsiSet].sort();
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+// Fungsi untuk mendapatkan daftar kabupaten berdasarkan provinsi
+function getKabupatenList(provinsi) {
+  try {
+    const data = getWilayahData_();
+    const kabupatenSet = new Set(
+      data
+        .filter(item => item.provinsi === provinsi)
+        .map(item => item.kabupaten)
+    );
+    return [...kabupatenSet].sort();
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+// Fungsi untuk mendapatkan daftar kecamatan berdasarkan kabupaten
+function getKecamatanList(provinsi, kabupaten) {
+  try {
+    const data = getWilayahData_();
+    const kecamatanSet = new Set(
+      data
+        .filter(item => item.provinsi === provinsi && item.kabupaten === kabupaten)
+        .map(item => item.kecamatan)
+    );
+    return [...kecamatanSet].sort();
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+// Fungsi untuk mendapatkan daftar kelurahan berdasarkan kecamatan
+function getKelurahanList(provinsi, kabupaten, kecamatan) {
+  try {
+    const data = getWilayahData_();
+    const kelurahanData = data
+      .filter(item => item.provinsi === provinsi && item.kabupaten === kabupaten && item.kecamatan === kecamatan)
+      .map(item => ({ nama: item.kelurahan, kodepos: item.kodepos }));
+    return kelurahanData.sort((a, b) => a.nama.localeCompare(b.nama));
+  } catch (e) {
+    return { error: e.message };
   }
 }
