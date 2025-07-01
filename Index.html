@@ -898,14 +898,18 @@
                         <div id="user-bulk-action-bar" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-auto bg-gray-800 text-white rounded-full shadow-2xl p-2 z-40 transition-all duration-300 ease-out transform">
                             <div class="flex items-center justify-between gap-4 px-4">
                                 <span id="selected-user-count" class="font-semibold whitespace-nowrap">0 akun dipilih</span>
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 border-l border-gray-600 pl-3">
+                                    <span class="text-xs font-bold uppercase text-gray-400">PENGGUNA:</span>
                                     <input type="number" id="bulk-limit-input" placeholder="Set Batas" class="p-2 border border-gray-500 bg-gray-700 text-white rounded-full w-28 text-sm focus:ring-blue-500 focus:border-blue-500">
                                     <button id="bulk-update-limit-btn" class="bg-blue-600 hover:bg-blue-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Update Limit</button>
-                                    <div class="h-6 border-l border-gray-500"></div>
-                                    <button id="bulk-generate-code-btn" class="hidden bg-purple-600 hover:bg-purple-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Generate Kode</button>
-                                    <div id="bulk-action-separator" class="h-6 border-l border-gray-500 hidden"></div>
                                     <button id="bulk-activate-btn" class="bg-green-600 hover:bg-green-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Aktifkan</button>
                                     <button id="bulk-deactivate-btn" class="bg-red-600 hover:bg-red-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Nonaktifkan</button>
+                                </div>
+                                
+                                <div class="flex items-center gap-2 border-l border-gray-600 pl-3">
+                                    <span class="text-xs font-bold uppercase text-gray-400">FITUR:</span>
+                                    <button onclick="handleBulkFeatureLock('Lock_Transkrip', true)" class="bg-gray-500 hover:bg-red-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Kunci Transkrip</button>
+                                    <button onclick="handleBulkFeatureLock('Lock_Transkrip', false)" class="bg-gray-500 hover:bg-green-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Buka Transkrip</button>
                                 </div>
                             </div>
                         </div>
@@ -2630,6 +2634,40 @@
         </div>
     </div>
 
+    <div id="feature-lock-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-md transform scale-95">
+            <div class="flex justify-between items-center border-b p-4">
+                <h2 id="feature-lock-title" class="text-lg font-bold text-gray-800">Pengaturan Fitur</h2>
+                <button id="close-feature-lock-modal" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <label class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span class="font-medium text-gray-700">Pengaturan Kelulusan</span>
+                    <input type="checkbox" id="lock_kelulusan" data-feature="Lock_Kelulusan" class="feature-lock-toggle h-6 w-6 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                </label>
+                <label class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span class="font-medium text-gray-700">Pengaturan Kop Surat & TTD</span>
+                    <input type="checkbox" id="lock_kop_surat" data-feature="Lock_KopSurat" class="feature-lock-toggle h-6 w-6 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                </label>
+                <label class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span class="font-medium text-gray-700">Halaman Transkrip Nilai</span>
+                    <input type="checkbox" id="lock_transkrip" data-feature="Lock_Transkrip" class="feature-lock-toggle h-6 w-6 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                </label>
+                <label class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span class="font-medium text-gray-700">Halaman Backup & Restore</span>
+                    <input type="checkbox" id="lock_backup" data-feature="Lock_Backup" class="feature-lock-toggle h-6 w-6 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                </label>
+                <div class="p-6 space-y-4">
+                    <div class="border-t my-4"></div>
+                    <label class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                        <span class="font-medium text-red-700">Kunci Halaman Login Siswa</span>
+                        <input type="checkbox" id="lock_login_siswa" data-feature="Lock_LoginSiswa" class="feature-lock-toggle h-6 w-6 rounded border-gray-300 text-red-600 focus:ring-red-500">
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="data-viewer-tooltip" class="hidden absolute z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm"></div>
     <div id="globalStatusMessage"></div>
 
@@ -3318,6 +3356,7 @@
                         sessionStorage.setItem('userEmail', response.email);
                         sessionStorage.setItem('userRole', response.role);
                         sessionStorage.setItem('webAppUrl', response.webAppUrl);
+                        sessionStorage.setItem('featureLocks', JSON.stringify(response.featureLocks || {}));
 
                         document.getElementById('auth-wrapper').classList.add('hidden');
                         document.getElementById('app-container').classList.remove('hidden');
@@ -3802,6 +3841,17 @@
             }
             // ===== AKHIR BLOK KODE BARU =====
 
+            // Ambil data kunci fitur dari session storage yang disimpan saat login
+            const featureLocks = JSON.parse(sessionStorage.getItem('featureLocks') || '{}');
+
+            // Sembunyikan navigasi jika terkunci
+            if (featureLocks.transkrip) {
+                document.querySelector('.nav-link[data-page="transkrip"]').classList.add('hidden');
+            }
+            if (featureLocks.backup) {
+                document.querySelector('.nav-link[data-page="backup-restore"]').classList.add('hidden');
+            }
+
             // --- AWAL PERUBAHAN UTAMA (EVENT DELEGATION) ---
             navContainer.addEventListener('click', (e) => {
                 const navLink = e.target.closest('.nav-link');
@@ -3834,7 +3884,15 @@
                 if (targetPageId === 'transkrip') loadTranskripPage();
                 if (targetPageId === 'pengaturan') {
                     loadPengaturanPage();
-                    loadDocumentSettings(); // <-- TAMBAHKAN PEMANGGILAN FUNGSI INI
+                    loadDocumentSettings();
+                    
+                    // Sembunyikan bagian pengaturan yang terkunci
+                    if (featureLocks.kelulusan) {
+                        document.getElementById('graduationSettingsForm').closest('.mt-10').classList.add('hidden');
+                    }
+                    if (featureLocks.kopSurat) {
+                        document.getElementById('documentSettingsForm').closest('.mt-10').classList.add('hidden');
+                    }
                 }
                 if (targetPageId === 'validasi-nilai') initValidationPage();
                 if (targetPageId === 'backup-restore') loadBackupRestorePage();
@@ -6679,10 +6737,6 @@
             tour.start();
         }
 
-        // Letakkan ini di dalam event listener DOMContentLoaded atau di area fungsi-fungsi utama
-        // --- SUPERADMIN FUNCTIONS ---
-
-        // GANTI FUNGSI loadUserManagementPage() LAMA DENGAN VERSI BARU INI
         function loadUserManagementPage() {
             const container = document.getElementById('userManagementTableContainer');
             const lastUpdatedText = document.getElementById('userCacheLastUpdatedText');
@@ -6695,38 +6749,12 @@
                 return;
             }
 
-            const refreshBtn = document.getElementById('refreshUserCacheBtn');
-            const refreshBtnText = document.getElementById('refreshBtnText');
-
-            refreshBtn.onclick = () => {
-                refreshBtn.disabled = true;
-                refreshBtnText.textContent = 'Memperbarui...';
-                showGlobalStatus("Memulai pembaruan cache, ini mungkin memakan waktu...", 'info');
-
-                google.script.run
-                    .withSuccessHandler(response => {
-                        showGlobalStatus(response.message, response.status === 'success');
-                        refreshBtn.disabled = false;
-                        refreshBtnText.textContent = 'Perbarui Data Cache';
-                        // Muat ulang seluruh data halaman setelah cache diperbarui
-                        loadUserManagementPage(); 
-                    })
-                    .withFailureHandler(err => {
-                        showGlobalStatus(`Gagal: ${err.message}`, false);
-                        refreshBtn.disabled = false;
-                        refreshBtnText.textContent = 'Perbarui Data Cache';
-                    })
-                    .updateUserCache_Superadmin(adminEmail);
-            };
-
-            // Panggil data utama dan data timestamp secara bersamaan
             Promise.all([
                 new Promise((resolve, reject) => google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).getAllUsers_Superadmin(adminEmail)),
                 new Promise((resolve, reject) => google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).getUserCacheLastUpdated_Superadmin())
             ]).then(([users, timeResponse]) => {
                 allUsersCache = users || [];
 
-                // Render tabel
                 if (!allUsersCache || allUsersCache.length === 0) {
                     container.innerHTML = `<div class="text-center p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
                         <p class="font-semibold text-yellow-800">Cache data pengguna masih kosong.</p>
@@ -6737,7 +6765,6 @@
                     attachUserTableCheckboxListeners();
                 }
 
-                // Tampilkan timestamp
                 if (timeResponse.status === 'success' && timeResponse.lastUpdated) {
                     lastUpdatedText.textContent = 'Diperbarui: ' + new Date(timeResponse.lastUpdated).toLocaleString('id-ID');
                 } else {
@@ -6765,6 +6792,62 @@
                 .withSuccessHandler(requests => { renderChangeRequestsTable(requests); })
                 .withFailureHandler(err => { pengajuanContainer.innerHTML = `<p class="text-center text-red-500 p-4">Gagal memuat pengajuan: ${err.message}</p>`; })
                 .getChangeRequests_Superadmin(adminEmail);
+        }
+
+        // Ganti keseluruhan fungsi openFeatureLockModal yang ada dengan versi ini
+        function openFeatureLockModal(user) {
+            const modal = document.getElementById('feature-lock-modal');
+            const title = document.getElementById('feature-lock-title');
+            
+            title.textContent = `Pengaturan Fitur untuk: ${user.namaSekolah}`;
+            
+            // [MODIFIKASI] Mengisi status checkbox berdasarkan data 'user' yang diterima
+            document.getElementById('lock_kelulusan').checked = user.lock_kelulusan === 'YA';
+            document.getElementById('lock_kop_surat').checked = user.lock_kopSurat === 'YA';
+            document.getElementById('lock_transkrip').checked = user.lock_transkrip === 'YA';
+            document.getElementById('lock_backup').checked = user.lock_backup === 'YA';
+            document.getElementById('lock_login_siswa').checked = user.lock_loginSiswa === 'YA';
+
+            document.querySelectorAll('.feature-lock-toggle').forEach(toggle => {
+                // Hapus listener lama untuk mencegah penumpukan
+                const newToggle = toggle.cloneNode(true);
+                toggle.parentNode.replaceChild(newToggle, toggle);
+
+                // Pasang listener baru
+                newToggle.onchange = function() {
+                    const featureName = this.dataset.feature;
+                    const isLocked = this.checked;
+                    const adminEmail = sessionStorage.getItem('userEmail');
+                    
+                    this.disabled = true; // Nonaktifkan toggle sementara
+                    
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            showGlobalStatus(response.message, response.status === 'success');
+                            if (response.status === 'success') {
+                                // [MODIFIKASI] Perbarui cache lokal agar UI konsisten
+                                const userIndex = allUsersCache.findIndex(u => u.row === user.row);
+                                if (userIndex !== -1) {
+                                    const featureKey = featureName.toLowerCase().replace('lock_', 'lock_');
+                                    allUsersCache[userIndex][featureKey] = isLocked ? 'YA' : 'TIDAK';
+                                }
+                            } else {
+                                // Kembalikan toggle ke state semula jika gagal
+                                this.checked = !isLocked;
+                            }
+                            this.disabled = false; // Aktifkan kembali toggle
+                        })
+                        .withFailureHandler(err => {
+                            showGlobalStatus(`Gagal: ${err.message}`, false);
+                            this.checked = !isLocked;
+                            this.disabled = false;
+                        })
+                        .setFeatureLockStatus_Superadmin(adminEmail, user.row, featureName, isLocked);
+                };
+            });
+
+            modal.classList.remove('hidden');
+            document.getElementById('close-feature-lock-modal').onclick = () => modal.classList.add('hidden');
         }
 
         /**
@@ -6836,7 +6919,8 @@
                         </span>
                     </td>
                     <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        ${user.role !== 'Superadmin' ? `<button class="text-cyan-600 hover:text-cyan-900" onclick='handleImpersonate(${JSON.stringify(user)})'>Masuk sbg</button>` : ''}
+                        <button class="text-green-600 hover:text-green-900" onclick='openFeatureLockModal(${JSON.stringify(user)})'>Fitur</button>
+                        ${user.role !== 'Superadmin' ? `<button class="text-cyan-600 hover:text-cyan-900 ml-4" onclick='handleImpersonate(${JSON.stringify(user)})'>Masuk sbg</button>` : ''}
                         <button class="ml-4 text-indigo-600 hover:text-indigo-900" onclick='handleEditUser_Superadmin(${JSON.stringify(user)})'>Edit</button>
                         <button class="ml-4 text-purple-600 hover:text-purple-900" onclick='handleSetLimit_Superadmin(${user.row}, "${user.studentLimit}")'>Limit</button>
                         ${!isSelf ? `<button class="ml-4 ${statusBtnClass}" onclick='handleSetStatus_Superadmin(${user.row}, "${statusBtnText}")'>${statusBtnText}</button>` : ''}
@@ -6899,7 +6983,6 @@
             }
         }
 
-        // ===== GANTI FUNGSI LAMA DENGAN VERSI BARU INI =====
         function initializeSuperadminApp() {
             const oldNav = document.getElementById('main-nav');
             const newNav = oldNav.cloneNode(true);
@@ -6920,7 +7003,8 @@
 
             document.querySelectorAll('.nav-link').forEach(link => {
                 const page = link.dataset.page;
-                if (page && (allowedAdminPages.includes(page) || (page in pageToLinkMap))) {
+                const targetPage = pageToLinkMap[page] || page;
+                if (allowedAdminPages.includes(targetPage)) {
                     link.classList.remove('hidden');
                 } else {
                     link.classList.add('hidden');
@@ -6934,29 +7018,63 @@
 
             navContainer.addEventListener('click', (e) => {
                 const navLink = e.target.closest('.nav-link');
-                if (!navLink) return;
+                if (!navLink || navLink.id === 'logoutButton') return;
 
                 e.preventDefault();
                 let targetPageId = navLink.dataset.page;
-
                 if (targetPageId === 'dashboard') targetPageId = 'superadmin-dashboard';
 
                 if (!targetPageId || !allowedAdminPages.includes(targetPageId)) return;
 
                 contentPages.forEach(p => p.classList.add('hidden'));
-                document.getElementById('page-' + targetPageId)?.classList.remove('hidden');
+                const pageElement = document.getElementById('page-' + targetPageId);
+                if (pageElement) pageElement.classList.remove('hidden');
 
                 document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
                 const linkToActivate = document.querySelector(`.nav-link[data-page="${navLink.dataset.page}"]`);
                 if(linkToActivate) linkToActivate.classList.add('active');
 
+                // Panggil fungsi pemuat data untuk setiap halaman
                 if (targetPageId === 'superadmin-dashboard') loadSuperadminDashboardData();
                 if (targetPageId === 'manajemen-akun') loadUserManagementPage();
                 if (targetPageId === 'daftar-pengajuan') loadPengajuanListPage_Superadmin();
                 if (targetPageId === 'kelola-update') loadVersionManagementPage();
-                if (targetPageId === 'broadcast') loadBroadcastPage(); // <-- Tambahkan pemicu fungsi
+                if (targetPageId === 'broadcast') loadBroadcastPage();
                 if (targetPageId === 'manajemen-saran') loadSaranAdminPage(); 
             });
+
+            // --- PEMASANGAN EVENT LISTENER DENGAN EVENT DELEGATION ---
+            // Pasang listener ke elemen induk yang pasti ada.
+            document.getElementById('app-container').addEventListener('click', function(event) {
+                // Cek apakah elemen yang diklik adalah tombol refresh atau ikon di dalamnya
+                if (event.target.id === 'refreshUserCacheBtn' || event.target.closest('#refreshUserCacheBtn')) {
+                    const refreshBtn = document.getElementById('refreshUserCacheBtn');
+                    // Pastikan tombol tidak sudah dalam keadaan non-aktif
+                    if (refreshBtn.disabled) return;
+
+                    const refreshBtnText = document.getElementById('refreshBtnText');
+                    refreshBtn.disabled = true;
+                    refreshBtnText.textContent = 'Memperbarui...';
+                    showGlobalStatus("Memulai pembaruan cache, ini mungkin memakan waktu...", 'info');
+                    const adminEmail = sessionStorage.getItem('userEmail');
+
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            showGlobalStatus(response.message, response.status === 'success');
+                            loadUserManagementPage(); // Muat ulang data setelah cache diperbarui
+                        })
+                        .withFailureHandler(err => {
+                            showGlobalStatus(`Gagal: ${err.message}`, false);
+                        })
+                        .withFinally(() => { // .withFinally akan selalu berjalan
+                            refreshBtn.disabled = false;
+                            refreshBtnText.textContent = 'Perbarui Data Cache';
+                        })
+                        .updateUserCache_Superadmin(adminEmail);
+                }
+            });
+            
+            // --- AKHIR BLOK EVENT DELEGATION ---
 
             const totalAkunCard = document.getElementById('sa-card-total-akun');
             if (totalAkunCard) {
@@ -11936,6 +12054,47 @@
             });
         }
         // ===== AKHIR BLOK KODE WILAYAH VERSI FINAL (DIPERBAIKI) =====
+
+        /**
+         * [BARU] Menangani klik pada tombol aksi massal untuk mengunci/membuka fitur.
+         * @param {string} featureName - Nama fitur dari backend (e.g., 'Lock_Transkrip').
+         * @param {boolean} isLocked - Aksi yang akan dilakukan (true untuk mengunci, false untuk membuka).
+         */
+        function handleBulkFeatureLock(featureName, isLocked) {
+            const selectedRows = Array.from(selectedUserRows);
+            if (selectedRows.length === 0) {
+                showGlobalStatus("Tidak ada pengguna yang dipilih.", false);
+                return;
+            }
+
+            const actionText = isLocked ? "MENGUNCI" : "MEMBUKA";
+            const featureText = featureName.replace('Lock_', '').replace('Siswa', ' Siswa');
+
+            showConfirmationModal({
+                title: `Konfirmasi Aksi Massal`,
+                body: `Anda yakin ingin <strong>${actionText}</strong> fitur <strong>${featureText}</strong> untuk <strong>${selectedRows.length} akun</strong> yang dipilih?`,
+                confirmText: `Ya, ${isLocked ? 'Kunci' : 'Buka'}`,
+                confirmColor: isLocked ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700",
+                onConfirm: () => {
+                    showGlobalStatus(`Memproses permintaan untuk ${selectedRows.length} akun...`, 'info');
+                    
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            showGlobalStatus(response.message, response.status === 'success');
+                            if (response.status === 'success') {
+                                // Bersihkan pilihan dan muat ulang tabel untuk melihat perubahan
+                                selectedUserRows.clear();
+                                updateUserBulkActionBar();
+                                loadUserManagementPage();
+                            }
+                        })
+                        .withFailureHandler(err => {
+                            showGlobalStatus(`Gagal: ${err.message}`, false);
+                        })
+                        .bulkSetFeatureLock_Superadmin(sessionStorage.getItem('userEmail'), selectedRows, featureName, isLocked);
+                }
+            });
+        }
     </script>
 </body>
 </html>
