@@ -328,10 +328,12 @@ function registerUser(userData, otp) {
     const hashedPassword = hashPassword(password, salt);
     const storedPasswordString = `${salt}:${hashedPassword}`;
 
-    // ===== PERUBAHAN UTAMA DI SINI (13 KOLOM) =====
+    // [MODIFIKASI DI SINI] Tambahkan 'YA' sebanyak 5 kali di akhir array
+    // Ini akan mengisi kolom N, O, P, Q, dan R secara otomatis
     userSheet.appendRow([
         userId, email, storedPasswordString, namaSekolah, jenjang, newSpreadsheetId,
-        'Pengguna', 'Aktif', defaultLimit, latestVersion, '', '', schoolCode, ''
+        'Pengguna', 'Aktif', defaultLimit, latestVersion, '', '', schoolCode, '',
+        'YA', 'YA', 'YA', 'YA', 'YA' // N=Kelulusan, O=Kop, P=Transkrip, Q=Backup, R=LoginSiswa
     ]);
     
     CacheService.getScriptCache().remove(email.toLowerCase());
@@ -359,7 +361,8 @@ function checkLogin(email, password) {
       return { status: "error", message: "Konfigurasi pengguna tidak ditemukan." };
     }
 
-    const users = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 12).getValues(); 
+    // [UBAH] Ubah jangkauan pengambilan data menjadi 18 kolom
+    const users = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 18).getValues(); 
     const userIndex = users.findIndex(userRow => userRow[1].toLowerCase() === email.toLowerCase());
 
     if (userIndex === -1) {
@@ -402,13 +405,22 @@ function checkLogin(email, password) {
     if (passwordIsValid) {
       logLoginActivity(email, userRow[3], userRow[4], role);
 
+      // ===== MODIFIKASI PADA OBJEK loginResponse =====
       const loginResponse = {  
           status: "success",  
           message: "Login berhasil.",  
           spreadsheetId: spreadsheetId,  
           email: userRow[1],  
           role: role,  
-          webAppUrl: ScriptApp.getService().getUrl()
+          webAppUrl: ScriptApp.getService().getUrl(),
+          // Objek baru untuk menyimpan status kunci fitur
+          featureLocks: {
+              kelulusan: userRow[13] === 'YA',  // Kolom N (indeks 13)
+              kopSurat: userRow[14] === 'YA',   // Kolom O (indeks 14)
+              transkrip: userRow[15] === 'YA',  // Kolom P (indeks 15)
+              backup: userRow[16] === 'YA',      // Kolom Q (indeks 16)
+              loginSiswa: userRow[17] === 'YA' // [BARU] Kolom R (indeks 17)
+          }
       };
 
       if (role === 'Pengguna') {
@@ -2792,21 +2804,16 @@ function getAllUsers_Superadmin(adminEmail) {
   let dataToMap;
 
   if (cachedJson) {
-    // --- JALUR CEPAT (UTAMA) ---
-    // Data ditemukan di PropertiesService, kita gunakan ini.
     dataToMap = JSON.parse(cachedJson);
   } else {
-    // --- JALUR LAMBAT (CADANGAN) ---
-    // Jika PropertiesService kosong (misal: setelah script di-update), baca dari sheet.
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CACHE_AKUN);
-    if (!sheet || sheet.getLastRow() < 2) {
-        return [];
-    }
-    const sheetData = sheet.getRange(2, 1, sheet.getLastRow() - 1, 9).getValues();
+    if (!sheet || sheet.getLastRow() < 2) return [];
+    // [UBAH] Ambil data hingga 14 kolom dari cache
+    const sheetData = sheet.getRange(2, 1, sheet.getLastRow() - 1, 14).getValues();
     dataToMap = sheetData.filter(row => row[0] && row[0] !== 'last_updated');
   }
 
-  // Proses mapping tetap sama, namun sumber datanya bisa dari 2 tempat.
+  // [MODIFIKASI] Tambahkan properti status kunci ke objek yang dikembalikan
   return dataToMap.map((row) => {
     return {
       email: row[0],
@@ -2817,7 +2824,12 @@ function getAllUsers_Superadmin(adminEmail) {
       studentLimit: row[5],
       currentStudentCount: row[6],
       row: row[7],
-      role: row[8]
+      role: row[8],
+      lock_kelulusan: row[9],   // Data dari cache kolom 10
+      lock_kopSurat: row[10],  // Data dari cache kolom 11
+      lock_transkrip: row[11], // Data dari cache kolom 12
+      lock_backup: row[12],    // Data dari cache kolom 13
+      lock_loginSiswa: row[13] // Data dari cache kolom 14
     };
   });
 }
@@ -5160,18 +5172,31 @@ function loginSiswa(kodeSekolah, nisn, tanggalLahir) {
             return { status: "error", message: "Sistem tidak menemukan data sekolah manapun." };
         }
         
-        const data = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 13).getValues();
+        // Ambil data sampai kolom R (18) untuk mencakup semua kolom kunci fitur
+        const data = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 18).getValues();
         const schoolRow = data.find(row => row[12] && row[12].toUpperCase() === kodeSekolah.toUpperCase());
 
         if (!schoolRow) {
             return { status: "error", message: "Kode Sekolah tidak valid atau tidak ditemukan." };
         }
+
+        // --- VALIDASI KUNCI FITUR DITAMBAHKAN DI SINI ---
+        const isLoginLocked = schoolRow[17] === 'YA'; // Kolom R (indeks 17) adalah Lock_LoginSiswa
+        if (isLoginLocked) {
+            const schoolName = schoolRow[3]; // Kolom D adalah Nama Sekolah
+            return { 
+                status: "error", 
+                message: `Login siswa untuk ${schoolName} saat ini sedang ditutup oleh administrator.` 
+            };
+        }
+        // --- AKHIR DARI VALIDASI ---
         
         const spreadsheetId = schoolRow[5]; // Kolom F adalah Spreadsheet ID
         if (!spreadsheetId) {
             return { status: "error", message: "Konfigurasi untuk sekolah ini tidak lengkap." };
         }
 
+        // Jika tidak terkunci, baru lanjutkan proses pencarian siswa
         const studentInfo = findStudentInSheet(spreadsheetId, nisn, tanggalLahir);
 
         if (studentInfo) {
@@ -5210,7 +5235,7 @@ function loginSiswa(kodeSekolah, nisn, tanggalLahir) {
                 statusLulus: statusLulus
             };
         } else {
-            return { status: "error", message: "Login Gagal. Pastikan NISN dan Tanggal Lahir Anda benar. Jika masih mengalami kendala login, silahkan hubungi Operator Sekolah/Madrasah." };
+            return { status: "error", message: "Login Gagal. Pastikan NISN dan Tanggal Lahir Anda benar. Jika masih mengalami kendala login, silahkan hubungi Operator Sekolah/Madrasah Anda." };
         }
 
     } catch (error) {
@@ -5800,8 +5825,6 @@ function bulkGenerateSchoolCodes_Superadmin(adminEmail, rowNumbers) {
   }
 }
 
-// ===== TAMBAHKAN FUNGSI BARU INI DI Kode.gs =====
-
 /**
  * [KHUSUS TRIGGER & DENGAN PROPERTIES SERVICE] Menjalankan pembaruan cache akun pengguna.
  * Menyimpan hasil ke Sheet Cache dan PropertiesService.
@@ -5820,13 +5843,14 @@ function runUserCacheUpdateTrigger() {
     if (cacheSheet.getLastRow() > 1) {
       cacheSheet.getRange(2, 1, cacheSheet.getLastRow() - 1, cacheSheet.getLastColumn()).clearContent();
     }
-
-    const usersData = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 13).getValues();
+    
+    // [UBAH] Ambil data hingga kolom R (kolom ke-18)
+    const usersData = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 18).getValues();
     const cacheData = [];
 
     usersData.forEach((row, index) => {
       const email = row[1];
-      if (!email || row[0] === 'last_updated') return; // <-- Ditambahkan filter untuk keamanan
+      if (!email || row[0] === 'last_updated') return;
 
       let currentStudentCount = '-';
       const role = row[6];
@@ -5841,31 +5865,39 @@ function runUserCacheUpdateTrigger() {
         }
       }
 
-      // Array untuk cache sheet (termasuk role)
+      // [MODIFIKASI] Tambahkan semua kolom status kunci ke dalam data cache
       cacheData.push([
-        email, row[3], row[4], row[12], row[7], row[8],
-        currentStudentCount, index + 2, role 
+        email,          // 0
+        row[3],         // 1: namaSekolah
+        row[4],         // 2: jenjang
+        row[12],        // 3: schoolCode
+        row[7],         // 4: status
+        row[8],         // 5: studentLimit
+        currentStudentCount, // 6
+        index + 2,      // 7: row
+        role,           // 8
+        row[13],        // 9: Lock_Kelulusan (Kolom N)
+        row[14],        // 10: Lock_KopSurat (Kolom O)
+        row[15],        // 11: Lock_Transkrip (Kolom P)
+        row[16],        // 12: Lock_Backup (Kolom Q)
+        row[17]         // 13: Lock_LoginSiswa (Kolom R)
       ]);
     });
 
     if (cacheData.length > 0) {
+      // Pastikan jumlah kolom di setValues sesuai
       cacheSheet.getRange(2, 1, cacheData.length, cacheData[0].length).setValues(cacheData);
     }
     
-    // Tambahkan timestamp di baris paling bawah sheet
     cacheSheet.appendRow(['last_updated', new Date().toISOString()]);
     
-    // ===== PERUBAHAN UTAMA: SIMPAN KE PROPERTIES SERVICE =====
     try {
         const scriptProperties = PropertiesService.getScriptProperties();
-        // 'cacheData' sudah berisi semua data pengguna yang kita butuhkan.
-        // Kita simpan array ini langsung sebagai string JSON.
         scriptProperties.setProperty('userManagementCache', JSON.stringify(cacheData));
         Logger.log('Cache Manajemen Akun berhasil disimpan ke PropertiesService.');
     } catch (e) {
         Logger.log('Gagal menyimpan cache Manajemen Akun ke PropertiesService: ' + e.message);
     }
-    // ===== AKHIR PERUBAHAN =====
 
   } catch(e) {
     Logger.log("Error pada runUserCacheUpdateTrigger: " + e.message);
@@ -6416,10 +6448,10 @@ function deleteDocumentAsset(spreadsheetId, settingKey) {
 }
 
 /**
- * [PUBLIC BARU] Mengambil pengaturan sekolah berdasarkan Kode Sekolah.
- * Fungsi ini digunakan untuk menampilkan countdown per sekolah sebelum login.
+ * [PUBLIC BARU - DIPERBAIKI] Mengambil pengaturan sekolah berdasarkan Kode Sekolah.
+ * Kini juga memeriksa apakah fitur login siswa dikunci oleh admin.
  * @param {string} kodeSekolah - Kode unik sekolah yang dimasukkan siswa.
- * @returns {object} Objek berisi nama sekolah dan tanggal pengumuman.
+ * @returns {object} Objek berisi nama sekolah, tanggal pengumuman, dan status kunci login.
  */
 function getSchoolSettingsByCode(kodeSekolah) {
   try {
@@ -6432,29 +6464,33 @@ function getSchoolSettingsByCode(kodeSekolah) {
       return { status: "error", message: "Sistem tidak dapat menemukan data sekolah." };
     }
     
-    // Cari baris yang cocok dengan Kode Sekolah (kolom M, indeks 12)
-    const data = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 13).getValues();
+    // Ambil data sampai kolom R (18) untuk membaca status kunci login siswa
+    const data = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 18).getValues();
     const schoolRow = data.find(row => row[12] && row[12].toUpperCase() === kodeSekolah.toUpperCase());
 
     if (!schoolRow) {
       return { status: "error", message: "Kode Sekolah tidak valid atau tidak ditemukan." };
     }
     
-    const spreadsheetId = schoolRow[5]; // Kolom F adalah Spreadsheet ID
-    const namaSekolah = schoolRow[3];   // Kolom D adalah Nama Sekolah
+    // --- VALIDASI KUNCI FITUR DITAMBAHKAN DI SINI ---
+    const isLoginLocked = schoolRow[17] === 'YA'; // Kolom R (indeks 17) adalah Lock_LoginSiswa
+    const spreadsheetId = schoolRow[5];
+    const namaSekolah = schoolRow[3];
 
     if (!spreadsheetId) {
       return { status: "error", message: "Konfigurasi untuk sekolah ini tidak lengkap." };
     }
 
-    // Ambil pengaturan spesifik sekolah tersebut
+    // Ambil pengaturan pengumuman spesifik sekolah
     const gradSettingsResponse = getGraduationSettings(spreadsheetId);
     const gradSettings = gradSettingsResponse.settings || { announcementDate: null };
 
+    // Kembalikan semua data yang dibutuhkan frontend, termasuk status kunci
     return {
       status: "success",
       namaSekolah: namaSekolah,
-      announcementDate: gradSettings.announcementDate
+      announcementDate: gradSettings.announcementDate,
+      isLoginLocked: isLoginLocked // <-- [BARU] Kirim status kunci ke frontend
     };
 
   } catch (error) {
@@ -6788,5 +6824,120 @@ function getKelurahanList(provinsi, kabupaten, kecamatan) {
     return kelurahanData.sort((a, b) => a.nama.localeCompare(b.nama));
   } catch (e) {
     return { error: e.message };
+  }
+}
+
+/**
+ * [SUPERADMIN BARU] Mengatur status kunci untuk sebuah fitur pada akun pengguna.
+ * @param {string} adminEmail Email superadmin untuk verifikasi.
+ * @param {number} rowNumber Nomor baris pengguna yang akan diubah.
+ * @param {string} featureName Nama kolom fitur yang akan diubah (Contoh: "Lock_Kelulusan").
+ * @param {boolean} isLocked Status baru (true jika dikunci, false jika dibuka).
+ * @returns {{status: string, message: string}} Hasil proses.
+ */
+function setFeatureLockStatus_Superadmin(adminEmail, rowNumber, featureName, isLocked) {
+  if (!isSuperadmin(adminEmail)) {
+    return { status: "error", message: "Akses ditolak." };
+  }
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
+    
+    // Tentukan kolom berdasarkan nama fitur
+    const featureColumns = {
+      'Lock_Kelulusan': 14,  // Kolom N
+      'Lock_KopSurat': 15,   // Kolom O
+      'Lock_Transkrip': 16,  // Kolom P
+      'Lock_Backup': 17,     // Kolom Q
+      'Lock_LoginSiswa': 18  // [BARU] Kolom R
+    };
+    
+    const columnToUpdate = featureColumns[featureName];
+    if (!columnToUpdate) {
+      throw new Error("Nama fitur tidak valid.");
+    }
+    
+    userSheet.getRange(rowNumber, columnToUpdate).setValue(isLocked ? 'YA' : 'TIDAK');
+    
+    return { status: "success", message: "Pengaturan fitur berhasil diperbarui." };
+    
+  } catch (e) {
+    Logger.log(e);
+    return { status: "error", message: "Gagal memperbarui pengaturan fitur: " + e.message };
+  }
+}
+
+/**
+ * [BARU] Mendapatkan pengaturan login untuk sekolah tertentu.
+ * Digunakan oleh halaman login siswa untuk memeriksa apakah login diizinkan.
+ * @param {string} schoolEmail Email utama sekolah.
+ * @returns {{isLoginLocked: boolean, schoolName: string}} Status kunci dan nama sekolah.
+ */
+function getLoginSettings(schoolEmail) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
+    const users = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 18).getValues();
+    
+    const userRow = users.find(row => row[1].toLowerCase() === schoolEmail.toLowerCase());
+    
+    if (!userRow) {
+      // Jika email sekolah tidak ditemukan, anggap saja terkunci untuk keamanan.
+      return { isLoginLocked: true, schoolName: "Sekolah tidak dikenal" };
+    }
+    
+    const isLocked = userRow[17] === 'YA'; // Kolom R (indeks 17)
+    const schoolName = userRow[3]; // Kolom D (Nama Sekolah)
+
+    return { isLoginLocked: isLocked, schoolName: schoolName };
+
+  } catch (e) {
+    Logger.log(e);
+    // Jika terjadi error, default ke terkunci.
+    return { isLoginLocked: true, schoolName: "Error Server" };
+  }
+}
+
+/**
+ * [AKSI MASSAL SUPERADMIN] Mengunci atau membuka fitur tertentu untuk beberapa akun sekaligus.
+ * @param {string} adminEmail - Email Superadmin untuk verifikasi.
+ * @param {Array<number>} rowNumbers - Array berisi nomor baris akun yang akan diubah.
+ * @param {string} featureName - Nama fitur yang akan diubah (e.g., 'Lock_Transkrip').
+ * @param {boolean} isLocked - Status baru (true untuk mengunci, false untuk membuka).
+ * @returns {object} Hasil operasi.
+ */
+function bulkSetFeatureLock_Superadmin(adminEmail, rowNumbers, featureName, isLocked) {
+  if (!isSuperadmin(adminEmail)) {
+    return { status: "error", message: "Akses ditolak." };
+  }
+  
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
+    
+    const featureColumns = {
+      'Lock_Kelulusan': 14, 'Lock_KopSurat': 15, 'Lock_Transkrip': 16,
+      'Lock_Backup': 17, 'Lock_LoginSiswa': 18
+    };
+    
+    const columnToUpdate = featureColumns[featureName];
+    if (!columnToUpdate) {
+      throw new Error("Nama fitur tidak valid untuk aksi massal.");
+    }
+
+    const valueToSet = isLocked ? 'YA' : 'TIDAK';
+    
+    // Lakukan update untuk setiap baris yang dipilih
+    rowNumbers.forEach(rowNum => {
+      userSheet.getRange(rowNum, columnToUpdate).setValue(valueToSet);
+    });
+
+    SpreadsheetApp.flush(); // Pastikan semua perubahan tersimpan
+    
+    const actionText = isLocked ? "mengunci" : "membuka";
+    return { status: "success", message: `Berhasil ${actionText} fitur untuk ${rowNumbers.length} akun.` };
+  } catch (e) {
+    Logger.log(e);
+    return { status: "error", message: "Gagal melakukan aksi massal: " + e.message };
   }
 }
