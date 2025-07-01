@@ -721,18 +721,30 @@
                                         <input type="text" id="nsm" name="nsm" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                                         <label for="alamat" class="block text-sm font-medium text-gray-700 mt-4">Alamat Jalan</label>
                                         <textarea id="alamat" name="alamat" rows="3" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
-                                        <label for="kelurahan" class="block text-sm font-medium text-gray-700 mt-4">Kelurahan/Desa</label>
-                                        <input type="text" id="kelurahan" name="kelurahan" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                        <label for="kecamatan" class="block text-sm font-medium text-gray-700 mt-4">Kecamatan</label>
-                                        <input type="text" id="kecamatan" name="kecamatan" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                        <label for="provinsi" class="block text-sm font-medium text-gray-700 mt-4">Provinsi</label>
+                                        <select id="provinsi" name="provinsi" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                            <option value="">Memuat Provinsi...</option>
+                                        </select>
+
+                                        <label for="kabupaten" class="block text-sm font-medium text-gray-700 mt-4">Kabupaten/Kota</label>
+                                        <select id="kabupaten" name="kabupaten" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100" disabled>
+                                            <option value="">Pilih Provinsi Dahulu</option>
+                                        </select>
                                     </div>
                                     <div>
-                                        <label for="kabupaten" class="block text-sm font-medium text-gray-700">Kabupaten/Kota</label>
-                                        <input type="text" id="kabupaten" name="kabupaten" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                        <label for="provinsi" class="block text-sm font-medium text-gray-700 mt-4">Provinsi</label>
-                                        <input type="text" id="provinsi" name="provinsi" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                        <label for="kecamatan" class="block text-sm font-medium text-gray-700 mt-4">Kecamatan</label>
+                                        <select id="kecamatan" name="kecamatan" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100" disabled>
+                                            <option value="">Pilih Kabupaten/Kota Dahulu</option>
+                                        </select>
+
+                                        <label for="kelurahan" class="block text-sm font-medium text-gray-700 mt-4">Kelurahan/Desa</label>
+                                        <select id="kelurahan" name="kelurahan" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100" disabled>
+                                            <option value="">Pilih Kecamatan Dahulu</option>
+                                        </select>
+
                                         <label for="kodePos" class="block text-sm font-medium text-gray-700 mt-4">Kode Pos</label>
-                                        <input type="text" id="kodePos" name="kodePos" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                        <input type="text" id="kodePos" name="kodePos" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100" readonly placeholder="Akan terisi otomatis">
+
                                         <label for="telepon" class="block text-sm font-medium text-gray-700 mt-4">Nomor Telepon</label>
                                         <input type="tel" id="telepon" name="telepon" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                                         <label for="email-sekolah" class="block text-sm font-medium text-gray-700 mt-4">Email</label>
@@ -801,7 +813,10 @@
 
                                     <div class="pt-4 border-t">
                                         <label class="block text-sm font-medium text-gray-700">Tampilkan Transkrip Nilai untuk Semua Siswa?</label>
-                                        <p class="text-xs text-gray-500 mt-1 mb-2">Jika "Tidak", Anda dapat mengatur visibilitas untuk masing-masing siswa di halaman Rekapitulasi Nilai Ijazah.</p>
+                                        <p class="text-xs text-gray-500 mt-1 mb-2">
+                                            Jika "Tidak", Anda dapat mengatur visibilitas untuk masing-masing siswa di halaman Transkrip. 
+                                            <a href="#" id="goToTranscriptLink" class="font-medium text-blue-600 hover:underline">Buka Transkrip.</a>
+                                        </p>
                                         <div class="mt-2 flex items-center space-x-6">
                                             <label class="flex items-center"><input type="radio" name="showTranscriptGlobal" value="YA" class="h-4 w-4"> <span class="ml-2">Ya, Tampilkan untuk semua</span></label>
                                             <label class="flex items-center"><input type="radio" name="showTranscriptGlobal" value="TIDAK" class="h-4 w-4"> <span class="ml-2">Tidak, kontrol per siswa</span></label>
@@ -3771,6 +3786,22 @@
             const navContainer = document.getElementById('main-nav');
             const contentPages = document.querySelectorAll('.content-page');
 
+            // ===== AWAL BLOK KODE BARU (TAMBAHKAN DI SINI) =====
+            const transkripPageContainer = document.getElementById('page-transkrip');
+            if (transkripPageContainer) {
+                transkripPageContainer.addEventListener('click', function(event) {
+                    // Cek apakah elemen yang diklik adalah tombol "Tampilkan"
+                    if (event.target.closest('#bulk-show-transcript-btn')) {
+                        handleBulkTranscriptVisibility('YA');
+                    }
+                    // Cek apakah elemen yang diklik adalah tombol "Sembunyikan"
+                    else if (event.target.closest('#bulk-hide-transcript-btn')) {
+                        handleBulkTranscriptVisibility('TIDAK');
+                    }
+                });
+            }
+            // ===== AKHIR BLOK KODE BARU =====
+
             // --- AWAL PERUBAHAN UTAMA (EVENT DELEGATION) ---
             navContainer.addEventListener('click', (e) => {
                 const navLink = e.target.closest('.nav-link');
@@ -3825,26 +3856,35 @@
             }
 
 
-            // ===== GANTI FUNGSI loadSchoolData LAMA DENGAN INI =====
+            // GANTI FUNGSI LAMA DENGAN VERSI BARU YANG LEBIH STABIL INI
             function loadSchoolData() {
                 google.script.run
                     .withSuccessHandler(data => {
                         if (data) {
                             const schoolNameSidebar = document.getElementById('school-name-sidebar');
                             if (data.namaSekolah) schoolNameSidebar.textContent = data.namaSekolah.toUpperCase();
+                            
+                            // Mengisi semua input teks seperti biasa
                             for (const key in data) {
+                                // Jangan isi dropdown wilayah di sini, kita akan tangani secara khusus
+                                if (['provinsi', 'kabupaten', 'kecamatan', 'kelurahan'].includes(key)) continue;
+
                                 const element = document.getElementById(key === 'email' ? 'email-sekolah' : key);
                                 if (element) element.value = data[key] || '';
                             }
+
+                            // Panggil setup dropdown dengan data yang sudah tersimpan
+                            initializeWilayahFeature(data); 
+                        } else {
+                            // Jika tidak ada data sama sekali, panggil setup dengan objek kosong
+                            setupWilayahDropdowns({});
                         }
-                        // [TAMBAHAN KUNCI] Panggil pengecekan indikator SETELAH data sekolah berhasil dimuat
-                        // Ini memastikan sesi pengguna sudah 100% aktif.
                         syncAndShowPengajuanIndicator();
                     })
                     .withFailureHandler(err => {
-                        // Jika gagal memuat data sekolah, kita juga coba muat indikator sebagai fallback
-                        syncAndShowPengajuanIndicator(); 
                         console.error("Gagal memuat data sekolah:", err);
+                        // Tetap panggil setup dropdown agar pengguna bisa memilih dari awal
+                        setupWilayahDropdowns({}); 
                     })
                     .getSchoolData(userSpreadsheetId);
             }
@@ -3874,6 +3914,20 @@
                 btnSpinner.classList.remove('hidden');
 
                 const dataObj = Object.fromEntries(new FormData(this).entries());
+
+                // ===== AWAL PERUBAHAN LOGIKA PENYIMPANAN =====
+                const getSelectedText = (selectId) => {
+                    const select = document.getElementById(selectId);
+                    return select.selectedIndex > 0 ? select.options[select.selectedIndex].text : '';
+                };
+
+                dataObj.provinsi = getSelectedText('provinsi');
+                dataObj.kabupaten = getSelectedText('kabupaten');
+                dataObj.kecamatan = getSelectedText('kecamatan');
+                dataObj.kelurahan = getSelectedText('kelurahan');
+                // Kode Pos sudah benar karena nilainya langsung dari input
+                // ===== AKHIR PERUBAHAN LOGIKA PENYIMPANAN =====
+
                 dataObj.jenjang = document.getElementById('jenjang').value;
                 dataObj.namaSekolah = document.getElementById('namaSekolah').value;
 
@@ -3896,6 +3950,11 @@
 
             // --- DATA SISWA FUNCTIONS ---
             let siswaDropzone;
+
+            // ===== TAMBAHKAN KODE INI DI SINI =====
+            // document.getElementById('bulk-show-transcript-btn')?.addEventListener('click', () => handleBulkTranscriptVisibility('YA'));
+            // document.getElementById('bulk-hide-transcript-btn')?.addEventListener('click', () => handleBulkTranscriptVisibility('TIDAK'));
+            // ===== AKHIR KODE TAMBAHAN =====
 
             const addStudentBtn = document.getElementById('addStudentBtn');
             const siswaModal = document.getElementById('siswa-modal');
@@ -5604,6 +5663,19 @@
             }
             // ===== AKHIR KODE BARU UNTUK KOTAK SARAN =====
             syncRekapIndicator();
+
+            // ===== AWAL KODE BARU UNTUK LINK "BUKA TRANSKRIP" =====
+            const goToTranscriptLink = document.getElementById('goToTranscriptLink');
+            if (goToTranscriptLink) {
+                goToTranscriptLink.addEventListener('click', function(event) {
+                    event.preventDefault(); // Mencegah link melakukan navigasi default
+                    const transcriptNavLink = document.querySelector('.nav-link[data-page="transkrip"]');
+                    if (transcriptNavLink) {
+                        transcriptNavLink.click(); // Mensimulasikan klik pada menu navigasi Transkrip
+                    }
+                });
+            }
+            // ===== AKHIR KODE BARU =====
         }
 
         /**
@@ -9744,10 +9816,6 @@
             // Pasang listener untuk tombol-tombol di menu aksi massal
             document.getElementById('bulk-delete-btn')?.addEventListener('click', handleBulkDelete);
             document.getElementById('bulk-update-tahun-lulus-btn')?.addEventListener('click', handleBulkUpdateTahunLulus);
-
-            // --- TAMBAHKAN LISTENER INI DI AKHIR FUNGSI ---
-            document.getElementById('bulk-show-transcript-btn')?.addEventListener('click', () => handleBulkTranscriptVisibility('YA'));
-            document.getElementById('bulk-hide-transcript-btn')?.addEventListener('click', () => handleBulkTranscriptVisibility('TIDAK'));
         }
 
         // ===== GANTI KEDUA FUNGSI INI DENGAN VERSI FINAL =====
@@ -11268,10 +11336,7 @@
                 .saveGraduationSettings(userSpreadsheetId, settings);
         }
 
-        /**
-         * [BARU] Menangani aksi massal untuk menampilkan/menyembunyikan transkrip.
-         * @param {string} isVisible - Status yang diinginkan ('YA' atau 'TIDAK').
-         */
+        // GANTI FUNGSI LAMA DENGAN VERSI BARU INI
         function handleBulkTranscriptVisibility(isVisible) {
             const selectedRows = document.querySelectorAll('.transcript-checkbox:checked');
             if (selectedRows.length === 0) {
@@ -11288,22 +11353,32 @@
                 confirmText: `Ya, ${actionText}`,
                 confirmColor: isVisible === 'YA' ? "bg-green-600 hover:bg-green-700" : "bg-gray-600 hover:bg-gray-700",
                 onConfirm: () => {
-                    showGlobalStatus(`Memproses permintaan untuk ${nisnList.length} siswa...`, 'info');
+                    // ===== AWAL PERUBAHAN UTAMA =====
+                    // 1. Ambil elemen-elemen overlay
+                    const overlay = document.getElementById('loading-overlay');
+                    const overlayTitle = document.getElementById('overlay-title');
+                    const overlaySubtitle = document.getElementById('overlay-subtitle');
+
+                    // 2. Atur teks dan tampilkan overlay (menggantikan notifikasi abu-abu)
+                    overlayTitle.textContent = `Memproses Permintaan`;
+                    overlaySubtitle.textContent = `Sedang ${actionText} transkrip untuk ${nisnList.length} siswa. Mohon tunggu...`;
+                    overlay.classList.remove('hidden');
+                    // ===== AKHIR PERUBAHAN UTAMA =====
+
                     google.script.run
                         .withSuccessHandler(response => {
-                            showGlobalStatus(response.message, response.status === 'success');
+                            overlay.classList.add('hidden'); // Sembunyikan overlay dulu
+                            showGlobalStatus(response.message, response.status === 'success'); // Baru tampilkan notifikasi final
                             if(response.status === 'success') {
-                                // [BARIS BARU 1] Bersihkan set data siswa yang terpilih secara logis
                                 selectedTranscriptRows.clear();
-                                
-                                // [BARU BARIS 2] Perbarui tampilan menu aksi massal agar langsung hilang
                                 updateTranskripBulkActionBar();
-                                
-                                // Muat ulang tabel untuk melihat perubahan visibilitas
                                 loadTranskripPage(); 
                             }
                         })
-                        .withFailureHandler(err => showGlobalStatus(`Error: ${err.message}`, false))
+                        .withFailureHandler(err => {
+                            overlay.classList.add('hidden'); // Sembunyikan overlay jika gagal
+                            showGlobalStatus(`Error: ${err.message}`, false);
+                        })
                         .setPerStudentTranscriptVisibility(userSpreadsheetId, nisnList, isVisible);
                 }
             });
@@ -11504,10 +11579,6 @@
                     updateTranskripBulkActionBar();
                 };
             });
-
-            // Event listener untuk tombol aksi massal
-            document.getElementById('bulk-show-transcript-btn').onclick = () => handleBulkTranscriptVisibility('YA');
-            document.getElementById('bulk-hide-transcript-btn').onclick = () => handleBulkTranscriptVisibility('TIDAK');
         }
 
         /**
@@ -11722,6 +11793,149 @@
             if (saveScoresGroup) saveScoresGroup.classList.add('hidden');
             if (clearScoresGroup) clearScoresGroup.classList.add('hidden');
         }
+
+        // ===== AWAL BLOK KODE WILAYAH VERSI FINAL (DIPERBAIKI) =====
+
+        let dataWilayahCache = null; // Cache untuk menyimpan data wilayah
+
+        // GANTI KESELURUHAN FUNGSI LAMA DENGAN VERSI BARU YANG LEBIH PINTAR INI
+
+        function initializeWilayahFeature(savedData = {}) {
+            const showLoadingState = (isLoading) => {
+                const dropdowns = ['provinsi', 'kabupaten', 'kecamatan', 'kelurahan'];
+                dropdowns.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.disabled = isLoading;
+                });
+            };
+
+            // ===== AWAL PERUBAHAN UTAMA (LOGIKA CACHE) =====
+            // Jika data wilayah sudah ada di cache, langsung gunakan. Tidak perlu ke server lagi.
+            if (dataWilayahCache) {
+                console.log("Menggunakan data wilayah dari cache. Proses akan cepat.");
+                setupDropdownListeners(); // Pastikan listener selalu terpasang
+                populateProvinsi(savedData); // Langsung isi dropdown dengan data dari cache
+                return; // Hentikan eksekusi lebih lanjut
+            }
+            // ===== AKHIR PERUBAHAN UTAMA =====
+
+            // Kode di bawah ini hanya akan berjalan SATU KALI (saat pertama kali halaman dimuat)
+            console.log("Cache wilayah kosong. Mengambil data dari server...");
+            showLoadingState(true);
+
+            google.script.run
+                .withSuccessHandler(response => {
+                    if (response.status === 'success') {
+                        dataWilayahCache = response.data; // Simpan data ke cache untuk penggunaan selanjutnya
+                        setupDropdownListeners();
+                        populateProvinsi(savedData);
+                    } else {
+                        showGlobalStatus(response.message || "Gagal memuat data wilayah.", false);
+                    }
+                    showLoadingState(false);
+                })
+                .withFailureHandler(err => {
+                    showGlobalStatus("Gagal menghubungi server wilayah: " + err.message, false);
+                    showLoadingState(false);
+                })
+                .getWilayahData();
+        }
+
+        // Mengisi dropdown Provinsi
+        function populateProvinsi(savedData) {
+            const select = document.getElementById('provinsi');
+            const provinsiList = Object.keys(dataWilayahCache.provinsi).sort();
+            
+            select.innerHTML = '<option value="">-- Pilih Provinsi --</option>';
+            provinsiList.forEach(prov => select.add(new Option(prov, prov)));
+
+            if (savedData.provinsi) {
+                select.value = savedData.provinsi;
+                // Panggil fungsi level berikutnya secara langsung
+                populateKabupaten(savedData.provinsi, savedData);
+            }
+        }
+
+        // Mengisi dropdown Kabupaten/Kota
+        function populateKabupaten(provinsi, savedData) {
+            const select = document.getElementById('kabupaten');
+            select.innerHTML = '<option value="">-- Pilih Kabupaten/Kota --</option>';
+            select.disabled = true;
+            if (!provinsi || !dataWilayahCache.provinsi[provinsi]) return;
+
+            const kabupatenList = Object.keys(dataWilayahCache.provinsi[provinsi]).sort();
+            kabupatenList.forEach(kab => select.add(new Option(kab, kab)));
+            
+            select.disabled = false;
+            if (savedData && savedData.kabupaten) {
+                select.value = savedData.kabupaten;
+                // Panggil fungsi level berikutnya secara langsung
+                populateKecamatan(provinsi, savedData.kabupaten, savedData);
+            }
+        }
+
+        // Mengisi dropdown Kecamatan
+        function populateKecamatan(provinsi, kabupaten, savedData) {
+            const select = document.getElementById('kecamatan');
+            select.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
+            select.disabled = true;
+            if (!kabupaten || !dataWilayahCache.provinsi[provinsi]?.[kabupaten]) return;
+
+            const kecamatanList = Object.keys(dataWilayahCache.provinsi[provinsi][kabupaten]).sort();
+            kecamatanList.forEach(kec => select.add(new Option(kec, kec)));
+            
+            select.disabled = false;
+            if (savedData && savedData.kecamatan) {
+                select.value = savedData.kecamatan;
+                // Panggil fungsi level berikutnya secara langsung
+                populateKelurahan(provinsi, kabupaten, savedData.kecamatan, savedData);
+            }
+        }
+
+        // Mengisi dropdown Kelurahan
+        function populateKelurahan(provinsi, kabupaten, kecamatan, savedData) {
+            const select = document.getElementById('kelurahan');
+            const kodePosInput = document.getElementById('kodePos');
+            select.innerHTML = '<option value="">-- Pilih Kelurahan/Desa --</option>';
+            select.disabled = true;
+            kodePosInput.value = '';
+            if (!kecamatan || !dataWilayahCache.provinsi[provinsi]?.[kabupaten]?.[kecamatan]) return;
+            
+            const kelurahanList = dataWilayahCache.provinsi[provinsi][kabupaten][kecamatan].sort();
+            kelurahanList.forEach(kel => select.add(new Option(kel, kel)));
+
+            select.disabled = false;
+            if (savedData && savedData.kelurahan) {
+                select.value = savedData.kelurahan;
+                // Isi Kode Pos
+                const key = `${provinsi}-${kabupaten}-${kecamatan}-${savedData.kelurahan}`;
+                kodePosInput.value = dataWilayahCache.kodepos[key] || '';
+            }
+        }
+
+        // Memasang semua event listener HANYA untuk interaksi pengguna
+        function setupDropdownListeners() {
+            document.getElementById('provinsi').addEventListener('change', function() {
+                populateKabupaten(this.value, {}); // Kirim savedData kosong
+                populateKecamatan(null, null, {});
+                populateKelurahan(null, null, null, {});
+            });
+            
+            document.getElementById('kabupaten').addEventListener('change', function() {
+                populateKecamatan(document.getElementById('provinsi').value, this.value, {});
+                populateKelurahan(null, null, null, {});
+            });
+            
+            document.getElementById('kecamatan').addEventListener('change', function() {
+                populateKelurahan(document.getElementById('provinsi').value, document.getElementById('kabupaten').value, this.value, {});
+            });
+
+            document.getElementById('kelurahan').addEventListener('change', function() {
+                const key = `${document.getElementById('provinsi').value}-${document.getElementById('kabupaten').value}-${document.getElementById('kecamatan').value}-${this.value}`;
+                document.getElementById('kodePos').value = dataWilayahCache.kodepos[key] || '';
+            });
+        }
+        // ===== AKHIR BLOK KODE WILAYAH VERSI FINAL (DIPERBAIKI) =====
     </script>
 </body>
 </html>
