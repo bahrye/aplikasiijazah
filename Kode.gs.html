@@ -2128,7 +2128,7 @@ function getTranscriptData(spreadsheetId, nisn) {
         const allScoreData = {};
         sheetsToRead.forEach(sheetName => { allScoreData[sheetName] = getSheetDataAsObject(spreadsheetId, sheetName); });
         const transcriptSubjects = mapelList.map(mapel => { const kode = mapel.kode; const studentScoresUM = (allScoreData[SHEET_NILAI_UJIAN_MADRASAH] || {})[nisn] || {}; const studentScoresUP = (allScoreData[SHEET_NILAI_UJIAN_PRAKTEK] || {})[nisn] || {}; const nilaiUM = parseFloat(studentScoresUM[kode]); const nilaiUP = parseFloat(studentScoresUP[kode]); let rataUjian = null; if (!isNaN(nilaiUM) && !isNaN(nilaiUP)) rataUjian = (nilaiUM + nilaiUP) / 2; else if (!isNaN(nilaiUM)) rataUjian = nilaiUM; else if (!isNaN(nilaiUP)) rataUjian = nilaiUP; let totalNilaiRapor = 0; let semesterCount = 0; semestersForJenjang.forEach(smKey => { const sheetP = `Rapor_Pengetahuan_${smKey}`; const sheetK = `Rapor_Keterampilan_${smKey}`; const nilaiP = parseFloat(((allScoreData[sheetP] || {})[nisn] || {})[kode]); const nilaiK = parseFloat(((allScoreData[sheetK] || {})[nisn] || {})[kode]); if (!isNaN(nilaiP) && !isNaN(nilaiK)) { totalNilaiRapor += (nilaiP + nilaiK) / 2; semesterCount++; } else if (!isNaN(nilaiP)) { totalNilaiRapor += nilaiP; semesterCount++; } else if (!isNaN(nilaiK)) { totalNilaiRapor += nilaiK; semesterCount++; }}); const rataRapor = semesterCount > 0 ? totalNilaiRapor / semesterCount : null; let nilaiIjazah = null; if (rataUjian !== null || rataRapor !== null) { const finalRataUjian = rataUjian !== null ? rataUjian : 0; const finalRataRapor = rataRapor !== null ? rataRapor : 0; nilaiIjazah = (finalRataUjian * (bobot.bobotUjian / 100)) + (finalRataRapor * (bobot.bobotRapor / 100)); } return { kode: kode, nama: mapel.nama, kelompok: mapel.kelompok, nilaiRapor: rataRapor, nilaiUjian: rataUjian, nilaiIjazah: nilaiIjazah }; });
-        const finalTranscript = { student: student, school: schoolData, subjects: transcriptSubjects };
+        const finalTranscript = { student: student, school: schoolData, subjects: transcriptSubjects, bobot: bobot };
         return { status: 'success', data: finalTranscript };
 
     } catch (e) {
@@ -5516,12 +5516,13 @@ function generateSchoolCodeForUser(spreadsheetId) {
  */
 function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
   try {
-    // 1. Dapatkan semua data yang diperlukan
+    // 1. Dapatkan semua data yang diperlukan, termasuk bobot
     const transcriptDataResponse = getTranscriptData(spreadsheetId, nisn);
     if (transcriptDataResponse.status !== 'success') {
       throw new Error(transcriptDataResponse.message);
     }
-    const { student, school, subjects } = transcriptDataResponse.data;
+    // Destrukturisasi bobot dari data
+    const { student, school, subjects, bobot } = transcriptDataResponse.data;
     
     const docSettingsResponse = getDocumentSettings(spreadsheetId);
     const docSettings = docSettingsResponse.settings || {};
@@ -5651,6 +5652,10 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
             <tbody>${subjects.map((s, index) => `<tr><td class="text-center">${index + 1}</td><td>${s.nama}</td><td class="text-center">${formatScore(s.nilaiRapor)}</td><td class="text-center">${formatScore(s.nilaiUjian)}</td><td class="text-center font-bold">${formatScore(s.nilaiIjazah)}</td></tr>`).join('')}</tbody>
             <tfoot class="font-bold"><tr><td class="text-center" colspan="4">Rata-rata Nilai Akhir Ijazah</td><td class="text-center bg-gray">${rataRataIjazah}</td></tr></tfoot>
           </table>
+
+          <div style="font-style: italic; font-size: 8pt; margin-top: 15px;">
+              Ket: Nilai Ijazah = ${bobot.bobotUjian}% Nilai Ujian Madrasah + ${bobot.bobotRapor}% Nilai Rapor 5 Semester
+          </div>
 
           <div class="footer-container">
               <div class="qr-block">
