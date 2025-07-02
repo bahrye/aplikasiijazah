@@ -299,6 +299,72 @@
         }
         /* === AKHIR KODE CSS BARU === */
 
+        /* Tambahkan ini di dalam tag <style> */
+        .locked-feature {
+            opacity: 0.6;
+            cursor: not-allowed;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .locked-feature::after {
+            content: ' terkunci ';
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            background-color: #fefce8; /* bg-yellow-50 */
+            color: #b45309; /* text-amber-700 */
+            padding: 2px 6px;
+            border-radius: 9999px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .locked-feature:hover {
+            background-color: #1e3a8a !important; /* Warna biru tua sidebar, cegah hover effect */
+            color: #93c5fd !important; /* text-blue-300 */
+        }
+
+        /* Tambahkan ini di dalam tag <style> */
+        .feature-locked-section {
+            position: relative;
+            border-radius: 0.5rem; /* Menyesuaikan dengan style kartu */
+            cursor: pointer;
+        }
+
+        .feature-locked-section::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-color: rgba(249, 250, 251, 0.8); /* bg-gray-50 dengan transparansi */
+            backdrop-filter: blur(2px);
+            z-index: 10;
+            border-radius: 0.5rem;
+            transition: background-color 0.3s;
+        }
+
+        .feature-locked-section:hover::before {
+            background-color: rgba(229, 231, 235, 0.9); /* bg-gray-200 saat di-hover */
+        }
+
+        .feature-locked-section::after {
+            content: '🔒 Fitur Terkunci - Klik untuk Info';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 11;
+            background-color: #fefce8; /* bg-yellow-50 */
+            color: #b45309; /* text-amber-700 */
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-size: 1rem;
+            font-weight: 700;
+            border: 1px solid #fde68a; /* border-yellow-200 */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            white-space: nowrap;
+        }
         /* ================================================= */
         /* PERBAIKAN UNTUK TOMBOL MODAL YG TIDAK BISA DIKLIK */
         /* ================================================= */
@@ -473,6 +539,16 @@
                     <a href="#" id="nav-daftar-pengajuan" class="nav-link flex justify-between items-center space-x-3 p-2 rounded-md hidden" data-page="daftar-pengajuan"><span class="flex items-center space-x-3"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg><span>Daftar Pengajuan</span></span><span id="pengajuan-badge" class="hidden bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full"></span></a>
                     <a href="#" id="admin-tools-link" class="nav-link flex items-center space-x-3 p-2 rounded-md hidden" data-page="admin-tools"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg><span>Alat Admin</span></a>
                     <a href="#" id="nav-kelola-update" class="nav-link flex items-center space-x-3 p-2 rounded-md hidden" data-page="kelola-update"><svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg><span>Kelola Update</span></a>
+
+                    <a href="#" id="nav-manajemen-donasi" class="nav-link flex justify-between items-center space-x-3 p-2 rounded-md hidden" data-page="manajemen-donasi">
+                        <span class="flex items-center space-x-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.75A.75.75 0 013 4.5h.75m0 0h.75A.75.75 0 015.25 6v.75m0 0v.75A.75.75 0 014.5 8.25h-.75m0 0h-.75A.75.75 0 012.25 7.5v-.75m0 0v-.75A.75.75 0 012.25 6h.75m0 0h.75a.75.75 0 01.75.75v.75m6 12h.008v.008H9v-.008zm.75-9.75h.008v.008H9.75v-.008zm.383.383a.75.75 0 011.06 0l2.25 2.25a.75.75 0 010 1.06l-2.25 2.25a.75.75 0 01-1.06-1.06l1.72-1.72-1.72-1.72a.75.75 0 010-1.06z" />
+                            </svg>
+                            <span>Manajemen Donasi</span>
+                        </span>
+                        <span id="donasi-badge" class="hidden bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full"></span>
+                    </a>
 
                     <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="data-sekolah"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg><span>Data Sekolah</span></a>
                     <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="data-siswa"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg><span>Data Siswa</span></a>
@@ -799,7 +875,7 @@
                             </form>
                         </div>
 
-                        <div class="mt-10 pt-8 border-t">
+                        <div id="pengumuman-kelulusan-container" class="mt-10 pt-8 border-t">
                             <h2 class="text-2xl font-bold text-gray-700">Pengaturan Pengumuman Kelulusan</h2>
                             <p class="text-sm text-gray-500 mt-1 mb-4">Atur kapan siswa bisa melihat status kelulusan dan kontrol akses ke transkrip nilai.</p>
 
@@ -834,7 +910,7 @@
                         </div>
 
                         <!-- === GANTI SELURUH BLOK INI === -->
-                        <div class="mt-10 pt-8 border-t">
+                        <div id="kop-surat-container" class="mt-10 pt-8 border-t">
                             <h2 class="text-2xl font-bold text-gray-700">Pengaturan Kop Surat & Tanda Tangan</h2>
                             <p class="text-sm text-gray-500 mt-1 mb-4">Unggah gambar logo, tanda tangan, dan stempel untuk ditampilkan pada dokumen ekspor (seperti Transkrip). Gunakan format PNG dengan latar transparan untuk hasil terbaik.</p>
 
@@ -906,6 +982,10 @@
                                     <div id="bulk-action-separator" class="h-6 border-l border-gray-500 hidden"></div>
                                     <button id="bulk-activate-btn" class="bg-green-600 hover:bg-green-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Aktifkan</button>
                                     <button id="bulk-deactivate-btn" class="bg-red-600 hover:bg-red-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Nonaktifkan</button>
+
+                                    <div class="h-6 border-l border-gray-500"></div>
+                                    <button id="bulk-lock-btn" class="bg-orange-600 hover:bg-orange-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Kunci Fitur</button>
+                                    <button id="bulk-unlock-btn" class="bg-teal-600 hover:bg-teal-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Buka Fitur</button>
                                 </div>
                             </div>
                         </div>
@@ -1782,6 +1862,112 @@
                             <div id="saranAdminContainer" class="bg-white p-4 rounded-lg shadow-md mt-4">
                                 </div>
                     </div>
+
+                    <div id="page-donasi" class="content-page hidden bg-white p-6 sm:p-8 rounded-lg shadow-md max-w-3xl mx-auto">
+                        
+                        <div id="donasi-form-container">
+                            <div class="text-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                                <h1 class="mt-4 text-3xl font-bold text-gray-800">Fitur Terkunci</h1>
+                                <p class="mt-2 text-gray-600">Untuk mendukung pengembangan dan pemeliharaan aplikasi ini, beberapa fitur premium memerlukan donasi.</p>
+
+                                <div class="my-8">
+                                    <h3 class="text-lg font-semibold text-center text-gray-700">Fitur Premium yang Akan Terbuka</h3>
+                                    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                                        <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row items-start gap-4">
+                                            <img src="https://i.imgur.com/5flmo3h.gif" alt="Fitur Transkrip" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
+                                            <div>
+                                                <h4 class="font-bold text-gray-800">Pengumuman & Manajemen Transkrip</h4>
+                                                <p class="mt-1 text-sm text-gray-600">Atur jadwal kelulusan, tampilkan hitung mundur di portal siswa, dan kelola visibilitas transkrip nilai akhir untuk setiap siswa secara individual.</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row items-start gap-4">
+                                            <img src="https://i.imgur.com/tkIQ4hR.gif" alt="Fitur Kop Surat" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
+                                            <div>
+                                                <h4 class="font-bold text-gray-800">Kustomisasi Kop Surat & TTD</h4>
+                                                <p class="mt-1 text-sm text-gray-600">Personalisasi semua dokumen ekspor (seperti transkrip) dengan mengunggah logo sekolah, stempel, dan tanda tangan digital kepala sekolah Anda.</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row items-start gap-4">
+                                            <img src="https://i.imgur.com/EktJKcX.gif" alt="Fitur Backup" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
+                                            <div>
+                                                <h4 class="font-bold text-gray-800">Backup & Restore Data</h4>
+                                                <p class="mt-1 text-sm text-gray-600">Amankan seluruh data Anda dengan mudah. Buat file cadangan dan pulihkan data kapan saja untuk menghindari kehilangan data penting.</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row items-start gap-4">
+                                            <img src="https://i.imgur.com/HHfdG35.gif" alt="Fitur Portal Siswa" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
+                                            <div>
+                                                <h4 class="font-bold text-gray-800">Akses Penuh Portal Siswa</h4>
+                                                <p class="mt-1 text-sm text-gray-600">Berikan akses kepada siswa untuk login, melihat status kelulusan, dan mengunduh transkrip nilai resmi mereka melalui portal khusus. Limit siswa pun ditambah menjadi 500 siswa.</p>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-8 pt-8 border-t">
+                                <h2 class="text-xl font-semibold text-gray-700">Buka Fitur dengan Donasi</h2>
+                                <p class="mt-2 text-sm text-gray-600">Silakan lakukan donasi seikhlasnya untuk membuka semua fitur yang terkunci. Donasi Anda sangat berarti bagi kami untuk terus mengembangkan aplikasi ini menjadi lebih baik.</p>
+                                <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                                    <p class="font-medium text-blue-800">Silakan transfer ke E-Wallet DANA:</p>
+                                    <p class="text-2xl font-bold text-blue-900 font-mono tracking-wider my-2">081543276033</p>
+                                    <p class="text-sm text-blue-700">(a.n. Syamsul Bahri)</p>
+                                </div>
+                                <h3 class="mt-8 text-lg font-semibold text-gray-700">Konfirmasi Donasi Anda</h3>
+                                <p class="text-sm text-gray-600 mb-4">Setelah melakukan transfer, mohon isi form di bawah ini.</p>
+                                <form id="donasiForm" class="space-y-4">
+                                    <div>
+                                        <label for="donasiEmail" class="block text-sm font-medium text-gray-700">Email yang digunakan (Akun ini)</label>
+                                        <input type="email" id="donasiEmail" class="mt-1 w-full p-2 border rounded-md bg-gray-100" readonly>
+                                    </div>
+                                    <div>
+                                        <label for="donasiNamaSekolah" class="block text-sm font-medium text-gray-700">Nama Sekolah</label>
+                                        <input type="text" id="donasiNamaSekolah" class="mt-1 w-full p-2 border rounded-md bg-gray-100" readonly>
+                                    </div>
+                                    <div>
+                                        <label for="donasiBukti" class="block text-sm font-medium text-gray-700">Upload Bukti Transfer (Gambar/PDF)</label>
+                                        <input type="file" id="donasiBukti" class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required>
+                                    </div>
+                                    <div class="pt-4">
+                                        <button type="submit" id="submitDonasiBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center">
+                                            <span id="donasiSubmitText">Kirim Konfirmasi Donasi</span>
+                                            <span id="donasiSpinner" class="hidden loading-animation">Mengirim</span>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div id="donasi-thanks-container" class="hidden">
+                            <div class="text-center">
+                                <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-green-100">
+                                    <svg class="h-12 w-12 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <h1 class="mt-6 text-3xl font-bold text-green-700">Terima Kasih!</h1>
+                                <p class="mt-3 text-gray-600 max-w-lg mx-auto">
+                                    Data donasi dan bukti transfer Anda berhasil dikirim. Admin akan segera melakukan verifikasi. Anda akan mendapatkan notifikasi jika fitur telah diaktifkan.
+                                </p>
+                            </div>
+                            <div id="donasi-action-container" class="mt-8 pt-6 border-t flex flex-col sm:flex-row items-center justify-center gap-4">
+                                </div>
+                        </div>
+                    </div>
+
+                    <div id="page-manajemen-donasi" class="content-page hidden">
+                        <h1 class="text-3xl font-bold text-gray-800">Manajemen Donasi</h1>
+                        <p class="mt-2 text-gray-600 mb-8">Tinjau konfirmasi donasi yang masuk dan verifikasi untuk membuka fitur pengguna.</p>
+                        <div id="donasiContainer_Superadmin" class="bg-white p-4 rounded-lg shadow-md mt-4">
+                            </div>
+                    </div>
                 </div>
                 <footer class="text-center py-4 mt-8 border-t">
                     <a href="https://wa.me/qr/FMVS3NLDIRUAA1" target="_blank" rel="noopener noreferrer" class="text-sm text-gray-500 hover:text-blue-600 transition-colors">
@@ -2630,6 +2816,11 @@
         </div>
     </div>
 
+    <div id="image-viewer-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[100] p-4 cursor-pointer">
+        <button id="close-image-viewer" class="absolute top-4 right-5 text-white text-5xl font-bold hover:text-gray-300">&times;</button>
+        <img id="fullscreen-image" src="" alt="Tampilan Fitur Penuh" class="max-w-full max-h-full object-contain rounded-lg">
+    </div>
+
     <div id="data-viewer-tooltip" class="hidden absolute z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm"></div>
     <div id="globalStatusMessage"></div>
 
@@ -3242,6 +3433,54 @@
             document.querySelectorAll('.delete-asset-btn').forEach(btn => {
                 btn.addEventListener('click', handleDeleteAsset);
             });
+
+            // gambar bisa diklik
+            const imageModal = document.getElementById('image-viewer-modal');
+            const fullscreenImage = document.getElementById('fullscreen-image');
+            const closeModalBtn = document.getElementById('close-image-viewer');
+            const donasiPage = document.getElementById('page-donasi');
+
+            // Fungsi untuk membuka modal
+            const openImageModal = (src) => {
+                fullscreenImage.src = src;
+                imageModal.classList.remove('hidden');
+            };
+
+            // Fungsi untuk menutup modal
+            const closeImageModal = () => {
+                imageModal.classList.add('hidden');
+                fullscreenImage.src = ''; // Kosongkan src untuk menghentikan GIF
+            };
+
+            // Pasang event listener pada kontainer donasi
+            if (donasiPage) {
+                donasiPage.addEventListener('click', function(event) {
+                    // Cek apakah yang diklik adalah gambar fitur
+                    if (event.target.classList.contains('feature-image-clickable')) {
+                        openImageModal(event.target.src);
+                    }
+                });
+            }
+
+            // Pasang event listener untuk tombol tutup dan latar belakang modal
+            if (closeModalBtn) {
+                closeModalBtn.addEventListener('click', closeImageModal);
+            }
+            if (imageModal) {
+                imageModal.addEventListener('click', function(event) {
+                    // Tutup modal hanya jika yang diklik adalah latar belakangnya, bukan gambarnya
+                    if (event.target.id === 'image-viewer-modal') {
+                        closeImageModal();
+                    }
+                });
+            }
+
+            // Tambahan: Tutup modal dengan tombol 'Escape'
+            document.addEventListener('keydown', function(event) {
+                if (event.key === "Escape" && !imageModal.classList.contains('hidden')) {
+                    closeImageModal();
+                }
+            });
         });
 
         function setupPasswordToggles() {
@@ -3318,6 +3557,8 @@
                         sessionStorage.setItem('userEmail', response.email);
                         sessionStorage.setItem('userRole', response.role);
                         sessionStorage.setItem('webAppUrl', response.webAppUrl);
+
+                        sessionStorage.setItem('isLocked', response.isLocked ? 'true' : 'false');
 
                         document.getElementById('auth-wrapper').classList.add('hidden');
                         document.getElementById('app-container').classList.remove('hidden');
@@ -3739,6 +3980,23 @@
 
         // ===== GANTI FUNGSI LAMA DENGAN VERSI BARU INI =====
         function initializeApp(lastPage = 'dashboard') {
+            const isLocked = sessionStorage.getItem('isLocked') === 'true';
+            const lockedFeaturePages = ['transkrip', 'backup-restore'];
+
+            // Kunci navigasi
+            document.querySelectorAll('.nav-link').forEach(link => {
+                const page = link.dataset.page;
+                if (lockedFeaturePages.includes(page)) {
+                    if (isLocked) {
+                        link.classList.add('locked-feature');
+                        link.dataset.isLocked = 'true';
+                    } else {
+                        link.classList.remove('locked-feature');
+                        link.dataset.isLocked = 'false';
+                    }
+                }
+            });
+
             const oldNav = document.getElementById('main-nav');
             const newNav = oldNav.cloneNode(true);
             oldNav.parentNode.replaceChild(newNav, oldNav);
@@ -3813,6 +4071,15 @@
 
                 e.preventDefault(); // Mencegah aksi default link
                 const targetPageId = navLink.dataset.page;
+
+                // --- AWAL MODIFIKASI ---
+                if (navLink.dataset.isLocked === 'true') {
+                    handleLockedFeatureClick(); // Ganti dari showDonasiPage()
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                    navLink.classList.add('active');
+                    return;
+                }
+                // --- AKHIR MODIFIKASI ---
 
                 if (!targetPageId || !allowedUserPages.includes(targetPageId)) return;
 
@@ -6800,28 +7067,33 @@
                 const statusBtnText = user.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan';
                 const statusBtnClass = user.status === 'Aktif' ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900';
                 
-                // ===== AWAL LOGIKA BARU UNTUK KODE SEKOLAH (VERSI FINAL) =====
+                // --- AWAL MODIFIKASI UNTUK IKON GEMBOK ---
                 let schoolCodeCellHtml = '';
-                // Cek jika user adalah Superadmin
                 if (user.role === 'Superadmin') {
-                    schoolCodeCellHtml = '<span class="text-gray-400">—</span>'; // Tampilkan tanda strip untuk Superadmin
-                } 
-                // Jika bukan Superadmin, cek apakah sudah punya kode
-                else if (user.schoolCode && user.schoolCode.trim() !== '') {
+                    schoolCodeCellHtml = '<span class="text-gray-400">—</span>';
+                } else if (user.schoolCode && user.schoolCode.trim() !== '') {
                     schoolCodeCellHtml = `<div class="font-mono font-bold text-blue-700">${user.schoolCode}</div>`;
-                } 
-                // Jika bukan Superadmin dan belum punya kode, tampilkan tombol Generate
-                else {
+                } else {
                     schoolCodeCellHtml = `<button class="text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded-md" onclick="handleGenerateSingleCode(${user.row}, this)">Generate</button>`;
                 }
-                // ===== AKHIR LOGIKA BARU KODE SEKOLAH (VERSI FINAL) =====
+                
+                // Tambahkan ikon gembok jika fiturTerkunci adalah 'YA'
+                let lockIcon = '';
+                if (user.fiturTerkunci === 'YA') {
+                    lockIcon = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 text-orange-500 align-text-bottom ml-2" title="Fitur premium terkunci" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                        </svg>
+                    `;
+                }
+                // --- AKHIR MODIFIKASI ---
 
                 tableHtml += `<tr>
                     <td class="px-4 py-4 whitespace-nowrap">
                         ${!isSelf ? `<input type="checkbox" class="user-checkbox h-4 w-4 rounded border-gray-300" data-row="${user.row}">` : ''}
                     </td>
                     <td class="px-4 py-4 whitespace-nowrap">
-                        <div class="text-sm font-medium text-gray-900">${user.namaSekolah}</div>
+                        <div class="text-sm font-medium text-gray-900">${user.namaSekolah}${lockIcon}</div>
                         <div class="text-sm text-gray-500">${user.email}</div>
                     </td>
                     <td class="px-4 py-4 whitespace-nowrap text-sm text-center">
@@ -6913,7 +7185,7 @@
 
             const allowedAdminPages = [
                 'superadmin-dashboard', 'manajemen-akun', 'daftar-pengajuan', 
-                'admin-tools', 'kelola-update', 'ubah-password', 'broadcast', 'manajemen-saran'
+                'admin-tools', 'kelola-update', 'ubah-password', 'broadcast', 'manajemen-saran', 'manajemen-donasi'
             ];
 
             const pageToLinkMap = { 'dashboard': 'superadmin-dashboard' };
@@ -6956,6 +7228,10 @@
                 if (targetPageId === 'kelola-update') loadVersionManagementPage();
                 if (targetPageId === 'broadcast') loadBroadcastPage(); // <-- Tambahkan pemicu fungsi
                 if (targetPageId === 'manajemen-saran') loadSaranAdminPage(); 
+                if (targetPageId === 'manajemen-donasi') {
+                    loadDonasiManagementPage();
+                    updateDonasiBadge();
+                }
             });
 
             const totalAkunCard = document.getElementById('sa-card-total-akun');
@@ -6977,6 +7253,7 @@
             updatePengajuanBadge();
             updateSaranBadge_Superadmin();
             setupGlobalGraduationSettings();
+            updateDonasiBadge();
 
             const dashboardLink = document.querySelector('.nav-link[data-page="dashboard"]');
             if (dashboardLink) dashboardLink.click();
@@ -9944,7 +10221,32 @@
          * Memuat semua data untuk halaman Pengaturan dan memastikan form selalu aktif setelahnya.
          */
         function loadPengaturanPage() {
-            // --- Bagian 1: Memuat Pengaturan KKM (Tidak ada perubahan) ---
+            const isLocked = sessionStorage.getItem('isLocked') === 'true';
+
+            // Targetkan kontainer yang akan dikunci
+            const pengumumanContainer = document.getElementById('pengumuman-kelulusan-container');
+            const kopSuratContainer = document.getElementById('kop-surat-container');
+            
+            // Fungsi untuk mengarahkan ke halaman donasi
+            /*const showDonasiPage = () => {
+                document.querySelectorAll('.content-page').forEach(p => p.classList.add('hidden'));
+                document.getElementById('page-donasi').classList.remove('hidden');
+                document.getElementById('donasiEmail').value = sessionStorage.getItem('userEmail') || '';
+                document.getElementById('donasiNamaSekolah').value = document.getElementById('school-name-sidebar').textContent || '';
+            };*/
+
+            // Terapkan atau hapus kunci berdasarkan status
+            [pengumumanContainer, kopSuratContainer].forEach(container => {
+                if (isLocked) {
+                    container.classList.add('feature-locked-section');
+                    container.onclick = handleLockedFeatureClick;
+                } else {
+                    container.classList.remove('feature-locked-section');
+                    container.onclick = null;
+                }
+            });
+
+            // Jalankan fungsi-fungsi pemuatan data yang sudah ada seperti biasa
             const kkmInput = document.getElementById('kkmSekolah');
             if (kkmInput) {
                 kkmInput.disabled = true;
@@ -9955,72 +10257,54 @@
                         }
                         kkmInput.disabled = false;
                     })
-                    .withFailureHandler(err => {
-                        kkmInput.disabled = false;
-                    })
                     .getKkm(userSpreadsheetId);
             }
 
-            // --- Bagian 2: Memuat Pengaturan Kelulusan (Dengan Perbaikan Timezone) ---
-            const announcementDateInput = document.getElementById('announcementDate');
-            const gradForm = document.getElementById('graduationSettingsForm');
-            const radioButtons = document.querySelectorAll('input[name="showTranscriptGlobal"]');
+            // Hanya muat data untuk bagian yang tidak terkunci atau jika fitur terbuka
+            if (!isLocked) {
+                const announcementDateInput = document.getElementById('announcementDate');
+                const gradForm = document.getElementById('graduationSettingsForm');
+                const radioButtons = document.querySelectorAll('input[name="showTranscriptGlobal"]');
 
-            if (announcementDateInput && gradForm) {
-                const enableGraduationForm = () => {
-                    announcementDateInput.disabled = false;
-                    radioButtons.forEach(radio => radio.disabled = false);
-                };
+                if (announcementDateInput && gradForm) {
+                    const enableGraduationForm = () => {
+                        announcementDateInput.disabled = false;
+                        radioButtons.forEach(radio => radio.disabled = false);
+                    };
 
-                announcementDateInput.disabled = true;
-                radioButtons.forEach(radio => radio.disabled = true);
+                    announcementDateInput.disabled = true;
+                    radioButtons.forEach(radio => radio.disabled = true);
 
-                google.script.run
-                    .withSuccessHandler(response => {
-                        if (response && response.status === 'success' && response.settings) {
-                            const settings = response.settings;
-
-                            // ==========================================================
-                            // ==== AWAL DARI BLOK KODE YANG DIPERBAIKI (TIMEZONE FIX) ====
-                            // ==========================================================
-                            if (settings.announcementDate) {
-                                const date = new Date(settings.announcementDate);
-
-                                // Ambil komponen tanggal & waktu berdasarkan zona waktu LOKAL browser
-                                const year = date.getFullYear();
-                                const month = String(date.getMonth() + 1).padStart(2, '0'); // +1 karena bulan 0-indexed
-                                const day = String(date.getDate()).padStart(2, '0');
-                                const hours = String(date.getHours()).padStart(2, '0');
-                                const minutes = String(date.getMinutes()).padStart(2, '0');
-                                
-                                // Buat string format YYYY-MM-DDTHH:mm yang dibutuhkan oleh input
-                                announcementDateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
-                            } else {
-                                announcementDateInput.value = '';
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            if (response && response.status === 'success' && response.settings) {
+                                const settings = response.settings;
+                                if (settings.announcementDate) {
+                                    const date = new Date(settings.announcementDate);
+                                    const year = date.getFullYear();
+                                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                                    const day = String(date.getDate()).padStart(2, '0');
+                                    const hours = String(date.getHours()).padStart(2, '0');
+                                    const minutes = String(date.getMinutes()).padStart(2, '0');
+                                    announcementDateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+                                } else {
+                                    announcementDateInput.value = '';
+                                }
+                                const valueToShow = settings.showTranscriptGlobal || 'TIDAK';
+                                const radioBtn = document.querySelector(`input[name="showTranscriptGlobal"][value="${valueToShow}"]`);
+                                if (radioBtn) radioBtn.checked = true;
                             }
-                            // ========================================================
-                            // ==== AKHIR DARI BLOK KODE YANG DIPERBAIKI (TIMEZONE FIX) ====
-                            // ========================================================
-
-                            const valueToShow = settings.showTranscriptGlobal || 'TIDAK';
-                            const radioBtn = document.querySelector(`input[name="showTranscriptGlobal"][value="${valueToShow}"]`);
-                            if (radioBtn) {
-                                radioBtn.checked = true;
-                            }
-                        }
-                        enableGraduationForm();
-                    })
-                    .withFailureHandler(err => {
-                        showGlobalStatus("Error memuat pengaturan: " + err.message, false);
-                        enableGraduationForm();
-                    })
-                    .getGraduationSettings(userSpreadsheetId);
-                
-                const gradFormHandler = document.getElementById('graduationSettingsForm');
-                if (gradFormHandler) {
-                    gradFormHandler.removeEventListener('submit', handleSaveGraduationSettings);
-                    gradFormHandler.addEventListener('submit', handleSaveGraduationSettings);
+                            enableGraduationForm();
+                        })
+                        .getGraduationSettings(userSpreadsheetId);
+                    
+                    const gradFormHandler = document.getElementById('graduationSettingsForm');
+                    if (gradFormHandler) {
+                        gradFormHandler.removeEventListener('submit', handleSaveGraduationSettings);
+                        gradFormHandler.addEventListener('submit', handleSaveGraduationSettings);
+                    }
                 }
+                loadDocumentSettings();
             }
         }
 
@@ -10843,6 +11127,9 @@
             document.getElementById('bulk-activate-btn').onclick = () => handleBulkSetStatus('Aktif');
             document.getElementById('bulk-deactivate-btn').onclick = () => handleBulkSetStatus('Nonaktif');
             document.getElementById('bulk-generate-code-btn').onclick = handleBulkGenerateCode; // Listener baru
+            // --- TAMBAHKAN DUA BARIS INI ---
+            document.getElementById('bulk-lock-btn').onclick = () => handleBulkSetLock(true);
+            document.getElementById('bulk-unlock-btn').onclick = () => handleBulkSetLock(false);
         }
 
         function handleBulkUpdateLimit() {
@@ -11936,6 +12223,313 @@
             });
         }
         // ===== AKHIR BLOK KODE WILAYAH VERSI FINAL (DIPERBAIKI) =====
+
+        // Letakkan ini bersama fungsi JavaScript lainnya
+
+        // --- FUNGSI UNTUK DONASI ---
+
+        function setupDonasiForm() {
+            const form = document.getElementById('donasiForm');
+            if (form) {
+                form.addEventListener('submit', handleDonasiSubmit);
+            }
+        }
+
+        function handleDonasiSubmit(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('donasiBukti');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showGlobalStatus("Harap pilih file bukti transfer.", false);
+                return;
+            }
+
+            const btn = document.getElementById('submitDonasiBtn');
+            const btnText = document.getElementById('donasiSubmitText');
+            const spinner = document.getElementById('donasiSpinner');
+            btn.disabled = true;
+            btnText.classList.add('hidden');
+            spinner.classList.remove('hidden');
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const fileData = {
+                    fileName: file.name,
+                    mimeType: file.type,
+                    content: event.target.result
+                };
+                const donationData = {
+                    email: document.getElementById('donasiEmail').value,
+                    namaSekolah: document.getElementById('donasiNamaSekolah').value
+                };
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        showGlobalStatus(response.message, response.status === 'success');
+                        
+                        // Nonaktifkan tombol dan spinner di sini setelah ada respons
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+
+                        if(response.status === 'success') {
+                          // --- PERUBAHAN UTAMA ADA DI SINI ---
+                          // Alih-alih menampilkan pesan statis, kita panggil kembali
+                          // fungsi utama untuk langsung menampilkan status terbaru.
+                          handleLockedFeatureClick();
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        showGlobalStatus(err.message, false);
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+                    })
+                    .simpanDonasi(donationData, fileData);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Panggil setup form saat aplikasi diinisialisasi
+        document.addEventListener('DOMContentLoaded', setupDonasiForm);
+
+        // --- FUNGSI UNTUK SUPERADMIN ---
+
+        function loadDonasiManagementPage() {
+            const container = document.getElementById('donasiContainer_Superadmin');
+            container.innerHTML = `<p class="text-center p-8 loading-animation">Memuat data donasi</p>`;
+            google.script.run
+                .withSuccessHandler(renderDonasiTable)
+                .withFailureHandler(err => {
+                    container.innerHTML = `<p class="text-red-500 text-center">${err.message}</p>`;
+                })
+                .getDonasiList_Superadmin(sessionStorage.getItem('userEmail'));
+        }
+
+        function renderDonasiTable(donasiList) {
+            const container = document.getElementById('donasiContainer_Superadmin');
+            if (!donasiList || donasiList.length === 0) {
+                container.innerHTML = `<p class="text-center text-gray-500 p-8">Belum ada data donasi yang masuk.</p>`;
+                return;
+            }
+
+            let tableHtml = `<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Detail</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bukti Transfer</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">`;
+
+            donasiList.forEach(d => {
+                const statusClass = d.status === 'Terverifikasi' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+                const actionButton = d.status !== 'Terverifikasi' 
+                    ? `<button class="text-sm font-medium text-green-600 hover:text-green-900" onclick="handleVerifyDonasi('${d.id}', '${d.email}')">Verifikasi & Buka Fitur</button>`
+                    : `<span class="text-sm text-gray-500">Selesai</span>`;
+
+                tableHtml += `
+                    <tr>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm">
+                            <div class="font-bold text-gray-900">${d.namaSekolah}</div>
+                            <div class="text-gray-600">${d.email}</div>
+                            <div class="text-xs text-gray-400">${new Date(d.tanggal).toLocaleString('id-ID')}</div>
+                        </td>
+                        <td class="px-4 py-4"><a href="${d.fileUrl}" target="_blank" class="text-blue-600 hover:underline">Lihat Bukti</a></td>
+                        <td class="px-4 py-4 text-center"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">${d.status}</span></td>
+                        <td class="px-4 py-4 text-right">${actionButton}</td>
+                    </tr>
+                `;
+            });
+
+            tableHtml += `</tbody></table></div>`;
+            container.innerHTML = tableHtml;
+        }
+
+        function handleVerifyDonasi(donasiId, userEmail) {
+            if (!confirm(`Anda yakin ingin memverifikasi donasi untuk ${userEmail} dan membuka semua fiturnya?`)) return;
+
+            showGlobalStatus("Memverifikasi donasi...", "info");
+            google.script.run
+                .withSuccessHandler(response => {
+                    showGlobalStatus(response.message, response.status === 'success');
+                    if (response.status === 'success') {
+                        loadDonasiManagementPage();
+                        updateDonasiBadge();
+                    }
+                })
+                .withFailureHandler(err => showGlobalStatus(err.message, false))
+                .verifyDonasi_Superadmin(sessionStorage.getItem('userEmail'), donasiId, userEmail);
+        }
+
+        function handleSetLockFitur(userEmail, isLocked) {
+            const action = isLocked ? "mengunci" : "membuka";
+            if (!confirm(`Anda yakin ingin ${action} semua fitur premium untuk akun ${userEmail}?`)) return;
+
+            showGlobalStatus(`Memproses permintaan untuk ${userEmail}...`, 'info');
+            google.script.run
+                .withSuccessHandler(response => {
+                    showGlobalStatus(response.message, response.status === 'success');
+                    loadUserManagementPage(); // Reload tabel untuk lihat perubahan
+                })
+                .withFailureHandler(err => showGlobalStatus(err.message, false))
+                .setFiturLock_Superadmin(sessionStorage.getItem('userEmail'), userEmail, isLocked);
+        }
+
+        function updateDonasiBadge() {
+            const badge = document.getElementById('donasi-badge');
+            if (!badge) return;
+
+            google.script.run
+                .withSuccessHandler(list => {
+                    const pendingCount = list.filter(d => d.status !== 'Terverifikasi').length;
+                    if (pendingCount > 0) {
+                        badge.textContent = pendingCount;
+                        badge.classList.remove('hidden');
+                    } else {
+                        badge.classList.add('hidden');
+                    }
+                })
+                .getDonasiList_Superadmin(sessionStorage.getItem('userEmail'));
+        }
+
+        /**
+         * [VERSI 3.0 - PERBAIKAN FINAL] Fungsi pusat yang dipanggil setiap kali fitur terkunci diklik.
+         */
+        function handleLockedFeatureClick() {
+            const pageContainer = document.getElementById('page-donasi');
+            const userEmail = sessionStorage.getItem('userEmail');
+
+            // 1. Sembunyikan semua halaman lain dan tampilkan kontainer halaman donasi
+            document.querySelectorAll('.content-page').forEach(p => {
+                if (p.id !== 'page-donasi') {
+                    p.classList.add('hidden');
+                }
+            });
+            pageContainer.classList.remove('hidden');
+
+            // 2. Tampilkan loader tanpa menghapus elemen lain
+            const formContainer = document.getElementById('donasi-form-container');
+            const thanksContainer = document.getElementById('donasi-thanks-container');
+            formContainer.classList.add('hidden');
+            thanksContainer.classList.add('hidden');
+            pageContainer.innerHTML = '<div id="donasi-loader" class="text-center p-8 loading-animation">Memeriksa status akun...</div>';
+            
+            // 3. Panggil server untuk mendapatkan status terbaru
+            google.script.run
+                .withSuccessHandler(response => {
+                    // Hapus loader dan kembalikan kontainer asli yang tadinya disembunyikan
+                    pageContainer.innerHTML = ''; 
+                    pageContainer.appendChild(formContainer);
+                    pageContainer.appendChild(thanksContainer);
+
+                    if (response && response.status === "Menunggu Verifikasi") {
+                        // Jika SUDAH ada konfirmasi, tampilkan tampilan "Terima Kasih"
+                        renderDonasiThanksView(response);
+                    } else {
+                        // Jika BELUM ada, tampilkan FORM konfirmasi
+                        renderDonasiFormView();
+                    }
+                })
+                .withFailureHandler(err => {
+                    pageContainer.innerHTML = `<p class="text-red-500 text-center p-6">Gagal memeriksa status: ${err.message}</p>`;
+                })
+                .getDonationStatus_User(userEmail);
+        }
+
+        /**
+         * [HELPER] Menampilkan dan mengisi halaman "Terima Kasih".
+         * @param {object} donationData Data donasi dari server.
+         */
+        function renderDonasiThanksView(donationData) {
+            const thanksContainer = document.getElementById('donasi-thanks-container');
+            const actionContainer = document.getElementById('donasi-action-container');
+
+            thanksContainer.classList.remove('hidden');
+
+            actionContainer.innerHTML = `
+                <a href="${donationData.fileUrl}" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg text-sm">Lihat File</a>
+                <button id="cancelDonationBtn" data-donation-id="${donationData.id}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-5 rounded-lg text-sm">Ubah/Batalkan Konfirmasi</button>
+            `;
+
+            document.getElementById('cancelDonationBtn').addEventListener('click', function(event) {
+                const donationId = event.target.dataset.donationId;
+                const userEmail = sessionStorage.getItem('userEmail');
+
+                showConfirmationModal({
+                    title: "Batalkan Konfirmasi?",
+                    body: "Anda yakin ingin membatalkan konfirmasi donasi ini? Anda bisa mengirimkan konfirmasi baru setelah ini.",
+                    confirmText: "Ya, Batalkan",
+                    confirmColor: "bg-red-600 hover:bg-red-700",
+                    onConfirm: () => {
+                        showGlobalStatus("Membatalkan konfirmasi...", "info");
+                        google.script.run
+                            .withSuccessHandler(response => {
+                                showGlobalStatus(response.message, response.status === 'success');
+                                if (response.status === 'success') {
+                                    handleLockedFeatureClick();
+                                }
+                            })
+                            .withFailureHandler(err => showGlobalStatus(err.message, false))
+                            .cancelDonation_User(donationId, userEmail);
+                    }
+                });
+            });
+        }
+
+        /**
+         * [HELPER] Menampilkan dan mengisi form donasi.
+         */
+        function renderDonasiFormView() {
+            const formContainer = document.getElementById('donasi-form-container');
+            const userEmail = sessionStorage.getItem('userEmail') || '';
+            const schoolName = document.getElementById('school-name-sidebar').textContent || '';
+
+            formContainer.classList.remove('hidden');
+
+            document.getElementById('donasiEmail').value = userEmail;
+            document.getElementById('donasiNamaSekolah').value = schoolName;
+            document.getElementById('donasiForm').addEventListener('submit', handleDonasiSubmit);
+        }
+
+        /**
+         * [BARU] Menangani aksi klik pada tombol Kunci/Buka Fitur massal.
+         * @param {boolean} isLocked - true jika ingin mengunci, false jika ingin membuka.
+         */
+        function handleBulkSetLock(isLocked) {
+            const rowsToUpdate = Array.from(selectedUserRows);
+            if (rowsToUpdate.length === 0) {
+                showGlobalStatus("Tidak ada akun yang dipilih.", false);
+                return;
+            }
+
+            const actionText = isLocked ? "mengunci" : "membuka kunci";
+            const actionTitle = isLocked ? "Konfirmasi Kunci Fitur" : "Konfirmasi Buka Fitur";
+
+            showConfirmationModal({
+                title: actionTitle,
+                body: `Anda yakin ingin <strong>${actionText}</strong> fitur premium untuk <strong>${rowsToUpdate.length} akun</strong> yang dipilih?`,
+                confirmText: `Ya, ${isLocked ? 'Kunci' : 'Buka'}`,
+                confirmColor: isLocked ? "bg-orange-600 hover:bg-orange-700" : "bg-teal-600 hover:bg-teal-700",
+                onConfirm: () => {
+                    showGlobalStatus(`Memproses permintaan untuk ${actionText}...`, 'info');
+
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            showGlobalStatus(response.message, response.status === 'success');
+                            // Muat ulang tabel untuk melihat status terbaru
+                            loadUserManagementPage(); 
+                        })
+                        .withFailureHandler(err => {
+                            showGlobalStatus(err.message, false);
+                        })
+                        .bulkSetFiturLock_Superadmin(sessionStorage.getItem('userEmail'), rowsToUpdate, isLocked);
+                }
+            });
+        }
     </script>
 </body>
 </html>
