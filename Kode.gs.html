@@ -331,7 +331,7 @@ function registerUser(userData, otp) {
     // ===== PERUBAHAN UTAMA DI SINI (13 KOLOM) =====
     userSheet.appendRow([
         userId, email, storedPasswordString, namaSekolah, jenjang, newSpreadsheetId,
-        'Pengguna', 'Aktif', defaultLimit, latestVersion, '', '', schoolCode, ''
+        'Pengguna', 'Aktif', defaultLimit, latestVersion, '', '', schoolCode, '', 'YA'
     ]);
     
     CacheService.getScriptCache().remove(email.toLowerCase());
@@ -399,8 +399,13 @@ function checkLogin(email, password) {
       }
     }
 
+    // Ganti bagian ini di dalam fungsi checkLogin
     if (passwordIsValid) {
       logLoginActivity(email, userRow[3], userRow[4], role);
+
+      // --- AWAL MODIFIKASI ---
+      const lockStatus = checkFiturLock(email);
+      // --- AKHIR MODIFIKASI ---
 
       const loginResponse = {  
           status: "success",  
@@ -408,7 +413,10 @@ function checkLogin(email, password) {
           spreadsheetId: spreadsheetId,  
           email: userRow[1],  
           role: role,  
-          webAppUrl: ScriptApp.getService().getUrl()
+          webAppUrl: ScriptApp.getService().getUrl(),
+          // --- AWAL MODIFIKASI ---
+          isLocked: lockStatus.isLocked // Kirim status lock ke frontend
+          // --- AKHIR MODIFIKASI ---
       };
 
       if (role === 'Pengguna') {
@@ -2792,21 +2800,17 @@ function getAllUsers_Superadmin(adminEmail) {
   let dataToMap;
 
   if (cachedJson) {
-    // --- JALUR CEPAT (UTAMA) ---
-    // Data ditemukan di PropertiesService, kita gunakan ini.
     dataToMap = JSON.parse(cachedJson);
   } else {
-    // --- JALUR LAMBAT (CADANGAN) ---
-    // Jika PropertiesService kosong (misal: setelah script di-update), baca dari sheet.
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CACHE_AKUN);
     if (!sheet || sheet.getLastRow() < 2) {
         return [];
     }
-    const sheetData = sheet.getRange(2, 1, sheet.getLastRow() - 1, 9).getValues();
+    // --- PERBAIKAN: BACA HINGGA KOLOM KE-10 ---
+    const sheetData = sheet.getRange(2, 1, sheet.getLastRow() - 1, 10).getValues();
     dataToMap = sheetData.filter(row => row[0] && row[0] !== 'last_updated');
   }
 
-  // Proses mapping tetap sama, namun sumber datanya bisa dari 2 tempat.
   return dataToMap.map((row) => {
     return {
       email: row[0],
@@ -2817,7 +2821,9 @@ function getAllUsers_Superadmin(adminEmail) {
       studentLimit: row[5],
       currentStudentCount: row[6],
       row: row[7],
-      role: row[8]
+      role: row[8],
+      // --- PERBAIKAN: Baca dari indeks 9 (kolom ke-10) ---
+      fiturTerkunci: row[9] || 'TIDAK' 
     };
   });
 }
@@ -3210,6 +3216,33 @@ function submitChangeRequest(userEmail, newData) {
       'Proses' // <-- [TAMBAHAN BARU] Kolom K: Status Dibaca
     ]);
 
+    // --- AWAL KODE NOTIFIKASI EMAIL SUPERADMIN ---
+    try {
+      const superadminEmail = "syamsulbahri.agro27b@gmail.com"; // GANTI DENGAN EMAIL SUPERADMIN ANDA
+      const subject = "[Aplikasi Ijazah] Pengajuan Perubahan Data Baru";
+      const body = `
+        <p>Halo Superadmin,</p>
+        <p>Ada pengajuan perubahan data baru yang masuk dari pengguna:</p>
+        <ul>
+          <li><b>Email Pengguna:</b> ${userEmail}</li>
+          <li><b>Nama Sekolah:</b> ${oldNamaSekolah}</li>
+          <li><b>Tanggal Ajuan:</b> ${requestDate.toLocaleString('id-ID')}</li>
+        </ul>
+        <p>Data yang diajukan untuk diubah:</p>
+        <ul>
+          <li><b>Jenjang Baru:</b> ${newJenjang || '(tidak diubah)'}</li>
+          <li><b>Nama Sekolah Baru:</b> ${newNamaSekolah || '(tidak diubah)'}</li>
+        </ul>
+        <p>Silakan masuk ke panel Superadmin untuk meninjau dan memproses pengajuan ini.</p>
+        <br>
+        <p>Terima kasih.</p>
+      `;
+      MailApp.sendEmail(superadminEmail, subject, "", { htmlBody: body });
+    } catch (e) {
+      Logger.log("Gagal mengirim notifikasi email pengajuan ke Superadmin: " + e.message);
+    }
+    // --- AKHIR KODE NOTIFIKASI EMAIL SUPERADMIN ---
+
     // !! PENTING: TAMBAHKAN BARIS INI !!
     // Memaksa Google untuk menyelesaikan semua operasi penulisan sebelum melanjutkan.
     SpreadsheetApp.flush(); 
@@ -3390,6 +3423,27 @@ function resolveChangeRequest_Superadmin(adminEmail, requestId, resolution, admi
     pengajuanSheet.getRange(targetRowInSheet, 9).setValue(adminNotes); // Catatan Admin
     pengajuanSheet.getRange(targetRowInSheet, 10).setValue(new Date()); // Tanggal Diproses
     pengajuanSheet.getRange(targetRowInSheet, 11).setValue('Belum Dibaca'); // Set Status Dibaca
+
+    // --- AWAL KODE NOTIFIKASI EMAIL PENGGUNA ---
+    try {
+      const subject = `[Aplikasi Ijazah] Status Pengajuan Anda Telah Diperbarui: ${resolution}`;
+      let body = `
+        <p>Halo,</p>
+        <p>Pengajuan perubahan data yang Anda kirim pada tanggal ${requestRow[6].toLocaleString('id-ID')} telah diproses oleh admin.</p>
+        <p><b>Status baru: ${resolution}</b></p>
+      `;
+      if (resolution === 'Disetujui') {
+        body += "<p>Perubahan data pada akun Anda telah berhasil diterapkan. Silakan periksa kembali data sekolah Anda di aplikasi.</p>";
+      } else if (resolution === 'Ditolak' && adminNotes) {
+        body += `<p><b>Alasan Penolakan:</b> ${adminNotes}</p><p>Anda dapat mengajukan perubahan data kembali melalui aplikasi jika diperlukan.</p>`;
+      }
+      body += "<br><p>Terima kasih.</p>";
+      
+      MailApp.sendEmail(userEmail, subject, "", { htmlBody: body });
+    } catch (e) {
+      Logger.log(`Gagal mengirim notifikasi email status pengajuan ke pengguna ${userEmail}: ${e.message}`);
+    }
+    // --- AKHIR KODE NOTIFIKASI EMAIL PENGGUNA ---
 
     return { status: 'success', message: `Pengajuan berhasil ${resolution.toLowerCase()}.` };
 
@@ -5163,9 +5217,21 @@ function loginSiswa(kodeSekolah, nisn, tanggalLahir) {
         const data = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 13).getValues();
         const schoolRow = data.find(row => row[12] && row[12].toUpperCase() === kodeSekolah.toUpperCase());
 
+        // Ganti bagian ini di dalam fungsi loginSiswa
         if (!schoolRow) {
             return { status: "error", message: "Kode Sekolah tidak valid atau tidak ditemukan." };
         }
+
+        // --- AWAL MODIFIKASI ---
+        // Cek apakah fitur untuk sekolah ini terkunci
+        const lockStatus = checkFiturLock(schoolRow[1]); // Cek berdasarkan email pengguna
+        if (lockStatus.isLocked) {
+          return { 
+            status: "locked", 
+            message: "Akses untuk siswa dari sekolah ini sementara ditangguhkan. Silakan hubungi administrator sekolah Anda untuk informasi lebih lanjut." 
+          };
+        }
+        // --- AKHIR MODIFIKASI ---
         
         const spreadsheetId = schoolRow[5]; // Kolom F adalah Spreadsheet ID
         if (!spreadsheetId) {
@@ -5800,8 +5866,6 @@ function bulkGenerateSchoolCodes_Superadmin(adminEmail, rowNumbers) {
   }
 }
 
-// ===== TAMBAHKAN FUNGSI BARU INI DI Kode.gs =====
-
 /**
  * [KHUSUS TRIGGER & DENGAN PROPERTIES SERVICE] Menjalankan pembaruan cache akun pengguna.
  * Menyimpan hasil ke Sheet Cache dan PropertiesService.
@@ -5821,12 +5885,13 @@ function runUserCacheUpdateTrigger() {
       cacheSheet.getRange(2, 1, cacheSheet.getLastRow() - 1, cacheSheet.getLastColumn()).clearContent();
     }
 
-    const usersData = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 13).getValues();
+    // --- PERBAIKAN 1: BACA HINGGA KOLOM O (15) ---
+    const usersData = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 15).getValues();
     const cacheData = [];
 
     usersData.forEach((row, index) => {
       const email = row[1];
-      if (!email || row[0] === 'last_updated') return; // <-- Ditambahkan filter untuk keamanan
+      if (!email || row[0] === 'last_updated') return;
 
       let currentStudentCount = '-';
       const role = row[6];
@@ -5841,38 +5906,39 @@ function runUserCacheUpdateTrigger() {
         }
       }
 
-      // Array untuk cache sheet (termasuk role)
+      // --- PERBAIKAN 2: Simpan data dari kolom O (indeks 14) ---
       cacheData.push([
-        email, row[3], row[4], row[12], row[7], row[8],
-        currentStudentCount, index + 2, role 
+        email,            // 1
+        row[3],           // 2. Nama Sekolah
+        row[4],           // 3. Jenjang
+        row[12],          // 4. Kode Sekolah
+        row[7],           // 5. Status Akun
+        row[8],           // 6. Batas Siswa
+        currentStudentCount, // 7
+        index + 2,        // 8. Nomor Baris
+        role,             // 9. Role
+        row[14] || 'TIDAK' // 10. FiturTerkunci dari kolom O
       ]);
     });
 
     if (cacheData.length > 0) {
       cacheSheet.getRange(2, 1, cacheData.length, cacheData[0].length).setValues(cacheData);
     }
-    
-    // Tambahkan timestamp di baris paling bawah sheet
+
     cacheSheet.appendRow(['last_updated', new Date().toISOString()]);
-    
-    // ===== PERUBAHAN UTAMA: SIMPAN KE PROPERTIES SERVICE =====
+
     try {
         const scriptProperties = PropertiesService.getScriptProperties();
-        // 'cacheData' sudah berisi semua data pengguna yang kita butuhkan.
-        // Kita simpan array ini langsung sebagai string JSON.
         scriptProperties.setProperty('userManagementCache', JSON.stringify(cacheData));
         Logger.log('Cache Manajemen Akun berhasil disimpan ke PropertiesService.');
     } catch (e) {
         Logger.log('Gagal menyimpan cache Manajemen Akun ke PropertiesService: ' + e.message);
     }
-    // ===== AKHIR PERUBAHAN =====
 
   } catch(e) {
     Logger.log("Error pada runUserCacheUpdateTrigger: " + e.message);
   }
 }
-
-// File: Kode.gs.html
 
 /**
  * [FUNGSI INTI BARU] Membangun ulang dan menyimpan data nilai ke sheet yang ditentukan.
@@ -6790,3 +6856,334 @@ function getKelurahanList(provinsi, kabupaten, kecamatan) {
     return { error: e.message };
   }
 }
+
+// ===== AWAL KODE FITUR LOCK & DONASI =====
+
+// --- FUNGSI UNTUK SUPERADMIN ---
+
+/**
+ * [SUPERADMIN] Mengunci atau membuka fitur untuk pengguna tertentu.
+ * @param {string} adminEmail - Email Superadmin untuk verifikasi.
+ * @param {string} targetUserEmail - Email pengguna yang akan diubah statusnya.
+ * @param {boolean} isLocked - true untuk mengunci, false untuk membuka.
+ * @returns {object} Hasil operasi.
+ */
+function setFiturLock_Superadmin(adminEmail, targetUserEmail, isLocked) {
+  if (!isSuperadmin(adminEmail)) {
+    return { status: "error", message: "Akses ditolak." };
+  }
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
+    const emailColumn = userSheet.getRange("B2:B").getValues().flat();
+    const userIndex = emailColumn.findIndex(email => email && email.toLowerCase() === targetUserEmail.toLowerCase());
+
+    if (userIndex === -1) {
+      throw new Error("Pengguna tidak ditemukan.");
+    }
+    const rowToUpdate = userIndex + 2;
+    // Asumsi kolom FiturTerkunci adalah kolom ke-15 (O)
+    userSheet.getRange(rowToUpdate, 15).setValue(isLocked ? 'YA' : 'TIDAK');
+    
+    const action = isLocked ? "dikunci" : "dibuka";
+    return { status: "success", message: `Fitur untuk akun ${targetUserEmail} berhasil ${action}.` };
+  } catch (e) {
+    Logger.log("setFiturLock_Superadmin Error: " + e.message);
+    return { status: "error", message: "Gagal mengubah status fitur: " + e.message };
+  }
+}
+
+/**
+ * [SUPERADMIN] Mengambil daftar semua donasi yang masuk.
+ * @param {string} adminEmail - Email Superadmin untuk verifikasi.
+ * @returns {Array<object>} Daftar donasi.
+ */
+function getDonasiList_Superadmin(adminEmail) {
+  if (!isSuperadmin(adminEmail)) {
+    throw new Error("Akses ditolak.");
+  }
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Data Donasi");
+    if (!sheet || sheet.getLastRow() < 2) return [];
+    
+    const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues();
+    return data.map(row => ({
+      id: row[0],
+      tanggal: row[1].toISOString(),
+      email: row[2],
+      namaSekolah: row[3],
+      fileId: row[4],
+      fileUrl: row[5],
+      status: row[6]
+    })).sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+  } catch (e) {
+    Logger.log("getDonasiList_Superadmin Error: " + e.message);
+    return [];
+  }
+}
+
+/**
+ * [SUPERADMIN - DIPERBARUI] Memverifikasi donasi, membuka kunci fitur, DAN menaikkan limit siswa.
+ * @param {string} adminEmail - Email Superadmin.
+ * @param {string} donasiId - ID donasi yang akan diverifikasi.
+ * @param {string} targetUserEmail - Email pengguna yang fiturnya akan dibuka.
+ * @returns {object} Hasil operasi.
+ */
+function verifyDonasi_Superadmin(adminEmail, donasiId, targetUserEmail) {
+  if (!isSuperadmin(adminEmail)) {
+    return { status: "error", message: "Akses ditolak." };
+  }
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // 1. Ubah status di sheet Data Donasi
+    const donasiSheet = ss.getSheetByName("Data Donasi");
+    const idColumn = donasiSheet.getRange("A2:A").getValues().flat();
+    const donasiRowIndex = idColumn.findIndex(id => id === donasiId);
+
+    if (donasiRowIndex === -1) throw new Error("Donasi tidak ditemukan.");
+    
+    donasiSheet.getRange(donasiRowIndex + 2, 7).setValue("Terverifikasi");
+
+    // --- AWAL MODIFIKASI ---
+
+    // 2. Temukan pengguna di sheet 'Data Pengguna' untuk update limit
+    const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
+    const userEmailColumn = userSheet.getRange("B2:B").getValues().flat();
+    const userRowIndex = userEmailColumn.findIndex(email => email && email.toLowerCase() === targetUserEmail.toLowerCase());
+
+    if (userRowIndex !== -1) {
+        const userRowToUpdate = userRowIndex + 2;
+        // Kolom I (indeks 9) adalah 'Batas Siswa'
+        userSheet.getRange(userRowToUpdate, 9).setValue(500);
+    } else {
+        Logger.log(`Peringatan: Pengguna ${targetUserEmail} tidak ditemukan untuk update limit saat verifikasi donasi.`);
+    }
+
+    // 3. Buka kunci fitur pengguna (fungsi ini sudah ada)
+    const unlockResult = setFiturLock_Superadmin(adminEmail, targetUserEmail, false);
+    if (unlockResult.status === 'error') throw new Error(unlockResult.message);
+    
+    // --- AKHIR MODIFIKASI ---
+
+    return { status: "success", message: `Donasi dari ${targetUserEmail} berhasil diverifikasi. Fitur telah dibuka dan limit siswa diatur ke 500.` };
+
+  } catch (e) {
+    return { status: "error", message: e.message };
+  }
+}
+
+/**
+ * [AKSI MASSAL SUPERADMIN] Mengunci atau membuka fitur premium untuk beberapa akun sekaligus.
+ * @param {string} adminEmail - Email Superadmin untuk verifikasi.
+ * @param {Array<number>} rowNumbers - Array berisi nomor baris akun yang akan diubah.
+ * @param {boolean} isLocked - true untuk mengunci, false untuk membuka.
+ * @returns {object} Hasil operasi.
+ */
+function bulkSetFiturLock_Superadmin(adminEmail, rowNumbers, isLocked) {
+  if (!isSuperadmin(adminEmail)) {
+    return { status: "error", message: "Akses ditolak." };
+  }
+  if (!rowNumbers || rowNumbers.length === 0) {
+    return { status: "info", message: "Tidak ada akun yang dipilih." };
+  }
+
+  try {
+    const userSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PENGGUNA);
+    const newValue = isLocked ? 'YA' : 'TIDAK';
+    const lockColumn = 15; // Kolom N untuk 'FiturTerkunci'
+
+    // Lakukan update untuk setiap baris yang dipilih
+    rowNumbers.forEach(rowNum => {
+      userSheet.getRange(rowNum, lockColumn).setValue(newValue);
+    });
+
+    const actionText = isLocked ? "dikunci" : "dibuka";
+    return { status: "success", message: `${rowNumbers.length} akun berhasil ${actionText}.` };
+
+  } catch (e) {
+    Logger.log("bulkSetFiturLock_Superadmin Error: " + e.message);
+    return { status: "error", message: "Gagal memproses aksi massal: " + e.message };
+  }
+}
+
+
+// --- FUNGSI UNTUK PENGGUNA & SISWA ---
+
+/**
+ * [HELPER] Fungsi pusat untuk memeriksa apakah fitur pengguna terkunci.
+ * @param {string} email - Email pengguna atau spreadsheetId.
+ * @returns {{isLocked: boolean, message: string}}
+ */
+function checkFiturLock(emailOrId) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
+    const data = userSheet.getRange("A2:O" + userSheet.getLastRow()).getValues(); // Baca hingga kolom O
+    
+    let userRow = data.find(row => row[1].toLowerCase() === emailOrId.toLowerCase() || row[5] === emailOrId);
+    
+    if (userRow) {
+      const isLocked = userRow[14] === 'YA'; // Kolom O adalah indeks ke-14
+      if (isLocked) {
+        return { isLocked: true, message: "Fitur ini terkunci. Silakan lakukan donasi untuk membukanya." };
+      }
+    }
+    return { isLocked: false, message: "" };
+  } catch (e) {
+    Logger.log("checkFiturLock Error: " + e.message);
+    return { isLocked: false, message: "" }; // Default ke tidak terkunci jika ada error
+  }
+}
+
+/**
+ * [PUBLIC] Menerima data form donasi dan file bukti transfer.
+ * @param {object} donationData - Data dari form { email, namaSekolah }.
+ * @param {object} fileData - Objek file dari frontend.
+ * @returns {object} Hasil penyimpanan.
+ */
+function simpanDonasi(donationData, fileData) {
+  try {
+    // 1. Buat folder 'Bukti Donasi' jika belum ada di root Drive Anda
+    let folder;
+    const folders = DriveApp.getFoldersByName("Bukti Donasi Aplikasi Ijazah");
+    if (folders.hasNext()) {
+      folder = folders.next();
+    } else {
+      folder = DriveApp.createFolder("Bukti Donasi Aplikasi Ijazah");
+    }
+
+    // 2. Simpan file
+    const decoded = Utilities.base64Decode(fileData.content.split(',')[1]);
+    const blob = Utilities.newBlob(decoded, fileData.mimeType, fileData.fileName);
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); // Agar admin bisa lihat
+
+    // 3. Simpan data ke sheet 'Data Donasi'
+    const donasiSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Data Donasi");
+    donasiSheet.appendRow([
+      Utilities.getUuid(),
+      new Date(),
+      donationData.email,
+      donationData.namaSekolah,
+      file.getId(),
+      file.getUrl(),
+      "Menunggu Verifikasi"
+    ]);
+
+    // --- AWAL KODE NOTIFIKASI EMAIL SUPERADMIN ---
+    try {
+      const superadminEmail = "syamsulbahri.agro27b@gmail.com"; // GANTI DENGAN EMAIL SUPERADMIN ANDA
+      const subject = "[Aplikasi Ijazah] Konfirmasi Donasi Baru";
+      const body = `
+        <p>Halo Superadmin,</p>
+        <p>Ada konfirmasi donasi baru yang masuk dari pengguna:</p>
+        <ul>
+          <li><b>Email Pengguna:</b> ${donationData.email}</li>
+          <li><b>Nama Sekolah:</b> ${donationData.namaSekolah}</li>
+          <li><b>Tanggal Konfirmasi:</b> ${new Date().toLocaleString('id-ID')}</li>
+        </ul>
+        <p>Bukti transfer dapat dilihat melalui link di panel Manajemen Donasi.</p>
+        <p>Silakan masuk untuk melakukan verifikasi dan membuka fitur premium untuk pengguna tersebut.</p>
+        <br>
+        <p>Terima kasih.</p>
+      `;
+      MailApp.sendEmail(superadminEmail, subject, "", { htmlBody: body });
+    } catch (e) {
+      Logger.log("Gagal mengirim notifikasi email donasi ke Superadmin: " + e.message);
+    }
+    // --- AKHIR KODE NOTIFIKASI EMAIL SUPERADMIN ---
+
+    return { status: "success", message: "Data donasi dan bukti transfer berhasil dikirim. Admin akan segera memverifikasinya. Terima kasih!" };
+  } catch (e) {
+    Logger.log("simpanDonasi Error: " + e.message);
+    return { status: "error", message: "Gagal menyimpan data donasi: " + e.message };
+  }
+}
+
+/**
+ * [PENGGUNA] Memeriksa status donasi terakhir dari pengguna.
+ * @param {string} userEmail - Email pengguna yang akan diperiksa.
+ * @returns {object|null} Detail donasi jika ada yang menunggu, atau null jika tidak.
+ */
+function getDonationStatus_User(userEmail) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Data Donasi");
+    if (!sheet || sheet.getLastRow() < 2) return null;
+
+    const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues();
+    // Cari dari bawah ke atas untuk mendapatkan data terbaru
+    for (let i = data.length - 1; i >= 0; i--) {
+      const row = data[i];
+      // Cek email dan status
+      if (row[2].toLowerCase() === userEmail.toLowerCase() && row[6] === "Menunggu Verifikasi") {
+        return {
+          id: row[0],
+          fileUrl: row[5],
+          status: row[6]
+        };
+      }
+    }
+    return null; // Tidak ada donasi yang menunggu dari pengguna ini
+  } catch (e) {
+    Logger.log("getDonationStatus_User Error: " + e.message);
+    return null;
+  }
+}
+
+/**
+ * [PENGGUNA] Membatalkan pengajuan donasi dan menghapus file terkait.
+ * @param {string} donationId - ID donasi yang akan dibatalkan.
+ * @param {string} userEmail - Email pengguna untuk verifikasi kepemilikan.
+ * @returns {object} Hasil operasi.
+ */
+function cancelDonation_User(donationId, userEmail) {
+  if (!donationId || !userEmail) {
+    return { status: "error", message: "Informasi tidak lengkap." };
+  }
+  
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Data Donasi");
+    const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn());
+    const data = dataRange.getValues();
+    
+    const rowIndex = data.findIndex(row => row[0] === donationId);
+
+    if (rowIndex === -1) {
+      throw new Error("Data donasi tidak ditemukan.");
+    }
+
+    const rowData = data[rowIndex];
+    const ownerEmail = rowData[2];
+    const fileId = rowData[4];
+
+    if (ownerEmail.toLowerCase() !== userEmail.toLowerCase()) {
+      throw new Error("Anda tidak memiliki izin untuk membatalkan donasi ini.");
+    }
+    
+    // Hapus file dari Google Drive
+    if (fileId) {
+      try {
+        DriveApp.getFileById(fileId).setTrashed(true);
+      } catch (driveError) {
+        Logger.log(`Gagal menghapus file di Drive (ID: ${fileId}): ${driveError.message}`);
+        // Tetap lanjutkan proses hapus data di sheet
+      }
+    }
+    
+    // Hapus baris dari sheet
+    sheet.deleteRow(rowIndex + 2); // +2 karena data dimulai dari baris 2 dan indeks array dari 0
+
+    return { status: "success", message: "Konfirmasi donasi berhasil dibatalkan." };
+
+  } catch (e) {
+    Logger.log("cancelDonation_User Error: " + e.message);
+    return { status: "error", message: "Gagal membatalkan donasi: " + e.message };
+  } finally {
+    lock.releaseLock();
+  }
+}
+// ===== AKHIR KODE FITUR LOCK & DONASI =====
