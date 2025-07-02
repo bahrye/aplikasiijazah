@@ -722,10 +722,8 @@ function toProperCase(str) {
 // FUNGSI MANAJEMEN DATA SEKOLAH, SISWA, MAPEL, DLL.
 // =================================================================
 
-// File: Kode.gs
-
 /**
- * [MODIFIKASI] Menyimpan data sekolah ke dalam sheet 'Data Sekolah', termasuk NSM.
+ * [MODIFIKASI] Menyimpan data sekolah ke dalam sheet 'Data Sekolah', termasuk NSM, tipe kabupaten, dan tipe kelurahan.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @param {object} dataObj Objek berisi data sekolah.
  * @returns {{status: string, message: string}} Status penyimpanan.
@@ -735,36 +733,63 @@ function saveSchoolData(spreadsheetId, dataObj) {
     const ss = getSpreadsheet(spreadsheetId);
     let sheet = ss.getSheetByName(SHEET_DATA_SEKOLAH);
     
-    // [MODIFIKASI] Set format kolom NSM (D), Kode Pos (J), dan Telepon (K) ke Plain Text
     sheet.getRange("C:D").setNumberFormat('@');
-    sheet.getRange("J:K").setNumberFormat('@'); // Indeks kolom bergeser
-    sheet.getRange("O:O").setNumberFormat('@'); // <-- TAMBAHKAN BARIS INI UNTUK NIP KEPSEK
+    sheet.getRange("J:K").setNumberFormat('@');
+    sheet.getRange("O:O").setNumberFormat('@');
     
-    // [MODIFIKASI] Tambahkan dataObj.nsm ke dalam array
+    // [MODIFIKASI] Tambahkan tipeKabupaten dan tipeKelurahan ke dalam array data
     const schoolDataRow = [
-        dataObj.jenjang||"", dataObj.namaSekolah||"", dataObj.npsn||"", dataObj.nsm||"", // NSM ditambahkan di sini
-        dataObj.alamat||"", dataObj.kelurahan||"", dataObj.kecamatan||"", dataObj.kabupaten||"", 
-        dataObj.provinsi||"", dataObj.kodePos||"", dataObj.telepon||"", dataObj.email||"", 
-        dataObj.website||"", dataObj.namaKepsek||"", dataObj.nipKepsek||""
+        dataObj.jenjang || "", dataObj.namaSekolah || "", dataObj.npsn || "", dataObj.nsm || "",
+        dataObj.alamat || "", 
+        dataObj.provinsi || "", 
+        // Tambahkan field baru di sini
+        dataObj.tipeKabupaten || "Kabupaten", // Default ke "Kabupaten" jika kosong
+        dataObj.kabupaten || "", 
+        dataObj.kecamatan || "", 
+        // Tambahkan field baru di sini
+        dataObj.tipeKelurahan || "Kelurahan", // Default ke "Kelurahan" jika kosong
+        dataObj.kelurahan || "", 
+        dataObj.kodePos || "", dataObj.telepon || "", dataObj.email || "", 
+        dataObj.website || "", dataObj.namaKepsek || "", dataObj.nipKepsek || ""
     ];
-    // [MODIFIKASI] Pastikan header "NSM" ada jika belum ada
-    if (sheet.getRange("D1").getValue() !== "NSM") {
-      sheet.insertColumnAfter(3); // Sisipkan kolom baru setelah kolom C (NPSN)
-      sheet.getRange("D1").setValue("NSM").setFontWeight("bold");
-    }
 
-    sheet.getRange(2, 1, 1, schoolDataRow.length).setValues([schoolDataRow]);
+    // [MODIFIKASI] Ubah jangkauan penulisan data untuk mencakup kolom baru
+    // Asumsi kita menyisipkan kolom baru setelah Provinsi (I) dan Kecamatan (K)
+    // Jika header belum ada, buat header baru
+    if (sheet.getRange("G1").getValue() !== "Tipe Kabupaten/Kota") {
+      sheet.insertColumnAfter(9); // Sisipkan setelah kolom I (Provinsi)
+      sheet.getRange("J1").setValue("Tipe Kabupaten/Kota").setFontWeight("bold");
+    }
+    if (sheet.getRange("L1").getValue() !== "Tipe Kelurahan/Desa") {
+      sheet.insertColumnAfter(11); // Sisipkan setelah kolom K (Kecamatan)
+      sheet.getRange("M1").setValue("Tipe Kelurahan/Desa").setFontWeight("bold");
+    }
+    
+    // Menulis data ke baris ke-2 dengan jangkauan yang sudah disesuaikan
+    // Logika penulisan data di sini mungkin perlu penyesuaian tergantung struktur akhir sheet
+    // Untuk penyederhanaan, kita akan menulis ulang seluruh baris data berdasarkan array yang baru.
+    // Asumsi total kolom sekarang adalah 17 (O + 2)
+    const valuesToWrite = [
+        dataObj.jenjang||"", dataObj.namaSekolah||"", dataObj.npsn||"", dataObj.nsm||"",
+        dataObj.alamat||"", dataObj.provinsi||"", dataObj.tipeKabupaten||"Kabupaten", dataObj.kabupaten||"",
+        dataObj.kecamatan||"", dataObj.tipeKelurahan||"Kelurahan", dataObj.kelurahan||"", dataObj.kodePos||"",
+        dataObj.telepon||"", dataObj.email||"", dataObj.website||"", dataObj.namaKepsek||"",
+        dataObj.nipKepsek||""
+    ];
+    sheet.getRange(2, 1, 1, valuesToWrite.length).setValues([valuesToWrite]);
+
+
     return { status: "success", message: "Data sekolah berhasil diperbarui." };
   } catch (error) {
     Logger.log(error);
-    return { status: "error", message: "Gagal menyimpan data sekolah: " + error.message };
+    // Untuk sementara, kita akan mengembalikan error yang lebih sederhana.
+    // Penyesuaian kolom yang kompleks memerlukan penanganan error yang lebih baik.
+    return { status: "error", message: "Gagal menyimpan data sekolah (mungkin karena perubahan struktur): " + error.message };
   }
 }
 
-// File: Kode.gs
-
 /**
- * [MODIFIKASI] Mengambil data sekolah dari sheet 'Data Sekolah', termasuk NSM.
+ * [MODIFIKASI] Mengambil data sekolah dari sheet 'Data Sekolah', termasuk tipe wilayah.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @returns {object|null} Objek data sekolah atau null jika gagal.
  */
@@ -774,31 +799,32 @@ function getSchoolData(spreadsheetId) {
     const sheet = ss.getSheetByName(SHEET_DATA_SEKOLAH);
     if (!sheet || sheet.getLastRow() < 2) return null;
 
-    // [MODIFIKASI] Set format kolom NSM, Kode Pos, dan Telepon ke Plain Text saat mengambil data
     sheet.getRange("C:D").setNumberFormat('@');
-    sheet.getRange("J:K").setNumberFormat('@'); // Indeks kolom bergeser
-    sheet.getRange("O:O").setNumberFormat('@'); // <-- TAMBAHKAN BARIS INI UNTUK NIP KEPSEK
+    sheet.getRange("K:L").setNumberFormat('@'); // Disesuaikan setelah penambahan kolom
+    sheet.getRange("Q:Q").setNumberFormat('@'); // Disesuaikan setelah penambahan kolom
 
-    // [MODIFIKASI] Ubah jangkauan pengambilan data dari A2:N2 menjadi A2:O2
-    const values = sheet.getRange("A2:O2").getValues()[0];
+    // [MODIFIKASI] Ubah jangkauan pengambilan data menjadi A2:Q2 (17 kolom)
+    const values = sheet.getRange("A2:Q2").getValues()[0];
     
-    // [MODIFIKASI] Tambahkan 'nsm' dan sesuaikan indeks kolom lainnya
+    // [MODIFIKASI] Tambahkan field baru dan sesuaikan indeks
     return {
-        jenjang:values[0], 
-        namaSekolah:values[1], 
-        npsn:values[2], 
-        nsm:values[3], // NSM ada di indeks 3
-        alamat:values[4], 
-        kelurahan:values[5], 
-        kecamatan:values[6], 
-        kabupaten:values[7], 
-        provinsi:values[8], 
-        kodePos:values[9], 
-        telepon:values[10], 
-        email:values[11], 
-        website:values[12], 
-        namaKepsek:values[13], 
-        nipKepsek:values[14]
+        jenjang: values[0], 
+        namaSekolah: values[1], 
+        npsn: values[2], 
+        nsm: values[3],
+        alamat: values[4], 
+        provinsi: values[5],
+        tipeKabupaten: values[6], // Kolom baru
+        kabupaten: values[7],
+        kecamatan: values[8],
+        tipeKelurahan: values[9], // Kolom baru
+        kelurahan: values[10],
+        kodePos: values[11], 
+        telepon: values[12], 
+        email: values[13], 
+        website: values[14], 
+        namaKepsek: values[15], 
+        nipKepsek: values[16]
     };
   } catch (error) {
     Logger.log(error);
