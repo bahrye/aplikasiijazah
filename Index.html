@@ -812,10 +812,21 @@
                                             <option value="">Memuat Provinsi...</option>
                                         </select>
 
-                                        <label for="kabupaten" class="block text-sm font-medium text-gray-700 mt-4">Kabupaten/Kota</label>
-                                        <select id="kabupaten" name="kabupaten" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100" disabled>
-                                            <option value="">Pilih Provinsi Dahulu</option>
-                                        </select>
+                                        <div class="grid grid-cols-2 gap-4 mt-4">
+                                            <div>
+                                                <label for="tipeKabupaten" class="block text-sm font-medium text-gray-700">Tipe Wilayah</label>
+                                                <select id="tipeKabupaten" name="tipeKabupaten" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white">
+                                                    <option>Kabupaten</option>
+                                                    <option>Kota</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label for="kabupaten" class="block text-sm font-medium text-gray-700">Nama Kabupaten/Kota</label>
+                                                <select id="kabupaten" name="kabupaten" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100" disabled>
+                                                    <option value="">Pilih Provinsi Dahulu</option>
+                                                </select>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div>
                                         <label for="kecamatan" class="block text-sm font-medium text-gray-700 mt-4">Kecamatan</label>
@@ -823,10 +834,21 @@
                                             <option value="">Pilih Kabupaten/Kota Dahulu</option>
                                         </select>
 
-                                        <label for="kelurahan" class="block text-sm font-medium text-gray-700 mt-4">Kelurahan/Desa</label>
-                                        <select id="kelurahan" name="kelurahan" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100" disabled>
-                                            <option value="">Pilih Kecamatan Dahulu</option>
-                                        </select>
+                                        <div class="grid grid-cols-2 gap-4 mt-4">
+                                            <div>
+                                                <label for="tipeKelurahan" class="block text-sm font-medium text-gray-700">Tipe Wilayah</label>
+                                                <select id="tipeKelurahan" name="tipeKelurahan" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white">
+                                                    <option>Kelurahan</option>
+                                                    <option>Desa</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label for="kelurahan" class="block text-sm font-medium text-gray-700">Nama Kelurahan/Desa</label>
+                                                <select id="kelurahan" name="kelurahan" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100" disabled>
+                                                    <option value="">Pilih Kecamatan Dahulu</option>
+                                                </select>
+                                            </div>
+                                        </div>
 
                                         <label for="kodePos" class="block text-sm font-medium text-gray-700 mt-4">Kode Pos</label>
                                         <input type="text" id="kodePos" name="kodePos" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100" readonly placeholder="Akan terisi otomatis">
@@ -836,7 +858,7 @@
                                         <label for="email-sekolah" class="block text-sm font-medium text-gray-700 mt-4">Email</label>
                                         <input type="email" id="email-sekolah" name="email" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                                         <label for="website" class="block text-sm font-medium text-gray-700 mt-4">Website</label>
-                                        <input type="url" id="website" name="website" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                        <input type="text" id="website" name="website" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                                     </div>
                                 </div>
                                 <div class="mt-8 border-t pt-6">
@@ -4231,6 +4253,9 @@
                                 const element = document.getElementById(key === 'email' ? 'email-sekolah' : key);
                                 if (element) element.value = data[key] || '';
                             }
+
+                            document.getElementById('tipeKabupaten').value = data.tipeKabupaten || 'Kabupaten';
+                            document.getElementById('tipeKelurahan').value = data.tipeKelurahan || 'Kelurahan';
 
                             // Panggil setup dropdown dengan data yang sudah tersimpan
                             initializeWilayahFeature(data); 
