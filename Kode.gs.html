@@ -5516,7 +5516,7 @@ function generateSchoolCodeForUser(spreadsheetId) {
  */
 function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
   try {
-    // 1. Dapatkan semua data yang diperlukan (tidak ada perubahan di sini)
+    // 1. Dapatkan semua data yang diperlukan
     const transcriptDataResponse = getTranscriptData(spreadsheetId, nisn);
     if (transcriptDataResponse.status !== 'success') {
       throw new Error(transcriptDataResponse.message);
@@ -5539,19 +5539,18 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
         Logger.log("Gagal mengambil gambar QR Code dari API: " + e.message);
     }
 
-    // 2. Helper dan perhitungan (tidak ada perubahan di sini)
+    // 2. Helper dan perhitungan
     const toProperCase = (str) => {
         if (!str || typeof str !== 'string') return '';
         return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
     };
     const tglLahirFormatted = new Date(student.tanggalLahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     const ttdDateFormatted = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-    const nomorIndukGabungan = (school.nsm || '') + (student.nis || '-');
+    const nomorIndukGabungan = student.nis ? (school.nsm || '') + student.nis : '-';
     const formatScore = (score) => {
       if (score === null || score === undefined || isNaN(score)) return '0';
       const rounded = Math.round(score);
-      const decimal = score.toFixed(2).replace('.', ',');
-      return `${rounded} (${decimal})`;
+      return rounded; // Cukup kembalikan angka yang sudah dibulatkan
     };
     let totalNilaiIjazah = 0;
     const mapelCount = subjects.length;
@@ -5561,16 +5560,30 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
     });
     const rataRataIjazah = mapelCount > 0 ? (totalNilaiIjazah / mapelCount).toFixed(2).replace('.', ',') : '0,00';
     
-    const alamatUtama = `${(school.alamat || '').toUpperCase()}, KEL. ${(school.kelurahan || '').toUpperCase()}`;
+    // ==========================================================
+    // === [PERUBAHAN UTAMA] LOGIKA UNTUK MEMBANGUN KOP SURAT ===
+    // ==========================================================
+    const kantorKemenagLine = `KANTOR KEMENTERIAN AGAMA ${school.tipeKabupaten || ''} ${school.kabupaten || ''}`.toUpperCase();
+    const tipeKabSingkat = school.tipeKabupaten === 'Kabupaten' ? 'Kab.' : 'Kota';
+    const tipeKelSingkat = school.tipeKelurahan === 'Kelurahan' ? 'Kel.' : 'Desa';
+
     const alamatLengkap = [
-        `Kecamatan ${toProperCase(school.kecamatan || '')}`,
-        `Kabupaten ${toProperCase(school.kabupaten || '')}`,
-        toProperCase(school.provinsi || ''),
-        school.kodePos || ''
-    ].filter(Boolean).join(' - ');
+      school.alamat,
+      `${tipeKelSingkat} ${toProperCase(school.kelurahan || '')}`,
+      `Kec. ${toProperCase(school.kecamatan || '')}`,
+      `${tipeKabSingkat} ${toProperCase(school.kabupaten || '')}`,
+      toProperCase(school.provinsi || ''),
+      school.kodePos
+    ].filter(Boolean).join(', ');
+
+    const teleponLine = school.telepon ? `Telepon : ${school.telepon}` : '';
+    const websiteLine = school.website ? `Website : ${school.website}` : '';
+    // ==========================================================
+    // === AKHIR PERUBAHAN LOGIKA KOP SURAT ===
+    // ==========================================================
 
 
-    // 3. Template HTML dengan KOP SURAT BARU dan CSS Footer yang diperbaiki
+    // 3. Template HTML dengan KOP SURAT BARU
     const htmlContent = `
       <html>
         <head>
@@ -5583,35 +5596,24 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
             .font-bold{font-weight: bold;} 
             .bg-gray{background-color: #f2f2f2;}
             
-            .kop-surat-container { display: flex; align-items: flex-start; padding-bottom: 5px; border-bottom: 3px solid black; }
+            /* [PERUBAHAN UTAMA] CSS KOP SURAT */
+            .kop-surat-container { 
+                display: flex; 
+                align-items: flex-start; 
+                padding-bottom: 5px; 
+                border-bottom: 3px solid black; 
+                margin-bottom: 10px;
+            }
             .kop-logo { width: 75px; height: 75px; margin-right: 20px; }
             .kop-teks { text-align: center; flex-grow: 1; line-height: 1.4; }
-            .kop-teks .kementerian { font-size: 14pt; font-weight: bold; }
-            .kop-teks .nama-sekolah { font-size: 16pt; font-weight: bold; }
-            .kop-teks .alamat-utama { font-size: 11pt; }
-            .kop-teks .alamat-wilayah { font-size: 9pt; font-style: italic; }
+            /* AKHIR PERUBAHAN */
 
             .footer-container { margin-top: 40px; width: 100%; display: flex; justify-content: space-between; align-items: flex-end; }
             .ttd-block { width: 45%; text-align: center; font-size: 10pt; }
             .qr-block { text-align: center; font-size: 8pt; color: #555; }
-            
             .ttd-signature-area { position: relative; height: 80px; margin-top: 10px; margin-bottom: 5px; }
-
-            /* --- [PERUBAHAN CSS Z-INDEX DI SINI] --- */
-            .ttd-signature {
-                position: absolute; left: 50%; top: 50%;
-                transform: translate(-50%, -50%);
-                max-width: 150px; max-height: 100px;
-                z-index: 1; /* Tanda Tangan sekarang di lapisan belakang */
-            }
-            .ttd-stamp {
-                position: absolute; left: 50%; top: 50%;
-                transform: translate(-50%, -50%) rotate(-15deg);
-                opacity: 0.75; max-width: 120px; max-height: 120px;
-                z-index: 2; /* Stempel sekarang di lapisan depan */
-            }
-            /* --- AKHIR PERUBAHAN CSS --- */
-
+            .ttd-signature { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); max-width: 150px; max-height: 100px; z-index: 1; }
+            .ttd-stamp { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-15deg); opacity: 0.75; max-width: 120px; max-height: 120px; z-index: 2; }
             .ttd-name-nip { position: absolute; bottom: -25px; width: 100%; left: 0; }
             .ttd-name { font-weight: bold; text-decoration: underline; margin-bottom: 2px; margin-top: 0; }
             .ttd-nip { margin-top: 0; }
@@ -5621,10 +5623,12 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
           <div class="kop-surat-container">
             ${logo ? `<img src="${logo}" alt="Logo Sekolah" class="kop-logo">` : '<div class="kop-logo"></div>'}
             <div class="kop-teks">
-              <div class="kementerian">KEMENTERIAN AGAMA REPUBLIK INDONESIA</div>
-              <div class="nama-sekolah">${school.namaSekolah || 'NAMA SEKOLAH'}</div>
-              <div class="alamat-utama">${alamatUtama}</div>
-              <div class="alamat-wilayah">${alamatLengkap}</div>
+              <div style="font-family: Arial, sans-serif; font-size: 14pt; font-weight: bold;">KEMENTERIAN AGAMA REPUBLIK INDONESIA</div>
+              <div style="font-family: Arial, sans-serif; font-size: 12pt; font-weight: bold;">${kantorKemenagLine}</div>
+              <div style="font-family: Arial, sans-serif; font-size: 11pt; font-weight: bold;">${(school.namaSekolah || 'NAMA SEKOLAH').toUpperCase()}</div>
+              <div style="font-family: Arial, sans-serif; font-size: 9pt;">Alamat : ${alamatLengkap}</div>
+              ${teleponLine ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">${teleponLine}</div>` : ''}
+              ${websiteLine ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">${websiteLine}</div>` : ''}
             </div>
           </div>
           <div class="text-center" style="margin-top: 10px;">
