@@ -10616,7 +10616,7 @@
          */
         function renderTranscriptModal(data, printableArea) {
             try {
-                const { student, school, subjects } = data;
+                const { student, school, subjects, bobot } = data;
 
                 // Fungsi-fungsi helper
                 const toProperCase = (str) => {
@@ -10723,6 +10723,9 @@
                                     </tr>
                                 </tbody>
                             </table>
+                            <div style="font-style: italic; font-size: 10pt; margin-top: 15px;">
+                                Ket: Nilai Ijazah = ${bobot.bobotUjian}% Nilai Ujian Madrasah + ${bobot.bobotRapor}% Nilai Rapor 5 Semester
+                            </div>
                             <div style="margin-top: 40px; width: 100%; display: flex; justify-content: space-between; align-items: flex-end;">
                                 <div style="text-align: center; font-size: 8pt; color: #555;">${qrHtml}</div>
                                 <div style="width: 45%; text-align: center; font-size: 10pt;">
