@@ -584,6 +584,14 @@
                     
                     <a href="#" class="nav-link flex justify-between items-center" data-page="pengajuan"><span class="flex items-center space-x-3 p-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span>Pengajuan</span></span><span id="pengajuan-indicator-container" class="pr-3"></span></a>
                     <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="backup-restore"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 20h5v-5M20 4h-5v5" /></svg><span>Backup & Restore</span></a>
+
+                    <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="arsip-tahunan">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                        </svg>
+                        <span>Arsip Tahunan</span>
+                    </a>
+
                     <a href="#" id="nav-update" class="nav-link flex justify-between items-center space-x-3 p-2 rounded-md" data-page="update-info"><span class="flex items-center space-x-3"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span>Info & Update</span></span></a>
                     <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-md" data-page="bantuan">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -676,7 +684,8 @@
                                     </div>
                                 </div>
                             </div>
-                            <a id="hubungi-admin-card" href="https://wa.me/qr/FMVS3NLDIRUAA1" target="_blank" rel="noopener noreferrer" class="bg-white p-6 rounded-2xl shadow-lg flex items-center space-x-4 transition-transform transform hover:scale-105 cursor-pointer">
+
+                            <div id="hubungi-admin-card" class="bg-white p-6 rounded-2xl shadow-lg flex items-center space-x-4 transition-transform transform hover:scale-105 cursor-pointer">
                                 <div class="bg-green-100 p-4 rounded-full">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.487 5.235 3.487 8.413 0 6.557-5.338 11.892-11.894 11.892-1.99 0-3.903-.52-5.586-1.456l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 4.315 1.731 6.086l.06.094-1.105 4.023 4.13-1.082.092.055z"/>
@@ -686,7 +695,8 @@
                                     <p class="text-lg font-bold text-gray-800">Hubungi Admin!</p>
                                     <p class="text-sm text-gray-500 mt-1">Jika ada saran atau menemukan masalah, klik di sini.</p>
                                 </div>
-                            </a>
+                            </div>
+
                             <div id="saran-card" class="relative bg-white p-6 rounded-2xl shadow-lg flex items-center space-x-4 transition-transform transform hover:scale-105 cursor-pointer">
                                 <span id="saran-user-badge" class="hidden absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold ring-2 ring-white"></span>
 
@@ -1909,6 +1919,14 @@
                                             </div>
                                         </div>
 
+                                        <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row items-start gap-4">
+                                            <img src="https://i.imgur.com/EtunhG5.gif" alt="Fitur Arsip Tahunan" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
+                                            <div>
+                                                <h4 class="font-bold text-gray-800">Arsip Tahunan & Reset Data</h4>
+                                                <p class="mt-1 text-sm text-gray-600">Arsipkan seluruh data akademik di akhir tahun ajaran ke file terpisah. Setelah itu, bersihkan data di aplikasi untuk memulai tahun ajaran baru dengan rapi.</p>
+                                            </div>
+                                        </div>
+
                                     </div>
                                 </div>
                             </div>
@@ -1967,6 +1985,30 @@
                         <p class="mt-2 text-gray-600 mb-8">Tinjau konfirmasi donasi yang masuk dan verifikasi untuk membuka fitur pengguna.</p>
                         <div id="donasiContainer_Superadmin" class="bg-white p-4 rounded-lg shadow-md mt-4">
                             </div>
+                    </div>
+
+                    <div id="page-arsip-tahunan" class="content-page hidden">
+                        <h1 class="text-3xl font-bold text-gray-800">Arsip Tahunan</h1>
+                        <p class="mt-2 text-gray-600 mb-8">Gunakan fitur ini untuk mengarsipkan seluruh data akademik tahun ajaran yang telah selesai.</p>
+
+                        <div class="bg-white p-8 rounded-lg shadow-md max-w-2xl">
+                            <div class="p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-r-lg mb-6">
+                                <h4 class="font-bold">Penting Sebelum Melanjutkan:</h4>
+                                <ul class="list-disc list-inside mt-2 text-sm">
+                                    <li>Proses ini akan **menyalin semua data siswa dan nilai** ke dalam satu file Spreadsheet baru di Google Drive Anda.</li>
+                                    <li>Setelah arsip berhasil dibuat, data di aplikasi akan **dibersihkan** untuk tahun ajaran baru.</li>
+                                    <li>Data yang sudah diarsipkan **tidak dapat diedit lagi** melalui aplikasi ini.</li>
+                                    <li>Pastikan semua proses input nilai dan rekapitulasi sudah final sebelum melakukan pengarsipan.</li>
+                                </ul>
+                            </div>
+
+                            <button id="startArchiveBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center disabled:bg-gray-400">
+                                <span id="archiveBtnText">Mulai Proses Arsip Tahunan</span>
+                                <span id="archiveSpinner" class="hidden loading-animation">Mengarsipkan Data</span>
+                            </button>
+
+                            <div id="archiveResultContainer" class="mt-6"></div>
+                        </div>
                     </div>
                 </div>
                 <footer class="text-center py-4 mt-8 border-t">
@@ -2411,6 +2453,26 @@
         </div>
     </div>
 
+    <div id="archive-confirm-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-[51]">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-lg transform scale-95 p-6">
+            <h2 class="text-2xl font-bold text-red-700">Konfirmasi Arsip Tahunan</h2>
+            <div class="mt-4 text-gray-600">
+                <p>Tindakan ini akan membuat salinan permanen dari semua data dan kemudian membersihkannya dari aplikasi. Proses ini <strong>tidak dapat dibatalkan</strong>.</p>
+            </div>
+            
+            <p id="archive-confirm-prompt" class="mt-4 text-sm"></p>
+            
+            <input type="text" id="archive-confirm-input" class="mt-2 w-full p-2 border border-gray-400 rounded-md" autocomplete="off">
+            
+            <div class="mt-6 pt-4 border-t flex justify-end space-x-3">
+                <button id="archive-confirm-cancel-btn" class="bg-gray-300 text-gray-800 py-2 px-6 rounded-md hover:bg-gray-400">Batal</button>
+                <button id="archive-confirm-action-btn" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed">
+                    Ya, Lanjutkan Arsip
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="status-info-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-[70]">
         <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-sm transform scale-95 text-center p-6">
             <div id="status-info-icon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
@@ -2816,6 +2878,35 @@
         </div>
     </div>
 
+    <div id="admin-info-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        
+        <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-sm transform scale-95 flex flex-col max-h-[90vh]">
+
+            <div class="p-6 md:p-8 text-center overflow-y-auto">
+                <button id="closeAdminInfoModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-3xl z-10">&times;</button>
+                
+                <img src="https://i.imgur.com/VU5TJqW.jpeg" alt="Foto Admin" class="w-44 h-44 rounded-full mx-auto mb-4 border-4 border-blue-200 shadow-lg">
+                
+                <h2 class="text-2xl font-bold text-gray-800"><span class="bg-blue-100 text-blue-800 font-bold border border-blue-300 rounded px-2 py-0.5">SYAMSUL BAHRI</span></h2>
+                
+                <div class="mt-4 text-sm text-gray-600 space-y-3">
+                    <p>Assalamualaikum Warahmatullahi Wabarakatuh...</p>
+                    <p>Saya Syamsul Bahri, pengembang Aplikasi Pengolahan Nilai Ijazah ini. Terima kasih sudah menggunakan aplikasi ini.</p>
+                    <p>Jika ada kendala atau masalah, mohon langsung hubungi saya. Terima kasih.</p>
+                </div>
+            </div>
+            
+            <div class="flex-shrink-0 mt-auto p-6 border-t text-center bg-gray-50 rounded-b-2xl">
+                <a href="https://wa.me/qr/FMVS3NLDIRUAA1" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-3 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.487 5.235 3.487 8.413 0 6.557-5.338 11.892-11.894 11.892-1.99 0-3.903-.52-5.586-1.456l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 4.315 1.731 6.086l.06.094-1.105 4.023 4.13-1.082.092.055z"/>
+                    </svg>
+                    <span>Hubungi Saya, Klik di Sini</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
     <div id="image-viewer-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[100] p-4 cursor-pointer">
         <button id="close-image-viewer" class="absolute top-4 right-5 text-white text-5xl font-bold hover:text-gray-300">&times;</button>
         <img id="fullscreen-image" src="" alt="Tampilan Fitur Penuh" class="max-w-full max-h-full object-contain rounded-lg">
@@ -2995,6 +3086,7 @@
             
             setupPasswordToggles();
             setupHelpAccordion();
+            setupAdminInfoModal();
 
             // Di dalam DOMContentLoaded
             const pengaturanForm = document.getElementById('pengaturanForm');
@@ -3981,7 +4073,7 @@
         // ===== GANTI FUNGSI LAMA DENGAN VERSI BARU INI =====
         function initializeApp(lastPage = 'dashboard') {
             const isLocked = sessionStorage.getItem('isLocked') === 'true';
-            const lockedFeaturePages = ['transkrip', 'backup-restore'];
+            const lockedFeaturePages = ['transkrip', 'backup-restore', 'arsip-tahunan'];
 
             // Kunci navigasi
             document.querySelectorAll('.nav-link').forEach(link => {
@@ -4023,7 +4115,7 @@
             const allowedUserPages = [
                 'dashboard', 'data-sekolah', 'data-siswa', 'mapel',
                 'input-ujian', 'input-rapor', 'upload-nilai', 'rekapitulasi', 'pengajuan',
-                'ubah-password', 'backup-restore', 'update-info', 'validasi-nilai', 'pengaturan', 'bantuan', 'transkrip'
+                'ubah-password', 'backup-restore', 'update-info', 'validasi-nilai', 'pengaturan', 'bantuan', 'transkrip', 'arsip-tahunan'
             ];
 
             document.querySelectorAll('.nav-link').forEach(link => {
@@ -5943,6 +6035,57 @@
                 });
             }
             // ===== AKHIR KODE BARU =====
+
+            // Ganti event listener untuk #startArchiveBtn dengan ini
+            document.getElementById('startArchiveBtn')?.addEventListener('click', function() {
+                const schoolName = document.getElementById('school-name-sidebar').textContent;
+
+                // Panggil fungsi modal yang BARU dan SPESIFIK
+                showArchiveConfirmModal({
+                    schoolName: schoolName, // <- Nama sekolah sebagai teks konfirmasi
+                    onConfirm: () => {
+                        // Logika untuk memulai arsip (tidak berubah dari sebelumnya)
+                        const btn = document.getElementById('startArchiveBtn');
+                        const btnText = document.getElementById('archiveBtnText');
+                        const spinner = document.getElementById('archiveSpinner');
+                        const resultContainer = document.getElementById('archiveResultContainer');
+                        
+                        btn.disabled = true;
+                        btnText.classList.add('hidden');
+                        spinner.classList.remove('hidden');
+                        resultContainer.innerHTML = '';
+
+                        const userEmail = sessionStorage.getItem('userEmail');
+
+                        google.script.run
+                            .withSuccessHandler(response => {
+                                btn.disabled = false;
+                                btnText.classList.remove('hidden');
+                                spinner.classList.add('hidden');
+
+                                if (response.status === 'success') {
+                                    resultContainer.innerHTML = `
+                                        <div class="mt-6 p-4 bg-green-100 border border-green-300 rounded-lg text-center">
+                                            <p class="font-bold text-green-800">${response.message}</p>
+                                            <a href="${response.fileUrl}" target="_blank" class="mt-3 inline-block bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">
+                                                Buka File Arsip Sekarang
+                                            </a>
+                                        </div>
+                                    `;
+                                } else {
+                                    resultContainer.innerHTML = `<p class="mt-4 text-red-600 text-center">${response.message}</p>`;
+                                }
+                            })
+                            .withFailureHandler(err => {
+                                btn.disabled = false;
+                                btnText.classList.remove('hidden');
+                                spinner.classList.add('hidden');
+                                resultContainer.innerHTML = `<p class="mt-4 text-red-600 text-center">Terjadi error: ${err.message}</p>`;
+                            })
+                            .prosesArsipTahunan(userSpreadsheetId, userEmail);
+                    }
+                });
+            });
         }
 
         /**
@@ -7937,6 +8080,52 @@
             // Tampilkan modal
             modal.classList.remove('hidden');
             modal.querySelector('.modal-content').style.transform = 'scale(1)';
+            inputEl.focus();
+        }
+
+        /**
+         * [BARU KHUSUS ARSIP] Menampilkan modal konfirmasi untuk arsip tahunan.
+         * @param {object} options Opsi untuk modal.
+         * @param {string} options.schoolName Nama sekolah yang harus diketik untuk konfirmasi.
+         * @param {function} options.onConfirm Fungsi callback yang akan dijalankan jika konfirmasi berhasil.
+         */
+        function showArchiveConfirmModal(options) {
+            const modal = document.getElementById('archive-confirm-modal');
+            const promptEl = document.getElementById('archive-confirm-prompt');
+            const inputEl = document.getElementById('archive-confirm-input');
+            const cancelBtn = document.getElementById('archive-confirm-cancel-btn');
+            const actionBtn = document.getElementById('archive-confirm-action-btn');
+
+            promptEl.innerHTML = `Untuk melanjutkan, ketik nama sekolah Anda "<code class="bg-gray-200 text-blue-700 font-bold p-1 rounded">${options.schoolName}</code>" di kolom di bawah ini.`;
+            
+            inputEl.value = '';
+            const newActionBtn = actionBtn.cloneNode(true);
+            actionBtn.parentNode.replaceChild(newActionBtn, actionBtn);
+            newActionBtn.disabled = true;
+
+            const closeModal = () => {
+                modal.classList.add('hidden');
+                inputEl.removeEventListener('input', inputHandler);
+            };
+
+            const inputHandler = () => {
+                if (inputEl.value.trim() === options.schoolName) {
+                    newActionBtn.disabled = false;
+                } else {
+                    newActionBtn.disabled = true;
+                }
+            };
+            
+            const actionHandler = () => {
+                closeModal();
+                options.onConfirm();
+            };
+
+            inputEl.addEventListener('input', inputHandler);
+            cancelBtn.onclick = closeModal;
+            newActionBtn.addEventListener('click', actionHandler);
+            
+            modal.classList.remove('hidden');
             inputEl.focus();
         }
 
@@ -10226,14 +10415,6 @@
             // Targetkan kontainer yang akan dikunci
             const pengumumanContainer = document.getElementById('pengumuman-kelulusan-container');
             const kopSuratContainer = document.getElementById('kop-surat-container');
-            
-            // Fungsi untuk mengarahkan ke halaman donasi
-            /*const showDonasiPage = () => {
-                document.querySelectorAll('.content-page').forEach(p => p.classList.add('hidden'));
-                document.getElementById('page-donasi').classList.remove('hidden');
-                document.getElementById('donasiEmail').value = sessionStorage.getItem('userEmail') || '';
-                document.getElementById('donasiNamaSekolah').value = document.getElementById('school-name-sidebar').textContent || '';
-            };*/
 
             // Terapkan atau hapus kunci berdasarkan status
             [pengumumanContainer, kopSuratContainer].forEach(container => {
@@ -12527,6 +12708,41 @@
                             showGlobalStatus(err.message, false);
                         })
                         .bulkSetFiturLock_Superadmin(sessionStorage.getItem('userEmail'), rowsToUpdate, isLocked);
+                }
+            });
+        }
+
+        // Letakkan ini di dekat fungsi-fungsi setup lainnya
+        function setupAdminInfoModal() {
+            const card = document.getElementById('hubungi-admin-card');
+            const modal = document.getElementById('admin-info-modal');
+            const closeBtn = document.getElementById('closeAdminInfoModalBtn');
+
+            if (!card || !modal || !closeBtn) return; // Pastikan semua elemen ada
+
+            const openModal = () => {
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.querySelector('.modal-content').style.transform = 'scale(1)';
+                }, 10);
+            };
+
+            const closeModal = () => {
+                modal.querySelector('.modal-content').style.transform = 'scale(0.95)';
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            };
+
+            card.addEventListener('click', (e) => {
+                e.preventDefault(); // Mencegah aksi default
+                openModal();
+            });
+            
+            closeBtn.addEventListener('click', closeModal);
+
+            // Menutup modal saat mengklik di area luar konten
+            modal.addEventListener('click', (event) => {
+                if (event.target.id === 'admin-info-modal') {
+                    closeModal();
                 }
             });
         }
