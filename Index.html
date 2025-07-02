@@ -10612,13 +10612,13 @@
 
 
         /**
-         * [MODIFIKASI FINAL v7] Menambahkan animasi loading pada tombol Cetak.
+         * [MODIFIKASI FINAL v10] Menampilkan blok TTD & QR Code di pratinjau modal.
          */
         function renderTranscriptModal(data, printableArea) {
             try {
                 const { student, school, subjects } = data;
 
-                // Helper dan perhitungan (tidak ada perubahan)
+                // Fungsi-fungsi helper
                 const toProperCase = (str) => {
                     if (!str || typeof str !== 'string') return '';
                     return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
@@ -10629,162 +10629,138 @@
                 };
                 const formatScore = (score) => {
                     if (score === null || score === undefined || isNaN(score)) return '0';
-                    const rounded = Math.round(score);
-                    const decimal = score.toFixed(2).replace('.', ',');
-                    return `${rounded} (${decimal})`;
+                    return `${Math.round(score)}`;
                 };
-                let totalNilaiIjazah = 0;
-                const mapelCount = subjects.length;
-                subjects.forEach(s => {
-                    const scoreToAdd = (s.nilaiIjazah !== null && !isNaN(s.nilaiIjazah)) ? Math.round(s.nilaiIjazah) : 0;
-                    totalNilaiIjazah += scoreToAdd;
-                });
-                const rataRataIjazah = mapelCount > 0 ? (totalNilaiIjazah / mapelCount).toFixed(2).replace('.', ',') : '0,00';
-                const nomorIndukGabungan = (school.nsm || '') + (student.nis || '-');
-                const alamatUtama = `${(school.alamat || '').toUpperCase()}, KEL. ${(school.kelurahan || '').toUpperCase()}`;
-                const alamatLengkap = [
-                    `Kecamatan ${toProperCase(school.kecamatan || '')}`,
-                    `Kabupaten ${toProperCase(school.kabupaten || '')}`,
-                    toProperCase(school.provinsi || ''),
-                    school.kodePos || ''
-                ].filter(Boolean).join(' - ');
-
-                // Struktur HTML (tidak ada perubahan)
-                const html = `
-                    <div class="font-sans p-4" id="printable-transcript-content">
-                        <div style="display: flex; align-items: flex-start; padding-bottom: 5px; border-bottom: 3px solid black; margin-bottom: 10px;">
-                            <div id="print-logo-placeholder" style="width: 75px; height: 75px; margin-right: 20px;"></div>
-                            <div style="text-align: center; flex-grow: 1; line-height: 1.4;">
-                                <div style="font-size: 14pt; font-weight: bold;">KEMENTERIAN AGAMA REPUBLIK INDONESIA</div>
-                                <div style="font-size: 16pt; font-weight: bold;">${school.namaSekolah || 'NAMA SEKOLAH'}</div>
-                                <div style="font-size: 11pt;">${alamatUtama}</div>
-                                <div style="font-size: 9pt; font-style: italic;">${alamatLengkap}</div>
-                            </div>
-                        </div>
-                        <div class="text-center" style="margin-top: 10px;">
-                            <h3 class="font-bold" style="text-decoration: underline; font-size: 14pt;">TRANSKRIP NILAI AKHIR</h3>
-                        </div>
-                        <table class="no-border" style="width:100%; margin-top: 1rem; margin-bottom: 1rem; font-size:10pt;">
-                          <tbody>
-                              <tr><td style="border:none; padding: 1px; width: 180px;">Nama Peserta Didik</td><td style="border:none; padding: 1px; width: 10px;">:</td><td style="border:none; font-weight:bold; padding: 1px;">${student.nama.toUpperCase()}</td></tr>
-                              <tr><td style="border:none; padding: 1px;">Tempat, Tanggal Lahir</td><td style="border:none; padding: 1px;">:</td><td style="border:none; font-weight:bold; padding: 1px;">${student.tempatLahir ? toProperCase(student.tempatLahir) + ', ' : ''}${formatIndonesianDate(student.tanggalLahir)}</td></tr>
-                              <tr><td style="border:none; padding: 1px;">Nomor Induk Siswa/NISN</td><td style="border:none; padding: 1px;">:</td><td style="border:none; font-weight:bold; padding: 1px;">${nomorIndukGabungan} / ${student.nisn}</td></tr>
-                          </tbody>
-                        </table>
-                        <table class="w-full text-sm border-collapse border border-black" style="border: 1px solid black;">
-                            <thead class="bg-gray-200 font-bold" style="background-color: #f2f2f2; font-weight: bold;">
-                                <tr>
-                                    <th class="border border-black p-2 w-10 text-center" rowspan="2">No</th>
-                                    <th class="border border-black p-2 text-left" rowspan="2">Mata Pelajaran</th>
-                                    <th class="border border-black p-2 text-center" colspan="3">Nilai</th>
-                                </tr>
-                                <tr>
-                                    <th class="border border-black p-1 text-xs font-semibold w-32 text-center">Rata-Rata Rapor</th>
-                                    <th class="border border-black p-1 text-xs font-semibold w-32 text-center">Ujian Madrasah</th>
-                                    <th class="border border-black p-1 text-xs font-semibold w-32 text-center">Nilai Ijazah</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${subjects.map((s, index) => `
-                                    <tr class="bg-white">
-                                        <td class="border border-black p-2 text-center">${index + 1}</td>
-                                        <td class="border border-black p-2">${s.nama}</td>
-                                        <td class="border border-black p-2 text-center">${formatScore(s.nilaiRapor)}</td>
-                                        <td class="border border-black p-2 text-center">${formatScore(s.nilaiUjian)}</td>
-                                        <td class="border border-black p-2 text-center font-bold">${formatScore(s.nilaiIjazah)}</td>
-                                    </tr>
-                                `).join('')}
-                                <tr class="font-bold" style="font-weight: bold; background-color: #f2f2f2;">
-                                    <td class="border border-black p-2 text-center" colspan="4">Rata-rata Nilai Akhir Ijazah</td>
-                                    <td class="border border-black p-2 text-center">${rataRataIjazah}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <div style="margin-top: 40px; width: 100%; display: flex; justify-content: space-between; align-items: flex-end;">
-                          <div id="print-qr-placeholder" style="text-align: center; font-size: 8pt; color: #555;"></div>
-                          <div style="width: 45%; text-align: center; font-size: 10pt;">
-                              <p>${toProperCase(school.kabupaten) || '(Tempat)'}, ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
-                              <p>Kepala Madrasah,</p>
-                              <div id="print-signature-area" style="position: relative; height: 80px; margin-top: 10px; margin-bottom: 5px;">
-                              </div>
-                              <p style="font-weight: bold; text-decoration: underline; margin:0;">${school.namaKepsek || '(Nama Kepala Sekolah)'}</p>
-                              <p style="margin:0;">NIP. ${school.nipKepsek || '-'}</p>
-                          </div>
-                        </div>
-                    </div>`;
                 
-                printableArea.innerHTML = html;
+                // Kalkulasi nilai
+                let totalNilaiIjazah = 0;
+                subjects.forEach(s => {
+                    totalNilaiIjazah += (s.nilaiIjazah !== null && !isNaN(s.nilaiIjazah)) ? Math.round(s.nilaiIjazah) : 0;
+                });
+                const rataRataIjazah = subjects.length > 0 ? (totalNilaiIjazah / subjects.length).toFixed(2).replace('.', ',') : '0,00';
 
-                // Menangani tombol cetak
+                // =====================================================================
+                // [PERUBAHAN UTAMA] AMBIL ASET DAN BANGUN SEMUA BAGIAN HTML SEKALIGUS
+                // =====================================================================
+
+                // Tampilkan loader di area pratinjau
+                printableArea.innerHTML = `<p class="text-center text-gray-500 py-8 loading-animation">Membangun pratinjau transkrip</p>`;
+
+                // Ambil semua aset (logo, ttd, qr) dari backend terlebih dahulu
+                Promise.all([
+                    new Promise(resolve => google.script.run.withSuccessHandler(resolve).getDocumentSettings(userSpreadsheetId)),
+                    new Promise(resolve => google.script.run.withSuccessHandler(resolve).getQrCodeAsBase64())
+                ]).then(([settingsResponse, qrCodeBase64]) => {
+                    
+                    const docSettings = (settingsResponse && settingsResponse.status === 'success') ? settingsResponse.settings : {};
+                    const { logo, signature, stamp } = docSettings;
+
+                    // Bangun HTML untuk gambar-gambar
+                    const logoHtml = logo ? `<img src="${logo}" style="width:75px; height:75px;" alt="Logo">` : '';
+                    const signatureHtml = signature ? `<img src="${signature}" style="position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); max-width:150px; max-height:100px; z-index:1;" alt="TTD">` : '';
+                    const stampHtml = stamp ? `<img src="${stamp}" style="position:absolute; left:50%; top:50%; transform:translate(-50%, -50%) rotate(-15deg); opacity:0.75; max-width:120px; max-height:120px; z-index:2;" alt="Stempel">` : '';
+                    const qrHtml = qrCodeBase64 ? `<img src="data:image/png;base64,${qrCodeBase64}" style="width:80px; height:80px;" alt="QR Code"><br><span>Scan untuk validasi</span>` : '';
+                    
+                    // Bangun Kop Surat
+                    const kantorKemenagLine = `KANTOR KEMENTERIAN AGAMA ${school.tipeKabupaten || ''} ${school.kabupaten || ''}`.toUpperCase();
+                    const tipeKabSingkat = school.tipeKabupaten === 'Kabupaten' ? 'Kab.' : 'Kota';
+                    const tipeKelSingkat = school.tipeKelurahan === 'Kelurahan' ? 'Kel.' : 'Desa';
+                    const alamatLengkap = [ school.alamat, `${tipeKelSingkat} ${toProperCase(school.kelurahan || '')}`, `Kec. ${toProperCase(school.kecamatan || '')}`, `${tipeKabSingkat} ${toProperCase(school.kabupaten || '')}`, toProperCase(school.provinsi || ''), school.kodePos ].filter(Boolean).join(', ');
+                    const teleponLine = school.telepon ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">Telepon : ${school.telepon}</div>` : '';
+                    const websiteLine = school.website ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">Website : ${school.website}</div>` : '';
+                    const nomorIndukGabungan = student.nis ? (school.nsm || '') + student.nis : '-';
+
+                    // Bangun keseluruhan HTML untuk ditampilkan di modal
+                    const finalHtml = `
+                        <div class="font-sans p-4" id="printable-transcript-content">
+                            <div style="display: flex; align-items: flex-start; padding-bottom: 5px; border-bottom: 3px solid black; margin-bottom: 10px;">
+                                <div style="width: 75px; height: 75px; margin-right: 20px;">${logoHtml}</div>
+                                <div style="text-align: center; flex-grow: 1; line-height: 1.4;">
+                                   <div style="font-family: Arial, sans-serif; font-size: 14pt; font-weight: bold;">KEMENTERIAN AGAMA REPUBLIK INDONESIA</div>
+                                   <div style="font-family: Arial, sans-serif; font-size: 12pt; font-weight: bold;">${kantorKemenagLine}</div>
+                                   <div style="font-family: Arial, sans-serif; font-size: 11pt; font-weight: bold;">${(school.namaSekolah || 'NAMA SEKOLAH').toUpperCase()}</div>
+                                   <div style="font-family: Arial, sans-serif; font-size: 9pt;">Alamat : ${alamatLengkap}</div>
+                                   ${teleponLine}
+                                   ${websiteLine}
+                                </div>
+                            </div>
+                            <div class="text-center" style="margin-top: 10px;">
+                                <h3 class="font-bold" style="text-decoration: underline; font-size: 14pt;">TRANSKRIP NILAI AKHIR</h3>
+                            </div>
+                            <table class="no-border" style="width:100%; margin-top: 1rem; margin-bottom: 1rem; font-size:10pt;">
+                              <tbody>
+                                  <tr><td style="border:none; padding: 1px; width: 180px;">Nama Peserta Didik</td><td style="border:none; padding: 1px; width: 10px;">:</td><td style="border:none; font-weight:bold; padding: 1px;">${student.nama.toUpperCase()}</td></tr>
+                                  <tr><td style="border:none; padding: 1px;">Tempat, Tanggal Lahir</td><td style="border:none; padding: 1px;">:</td><td style="border:none; font-weight:bold; padding: 1px;">${student.tempatLahir ? toProperCase(student.tempatLahir) + ', ' : ''}${formatIndonesianDate(student.tanggalLahir)}</td></tr>
+                                  <tr><td style="border:none; padding: 1px;">Nomor Induk Siswa/NISN</td><td style="border:none; padding: 1px;">:</td><td style="border:none; font-weight:bold; padding: 1px;">${nomorIndukGabungan} / ${student.nisn}</td></tr>
+                              </tbody>
+                            </table>
+                            <table class="w-full text-sm border-collapse border border-black" style="border: 1px solid black;">
+                                <thead class="bg-gray-200 font-bold" style="background-color: #f2f2f2; font-weight: bold;">
+                                    <tr>
+                                        <th class="border border-black p-2 w-10 text-center" rowspan="2">No</th>
+                                        <th class="border border-black p-2 text-left" rowspan="2">Mata Pelajaran</th>
+                                        <th class="border border-black p-2 text-center" colspan="3">Nilai</th>
+                                    </tr>
+                                    <tr>
+                                        <th class="border border-black p-1 text-xs font-semibold w-32 text-center">Rata-Rata Rapor</th>
+                                        <th class="border border-black p-1 text-xs font-semibold w-32 text-center">Ujian Madrasah</th>
+                                        <th class="border border-black p-1 text-xs font-semibold w-32 text-center">Nilai Ijazah</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${subjects.map((s, index) => `
+                                        <tr class="bg-white">
+                                            <td class="border border-black p-2 text-center">${index + 1}</td>
+                                            <td class="border border-black p-2">${s.nama}</td>
+                                            <td class="border border-black p-2 text-center">${formatScore(s.nilaiRapor)}</td>
+                                            <td class="border border-black p-2 text-center">${formatScore(s.nilaiUjian)}</td>
+                                            <td class="border border-black p-2 text-center font-bold">${formatScore(s.nilaiIjazah)}</td>
+                                        </tr>
+                                    `).join('')}
+                                    <tr class="font-bold" style="font-weight: bold; background-color: #f2f2f2;">
+                                        <td class="border border-black p-2 text-center" colspan="4">Rata-rata Nilai Akhir Ijazah</td>
+                                        <td class="border border-black p-2 text-center">${rataRataIjazah}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div style="margin-top: 40px; width: 100%; display: flex; justify-content: space-between; align-items: flex-end;">
+                                <div style="text-align: center; font-size: 8pt; color: #555;">${qrHtml}</div>
+                                <div style="width: 45%; text-align: center; font-size: 10pt;">
+                                    <p>${toProperCase(school.kabupaten) || '(Tempat)'}, ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                                    <p>Kepala Madrasah,</p>
+                                    <div style="position: relative; height: 80px; margin-top: 10px; margin-bottom: 5px;">
+                                        ${stampHtml}${signatureHtml}
+                                    </div>
+                                    <p style="font-weight: bold; text-decoration: underline; margin:0;">${school.namaKepsek || '(Nama Kepala Sekolah)'}</p>
+                                    <p style="margin:0;">NIP. ${school.nipKepsek || '-'}</p>
+                                </div>
+                            </div>
+                        </div>`;
+                    
+                    // Tampilkan HTML yang sudah lengkap di area pratinjau
+                    printableArea.innerHTML = finalHtml;
+                });
+
+                // Handler tombol Cetak (sekarang lebih sederhana)
                 const printBtn = document.getElementById('printTranscriptBtn');
                 const newPrintBtn = printBtn.cloneNode(true);
                 printBtn.parentNode.replaceChild(newPrintBtn, printBtn);
-
                 newPrintBtn.addEventListener('click', () => {
-                    // === [PERUBAHAN 1] Ambil elemen tombol dan span-nya ===
-                    const btnText = newPrintBtn.querySelector('.btn-text');
-                    const spinner = newPrintBtn.querySelector('.btn-spinner');
-
-                    // === [PERUBAHAN 2] Aktifkan mode loading ===
-                    newPrintBtn.disabled = true;
-                    btnText.classList.add('hidden');
-                    spinner.classList.remove('hidden');
-
-                    Promise.all([
-                        new Promise(resolve => google.script.run.withSuccessHandler(resolve).getDocumentSettings(userSpreadsheetId)),
-                        new Promise(resolve => google.script.run.withSuccessHandler(resolve).getQrCodeAsBase64())
-                    ]).then(([settingsResponse, qrCodeBase64]) => {
-                        
-                        const docSettings = (settingsResponse && settingsResponse.status === 'success') ? settingsResponse.settings : {};
-                        const { logo, signature, stamp } = docSettings;
-                        
-                        const printWindowTitle = `${student.nama} - ${student.nisn} - Aplikasi Ijazah by Syamsul Bahri`;
-                        const printWindow = window.open('', '', 'height=800,width=800');
-                        printWindow.document.write(`<html><head><title>${printWindowTitle}</title>`);
-                        
-                        Array.from(document.styleSheets).forEach(styleSheet => {
-                            try {
-                                const cssRules = Array.from(styleSheet.cssRules).map(rule => rule.cssText).join('');
-                                printWindow.document.write(`<style>${cssRules}</style>`);
-                            } catch (e) {
-                                if (styleSheet.href) {
-                                    printWindow.document.write(`<link rel="stylesheet" href="${styleSheet.href}">`);
-                                }
-                            }
-                        });
-
-                        printWindow.document.write(`<style>@media print { thead { display: table-header-group; } tr { page-break-inside: avoid; } }</style>`);
-                        printWindow.document.write('</head><body></body></html>');
-                        printWindow.document.close();
-                        
-                        const contentToPrint = document.getElementById('printable-transcript-content').cloneNode(true);
-                        
-                        if (logo) contentToPrint.querySelector('#print-logo-placeholder').innerHTML = `<img src="${logo}" style="width:75px; height:75px;" alt="Logo">`;
-                        const signatureArea = contentToPrint.querySelector('#print-signature-area');
-                        if (signature) signatureArea.innerHTML += `<img src="${signature}" style="position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); max-width:150px; max-height:100px; z-index:1;" alt="TTD">`;
-                        if (stamp) signatureArea.innerHTML += `<img src="${stamp}" style="position:absolute; left:50%; top:50%; transform:translate(-50%, -50%) rotate(-15deg); opacity:0.75; max-width:120px; max-height:120px; z-index:2;" alt="Stempel">`;
-                        if(qrCodeBase64) contentToPrint.querySelector('#print-qr-placeholder').innerHTML = `<img src="data:image/png;base64,${qrCodeBase64}" alt="QR Code"><br><span>Scan untuk validasi</span>`;
-                        
-                        printWindow.document.body.appendChild(contentToPrint);
-
-                        // === [PERUBAHAN 3] Non-aktifkan mode loading sebelum dialog cetak muncul ===
-                        newPrintBtn.disabled = false;
-                        btnText.classList.remove('hidden');
-                        spinner.classList.add('hidden');
-
-                        setTimeout(() => {
-                            printWindow.focus();
-                            printWindow.print();
-                            printWindow.close();
-                        }, 250);
-                    }).catch(error => { // Tangani jika promise gagal
-                        console.error("Gagal mempersiapkan data cetak:", error);
-                        newPrintBtn.disabled = false;
-                        btnText.classList.remove('hidden');
-                        spinner.classList.add('hidden');
-                    });
+                    const printWindow = window.open('', '', 'height=800,width=800');
+                    printWindow.document.write('<html><head><title>Cetak Transkrip</title>');
+                    printWindow.document.write('<style>body{font-family: Arial, sans-serif; font-size: 10pt;} table{border-collapse: collapse; width: 100%;} th, td{border: 1px solid black; padding: 4px; vertical-align: middle; text-align:left;} .text-center{text-align: center;} .font-bold{font-weight: bold;} .bg-gray{background-color: #f2f2f2;} @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } thead { display: table-header-group; } tr, table, div { page-break-inside: avoid; } }</style>');
+                    printWindow.document.write('</head><body>');
+                    // Ambil konten yang SUDAH ADA di modal, yang sekarang sudah lengkap
+                    printWindow.document.body.innerHTML = document.getElementById('printable-transcript-content').innerHTML;
+                    printWindow.document.write('</body></html>');
+                    printWindow.document.close();
+                    setTimeout(() => {
+                        printWindow.focus();
+                        printWindow.print();
+                        printWindow.close();
+                    }, 250);
                 });
-
+                
                 // Event listener untuk tombol download (tidak ada perubahan)
                 const downloadBtn = document.getElementById('downloadTranscriptBtn');
                 const newDownloadBtn = downloadBtn.cloneNode(true);
@@ -10821,6 +10797,15 @@
                         })
                         .generateTranscriptPdfForSiswa(ssId, nisn);
                 });
+
+                // Secara dinamis memuat gambar logo ke area pratinjau modal
+                google.script.run.withSuccessHandler(response => {
+                    const previewLogoPlaceholder = document.getElementById('preview-logo-placeholder');
+                    if(response && response.status === 'success' && response.settings && response.settings.logo && previewLogoPlaceholder) {
+                        previewLogoPlaceholder.innerHTML = `<img src="${response.settings.logo}" style="width:75px; height:75px;" alt="Logo">`;
+                    }
+                }).getDocumentSettings(userSpreadsheetId);
+
 
             } catch (error) {
                 alert("Gagal menampilkan transkrip. Error: " + error.message);
