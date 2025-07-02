@@ -499,21 +499,40 @@
             .getTranscriptData(ssId, nisn);
     }
     
-    // FUNGSI INI SEKARANG SAMA SEPERTI DI PORTAL ADMIN
     function renderTranscriptSiswa(data, printableArea) {
         const { student, school, subjects } = data;
         
+        // ==========================================================
+        // === [PERUBAHAN UTAMA] LOGIKA UNTUK MEMBANGUN KOP SURAT ===
+        // ==========================================================
         const toProperCase = (str) => {
             if (!str || typeof str !== 'string') return '';
             return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
         };
+
+        const kantorKemenagLine = `KANTOR KEMENTERIAN AGAMA ${school.tipeKabupaten || ''} ${school.kabupaten || ''}`.toUpperCase();
+        const tipeKabSingkat = school.tipeKabupaten === 'Kabupaten' ? 'Kab.' : 'Kota';
+        const tipeKelSingkat = school.tipeKelurahan === 'Kelurahan' ? 'Kel.' : 'Desa';
+        
+        const alamatLengkap = [
+            school.alamat,
+            `${tipeKelSingkat} ${toProperCase(school.kelurahan || '')}`,
+            `Kec. ${toProperCase(school.kecamatan || '')}`,
+            `${tipeKabSingkat} ${toProperCase(school.kabupaten || '')}`,
+            toProperCase(school.provinsi || ''),
+            school.kodePos
+        ].filter(Boolean).join(', ');
+
+        const teleponLine = school.telepon ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">Telepon : ${school.telepon}</div>` : '';
+        const websiteLine = school.website ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">Website : ${school.website}</div>` : '';
+        // ==========================================================
+
         const tglLahirFormatted = new Date(student.tanggalLahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-        const nomorIndukGabungan = (school.nsm || '') + (student.nis || '-');
+        const nomorIndukGabungan = student.nis ? (school.nsm || '') + student.nis : '-';
         const formatScore = (score) => {
             if (score === null || score === undefined || isNaN(score)) return '0';
             const rounded = Math.round(score);
-            const decimal = score.toFixed(2).replace('.', ',');
-            return `${rounded} (${decimal})`;
+            return `${rounded}`; // Hanya mengembalikan nilai yang sudah dibulatkan
         };
         let totalNilaiIjazah = 0;
         const mapelCount = subjects.length;
@@ -522,27 +541,18 @@
         });
         const rataRataIjazah = mapelCount > 0 ? (totalNilaiIjazah / mapelCount).toFixed(2).replace('.', ',') : '0,00';
         
-        const alamatUtama = `${(school.alamat || '').toUpperCase()}, KEL. ${(school.kelurahan || '').toUpperCase()}`;
-        const alamatLengkap = [
-            `Kecamatan ${toProperCase(school.kecamatan || '')}`,
-            `Kabupaten ${toProperCase(school.kabupaten || '')}`,
-            toProperCase(school.provinsi || ''),
-            school.kodePos || ''
-        ].filter(Boolean).join(' - ');
-        
         printableArea.innerHTML = `
             <div class="font-sans p-2">
-                <div style="display: flex; align-items: flex-start; padding-bottom: 5px; border-bottom: 3px solid black; margin-bottom: 10px;">
-                    <div style="width: 75px; height: 75px; margin-right: 20px;"></div>
-                    <div style="text-align: center; flex-grow: 1; line-height: 1.4;">
-                        <div style="font-size: 14pt; font-weight: bold;">KEMENTERIAN AGAMA REPUBLIK INDONESIA</div>
-                        <div style="font-size: 16pt; font-weight: bold;">${school.namaSekolah || 'NAMA SEKOLAH'}</div>
-                        <div style="font-size: 11pt;">${alamatUtama}</div>
-                        <div style="font-size: 9pt; font-style: italic;">${alamatLengkap}</div>
-                    </div>
+                <div style="text-align: center; line-height: 1.4; border-bottom: 2px solid black; padding-bottom: 5px; margin-bottom: 10px;">
+                    <div style="font-family: Arial, sans-serif; font-size: 14pt; font-weight: bold;">KEMENTERIAN AGAMA REPUBLIK INDONESIA</div>
+                    <div style="font-family: Arial, sans-serif; font-size: 12pt; font-weight: bold;">${kantorKemenagLine}</div>
+                    <div style="font-family: Arial, sans-serif; font-size: 11pt; font-weight: bold;">${(school.namaSekolah || 'NAMA SEKOLAH').toUpperCase()}</div>
+                    <div style="font-family: Arial, sans-serif; font-size: 9pt;">Alamat : ${alamatLengkap}</div>
+                    ${teleponLine}
+                    ${websiteLine}
                 </div>
                 <div class="text-center" style="margin-top: 10px;">
-                     <h3 class="font-bold" style="text-decoration: underline; font-size: 14pt;">TRANSKRIP NILAI AKHIR</h3>
+                    <h3 class="font-bold" style="text-decoration: underline; font-size: 14pt;">TRANSKRIP NILAI AKHIR</h3>
                 </div>
                 <div class="w-full text-sm my-4 space-y-1">
                     <div class="grid grid-cols-[max-content_auto_1fr] gap-x-2">
