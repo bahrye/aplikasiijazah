@@ -52,7 +52,8 @@ function doGet(e) {
     return template.evaluate() // Gunakan .evaluate() untuk memproses template
       .setTitle('Portal Siswa')
       .setFaviconUrl("https://i.imgur.com/C0cZOT0.png")
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   } else {
     // Untuk halaman utama, buat template dan sisipkan URL ke dalamnya
     const template = HtmlService.createTemplateFromFile('Index');
@@ -61,7 +62,8 @@ function doGet(e) {
     return template.evaluate() // Gunakan .evaluate() untuk memproses template
       .setTitle('Aplikasi Pengolahan Nilai Ijazah by Syamsul Bahri')
       .setFaviconUrl("https://i.imgur.com/C0cZOT0.png")
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   }
 }
 
