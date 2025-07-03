@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -378,9 +379,186 @@
         #mapel-import-modal .modal-content {
           pointer-events: auto;
         }
+
+        /* ===== AWAL KODE BARU (CSS untuk Hamburger Menu) ===== */
+
+        /* ===== AWAL KODE PERBAIKAN (CSS Hamburger) ===== */
+        /* Secara default, sembunyikan tombol hamburger */
+        #hamburger-btn {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            /* 1. Atur ulang container utama agar tidak lagi menjadi flex row di mobile */
+            /* Ini adalah kunci utama perbaikannya */
+            #app-container > .flex {
+                display: block; /* Ubah dari flex menjadi block */
+            }
+
+            /* 2. Atur sidebar agar posisinya fixed dan tersembunyi di kiri */
+            #app-container aside {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                width: 280px; /* Lebar sidebar saat terbuka */
+                z-index: 40; /* Pastikan sidebar di atas lapisan lain */
+                
+                /* Sembunyikan ke kiri layar */
+                transform: translateX(-100%); 
+                transition: transform 0.3s ease-in-out;
+            }
+
+            /* 3. Atur agar konten utama memenuhi seluruh lebar layar */
+            #app-container main {
+                width: 100%;
+                padding-top: 5rem; /* Jarak untuk tombol hamburger di atas */
+            }
+
+            /* 4. Tampilkan sidebar saat kelas 'is-open' ditambahkan oleh JavaScript */
+            #app-container aside.is-open {
+                transform: translateX(0);
+            }
+
+            /* 5. Tampilkan tombol hamburger */
+            #hamburger-btn.is-active {
+                display: block;
+            }
+        }
+
+        /* ===== AKHIR KODE BARU ===== */
+        
+        /* ---------------------------------------------------- */
+        /* PENYESUAIAN SPESIFIK UNTUK 700px, 600px, dan 480px   */
+        /* ---------------------------------------------------- */
+
+        /* Untuk layar 700px ke bawah */
+        @media (max-width: 700px) {
+            /* Sedikit kurangi ukuran font judul utama halaman */
+            .content-page h1 {
+                font-size: 1.875rem; /* Ukuran antara text-2xl dan text-3xl */
+            }
+
+            /* Kurangi padding pada konten utama */
+            #app-container main {
+                padding: 1.25rem; /* 20px */
+            }
+
+            /* Kurangi padding di dalam modal agar tidak terlalu mepet */
+            .modal-content .p-6 {
+                padding: 1.25rem;
+            }
+        }
+
+        /* ===== AWAL KODE BARU (Panel Aksi Scrollable) ===== */
+        @media (max-width: 600px) {
+            /* Menargetkan semua panel aksi yang melayang */
+            #bulk-action-bar,
+            #user-bulk-action-bar,
+            #transcript-bulk-action-bar,
+            #undo-redo-container {
+                /* 1. Jaga agar panel tetap di tengah, tapi batasi lebarnya agar tidak keluar layar */
+                max-width: calc(100% - 2rem); /* Lebar maksimal = 100% layar dikurangi sedikit jarak di sisi */
+                
+                /* 2. INI KUNCINYA: Aktifkan scroll horizontal jika kontennya lebih panjang */
+                overflow-x: auto;
+
+                /* 3. (Opsional) Sembunyikan tampilan scrollbar agar lebih rapi */
+                -ms-overflow-style: none;  /* IE and Edge */
+                scrollbar-width: none;  /* Firefox */
+            }
+            
+            /* Sembunyikan scrollbar untuk browser Webkit (Chrome, Safari) */
+            #bulk-action-bar::-webkit-scrollbar,
+            #user-bulk-action-bar::-webkit-scrollbar,
+            #transcript-bulk-action-bar::-webkit-scrollbar,
+            #undo-redo-container::-webkit-scrollbar {
+                display: none;
+            }
+
+            /* 4. Paksa konten di dalam panel untuk tetap berada dalam satu baris */
+            #bulk-action-bar > div,
+            #user-bulk-action-bar > div,
+            #transcript-bulk-action-bar > div,
+            #undo-redo-container > div {
+                white-space: nowrap;
+            }
+
+            /* Menargetkan header dari modal transkrip */
+            #transcript-modal .flex-shrink-0.flex.justify-between {
+                flex-direction: column;   /* Susun item secara vertikal */
+                align-items: flex-start;  /* Rata kiri */
+                gap: 0.75rem;             /* Beri jarak antar item */
+            }
+
+            /* Posisikan tombol 'X' ke pojok kanan atas */
+            #closeTranscriptModalBtn {
+                position: absolute;
+                top: 0.75rem;
+                right: 0.75rem;
+            }
+
+            /* ===== AWAL KODE BARU (Sejajarkan Tombol Modal) ===== */
+            
+            /* 1. Paksa agar grup tombol tidak turun ke bawah (wrap) */
+            #transcript-modal .flex.items-center.space-x-3 {
+                flex-wrap: nowrap; 
+            }
+
+            /* 2. Perkecil ukuran tombol Unduh dan Cetak agar muat */
+            #downloadTranscriptBtn, #printTranscriptBtn {
+                width: auto; /* Biarkan lebar mengikuti konten */
+                padding: 0.5rem 1rem; /* Sedikit kurangi padding */
+                font-size: 0.875rem; /* Perkecil font */
+            }
+            /* ===== AKHIR KODE BARU ===== */
+        }
+
+        /* ===== AKHIR KODE BARU ===== */
+
+        /* Untuk layar 480px ke bawah (Ponsel kecil) */
+        @media (max-width: 480px) {
+            /* Perkecil padding utama agar lebih banyak ruang untuk konten */
+            #app-container main {
+                padding: 1rem; /* 16px */
+            }
+
+            /* Perkecil ukuran font pada tombol navigasi di sidebar */
+            .nav-link span {
+                font-size: 0.875rem; /* text-sm */
+            }
+
+            /* Perkecil font di dalam modal */
+            .modal-content h2 {
+                font-size: 1.25rem;
+            }
+            .modal-content {
+                padding: 0.75rem;
+            }
+            
+            /* Penyesuaian untuk Portal Siswa di Siswa.html */
+            #login-school-name {
+                font-size: 1.5rem; /* text-2xl */
+            }
+            #countdown-school-name {
+                font-size: 1.875rem;
+            }
+            #timer .font-display {
+                font-size: 3rem; /* text-5xl */
+            }
+            #status-lulus {
+                font-size: 4rem; /* antara text-6xl dan 7-xl */
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100">
+
+    <button id="hamburger-btn" class="hidden fixed top-4 left-4 z-50 bg-blue-600 text-white p-2 rounded-md shadow-lg">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+        </svg>
+    </button>
 
     <!-- Auth Container -->
     <div id="auth-wrapper" class="gradient-bg flex flex-col min-h-screen hidden">
@@ -2041,6 +2219,8 @@
             </main>
         </div>
     </div>
+
+    <div id="sidebar-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-30"></div>
     
     <div id="siswa-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
         <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-lg transform scale-95 flex flex-col max-h-[90vh]">
@@ -3000,6 +3180,7 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             setFooterYear();
+            setupHamburgerMenu();
 
             const loginForm = document.getElementById('loginForm');
             const signupForm = document.getElementById('signupForm');
@@ -3016,6 +3197,7 @@
                 // Jika peran yang tersimpan adalah Superadmin, langsung inisialisasi UI Superadmin
                 document.getElementById('auth-wrapper').classList.add('hidden');
                 document.getElementById('app-container').classList.remove('hidden');
+                document.getElementById('hamburger-btn').classList.add('is-active');
                 initializeSuperadminApp();
             } else if (storedSpreadsheetId) {
                 // Jika ada spreadsheetId, berarti ini pengguna biasa, inisialisasi UI normal
@@ -3023,6 +3205,7 @@
                 const lastPage = sessionStorage.getItem('lastActivePage') || 'dashboard';
                 document.getElementById('auth-wrapper').classList.add('hidden');
                 document.getElementById('app-container').classList.remove('hidden');
+                document.getElementById('hamburger-btn').classList.add('is-active');
                 initializeApp(lastPage);
             } else {
                 // Jika tidak ada keduanya, tampilkan halaman login
@@ -3617,6 +3800,7 @@
          * Ini memastikan semua state aplikasi di-reset total untuk semua jenis pengguna.
          */
         function logoutUser() {
+            document.getElementById('hamburger-btn').classList.add('is-active');
             // [1] Ambil URL aplikasi web yang bersih dari session storage.
             // URL ini didapat saat login berhasil dan disimpan untuk keperluan ini.
             const webAppUrl = sessionStorage.getItem('webAppUrl');
@@ -3676,6 +3860,7 @@
 
                         document.getElementById('auth-wrapper').classList.add('hidden');
                         document.getElementById('app-container').classList.remove('hidden');
+                        document.getElementById('hamburger-btn').classList.add('is-active');
 
                         if (response.role === 'Superadmin') {
                             initializeSuperadminApp();
@@ -4226,6 +4411,8 @@
                     // Tidak perlu memanggil fungsi khusus karena halaman ini statis
                     console.log("Halaman Bantuan dimuat.");
                 }
+
+                closeSidebar();
             });
             // --- AKHIR PERUBAHAN UTAMA ---
 
@@ -7400,6 +7587,8 @@
                     loadDonasiManagementPage();
                     updateDonasiBadge();
                 }
+
+                closeSidebar();
             });
 
             const totalAkunCard = document.getElementById('sa-card-total-akun');
@@ -10587,6 +10776,14 @@
             const printableArea = document.getElementById('transcript-printable-area');
 
             modal.classList.remove('hidden');
+
+            // Tambahkan animasi saat membuka
+            setTimeout(() => modal.querySelector('.modal-content').style.transform = 'scale(1)', 10);
+            
+            // ===== TAMBAHKAN BARIS DI BAWAH INI =====
+            document.getElementById('closeTranscriptModalBtn').onclick = closeTranscriptModal;
+            // =======================================
+
             loader.classList.remove('hidden');
             printableArea.classList.add('hidden');
             printableArea.innerHTML = ''; // Kosongkan konten lama
@@ -12759,6 +12956,47 @@
                 }
             });
         }
+
+        // ===== PINDAHKAN FUNGSI INI KE LUAR =====
+        const closeSidebar = () => {
+            const sidebar = document.querySelector('#app-container aside');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar) sidebar.classList.remove('is-open');
+            if (overlay) overlay.classList.add('hidden');
+        };
+
+        function setupHamburgerMenu() {
+            const hamburgerBtn = document.getElementById('hamburger-btn');
+            const sidebar = document.querySelector('#app-container aside');
+            const overlay = document.getElementById('sidebar-overlay');
+            // const navLinks = sidebar.querySelectorAll('a.nav-link'); // <-- HAPUS BARIS INI
+
+            const openSidebar = () => {
+                sidebar.classList.add('is-open');
+                overlay.classList.remove('hidden');
+            };
+
+            // Fungsi closeSidebar sudah dipindah keluar
+
+            hamburgerBtn.addEventListener('click', openSidebar);
+            overlay.addEventListener('click', closeSidebar);
+
+            // HAPUS BLOK DI BAWAH INI KARENA AKAN KITA GANTI
+            // navLinks.forEach(link => {
+            //     link.addEventListener('click', closeSidebar);
+            // });
+        }
+
+        // ===== AWAL FUNGSI BARU =====
+        function closeTranscriptModal() {
+            const modal = document.getElementById('transcript-modal');
+            if (modal) {
+                // Tambahkan animasi saat menutup
+                modal.querySelector('.modal-content').style.transform = 'scale(0.95)';
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            }
+        }
+        // ===== AKHIR FUNGSI BARU =====
     </script>
 </body>
 </html>
