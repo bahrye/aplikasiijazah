@@ -1121,48 +1121,72 @@
 
                         <!-- === GANTI SELURUH BLOK INI === -->
                         <div id="kop-surat-container" class="mt-10 pt-8 border-t">
-                            <h2 class="text-2xl font-bold text-gray-700">Pengaturan Kop Surat & Tanda Tangan</h2>
-                            <p class="text-sm text-gray-500 mt-1 mb-4">Unggah gambar logo, tanda tangan, dan stempel untuk ditampilkan pada dokumen ekspor (seperti Transkrip). Gunakan format PNG dengan latar transparan untuk hasil terbaik.</p>
+                            <h2 class="text-2xl font-bold text-gray-700">Pengaturan Logo & Dokumen</h2>
+                            <p class="text-sm text-gray-500 mt-1 mb-4">Unggah gambar logo, header, tanda tangan, dan stempel. Gunakan format PNG dengan latar transparan untuk hasil terbaik.</p>
 
-                            <div class="bg-white p-8 rounded-lg shadow-md max-w-4xl">
+                            <div class="bg-white p-8 rounded-lg shadow-md max-w-5xl">
                                 <form id="documentSettingsForm" class="space-y-8">
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+                                    <div class="text-center border-b pb-8">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Header / Kop Surat Kustom</label>
+                                        <p class="text-xs text-gray-500 mb-2">Unggah gambar kop surat yang sudah jadi. Jika diunggah, ini akan menggantikan kop surat teks di transkrip.<br>Rekomendasi ukuran: Lebar 800px, Tinggi 100-150px.</p>
+                                        <div class="w-full h-32 mx-auto bg-gray-100 rounded-lg flex items-center justify-center border overflow-hidden">
+                                            <img id="customHeaderPreview" src="https://placehold.co/800x150/e2e8f0/64748b?text=Header+Kustom+(Kosong)" alt="Pratinjau Header Kustom" class="max-w-full max-h-full object-contain p-2">
+                                        </div>
+                                        <div class="mt-3 space-x-4">
+                                            <input type="file" id="customHeaderInput" accept="image/png, image/jpeg" class="hidden">
+                                            <button type="button" onclick="document.getElementById('customHeaderInput').click()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Ganti Header</button>
+                                            <button type="button" data-delete-key="ID Header Kustom" data-preview-id="customHeaderPreview" class="delete-asset-btn text-sm text-red-600 hover:text-red-800 font-medium">Hapus</button>
+                                        </div>
+                                    </div>
 
-                                        <!-- Kolom Logo -->
+                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 items-start">
+
                                         <div class="text-center">
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">Logo Sekolah</label>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Logo Portal Siswa</label>
+                                            <p class="text-xs text-gray-500 mb-2">Tampil di halaman login siswa.</p>
                                             <div class="w-32 h-32 mx-auto bg-gray-100 rounded-full flex items-center justify-center border overflow-hidden">
-                                                <img id="logoPreview" src="https://placehold.co/128x128/e2e8f0/64748b?text=Logo" alt="Pratinjau Logo" class="w-full h-full object-contain">
+                                                <img id="portalLogoPreview" src="https://placehold.co/128x128/e2e8f0/64748b?text=Logo+Portal" alt="Pratinjau Logo Portal" class="w-full h-full object-contain">
+                                            </div>
+                                            <div class="mt-3 space-x-4">
+                                                <input type="file" id="portalLogoInput" accept="image/png, image/jpeg" class="hidden">
+                                                <button type="button" onclick="document.getElementById('portalLogoInput').click()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Ganti</button>
+                                                <button type="button" data-delete-key="ID Logo Portal" data-preview-id="portalLogoPreview" class="delete-asset-btn text-sm text-red-600 hover:text-red-800 font-medium">Hapus</button>
+                                            </div>
+                                        </div>
+
+                                        <div class="text-center">
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Logo Dokumen</label>
+                                            <p class="text-xs text-gray-500 mb-2">Digunakan jika Header Kustom kosong.</p>
+                                            <div class="w-32 h-32 mx-auto bg-gray-100 rounded-full flex items-center justify-center border overflow-hidden">
+                                                <img id="logoPreview" src="https://placehold.co/128x128/e2e8f0/64748b?text=Logo+Dokumen" alt="Pratinjau Logo" class="w-full h-full object-contain">
                                             </div>
                                             <div class="mt-3 space-x-4">
                                                 <input type="file" id="logoInput" accept="image/png, image/jpeg" class="hidden">
-                                                <button type="button" onclick="document.getElementById('logoInput').click()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Ganti Gambar</button>
+                                                <button type="button" onclick="document.getElementById('logoInput').click()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Ganti</button>
                                                 <button type="button" data-delete-key="ID Logo Sekolah" data-preview-id="logoPreview" class="delete-asset-btn text-sm text-red-600 hover:text-red-800 font-medium">Hapus</button>
                                             </div>
                                         </div>
 
-                                        <!-- Kolom Tanda Tangan -->
                                         <div class="text-center">
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">Tanda Tangan Kepala Sekolah</label>
-                                            <div class="w-48 h-32 mx-auto bg-gray-100 rounded-lg flex items-center justify-center border overflow-hidden">
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Tanda Tangan Kepsek</label>
+                                            <p class="text-xs text-gray-500 mb-2">&nbsp;</p> <div class="w-48 h-32 mx-auto bg-gray-100 rounded-lg flex items-center justify-center border overflow-hidden">
                                                 <img id="signaturePreview" src="https://placehold.co/192x128/e2e8f0/64748b?text=Tanda+Tangan" alt="Pratinjau Tanda Tangan" class="max-w-full max-h-full object-contain p-2">
                                             </div>
                                             <div class="mt-3 space-x-4">
                                                 <input type="file" id="signatureInput" accept="image/png" class="hidden">
-                                                <button type="button" onclick="document.getElementById('signatureInput').click()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Ganti Gambar</button>
+                                                <button type="button" onclick="document.getElementById('signatureInput').click()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Ganti</button>
                                                 <button type="button" data-delete-key="ID Tanda Tangan" data-preview-id="signaturePreview" class="delete-asset-btn text-sm text-red-600 hover:text-red-800 font-medium">Hapus</button>
                                             </div>
                                         </div>
 
-                                        <!-- Kolom Stempel -->
                                         <div class="text-center">
                                             <label class="block text-sm font-medium text-gray-700 mb-2">Stempel Sekolah</label>
-                                            <div class="w-32 h-32 mx-auto bg-gray-100 rounded-full flex items-center justify-center border overflow-hidden">
+                                            <p class="text-xs text-gray-500 mb-2">&nbsp;</p> <div class="w-32 h-32 mx-auto bg-gray-100 rounded-full flex items-center justify-center border overflow-hidden">
                                                 <img id="stampPreview" src="https://placehold.co/128x128/e2e8f0/64748b?text=Stempel" alt="Pratinjau Stempel" class="w-full h-full object-contain">
                                             </div>
                                             <div class="mt-3 space-x-4">
                                                 <input type="file" id="stampInput" accept="image/png" class="hidden">
-                                                <button type="button" onclick="document.getElementById('stampInput').click()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Ganti Gambar</button>
+                                                <button type="button" onclick="document.getElementById('stampInput').click()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Ganti</button>
                                                 <button type="button" data-delete-key="ID Stempel" data-preview-id="stampPreview" class="delete-asset-btn text-sm text-red-600 hover:text-red-800 font-medium">Hapus</button>
                                             </div>
                                         </div>
@@ -1863,7 +1887,7 @@
                                             <li>Klik tombol <strong>"Simpan Data Sekolah"</strong> jika ada perubahan.</li>
                                         </ol>
                                         <div class="p-4 bg-gray-100 rounded-lg text-center">
-                                            <img src="https://i.imgur.com/wVVTeAV.gif" alt="Tutorial mengisi data sekolah" class="w-full rounded-md shadow-md">
+                                            <img src="https://i.imgur.com/yfUXZJE.gif" alt="Tutorial mengisi data sekolah" class="w-full rounded-md shadow-md">
                                             <p class="text-xs text-gray-500 mt-2">Contoh: Tampilan Halaman Data Sekolah</p>
                                         </div>
                                     </div>
@@ -1899,7 +1923,7 @@
                                             </li>
                                         </ol>
                                         <div class="p-4 bg-gray-100 rounded-lg text-center">
-                                            <img src="https://i.imgur.com/l6K3Uq8.gif" alt="Tutorial impor mapel" class="w-full rounded-md shadow-md">
+                                            <img src="https://i.imgur.com/RRzzkYP.gif" alt="Tutorial impor mapel" class="w-full rounded-md shadow-md">
                                             <p class="text-xs text-gray-500 mt-2">Contoh: Halaman Pengaturan Mapel & Bobot</p>
                                         </div>
                                     </div>
@@ -1931,7 +1955,7 @@
                                             </li>
                                         </ul>
                                         <div class="p-4 bg-gray-100 rounded-lg text-center">
-                                            <img src="https://i.imgur.com/AzjvVLX.gif" alt="Tutorial upload data siswa" class="w-full rounded-md shadow-md">
+                                            <img src="https://i.imgur.com/6UWEX2O.gif" alt="Tutorial upload data siswa" class="w-full rounded-md shadow-md">
                                             <p class="text-xs text-gray-500 mt-2">Contoh: Jendela untuk Upload Data Siswa Massal</p>
                                         </div>
                                     </div>
@@ -1958,7 +1982,7 @@
                                             <li><strong>Upload Massal:</strong> Untuk cara yang lebih cepat, gunakan menu <code class="help-code">Upload Nilai</code>. Unduh template untuk Ujian atau Rapor per semester, isi, lalu unggah kembali.</li>
                                         </ul>
                                         <div class="p-4 bg-gray-100 rounded-lg text-center">
-                                            <img src="https://i.imgur.com/Xig84go.gif" alt="Tutorial mengisi nilai" class="w-full rounded-md shadow-md">
+                                            <img src="https://i.imgur.com/xsBmAOc.gif" alt="Tutorial mengisi nilai" class="w-full rounded-md shadow-md">
                                             <p class="text-xs text-gray-500 mt-2">Contoh: Tampilan Input Nilai</p>
                                         </div>
                                     </div>
@@ -1986,8 +2010,65 @@
                                             <li>Setelah proses selesai, Anda dapat melihat tabel <strong>Rekap Nilai Ujian, Rekap Nilai Rapor,</strong> dan <strong>Rekap Nilai Ijazah</strong>.</li>
                                         </ol>
                                         <div class="p-4 bg-gray-100 rounded-lg text-center">
-                                            <img src="https://i.imgur.com/pf9hQie.gif" alt="Tutorial rekapitulasi" class="w-full rounded-md shadow-md">
+                                            <img src="https://i.imgur.com/8yg7YL7.gif" alt="Tutorial rekapitulasi" class="w-full rounded-md shadow-md">
                                             <p class="text-xs text-gray-500 mt-2">Tombol Kunci pada Halaman Rekapitulasi</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="help-item bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+                                <div class="help-header flex justify-between items-center p-5 cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <div class="flex items-center">
+                                        <span class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-bold text-lg mr-4">6</span>
+                                        <div>
+                                            <h2 class="font-bold text-lg text-gray-800">Pengaturan dan Transkrip Nilai</h2>
+                                            <p class="text-sm text-gray-500">Untuk mencetak transkrip nilai siswa.</p>
+                                        </div>
+                                    </div>
+                                    <svg class="w-6 h-6 text-gray-500 transform transition-transform chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                                <div class="help-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
+                                    <div class="p-5 border-t">
+                                        <p class="mb-4">Untuk mencetak transkrip nilai siswa, silahkan lakukan hal diawah ini.</p>
+                                        <ol class="list-decimal list-inside space-y-3 mb-4">
+                                            <li><strong>Pengaturan:</strong> Buka menu <code class="help-code">Pengaturan</code>, lalu silahkan upload semua gambar kop, logo dll pada <strong>Pengaturan Logo & Dokumen</strong>.</li>
+                                            <li><strong>Transkrip:</strong> Buka menu <code class="help-code">Transkrip</code>.</li>
+                                            <li>Klik tombol <code class="help-code">Cetak</code>. Tombol ini akan menampilkan preview Transkrip Nilai Siswa.</li>
+                                            <li>Silahkan klik tombol <code class="help-code">Unduh PDF</code> atau <code class="help-code">Cetak</code>.</li>
+                                        </ol>
+                                        <div class="p-4 bg-gray-100 rounded-lg text-center">
+                                            <img src="https://i.imgur.com/w8xW7hI.gif" alt="Tutorial transkrip" class="w-full rounded-md shadow-md">
+                                            <p class="text-xs text-gray-500 mt-2">Pengaturan dan Transkrip Nilai</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="help-item bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+                                <div class="help-header flex justify-between items-center p-5 cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <div class="flex items-center">
+                                        <span class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-bold text-lg mr-4">7</span>
+                                        <div>
+                                            <h2 class="font-bold text-lg text-gray-800">Login Portal Siswa</h2>
+                                            <p class="text-sm text-gray-500">Siswa dapat mengecek pengumuman kelulusan dan cetak transkrip nilainya sendiri.</p>
+                                        </div>
+                                    </div>
+                                    <svg class="w-6 h-6 text-gray-500 transform transition-transform chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                                <div class="help-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
+                                    <div class="p-5 border-t">
+                                        <p class="mb-4">Setting Tanggal Kelulusan dan cara tampilkan Transkrip Nilai untuk seluruh siswa atau hanya sebagaian siswa yang terpilih. Silahkan ikuti cara dibawah.</p>
+                                        <ol class="list-decimal list-inside space-y-3 mb-4">
+                                            <li><strong>Pengaturan:</strong> Buka menu <code class="help-code">Pengaturan</code> lalu atur tanggal dan waktu kelulusan siswa pada <strong>Pengaturan Pengumuman Kelulusan</strong>. Pada <strong>Tampilkan Transkrip Nilai untuk Semua Siswa?</strong>, jika memilih Ya, berarti transkrip diperlihatkan untuk semua siswa, jika memilih Tidak, maka transkrip hanya diperlihatkan kepada siswa yang terpilih di halaman <strong>Transkrip Nilai</strong>.</li>
+                                            <li><strong>Jika memilih Tidak di Pengaturan:</strong> Buka menu <code class="help-code">Transkrip</code>. Pilih/Tandai beberapa siswa, sebuah floating akan tampil, pilih Tampilkan/Sembunyikan di Portal Siswa.</li>
+                                            <li><strong>Dashboard:</strong> Pada <code class="help-code">Dashboard</code> silahkan berikan <strong>Kode Login Siswa</strong> kepada siswa untuk digunakan login ke <strong>Portal Siswa</strong>.</li>
+                                            <li><strong>Login Portal Siswa:</strong> Pada halaman Login, siswa dapat mengklik <code class="help-code">Login sebagai Siswa</code>. Setelah itu siswa memerlukan Kode Login Siswa yang sudah diberikan untuk dimasukkan ke kotak <code class="help-code">Kode Unik Sekolah</code>.</li>
+                                            <li>Jika berhasil, siswa perlu memasukkan <code class="help-code">NISN</code> dan <code class="help-code">Tanggal Lahir</code> untuk masuk ke halaman Cek Kelulusan dan Transkrip Nilai.</li>
+                                        </ol>
+                                        <div class="p-4 bg-gray-100 rounded-lg text-center">
+                                            <img src="https://i.imgur.com/wT4hqpS.gif" alt="Tutorial portal siswa2" class="w-full rounded-md shadow-md">
+                                            <p class="text-xs text-gray-500 mt-2">Pengaturan & Portal Siswa</p>
                                         </div>
                                     </div>
                                 </div>
@@ -2088,7 +2169,7 @@
                                     <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
 
                                         <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row items-start gap-4">
-                                            <img src="https://i.imgur.com/5flmo3h.gif" alt="Fitur Transkrip" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
+                                            <img src="https://i.imgur.com/TJ5KOvd.gif" alt="Fitur Transkrip" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
                                             <div>
                                                 <h4 class="font-bold text-gray-800">Pengumuman & Manajemen Transkrip</h4>
                                                 <p class="mt-1 text-sm text-gray-600">Atur jadwal kelulusan, tampilkan hitung mundur di portal siswa, dan kelola visibilitas transkrip nilai akhir untuk setiap siswa secara individual.</p>
@@ -2096,15 +2177,15 @@
                                         </div>
 
                                         <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row items-start gap-4">
-                                            <img src="https://i.imgur.com/tkIQ4hR.gif" alt="Fitur Kop Surat" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
+                                            <img src="https://i.imgur.com/PrBxDjH.gif" alt="Fitur Kop Surat" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
                                             <div>
                                                 <h4 class="font-bold text-gray-800">Kustomisasi Kop Surat & TTD</h4>
-                                                <p class="mt-1 text-sm text-gray-600">Personalisasi semua dokumen ekspor (seperti transkrip) dengan mengunggah logo sekolah, stempel, dan tanda tangan digital kepala sekolah Anda.</p>
+                                                <p class="mt-1 text-sm text-gray-600">Personalisasi semua dokumen ekspor (seperti transkrip) dengan mengunggah kop surat, logo aplikasi, logo sekolah, stempel, dan tanda tangan digital kepala sekolah Anda.</p>
                                             </div>
                                         </div>
 
                                         <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row items-start gap-4">
-                                            <img src="https://i.imgur.com/EktJKcX.gif" alt="Fitur Backup" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
+                                            <img src="https://i.imgur.com/vN4pYH0.gif" alt="Fitur Backup" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
                                             <div>
                                                 <h4 class="font-bold text-gray-800">Backup & Restore Data</h4>
                                                 <p class="mt-1 text-sm text-gray-600">Amankan seluruh data Anda dengan mudah. Buat file cadangan dan pulihkan data kapan saja untuk menghindari kehilangan data penting.</p>
@@ -2112,7 +2193,7 @@
                                         </div>
 
                                         <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row items-start gap-4">
-                                            <img src="https://i.imgur.com/HHfdG35.gif" alt="Fitur Portal Siswa" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
+                                            <img src="https://i.imgur.com/wT4hqpS.gif" alt="Fitur Portal Siswa" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
                                             <div>
                                                 <h4 class="font-bold text-gray-800">Akses Penuh Portal Siswa</h4>
                                                 <p class="mt-1 text-sm text-gray-600">Berikan akses kepada siswa untuk login, melihat status kelulusan, dan mengunduh transkrip nilai resmi mereka melalui portal khusus. Limit siswa pun ditambah menjadi 500 siswa.</p>
@@ -2120,7 +2201,7 @@
                                         </div>
 
                                         <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row items-start gap-4">
-                                            <img src="https://i.imgur.com/EtunhG5.gif" alt="Fitur Arsip Tahunan" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
+                                            <img src="https://i.imgur.com/9NjOQOR.gif" alt="Fitur Arsip Tahunan" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
                                             <div>
                                                 <h4 class="font-bold text-gray-800">Arsip Tahunan & Reset Data</h4>
                                                 <p class="mt-1 text-sm text-gray-600">Arsipkan seluruh data akademik di akhir tahun ajaran ke file terpisah. Setelah itu, bersihkan data di aplikasi untuk memulai tahun ajaran baru dengan rapi.</p>
@@ -3679,6 +3760,8 @@
             setupImageInput('logoInput', 'logoPreview', 'logo');
             setupImageInput('signatureInput', 'signaturePreview', 'signature');
             setupImageInput('stampInput', 'stampPreview', 'stamp');
+            setupImageInput('portalLogoInput', 'portalLogoPreview', 'portalLogo');
+            setupImageInput('customHeaderInput', 'customHeaderPreview', 'customHeader'); 
 
             document.getElementById('documentSettingsForm').addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -3694,6 +3777,8 @@
                 if (newDocumentSettings.logo) settingsToSave.logo = newDocumentSettings.logo;
                 if (newDocumentSettings.signature) settingsToSave.signature = newDocumentSettings.signature;
                 if (newDocumentSettings.stamp) settingsToSave.stamp = newDocumentSettings.stamp;
+                if (newDocumentSettings.portalLogo) settingsToSave.portalLogo = newDocumentSettings.portalLogo;
+                if (newDocumentSettings.customHeader) settingsToSave.customHeader = newDocumentSettings.customHeader;
 
                 if (Object.keys(settingsToSave).length === 0) {
                     showGlobalStatus("Tidak ada gambar baru yang dipilih untuk disimpan.", 'info');
@@ -3708,7 +3793,7 @@
                     .withSuccessHandler(response => {
                         showGlobalStatus(response.message, response.status === 'success');
                         if (response.status === 'success') {
-                            newDocumentSettings = { logo: null, signature: null, stamp: null };
+                            newDocumentSettings = { logo: null, signature: null, stamp: null, portalLogo: null, customHeader: null }; 
                         }
                         // Kembalikan tombol ke normal setelah berhasil
                         btn.disabled = false;
@@ -10620,28 +10705,32 @@
         }
 
         /**
-         * [VERSI FINAL 2.0 - FIX TIMEZONE]
-         * Memuat semua data untuk halaman Pengaturan dan memastikan form selalu aktif setelahnya.
+         * [VERSI FINAL - DIPERBAIKI] Memuat semua data untuk halaman Pengaturan.
+         * Memastikan gambar pratinjau selalu dimuat, terlepas dari status kunci fitur.
          */
         function loadPengaturanPage() {
             const isLocked = sessionStorage.getItem('isLocked') === 'true';
 
-            // Targetkan kontainer yang akan dikunci
-            const pengumumanContainer = document.getElementById('pengumuman-kelulusan-container');
-            const kopSuratContainer = document.getElementById('kop-surat-container');
+            // Targetkan semua kontainer yang termasuk fitur premium
+            const premiumContainers = [
+                document.getElementById('pengumuman-kelulusan-container'),
+                document.getElementById('kop-surat-container')
+            ];
 
-            // Terapkan atau hapus kunci berdasarkan status
-            [pengumumanContainer, kopSuratContainer].forEach(container => {
-                if (isLocked) {
-                    container.classList.add('feature-locked-section');
-                    container.onclick = handleLockedFeatureClick;
-                } else {
-                    container.classList.remove('feature-locked-section');
-                    container.onclick = null;
+            // Terapkan atau hapus kelas pengunci pada setiap kontainer
+            premiumContainers.forEach(container => {
+                if (container) {
+                    if (isLocked) {
+                        container.classList.add('feature-locked-section');
+                        container.onclick = handleLockedFeatureClick;
+                    } else {
+                        container.classList.remove('feature-locked-section');
+                        container.onclick = null;
+                    }
                 }
             });
 
-            // Jalankan fungsi-fungsi pemuatan data yang sudah ada seperti biasa
+            // Memuat KKM (bukan fitur premium, selalu jalan)
             const kkmInput = document.getElementById('kkmSekolah');
             if (kkmInput) {
                 kkmInput.disabled = true;
@@ -10655,52 +10744,49 @@
                     .getKkm(userSpreadsheetId);
             }
 
-            // Hanya muat data untuk bagian yang tidak terkunci atau jika fitur terbuka
-            if (!isLocked) {
-                const announcementDateInput = document.getElementById('announcementDate');
-                const gradForm = document.getElementById('graduationSettingsForm');
-                const radioButtons = document.querySelectorAll('input[name="showTranscriptGlobal"]');
+            // Memuat form pengaturan kelulusan (UI akan dikunci oleh CSS jika `isLocked`)
+            const announcementDateInput = document.getElementById('announcementDate');
+            const radioButtons = document.querySelectorAll('input[name="showTranscriptGlobal"]');
 
-                if (announcementDateInput && gradForm) {
-                    const enableGraduationForm = () => {
-                        announcementDateInput.disabled = false;
-                        radioButtons.forEach(radio => radio.disabled = false);
-                    };
+            if (announcementDateInput) {
+                // Nonaktifkan sementara saat memuat
+                announcementDateInput.disabled = true;
+                radioButtons.forEach(radio => radio.disabled = true);
 
-                    announcementDateInput.disabled = true;
-                    radioButtons.forEach(radio => radio.disabled = true);
-
-                    google.script.run
-                        .withSuccessHandler(response => {
-                            if (response && response.status === 'success' && response.settings) {
-                                const settings = response.settings;
-                                if (settings.announcementDate) {
-                                    const date = new Date(settings.announcementDate);
-                                    const year = date.getFullYear();
-                                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                                    const day = String(date.getDate()).padStart(2, '0');
-                                    const hours = String(date.getHours()).padStart(2, '0');
-                                    const minutes = String(date.getMinutes()).padStart(2, '0');
-                                    announcementDateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
-                                } else {
-                                    announcementDateInput.value = '';
-                                }
-                                const valueToShow = settings.showTranscriptGlobal || 'TIDAK';
-                                const radioBtn = document.querySelector(`input[name="showTranscriptGlobal"][value="${valueToShow}"]`);
-                                if (radioBtn) radioBtn.checked = true;
+                google.script.run
+                    .withSuccessHandler(response => {
+                        if (response && response.status === 'success' && response.settings) {
+                            const settings = response.settings;
+                            if (settings.announcementDate) {
+                                const date = new Date(settings.announcementDate);
+                                date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+                                announcementDateInput.value = date.toISOString().slice(0, 16);
+                            } else {
+                                announcementDateInput.value = '';
                             }
-                            enableGraduationForm();
-                        })
-                        .getGraduationSettings(userSpreadsheetId);
-                    
-                    const gradFormHandler = document.getElementById('graduationSettingsForm');
-                    if (gradFormHandler) {
-                        gradFormHandler.removeEventListener('submit', handleSaveGraduationSettings);
-                        gradFormHandler.addEventListener('submit', handleSaveGraduationSettings);
-                    }
-                }
-                loadDocumentSettings();
+                            const valueToShow = settings.showTranscriptGlobal || 'TIDAK';
+                            const radioBtn = document.querySelector(`input[name="showTranscriptGlobal"][value="${valueToShow}"]`);
+                            if (radioBtn) radioBtn.checked = true;
+                        }
+                        
+                        // Aktifkan kembali HANYA jika fitur tidak terkunci
+                        if (!isLocked) {
+                            announcementDateInput.disabled = false;
+                            radioButtons.forEach(radio => radio.disabled = false);
+                        }
+                    })
+                    .getGraduationSettings(userSpreadsheetId);
             }
+            
+            const gradFormHandler = document.getElementById('graduationSettingsForm');
+            if (gradFormHandler) {
+                gradFormHandler.removeEventListener('submit', handleSaveGraduationSettings);
+                gradFormHandler.addEventListener('submit', handleSaveGraduationSettings);
+            }
+
+            // Panggil fungsi untuk memuat gambar pratinjau.
+            // Ini sekarang akan berjalan terlepas dari status isLocked.
+            loadDocumentSettings();
         }
 
         /**
@@ -10809,13 +10895,14 @@
 
 
         /**
-         * [MODIFIKASI FINAL v10] Menampilkan blok TTD & QR Code di pratinjau modal.
+         * [MODIFIKASI FINAL v11] Menampilkan blok TTD & QR Code di pratinjau modal,
+         * dan kini mendukung Header Kustom.
          */
         function renderTranscriptModal(data, printableArea) {
             try {
                 const { student, school, subjects, bobot } = data;
 
-                // Fungsi-fungsi helper
+                // Fungsi helper (tidak berubah)
                 const toProperCase = (str) => {
                     if (!str || typeof str !== 'string') return '';
                     return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
@@ -10829,47 +10916,51 @@
                     return `${Math.round(score)}`;
                 };
                 
-                // Kalkulasi nilai
+                // Kalkulasi nilai (tidak berubah)
                 let totalNilaiIjazah = 0;
                 subjects.forEach(s => {
                     totalNilaiIjazah += (s.nilaiIjazah !== null && !isNaN(s.nilaiIjazah)) ? Math.round(s.nilaiIjazah) : 0;
                 });
                 const rataRataIjazah = subjects.length > 0 ? (totalNilaiIjazah / subjects.length).toFixed(2).replace('.', ',') : '0,00';
-
-                // =====================================================================
-                // [PERUBAHAN UTAMA] AMBIL ASET DAN BANGUN SEMUA BAGIAN HTML SEKALIGUS
-                // =====================================================================
-
-                // Tampilkan loader di area pratinjau
+                
                 printableArea.innerHTML = `<p class="text-center text-gray-500 py-8 loading-animation">Membangun pratinjau transkrip</p>`;
 
-                // Ambil semua aset (logo, ttd, qr) dari backend terlebih dahulu
                 Promise.all([
                     new Promise(resolve => google.script.run.withSuccessHandler(resolve).getDocumentSettings(userSpreadsheetId)),
                     new Promise(resolve => google.script.run.withSuccessHandler(resolve).getQrCodeAsBase64())
                 ]).then(([settingsResponse, qrCodeBase64]) => {
                     
                     const docSettings = (settingsResponse && settingsResponse.status === 'success') ? settingsResponse.settings : {};
-                    const { logo, signature, stamp } = docSettings;
+                    // [MODIFIKASI] Ambil juga 'customHeader' dari settings
+                    const { logo, signature, stamp, customHeader } = docSettings;
 
-                    // Bangun HTML untuk gambar-gambar
-                    const logoHtml = logo ? `<img src="${logo}" style="width:75px; height:75px;" alt="Logo">` : '';
                     const signatureHtml = signature ? `<img src="${signature}" style="position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); max-width:150px; max-height:100px; z-index:1;" alt="TTD">` : '';
                     const stampHtml = stamp ? `<img src="${stamp}" style="position:absolute; left:50%; top:50%; transform:translate(-50%, -50%) rotate(-15deg); opacity:0.75; max-width:120px; max-height:120px; z-index:2;" alt="Stempel">` : '';
                     const qrHtml = qrCodeBase64 ? `<img src="data:image/png;base64,${qrCodeBase64}" style="width:80px; height:80px;" alt="QR Code"><br><span>Scan untuk validasi</span>` : '';
-                    
-                    // Bangun Kop Surat
-                    const kantorKemenagLine = `KANTOR KEMENTERIAN AGAMA ${school.tipeKabupaten || ''} ${school.kabupaten || ''}`.toUpperCase();
-                    const tipeKabSingkat = school.tipeKabupaten === 'Kabupaten' ? 'Kab.' : 'Kota';
-                    const tipeKelSingkat = school.tipeKelurahan === 'Kelurahan' ? 'Kel.' : 'Desa';
-                    const alamatLengkap = [ school.alamat, `${tipeKelSingkat} ${toProperCase(school.kelurahan || '')}`, `Kec. ${toProperCase(school.kecamatan || '')}`, `${tipeKabSingkat} ${toProperCase(school.kabupaten || '')}`, toProperCase(school.provinsi || ''), school.kodePos ].filter(Boolean).join(', ');
-                    const teleponLine = school.telepon ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">Telepon : ${school.telepon}</div>` : '';
-                    const websiteLine = school.website ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">Website : ${school.website}</div>` : '';
                     const nomorIndukGabungan = student.nis ? (school.nsm || '') + student.nis : '-';
-
-                    // Bangun keseluruhan HTML untuk ditampilkan di modal
-                    const finalHtml = `
-                        <div class="font-sans p-4" id="printable-transcript-content">
+                    
+                    // ==========================================================
+                    // === [PERUBAHAN UTAMA] LOGIKA UNTUK KOP SURAT DINAMIS ===
+                    // ==========================================================
+                    let headerHtml;
+                    if (customHeader) {
+                        // JIKA ADA HEADER KUSTOM, gunakan gambar ini.
+                        headerHtml = `
+                            <div style="width: 100%; margin-bottom: 10px; border-bottom: 3px solid black;">
+                                <img src="${customHeader}" alt="Kop Surat" style="width: 100%; height: auto;">
+                            </div>
+                        `;
+                    } else {
+                        // JIKA TIDAK ADA, gunakan kop surat berbasis teks seperti sebelumnya.
+                        const logoHtml = logo ? `<img src="${logo}" style="width:75px; height:75px;" alt="Logo">` : '';
+                        const kantorKemenagLine = `KANTOR KEMENTERIAN AGAMA ${school.tipeKabupaten || ''} ${school.kabupaten || ''}`.toUpperCase();
+                        const tipeKabSingkat = school.tipeKabupaten === 'Kabupaten' ? 'Kab.' : 'Kota';
+                        const tipeKelSingkat = school.tipeKelurahan === 'Kelurahan' ? 'Kel.' : 'Desa';
+                        const alamatLengkap = [ school.alamat, `${tipeKelSingkat} ${toProperCase(school.kelurahan || '')}`, `Kec. ${toProperCase(school.kecamatan || '')}`, `${tipeKabSingkat} ${toProperCase(school.kabupaten || '')}`, toProperCase(school.provinsi || ''), school.kodePos ].filter(Boolean).join(', ');
+                        const teleponLine = school.telepon ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">Telepon : ${school.telepon}</div>` : '';
+                        const websiteLine = school.website ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">Website : ${school.website}</div>` : '';
+                        
+                        headerHtml = `
                             <div style="display: flex; align-items: flex-start; padding-bottom: 5px; border-bottom: 3px solid black; margin-bottom: 10px;">
                                 <div style="width: 75px; height: 75px; margin-right: 20px;">${logoHtml}</div>
                                 <div style="text-align: center; flex-grow: 1; line-height: 1.4;">
@@ -10881,6 +10972,14 @@
                                    ${websiteLine}
                                 </div>
                             </div>
+                        `;
+                    }
+                    // ==========================================================
+
+                    // [MODIFIKASI] Gunakan variabel headerHtml yang sudah dinamis
+                    const finalHtml = `
+                        <div class="font-sans p-4" id="printable-transcript-content">
+                            ${headerHtml}
                             <div class="text-center" style="margin-top: 10px;">
                                 <h3 class="font-bold" style="text-decoration: underline; font-size: 14pt;">TRANSKRIP NILAI AKHIR</h3>
                             </div>
@@ -10937,7 +11036,6 @@
                             </div>
                         </div>`;
                     
-                    // Tampilkan HTML yang sudah lengkap di area pratinjau
                     printableArea.innerHTML = finalHtml;
                 });
 
@@ -12318,20 +12416,29 @@
         let newDocumentSettings = {
           logo: null,
           signature: null,
-          stamp: null
+          stamp: null,
+          portalLogo: null,
+          customHeader: null
         };
 
         // Fungsi ini akan dipanggil saat halaman Pengaturan dibuka
         function loadDocumentSettings() {
           // Tampilkan placeholder saat loading
-          document.getElementById('logoPreview').src = "https://placehold.co/128x128/e2e8f0/64748b?text=Logo";
+          document.getElementById('customHeaderPreview').src = "https://placehold.co/800x150/e2e8f0/64748b?text=Header+Kustom+(Kosong)";
+          document.getElementById('portalLogoPreview').src = "https://placehold.co/128x128/e2e8f0/64748b?text=Logo+Portal";
+          document.getElementById('logoPreview').src = "https://placehold.co/128x128/e2e8f0/64748b?text=Logo+Dokumen";
           document.getElementById('signaturePreview').src = "https://placehold.co/192x128/e2e8f0/64748b?text=TTD";
           document.getElementById('stampPreview').src = "https://placehold.co/128x128/e2e8f0/64748b?text=Stempel";
           
           google.script.run
             .withSuccessHandler(response => {
               if (response.status === 'success' && response.settings) {
-                const { logo, signature, stamp } = response.settings;
+                // [PERBAIKAN UTAMA] Pastikan semua variabel dideklarasikan dengan benar di sini
+                const { logo, signature, stamp, portalLogo, customHeader } = response.settings;
+                
+                // Gunakan variabel yang sudah dideklarasikan
+                if (customHeader) document.getElementById('customHeaderPreview').src = customHeader;
+                if (portalLogo) document.getElementById('portalLogoPreview').src = portalLogo;
                 if (logo) document.getElementById('logoPreview').src = logo;
                 if (signature) document.getElementById('signaturePreview').src = signature;
                 if (stamp) document.getElementById('stampPreview').src = stamp;
@@ -12356,7 +12463,7 @@
             reader.onload = function(e) {
               const base64String = e.target.result;
               preview.src = base64String;
-              newDocumentSettings[settingKey] = base64String; // Simpan data baru ke objek sementara
+              newDocumentSettings[settingKey] = base64String;
             };
             reader.readAsDataURL(file);
           });
