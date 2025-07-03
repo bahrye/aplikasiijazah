@@ -5528,7 +5528,7 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
     
     const docSettingsResponse = getDocumentSettings(spreadsheetId);
     const docSettings = docSettingsResponse.settings || {};
-    const { logo, signature, stamp } = docSettings;
+    const { logo, signature, stamp, customHeader } = docSettings;
 
     let qrCodeBase64 = '';
     try {
@@ -5566,21 +5566,45 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
     // ==========================================================
     // === [PERUBAHAN UTAMA] LOGIKA UNTUK MEMBANGUN KOP SURAT ===
     // ==========================================================
-    const kantorKemenagLine = `KANTOR KEMENTERIAN AGAMA ${school.tipeKabupaten || ''} ${school.kabupaten || ''}`.toUpperCase();
-    const tipeKabSingkat = school.tipeKabupaten === 'Kabupaten' ? 'Kab.' : 'Kota';
-    const tipeKelSingkat = school.tipeKelurahan === 'Kelurahan' ? 'Kel.' : 'Desa';
+    let headerHtml;
+    if (customHeader) {
+        // JIKA ADA HEADER KUSTOM, gunakan gambar ini saja.
+        headerHtml = `
+            <div style="width: 100%; margin-bottom: 10px; border-bottom: 3px solid black;">
+                <img src="${customHeader}" alt="Kop Surat" style="width: 100%; height: auto;">
+            </div>
+        `;
+    } else {
+        const kantorKemenagLine = `KANTOR KEMENTERIAN AGAMA ${school.tipeKabupaten || ''} ${school.kabupaten || ''}`.toUpperCase();
+        const tipeKabSingkat = school.tipeKabupaten === 'Kabupaten' ? 'Kab.' : 'Kota';
+        const tipeKelSingkat = school.tipeKelurahan === 'Kelurahan' ? 'Kel.' : 'Desa';
 
-    const alamatLengkap = [
-      school.alamat,
-      `${tipeKelSingkat} ${toProperCase(school.kelurahan || '')}`,
-      `Kec. ${toProperCase(school.kecamatan || '')}`,
-      `${tipeKabSingkat} ${toProperCase(school.kabupaten || '')}`,
-      toProperCase(school.provinsi || ''),
-      school.kodePos
-    ].filter(Boolean).join(', ');
+        const alamatLengkap = [
+          school.alamat,
+          `${tipeKelSingkat} ${toProperCase(school.kelurahan || '')}`,
+          `Kec. ${toProperCase(school.kecamatan || '')}`,
+          `${tipeKabSingkat} ${toProperCase(school.kabupaten || '')}`,
+          toProperCase(school.provinsi || ''),
+          school.kodePos
+        ].filter(Boolean).join(', ');
 
-    const teleponLine = school.telepon ? `Telepon : ${school.telepon}` : '';
-    const websiteLine = school.website ? `Website : ${school.website}` : '';
+        const teleponLine = school.telepon ? `Telepon : ${school.telepon}` : '';
+        const websiteLine = school.website ? `Website : ${school.website}` : '';
+
+        headerHtml = `
+            <div style="display: flex; align-items: flex-start; padding-bottom: 5px; border-bottom: 3px solid black; margin-bottom: 10px;">
+                ${logo ? `<img src="${logo}" style="width:75px; height:75px; margin-right: 20px;" alt="Logo">` : '<div style="width:75px; height:75px; margin-right: 20px;"></div>'}
+                <div style="text-align: center; flex-grow: 1; line-height: 1.4; font-family: Arial, sans-serif;">
+                   <div style="font-size: 14pt; font-weight: bold;">KEMENTERIAN AGAMA REPUBLIK INDONESIA</div>
+                   <div style="font-size: 12pt; font-weight: bold;">${kantorKemenagLine}</div>
+                   <div style="font-size: 11pt; font-weight: bold;">${(school.namaSekolah || 'NAMA SEKOLAH').toUpperCase()}</div>
+                   <div style="font-size: 9pt;">Alamat : ${alamatLengkap}</div>
+                   ${teleponLine ? `<div style="font-size: 9pt;">${teleponLine}</div>` : ''}
+                   ${websiteLine ? `<div style="font-size: 9pt;">${websiteLine}</div>` : ''}
+                </div>
+            </div>
+        `;
+    }
     // ==========================================================
     // === AKHIR PERUBAHAN LOGIKA KOP SURAT ===
     // ==========================================================
@@ -5623,17 +5647,7 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
           </style>
         </head>
         <body>
-          <div class="kop-surat-container">
-            ${logo ? `<img src="${logo}" alt="Logo Sekolah" class="kop-logo">` : '<div class="kop-logo"></div>'}
-            <div class="kop-teks">
-              <div style="font-family: Arial, sans-serif; font-size: 14pt; font-weight: bold;">KEMENTERIAN AGAMA REPUBLIK INDONESIA</div>
-              <div style="font-family: Arial, sans-serif; font-size: 12pt; font-weight: bold;">${kantorKemenagLine}</div>
-              <div style="font-family: Arial, sans-serif; font-size: 11pt; font-weight: bold;">${(school.namaSekolah || 'NAMA SEKOLAH').toUpperCase()}</div>
-              <div style="font-family: Arial, sans-serif; font-size: 9pt;">Alamat : ${alamatLengkap}</div>
-              ${teleponLine ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">${teleponLine}</div>` : ''}
-              ${websiteLine ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">${websiteLine}</div>` : ''}
-            </div>
-          </div>
+          ${headerHtml}
           <div class="text-center" style="margin-top: 10px;">
              <h3 class="font-bold" style="text-decoration: underline; font-size: 14pt;">TRANSKRIP NILAI AKHIR</h3>
           </div>
@@ -6554,10 +6568,15 @@ function getSchoolSettingsByCode(kodeSekolah) {
     const gradSettingsResponse = getGraduationSettings(spreadsheetId);
     const gradSettings = gradSettingsResponse.settings || { announcementDate: null };
 
+    // [MODIFIKASI] Panggil getDocumentSettings untuk mendapatkan logo
+    const docSettingsResponse = getDocumentSettings(spreadsheetId);
+    const docSettings = docSettingsResponse.settings || {};
+
     return {
       status: "success",
       namaSekolah: namaSekolah,
-      announcementDate: gradSettings.announcementDate
+      announcementDate: gradSettings.announcementDate,
+      portalLogo: docSettings.portalLogo || null
     };
 
   } catch (error) {
@@ -6641,6 +6660,8 @@ function saveDocumentSettings(spreadsheetId, settings) {
     saveFile('ID Logo Sekolah', settings.logo, 'logo_sekolah.png');
     saveFile('ID Tanda Tangan', settings.signature, 'tanda_tangan.png');
     saveFile('ID Stempel', settings.stamp, 'stempel_sekolah.png');
+    saveFile('ID Logo Portal', settings.portalLogo, 'logo_portal.png');
+    saveFile('ID Header Kustom', settings.customHeader, 'header_kustom.png');
 
     return { status: 'success', message: 'Pengaturan kop surat dan tanda tangan berhasil disimpan.' };
   } catch (e) {
@@ -6655,11 +6676,18 @@ function saveDocumentSettings(spreadsheetId, settings) {
  * @param {string} spreadsheetId - ID spreadsheet pengguna.
  * @returns {object} Objek berisi data gambar Base64.
  */
+/**
+ * [VERSI BARU] Mengambil ID file dari sheet Pengaturan, lalu mengambil data gambar
+ * dari Google Drive dan mengubahnya menjadi Base64.
+ * @param {string} spreadsheetId - ID spreadsheet pengguna.
+ * @returns {object} Objek berisi data gambar Base64.
+ */
 function getDocumentSettings(spreadsheetId) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_PENGATURAN);
-    const settings = { logo: null, signature: null, stamp: null };
+    // [PERBAIKAN UTAMA] Pastikan semua properti diinisialisasi sebagai null
+    const settings = { logo: null, signature: null, stamp: null, portalLogo: null, customHeader: null };
     if (!sheet) return { status: 'success', settings: settings };
     
     const data = sheet.getDataRange().getValues();
@@ -6677,9 +6705,12 @@ function getDocumentSettings(spreadsheetId) {
       }
     };
     
+    // Ambil nilai untuk setiap pengaturan
     settings.logo = getBase64(settingsMap.get('ID Logo Sekolah'));
     settings.signature = getBase64(settingsMap.get('ID Tanda Tangan'));
     settings.stamp = getBase64(settingsMap.get('ID Stempel'));
+    settings.portalLogo = getBase64(settingsMap.get('ID Logo Portal'));
+    settings.customHeader = getBase64(settingsMap.get('ID Header Kustom'));
 
     return { status: 'success', settings: settings };
   } catch (e) {
@@ -7256,6 +7287,12 @@ function prosesArsipTahunan(spreadsheetId, userEmail) {
     // 3. Salin spreadsheet saat ini sebagai file arsip
     const fileArsip = fileInduk.makeCopy(archiveFileName, folderArsip);
     const urlArsip = fileArsip.getUrl();
+
+    // ==========================================================
+    // === PERUBAHAN UTAMA ADA DI SINI ===
+    // Menambahkan pengguna sebagai editor pada file arsip yang baru dibuat.
+    fileArsip.addEditor(userEmail);
+    // ==========================================================
 
     // 4. Kirim email notifikasi ke pengguna dengan link file arsip
     const subject = `Arsip Tahunan Aplikasi Ijazah Telah Selesai`;
