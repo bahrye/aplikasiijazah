@@ -151,6 +151,10 @@
 
         <div id="login-container" class="w-full max-w-md content-view hidden">
             <div class="bg-white rounded-2xl shadow-xl p-8">
+                <div id="portal-logo-container" class="w-24 h-24 mx-auto mb-4 hidden">
+                    <img id="portal-logo-img" src="" alt="Logo Sekolah" class="w-full h-full object-contain">
+                </div>
+
                 <div class="text-center mb-6">
                     <h1 id="login-school-name" class="text-2xl font-bold text-gray-800 uppercase">NAMA SEKOLAH</h1>
                     <p class="text-gray-500 mt-2">Silakan masukkan data diri Anda.</p>
@@ -359,6 +363,17 @@
 
                 if (response.status === 'success') {
                     sessionStorage.setItem('siswa_namaSekolah', response.namaSekolah);
+
+                    // [MODIFIKASI] Simpan dan tampilkan logo
+                    if (response.portalLogo) {
+                        sessionStorage.setItem('siswa_portalLogo', response.portalLogo);
+                        document.getElementById('portal-logo-img').src = response.portalLogo;
+                        document.getElementById('portal-logo-container').classList.remove('hidden');
+                    } else {
+                        sessionStorage.removeItem('siswa_portalLogo');
+                        document.getElementById('portal-logo-container').classList.add('hidden');
+                    }
+
                     const announcementDateStr = response.announcementDate;
                     if (announcementDateStr) {
                         const announcementDate = new Date(announcementDateStr);
@@ -624,37 +639,17 @@
     function renderTranscriptSiswa(data, printableArea) {
         const { student, school, subjects, bobot } = data;
         
-        // ==========================================================
-        // === [PERUBAHAN UTAMA] LOGIKA UNTUK MEMBANGUN KOP SURAT ===
-        // ==========================================================
+        // Helper dan kalkulasi (tidak berubah)
         const toProperCase = (str) => {
             if (!str || typeof str !== 'string') return '';
             return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
         };
-
-        const kantorKemenagLine = `KANTOR KEMENTERIAN AGAMA ${school.tipeKabupaten || ''} ${school.kabupaten || ''}`.toUpperCase();
-        const tipeKabSingkat = school.tipeKabupaten === 'Kabupaten' ? 'Kab.' : 'Kota';
-        const tipeKelSingkat = school.tipeKelurahan === 'Kelurahan' ? 'Kel.' : 'Desa';
-        
-        const alamatLengkap = [
-            school.alamat,
-            `${tipeKelSingkat} ${toProperCase(school.kelurahan || '')}`,
-            `Kec. ${toProperCase(school.kecamatan || '')}`,
-            `${tipeKabSingkat} ${toProperCase(school.kabupaten || '')}`,
-            toProperCase(school.provinsi || ''),
-            school.kodePos
-        ].filter(Boolean).join(', ');
-
-        const teleponLine = school.telepon ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">Telepon : ${school.telepon}</div>` : '';
-        const websiteLine = school.website ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">Website : ${school.website}</div>` : '';
-        // ==========================================================
-
         const tglLahirFormatted = new Date(student.tanggalLahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
         const nomorIndukGabungan = student.nis ? (school.nsm || '') + student.nis : '-';
         const formatScore = (score) => {
             if (score === null || score === undefined || isNaN(score)) return '0';
             const rounded = Math.round(score);
-            return `${rounded}`; // Hanya mengembalikan nilai yang sudah dibulatkan
+            return `${rounded}`;
         };
         let totalNilaiIjazah = 0;
         const mapelCount = subjects.length;
@@ -663,52 +658,96 @@
         });
         const rataRataIjazah = mapelCount > 0 ? (totalNilaiIjazah / mapelCount).toFixed(2).replace('.', ',') : '0,00';
         
-        printableArea.innerHTML = `
-            <div class="font-sans p-2">
-                <div style="text-align: center; line-height: 1.4; border-bottom: 2px solid black; padding-bottom: 5px; margin-bottom: 10px;">
-                    <div style="font-family: Arial, sans-serif; font-size: 14pt; font-weight: bold;">KEMENTERIAN AGAMA REPUBLIK INDONESIA</div>
-                    <div style="font-family: Arial, sans-serif; font-size: 12pt; font-weight: bold;">${kantorKemenagLine}</div>
-                    <div style="font-family: Arial, sans-serif; font-size: 11pt; font-weight: bold;">${(school.namaSekolah || 'NAMA SEKOLAH').toUpperCase()}</div>
-                    <div style="font-family: Arial, sans-serif; font-size: 9pt;">Alamat : ${alamatLengkap}</div>
-                    ${teleponLine}
-                    ${websiteLine}
-                </div>
-                <div class="text-center" style="margin-top: 10px;">
-                    <h3 class="font-bold" style="text-decoration: underline; font-size: 14pt;">TRANSKRIP NILAI AKHIR</h3>
-                </div>
-                <div class="w-full text-sm my-4 space-y-1">
-                    <div class="grid grid-cols-[max-content_auto_1fr] gap-x-2">
-                        <div>Nama Peserta Didik</div><div>:</div><div class="font-semibold">${student.nama.toUpperCase()}</div>
-                        <div>Tempat, Tanggal Lahir</div><div>:</div><div class="font-semibold">${student.tempatLahir ? toProperCase(student.tempatLahir) + ', ' : ''}${tglLahirFormatted}</div>
-                        <div>Nomor Induk Siswa/NISN</div><div>:</div><div class="font-semibold">${nomorIndukGabungan} / ${student.nisn}</div>
-                    </div>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-xs sm:text-sm border-collapse border border-gray-400">
-                        <thead class="bg-gray-100 font-bold">
-                            <tr><th class="border border-gray-400 p-2" rowspan="2">No</th><th class="border border-gray-400 p-2 text-left" rowspan="2">Mata Pelajaran</th><th class="border border-gray-400 p-2" colspan="3">Nilai</th></tr>
-                            <tr><th class="border border-gray-400 p-1 font-semibold">Rapor</th><th class="border border-gray-400 p-1 font-semibold">Ujian</th><th class="border border-gray-400 p-1 font-semibold">Ijazah</th></tr>
-                        </thead>
-                        <tbody>
-                            ${subjects.map((s, index) => `<tr><td class="border border-gray-400 p-2 text-center">${index + 1}</td><td class="border border-gray-400 p-2">${s.nama}</td><td class="border border-gray-400 p-2 text-center">${formatScore(s.nilaiRapor)}</td><td class="border border-gray-400 p-2 text-center">${formatScore(s.nilaiUjian)}</td><td class="border border-gray-400 p-2 text-center font-bold">${formatScore(s.nilaiIjazah)}</td></tr>`).join('')}
-                        </tbody>
-                        <tfoot class="font-bold">
-                            <tr>
-                                <td class="border border-gray-400 p-2 text-center" colspan="4">Rata-rata Nilai Akhir Ijazah</td>
-                                <td class="border border-gray-400 p-2 text-center bg-gray-100">${rataRataIjazah}</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-                <div style="font-style: italic; font-size: 10pt; margin-top: 15px;">
-                    Ket: Nilai Ijazah = ${bobot.bobotUjian}% Nilai Ujian Madrasah + ${bobot.bobotRapor}% Nilai Rapor 5 Semester
-                </div>
-            </div>`;
+        // ==========================================================
+        // === [PERUBAHAN UTAMA] AMBIL PENGATURAN DOKUMEN DARI SERVER ===
+        // ==========================================================
+        const ssId = sessionStorage.getItem('siswa_spreadsheetId');
+        printableArea.innerHTML = `<p class="text-center text-gray-500 py-8 loading-animation">Membangun pratinjau transkrip</p>`;
 
-        document.getElementById('downloadPdfBtn').onclick = handleDownloadPdf;
-        document.getElementById('backToResultBtn').onclick = function() {
-            showView('result-container');
-        };
+        // Panggil server untuk mendapatkan data gambar (logo, header, dll)
+        google.script.run
+            .withSuccessHandler(settingsResponse => {
+                const docSettings = (settingsResponse && settingsResponse.status === 'success') ? settingsResponse.settings : {};
+                const { logo, customHeader } = docSettings;
+                
+                let headerHtml;
+                if (customHeader) {
+                    // JIKA ADA HEADER KUSTOM, gunakan gambar ini.
+                    headerHtml = `
+                        <div style="width: 100%; margin-bottom: 10px; border-bottom: 3px solid black;">
+                            <img src="${customHeader}" alt="Kop Surat" style="width: 100%; height: auto;">
+                        </div>
+                    `;
+                } else {
+                    // JIKA TIDAK ADA, gunakan kop surat berbasis teks.
+                    const logoHtml = logo ? `<img src="${logo}" style="width:75px; height:75px; margin-right: 20px;" alt="Logo">` : '<div style="width:75px; height:75px; margin-right: 20px;"></div>';
+                    const kantorKemenagLine = `KANTOR KEMENTERIAN AGAMA ${school.tipeKabupaten || ''} ${school.kabupaten || ''}`.toUpperCase();
+                    const tipeKabSingkat = school.tipeKabupaten === 'Kabupaten' ? 'Kab.' : 'Kota';
+                    const tipeKelSingkat = school.tipeKelurahan === 'Kelurahan' ? 'Kel.' : 'Desa';
+                    const alamatLengkap = [ school.alamat, `${tipeKelSingkat} ${toProperCase(school.kelurahan || '')}`, `Kec. ${toProperCase(school.kecamatan || '')}`, `${tipeKabSingkat} ${toProperCase(school.kabupaten || '')}`, toProperCase(school.provinsi || ''), school.kodePos ].filter(Boolean).join(', ');
+                    const teleponLine = school.telepon ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">Telepon : ${school.telepon}</div>` : '';
+                    const websiteLine = school.website ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">Website : ${school.website}</div>` : '';
+                    
+                    headerHtml = `
+                        <div style="display: flex; align-items: flex-start; padding-bottom: 5px; border-bottom: 3px solid black; margin-bottom: 10px;">
+                            ${logoHtml}
+                            <div style="text-align: center; flex-grow: 1; line-height: 1.4; font-family: Arial, sans-serif;">
+                               <div style="font-size: 14pt; font-weight: bold;">KEMENTERIAN AGAMA REPUBLIK INDONESIA</div>
+                               <div style="font-size: 12pt; font-weight: bold;">${kantorKemenagLine}</div>
+                               <div style="font-size: 11pt; font-weight: bold;">${(school.namaSekolah || 'NAMA SEKOLAH').toUpperCase()}</div>
+                               <div style="font-size: 9pt;">Alamat : ${alamatLengkap}</div>
+                               ${teleponLine}
+                               ${websiteLine}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Render HTML lengkap ke dalam area pratinjau
+                printableArea.innerHTML = `
+                    <div class="font-sans p-2">
+                        ${headerHtml}
+                        <div class="text-center" style="margin-top: 10px;">
+                            <h3 class="font-bold" style="text-decoration: underline; font-size: 14pt;">TRANSKRIP NILAI AKHIR</h3>
+                        </div>
+                        <div class="w-full text-sm my-4 space-y-1">
+                            <div class="grid grid-cols-[max-content_auto_1fr] gap-x-2">
+                                <div>Nama Peserta Didik</div><div>:</div><div class="font-semibold">${student.nama.toUpperCase()}</div>
+                                <div>Tempat, Tanggal Lahir</div><div>:</div><div class="font-semibold">${student.tempatLahir ? toProperCase(student.tempatLahir) + ', ' : ''}${tglLahirFormatted}</div>
+                                <div>Nomor Induk Siswa/NISN</div><div>:</div><div class="font-semibold">${nomorIndukGabungan} / ${student.nisn}</div>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs sm:text-sm border-collapse border border-gray-400">
+                                <thead class="bg-gray-100 font-bold">
+                                    <tr><th class="border border-gray-400 p-2" rowspan="2">No</th><th class="border border-gray-400 p-2 text-left" rowspan="2">Mata Pelajaran</th><th class="border border-gray-400 p-2" colspan="3">Nilai</th></tr>
+                                    <tr><th class="border border-gray-400 p-1 font-semibold">Rapor</th><th class="border border-gray-400 p-1 font-semibold">Ujian</th><th class="border border-gray-400 p-1 font-semibold">Ijazah</th></tr>
+                                </thead>
+                                <tbody>
+                                    ${subjects.map((s, index) => `<tr><td class="border border-gray-400 p-2 text-center">${index + 1}</td><td class="border border-gray-400 p-2">${s.nama}</td><td class="border border-gray-400 p-2 text-center">${formatScore(s.nilaiRapor)}</td><td class="border border-gray-400 p-2 text-center">${formatScore(s.nilaiUjian)}</td><td class="border border-gray-400 p-2 text-center font-bold">${formatScore(s.nilaiIjazah)}</td></tr>`).join('')}
+                                </tbody>
+                                <tfoot class="font-bold">
+                                    <tr>
+                                        <td class="border border-gray-400 p-2 text-center" colspan="4">Rata-rata Nilai Akhir Ijazah</td>
+                                        <td class="border border-gray-400 p-2 text-center bg-gray-100">${rataRataIjazah}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <div style="font-style: italic; font-size: 10pt; margin-top: 15px;">
+                            Ket: Nilai Ijazah = ${bobot.bobotUjian}% Nilai Ujian Madrasah + ${bobot.bobotRapor}% Nilai Rapor 5 Semester
+                        </div>
+                    </div>`;
+
+                document.getElementById('downloadPdfBtn').onclick = handleDownloadPdf;
+                document.getElementById('backToResultBtn').onclick = function() {
+                    showView('result-container');
+                };
+            })
+            .withFailureHandler(err => {
+                 printableArea.innerHTML = `<p class="text-red-500 text-center">Gagal memuat detail dokumen: ${err.message}</p>`;
+            })
+            .getDocumentSettings(ssId);
     }
 
     // FUNGSI INI TIDAK BERUBAH
