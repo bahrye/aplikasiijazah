@@ -31,6 +31,86 @@
             33% { content: '..'; }
             66% { content: '...'; }
         }
+
+        /* ===== AWAL KODE BARU UNTUK Siswa.html ===== */
+        @media (max-width: 768px) {
+            /* Mengatur agar semua container utama tidak terlalu lebar di layar besar,
+              tetapi menggunakan lebar penuh di layar kecil. */
+            #app > .content-view {
+                width: 100%;
+                padding: 0 1rem; /* Beri sedikit jarak di sisi kiri-kanan */
+            }
+        }
+
+        /* Penyesuaian untuk ponsel dengan layar lebih kecil */
+        @media (max-width: 480px) {
+            /* Perkecil padding di dalam kartu agar konten lebih lega */
+            .bg-white.rounded-2xl.shadow-xl {
+                padding: 1.5rem;
+            }
+
+            /* Perkecil ukuran font untuk judul-judul */
+            h1.text-3xl {
+                font-size: 1.875rem; /* text-3xl -> text-2xl */
+            }
+            #login-school-name {
+                font-size: 1.5rem;
+            }
+            #countdown-school-name {
+                font-size: 1.875rem;
+                margin-bottom: 1.5rem;
+            }
+
+            /* Perkecil ukuran timer countdown */
+            #timer .font-display {
+                font-size: 3rem; /* text-6xl -> text-5xl */
+            }
+            #timer .pb-4 {
+                padding-bottom: 1rem;
+            }
+            
+            /* Perkecil ukuran status kelulusan */
+            #status-lulus {
+                font-size: 4.5rem; /* text-8xl -> text-7xl */
+            }
+
+            /* Pastikan tombol-tombol memiliki ukuran yang pas */
+            button.py-3 {
+                padding-top: 0.75rem;
+                padding-bottom: 0.75rem;
+            }
+        }
+        /* ===== AKHIR KODE BARU ===== */
+
+        /* ===== AWAL KODE BARU (Perbaikan Modal Transkrip Siswa) ===== */
+        @media (max-width: 600px) {
+            /* Menargetkan header modal */
+            #transcript-container .flex.justify-between {
+                position: relative; /* Diperlukan untuk memposisikan tombol 'X' */
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            /* Tampilkan tombol 'X' hanya di mobile */
+            #closeTranscriptModalSiswaBtn {
+                display: block;
+            }
+
+            /* Pastikan grup tombol utama sejajar dan rapi */
+            #transcript-container .flex.space-x-2 {
+                width: 100%;
+                justify-content: flex-start; /* Ratakan ke kiri */
+            }
+            
+            /* Perkecil ukuran tombol agar muat */
+            #downloadPdfBtn, #backToResultBtn {
+                flex-grow: 1; /* Buat tombol memenuhi ruang yang tersedia */
+                padding: 0.5rem 0.75rem;
+                font-size: 0.875rem;
+            }
+        }
+        /* ===== AKHIR KODE BARU ===== */
     </style>
 </head>
 <body class="gradient-bg text-gray-800">
@@ -423,8 +503,32 @@
         clearInterval(countdownInterval);
         document.querySelectorAll('.content-view').forEach(el => el.classList.add('hidden'));
         document.getElementById('result-container').classList.remove('hidden');
+
+        // Mengambil semua data yang diperlukan dari session storage
         const studentData = JSON.parse(sessionStorage.getItem('siswa_studentData'));
+        const schoolData = JSON.parse(sessionStorage.getItem('siswa_schoolData')); // <-- Data sekolah diambil di sini
         const statusLulus = sessionStorage.getItem('siswa_statusLulus');
+        const resultBox = document.querySelector('#result-container .bg-white');
+
+        // ===== AWAL KODE TAMBAHAN =====
+        // Hapus dulu nama sekolah lama jika ada, untuk mencegah duplikasi
+        const oldSchoolNameEl = document.getElementById('result-school-name');
+        if (oldSchoolNameEl) {
+            oldSchoolNameEl.remove();
+        }
+
+        // Buat elemen H1 baru untuk nama sekolah
+        const schoolNameEl = document.createElement('h1');
+        schoolNameEl.id = 'result-school-name';
+        // Terapkan styling dengan Tailwind CSS: besar, kapital, tengah, dan ada garis bawah
+        schoolNameEl.className = 'text-2xl md:text-3xl font-bold uppercase text-center text-gray-800 mb-6 pb-6 border-b';
+        schoolNameEl.textContent = schoolData.namaSekolah || '(NAMA SEKOLAH TIDAK DITEMUKAN)';
+
+        // Masukkan elemen nama sekolah ke bagian paling atas di dalam kotak putih
+        resultBox.prepend(schoolNameEl);
+        // ===== AKHIR KODE TAMBAHAN =====
+
+        // Kode untuk menampilkan detail siswa (tidak berubah)
         const dataDisplay = document.getElementById('graduation-data-display');
         dataDisplay.className = 'grid grid-cols-[max-content_auto_1fr] gap-x-2 gap-y-1 text-sm md:text-base items-baseline';
         const fields = [
@@ -441,6 +545,8 @@
             <div class="font-medium text-gray-600">:</div>
             <div class="font-semibold text-gray-900">${field.value}</div>
         `).join('');
+
+        // Kode untuk menampilkan status kelulusan (tidak berubah)
         const statusEl = document.getElementById('status-lulus');
         statusEl.textContent = statusLulus.toUpperCase();
         statusEl.className = `font-display text-7xl md:text-8xl my-2 text-center ${statusLulus === 'LULUS' ? 'text-green-600' : 'text-red-600'}`;
@@ -471,6 +577,22 @@
         const nisn = sessionStorage.getItem('siswa_nisn');
         const ssId = sessionStorage.getItem('siswa_spreadsheetId');
         document.getElementById('nama-siswa-display-transcript').textContent = studentName;
+
+        // ===== AWAL KODE TAMBAHAN =====
+        // Dapatkan elemen tombol-tombol
+        const backBtn = document.getElementById('backToResultBtn');
+        const modal = document.getElementById('transcript-container');
+
+        // Fungsi untuk menutup modal
+        const hideModal = () => {
+            modal.classList.add('hidden');
+        };
+
+        // Pasang event listener
+        backBtn.onclick = () => {
+            showView('result-container'); // Fungsi ini sudah ada untuk kembali ke hasil
+        };
+        // ===== AKHIR KODE TAMBAHAN =====
         
         const loader = document.getElementById('transcript-loader');
         const printableArea = document.getElementById('transcript-printable-area');
@@ -561,21 +683,23 @@
                         <div>Nomor Induk Siswa/NISN</div><div>:</div><div class="font-semibold">${nomorIndukGabungan} / ${student.nisn}</div>
                     </div>
                 </div>
-                <table class="w-full text-xs sm:text-sm border-collapse border border-gray-400">
-                    <thead class="bg-gray-100 font-bold">
-                        <tr><th class="border border-gray-400 p-2" rowspan="2">No</th><th class="border border-gray-400 p-2 text-left" rowspan="2">Mata Pelajaran</th><th class="border border-gray-400 p-2" colspan="3">Nilai</th></tr>
-                        <tr><th class="border border-gray-400 p-1 font-semibold">Rapor</th><th class="border border-gray-400 p-1 font-semibold">Ujian</th><th class="border border-gray-400 p-1 font-semibold">Ijazah</th></tr>
-                    </thead>
-                    <tbody>
-                        ${subjects.map((s, index) => `<tr><td class="border border-gray-400 p-2 text-center">${index + 1}</td><td class="border border-gray-400 p-2">${s.nama}</td><td class="border border-gray-400 p-2 text-center">${formatScore(s.nilaiRapor)}</td><td class="border border-gray-400 p-2 text-center">${formatScore(s.nilaiUjian)}</td><td class="border border-gray-400 p-2 text-center font-bold">${formatScore(s.nilaiIjazah)}</td></tr>`).join('')}
-                    </tbody>
-                    <tfoot class="font-bold">
-                        <tr>
-                            <td class="border border-gray-400 p-2 text-center" colspan="4">Rata-rata Nilai Akhir Ijazah</td>
-                            <td class="border border-gray-400 p-2 text-center bg-gray-100">${rataRataIjazah}</td>
-                        </tr>
-                    </tfoot>
-                </table>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs sm:text-sm border-collapse border border-gray-400">
+                        <thead class="bg-gray-100 font-bold">
+                            <tr><th class="border border-gray-400 p-2" rowspan="2">No</th><th class="border border-gray-400 p-2 text-left" rowspan="2">Mata Pelajaran</th><th class="border border-gray-400 p-2" colspan="3">Nilai</th></tr>
+                            <tr><th class="border border-gray-400 p-1 font-semibold">Rapor</th><th class="border border-gray-400 p-1 font-semibold">Ujian</th><th class="border border-gray-400 p-1 font-semibold">Ijazah</th></tr>
+                        </thead>
+                        <tbody>
+                            ${subjects.map((s, index) => `<tr><td class="border border-gray-400 p-2 text-center">${index + 1}</td><td class="border border-gray-400 p-2">${s.nama}</td><td class="border border-gray-400 p-2 text-center">${formatScore(s.nilaiRapor)}</td><td class="border border-gray-400 p-2 text-center">${formatScore(s.nilaiUjian)}</td><td class="border border-gray-400 p-2 text-center font-bold">${formatScore(s.nilaiIjazah)}</td></tr>`).join('')}
+                        </tbody>
+                        <tfoot class="font-bold">
+                            <tr>
+                                <td class="border border-gray-400 p-2 text-center" colspan="4">Rata-rata Nilai Akhir Ijazah</td>
+                                <td class="border border-gray-400 p-2 text-center bg-gray-100">${rataRataIjazah}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
                 <div style="font-style: italic; font-size: 10pt; margin-top: 15px;">
                     Ket: Nilai Ijazah = ${bobot.bobotUjian}% Nilai Ujian Madrasah + ${bobot.bobotRapor}% Nilai Rapor 5 Semester
                 </div>
