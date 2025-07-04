@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validasi Transkrip Nilai</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f3f4f6; /* bg-gray-100 */
+        }
+        /* Animasi untuk titik-titik loading */
+        .loading-animation::after {
+            display: inline-block;
+            animation: loading-dots 1.4s infinite;
+            content: '.';
+            width: 1em;
+            text-align: left;
+        }
+        @keyframes loading-dots {
+            0% { content: '.'; }
+            33% { content: '..'; }
+            66% { content: '...'; }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div id="app" class="w-full max-w-2xl mx-auto">
+        <div class="bg-white rounded-lg shadow-xl p-6 md:p-8">
+            <h1 class="text-xl md:text-2xl font-bold text-center text-gray-800">
+                Data Valid di Aplikasi Pengolahan Nilai Ijazah
+            </h1>
+            <p class="text-sm text-center text-gray-500 mt-1 mb-8">by Syamsul Bahri</p>
+
+            <div id="validation-result" class="text-center">
+                <!-- Hasil validasi akan ditampilkan di sini oleh JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Fungsi ini berjalan otomatis saat halaman selesai dimuat.
+         * Ia akan mengambil token dari URL, memanggil server, dan menampilkan hasilnya.
+         */
+        window.addEventListener('load', () => {
+            const resultDiv = document.getElementById('validation-result');
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get('token');
+
+            // Jika tidak ada token di URL, tampilkan pesan error.
+            if (!token) {
+                resultDiv.innerHTML = '<p class="text-red-600 font-bold">Error: Token validasi tidak ditemukan di URL.</p>';
+                return;
+            }
+
+            // Tampilkan status loading saat menunggu data dari server.
+            resultDiv.innerHTML = '<p class="text-gray-600 loading-animation">Memvalidasi data, mohon tunggu</p>';
+
+            // Panggil fungsi 'getValidationData' di backend (Kode.gs) dengan mengirimkan token.
+            google.script.run
+                .withSuccessHandler(response => {
+                    // Jika server merespons dengan status 'success'
+                    if (response && response.status === 'success') {
+                        const data = response.data;
+                        // Bangun tabel HTML dengan data yang diterima.
+                        resultDiv.innerHTML = `
+                            <div class="overflow-x-auto border rounded-lg">
+                                <table class="min-w-full text-left text-sm md:text-base">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-3 font-medium text-gray-600">Data</th>
+                                            <th class="px-4 py-3 font-medium text-gray-800">Informasi Siswa</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200">
+                                        <tr>
+                                            <td class="px-4 py-3 text-gray-500">NISN</td>
+                                            <td class="px-4 py-3 font-bold text-gray-900">${data.nisn}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-4 py-3 text-gray-500">Nama Lengkap Siswa</td>
+                                            <td class="px-4 py-3 font-bold text-gray-900">${data.namaLengkap}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-4 py-3 text-gray-500">Nilai Rata-Rata Ijazah</td>
+                                            <td class="px-4 py-3 font-bold text-blue-600 text-lg">${data.rataRataIjazah}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-6 p-3 bg-green-100 text-green-800 rounded-lg flex items-center justify-center gap-3">
+                                <svg class="w-6 h-6 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                                <span class="font-semibold text-center">DATA TERVERIFIKASI DAN VALID</span>
+                            </div>
+                        `;
+                    } else {
+                        // Jika server merespons dengan status 'error'
+                        resultDiv.innerHTML = `
+                            <div class="mt-6 p-3 bg-red-100 text-red-800 rounded-lg flex items-center justify-center gap-3">
+                                <svg class="w-6 h-6 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+                                <span class="font-semibold text-center">VALIDASI GAGAL: ${response.message}</span>
+                            </div>
+                        `;
+                    }
+                })
+                .withFailureHandler(err => {
+                    // Jika terjadi error saat menghubungi server
+                    resultDiv.innerHTML = '<p class="text-red-600 font-bold">Terjadi kesalahan saat menghubungi server. Coba lagi nanti.</p>';
+                })
+                .getValidationData(token);
+        });
+    </script>
+</body>
+</html>
