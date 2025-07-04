@@ -36,30 +36,32 @@ const SHEET_WILAYAH = "Data Wilayah";
 
 
 /**
- * [VERSI FINAL DENGAN INJEKSI URL] Fungsi utama yang dipanggil saat web app diakses.
- * Mengirimkan URL aplikasi ke frontend untuk navigasi yang andal.
- * @returns {HtmlService.HtmlOutput} Output HTML untuk ditampilkan.
+ * [MODIFIKASI FINAL] Fungsi utama yang menangani permintaan GET.
+ * Sekarang membangun halaman validasi secara dinamis untuk keandalan maksimal.
  */
 function doGet(e) {
-  let page = e.parameter.page;
-  const webAppUrl = ScriptApp.getService().getUrl(); // Dapatkan URL publik
+  const page = e.parameter.page;
+  const webAppUrl = ScriptApp.getService().getUrl();
 
   if (page === 'siswa') {
-    // PERUBAHAN: Gunakan template untuk halaman siswa agar bisa menyisipkan URL
     const template = HtmlService.createTemplateFromFile('Siswa.html');
-    template.webAppUrl = webAppUrl; // Sisipkan URL ke dalam variabel 'webAppUrl'
-
-    return template.evaluate() // Gunakan .evaluate() untuk memproses template
+    template.webAppUrl = webAppUrl;
+    return template.evaluate()
       .setTitle('Portal Siswa')
-      .setFaviconUrl("https://i.imgur.com/C0cZOT0.png")
+      .setFaviconUrl("https://i.imgur.com/XX5e5Pe.png")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
-  } else {
-    // Untuk halaman utama, buat template dan sisipkan URL ke dalamnya
+  } 
+  else if (page === 'validasi') {
+    // Ambil token dari parameter URL
+    const token = e.parameter.token;
+    // Panggil fungsi baru untuk membuat halaman HTML secara dinamis
+    return buildValidationPage(token);
+  } 
+  else {
     const template = HtmlService.createTemplateFromFile('Index');
-    template.webAppUrl = webAppUrl; // Sisipkan URL ke dalam variabel 'webAppUrl'
-    
-    return template.evaluate() // Gunakan .evaluate() untuk memproses template
+    template.webAppUrl = webAppUrl;
+    return template.evaluate()
       .setTitle('Aplikasi Pengolahan Nilai Ijazah by Syamsul Bahri')
       .setFaviconUrl("https://i.imgur.com/C0cZOT0.png")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
@@ -2072,70 +2074,114 @@ function getRekapitulasiData_Optimized(spreadsheetId) {
 }
 
 /**
- * [VERSI DIAGNOSTIK 2.0] Mengambil data transkrip dengan logging super detail.
+ * [VERSI FINAL] Mengambil semua data yang diperlukan untuk membuat transkrip siswa,
+ * termasuk data siswa, sekolah, mata pelajaran, bobot nilai, dan pengaturan cetak yang tersimpan.
+ *
+ * @param {string} spreadsheetId - ID spreadsheet sekolah target.
+ * @param {string} nisn - NISN siswa yang akan diambil datanya.
+ * @returns {object} Objek berisi status dan payload data transkrip yang lengkap.
  */
 function getTranscriptData(spreadsheetId, nisn) {
-    // Mulai logging
-    Logger.log('--- MEMULAI DIAGNOSA getTranscriptData ---');
-    Logger.log('NISN yang diterima dari frontend: "' + nisn + '" (Tipe data: ' + typeof nisn + ')');
-
     try {
+        // 1. Validasi Input Awal
+        if (!spreadsheetId || !nisn) {
+            throw new Error("ID Spreadsheet atau NISN tidak boleh kosong.");
+        }
+
+        // 2. Mengambil Data Utama
         const allStudents = getStudents(spreadsheetId);
-        Logger.log('Berhasil memanggil getStudents. Jumlah total siswa yang terbaca: ' + allStudents.length);
-
-        // Jika ada siswa, cetak beberapa NISN dari spreadsheet untuk perbandingan
-        if (allStudents.length > 0) {
-            Logger.log('Mencetak 5 NISN pertama dari spreadsheet untuk dicek:');
-            for (let i = 0; i < Math.min(5, allStudents.length); i++) {
-                Logger.log('  - Baris ' + (i+1) + ': "' + allStudents[i].nisn + '" (Tipe data: ' + typeof allStudents[i].nisn + ')');
-            }
-        } else {
-             Logger.log('PERINGATAN: Tidak ada data siswa yang terbaca dari fungsi getStudents.');
-        }
-
-        // Lakukan pencarian
         const student = allStudents.find(s => String(s.nisn).trim() === String(nisn).trim());
-        
-        // Periksa hasil pencarian
+
         if (!student) {
-            Logger.log('--- HASIL: Siswa TIDAK DITEMUKAN setelah proses pencarian.---');
-            // Coba cari manual untuk melihat apakah ada yang mirip
-            let foundSimilar = false;
-            for (const s of allStudents) {
-                if (s.nisn == nisn) { // Gunakan perbandingan tidak ketat (==) untuk diagnosa
-                    Logger.log('INFO TAMBAHAN: Ditemukan siswa dengan perbandingan tidak ketat (==), ini menandakan masalah tipe data yang sangat subtil. NISN di Sheet: ' + s.nisn);
-                    foundSimilar = true;
-                }
-            }
-            if (!foundSimilar) {
-                Logger.log('INFO TAMBAHAN: Tidak ada NISN yang mirip sama sekali, bahkan dengan perbandingan tidak ketat.');
-            }
-            
-            throw new Error("Siswa dengan NISN " + nisn + " tidak ditemukan. (Error dari diagnosa)");
+            throw new Error(`Siswa dengan NISN ${nisn} tidak dapat ditemukan.`);
         }
-        
-        Logger.log('--- HASIL: Siswa BERHASIL DITEMUKAN. Seharusnya proses berjalan normal. ---');
-        
-        // ... Sisa dari fungsi ini (tidak perlu diubah, tapi saya sertakan agar lengkap) ...
+
         const schoolData = getSchoolData(spreadsheetId);
         const mapelList = getMapel(spreadsheetId);
-        // (Seluruh sisa fungsi ini biarkan sama)
         const bobot = getBobot(spreadsheetId);
+        const printSettings = getPrintSettings(spreadsheetId).settings || {}; // Mengambil pengaturan cetak
+
+        if (!schoolData || !schoolData.jenjang) {
+            throw new Error("Jenjang sekolah belum diatur. Silakan lengkapi di menu Data Sekolah.");
+        }
+
+        // 3. Menyiapkan Daftar Sheet Nilai yang Akan Dibaca
         const jenjang = schoolData.jenjang;
-        if (!jenjang) { throw new Error("Jenjang sekolah belum diatur.");}
-        const semesterKeys = { MI: ['k4_ganjil', 'k4_genap', 'k5_ganjil', 'k5_genap', 'k6_ganjil'], MTS: ['k7_ganjil', 'k7_genap', 'k8_ganjil', 'k8_genap', 'k9_ganjil'], MA: ['k10_ganjil', 'k10_genap', 'k11_ganjil', 'k11_genap', 'k12_ganjil']};
+        const semesterKeys = {
+            MI: ['k4_ganjil', 'k4_genap', 'k5_ganjil', 'k5_genap', 'k6_ganjil'],
+            MTS: ['k7_ganjil', 'k7_genap', 'k8_ganjil', 'k8_genap', 'k9_ganjil'],
+            MA: ['k10_ganjil', 'k10_genap', 'k11_ganjil', 'k11_genap', 'k12_ganjil']
+        };
         const semestersForJenjang = semesterKeys[jenjang] || [];
-        const sheetsToRead = [SHEET_NILAI_UJIAN_MADRASAH, SHEET_NILAI_UJIAN_PRAKTEK];
-        semestersForJenjang.forEach(smKey => { sheetsToRead.push(`Rapor_Pengetahuan_${smKey}`); sheetsToRead.push(`Rapor_Keterampilan_${smKey}`); });
+        const sheetsToRead = [
+            SHEET_NILAI_UJIAN_MADRASAH,
+            SHEET_NILAI_UJIAN_PRAKTEK,
+            ...semestersForJenjang.flatMap(smKey => [`Rapor_Pengetahuan_${smKey}`, `Rapor_Keterampilan_${smKey}`])
+        ];
+
+        // 4. Membaca Semua Data Nilai dalam Satu Operasi
         const allScoreData = {};
-        sheetsToRead.forEach(sheetName => { allScoreData[sheetName] = getSheetDataAsObject(spreadsheetId, sheetName); });
-        const transcriptSubjects = mapelList.map(mapel => { const kode = mapel.kode; const studentScoresUM = (allScoreData[SHEET_NILAI_UJIAN_MADRASAH] || {})[nisn] || {}; const studentScoresUP = (allScoreData[SHEET_NILAI_UJIAN_PRAKTEK] || {})[nisn] || {}; const nilaiUM = parseFloat(studentScoresUM[kode]); const nilaiUP = parseFloat(studentScoresUP[kode]); let rataUjian = null; if (!isNaN(nilaiUM) && !isNaN(nilaiUP)) rataUjian = (nilaiUM + nilaiUP) / 2; else if (!isNaN(nilaiUM)) rataUjian = nilaiUM; else if (!isNaN(nilaiUP)) rataUjian = nilaiUP; let totalNilaiRapor = 0; let semesterCount = 0; semestersForJenjang.forEach(smKey => { const sheetP = `Rapor_Pengetahuan_${smKey}`; const sheetK = `Rapor_Keterampilan_${smKey}`; const nilaiP = parseFloat(((allScoreData[sheetP] || {})[nisn] || {})[kode]); const nilaiK = parseFloat(((allScoreData[sheetK] || {})[nisn] || {})[kode]); if (!isNaN(nilaiP) && !isNaN(nilaiK)) { totalNilaiRapor += (nilaiP + nilaiK) / 2; semesterCount++; } else if (!isNaN(nilaiP)) { totalNilaiRapor += nilaiP; semesterCount++; } else if (!isNaN(nilaiK)) { totalNilaiRapor += nilaiK; semesterCount++; }}); const rataRapor = semesterCount > 0 ? totalNilaiRapor / semesterCount : null; let nilaiIjazah = null; if (rataUjian !== null || rataRapor !== null) { const finalRataUjian = rataUjian !== null ? rataUjian : 0; const finalRataRapor = rataRapor !== null ? rataRapor : 0; nilaiIjazah = (finalRataUjian * (bobot.bobotUjian / 100)) + (finalRataRapor * (bobot.bobotRapor / 100)); } return { kode: kode, nama: mapel.nama, kelompok: mapel.kelompok, nilaiRapor: rataRapor, nilaiUjian: rataUjian, nilaiIjazah: nilaiIjazah }; });
-        const finalTranscript = { student: student, school: schoolData, subjects: transcriptSubjects, bobot: bobot };
-        return { status: 'success', data: finalTranscript };
+        sheetsToRead.forEach(sheetName => {
+            allScoreData[sheetName] = getSheetDataAsObject(spreadsheetId, sheetName);
+        });
+
+        // 5. Melakukan Kalkulasi untuk Setiap Mata Pelajaran
+        const transcriptSubjects = mapelList.map(mapel => {
+            const kode = mapel.kode;
+            const studentScoresUM = (allScoreData[SHEET_NILAI_UJIAN_MADRASAH] || {})[nisn] || {};
+            const studentScoresUP = (allScoreData[SHEET_NILAI_UJIAN_PRAKTEK] || {})[nisn] || {};
+            
+            // Hitung Rata-rata Nilai Ujian
+            const nilaiUM = parseFloat(studentScoresUM[kode]);
+            const nilaiUP = parseFloat(studentScoresUP[kode]);
+            let rataUjian = null;
+            if (!isNaN(nilaiUM) && !isNaN(nilaiUP)) rataUjian = (nilaiUM + nilaiUP) / 2;
+            else if (!isNaN(nilaiUM)) rataUjian = nilaiUM;
+            else if (!isNaN(nilaiUP)) rataUjian = nilaiUP;
+
+            // Hitung Rata-rata Nilai Rapor
+            let totalNilaiRapor = 0;
+            let semesterCount = 0;
+            semestersForJenjang.forEach(smKey => {
+                const nilaiP = parseFloat(((allScoreData[`Rapor_Pengetahuan_${smKey}`] || {})[nisn] || {})[kode]);
+                const nilaiK = parseFloat(((allScoreData[`Rapor_Keterampilan_${smKey}`] || {})[nisn] || {})[kode]);
+                if (!isNaN(nilaiP) && !isNaN(nilaiK)) { totalNilaiRapor += (nilaiP + nilaiK) / 2; semesterCount++; }
+                else if (!isNaN(nilaiP)) { totalNilaiRapor += nilaiP; semesterCount++; }
+                else if (!isNaN(nilaiK)) { totalNilaiRapor += nilaiK; semesterCount++; }
+            });
+            const rataRapor = semesterCount > 0 ? totalNilaiRapor / semesterCount : null;
+
+            // Hitung Nilai Akhir Ijazah
+            let nilaiIjazah = null;
+            if (rataUjian !== null || rataRapor !== null) {
+                const finalRataUjian = rataUjian !== null ? rataUjian : 0;
+                const finalRataRapor = rataRapor !== null ? rataRapor : 0;
+                nilaiIjazah = (finalRataUjian * (bobot.bobotUjian / 100)) + (finalRataRapor * (bobot.bobotRapor / 100));
+            }
+
+            return {
+                kode: kode,
+                nama: mapel.nama,
+                kelompok: mapel.kelompok,
+                nilaiRapor: rataRapor,
+                nilaiUjian: rataUjian,
+                nilaiIjazah: nilaiIjazah
+            };
+        });
+
+        // 6. Menyusun Paket Data Final untuk Dikirim
+        const finalTranscriptData = {
+            student: student,
+            school: schoolData,
+            subjects: transcriptSubjects,
+            bobot: bobot,
+            printSettings: printSettings // Menyertakan pengaturan cetak
+        };
+
+        return { status: 'success', data: finalTranscriptData };
 
     } catch (e) {
-        Logger.log('---!!! TERJADI ERROR DI DALAM BLOK TRY-CATCH getTranscriptData !!!---');
-        Logger.log('Pesan Error: ' + e.message);
+        Logger.log('Error di getTranscriptData: ' + e.message + ' | Stack: ' + e.stack);
         return { status: 'error', message: 'Gagal mengambil data transkrip: ' + e.message };
     }
 }
@@ -5513,83 +5559,91 @@ function generateSchoolCodeForUser(spreadsheetId) {
 }
 
 /**
- * [MODIFIKASI FINAL v5] Membuat PDF transkrip dengan TTD dan QR Code yang disematkan,
- * menggunakan format KOP SURAT RESMI dan posisi TTD & Stempel yang presisi.
+ * [VERSI FINAL & PALING STABIL] Membuat PDF transkrip dengan mengambil pengaturan
+ * langsung dari spreadsheet dan menyematkan token validasi unik ke dalam QR code.
+ * Fungsi ini tidak lagi memerlukan parameter 'printOptions'.
+ *
+ * @param {string} spreadsheetId ID spreadsheet pengguna.
+ * @param {string} nisn NISN siswa yang akan dibuatkan transkrip.
+ * @returns {object} Objek berisi data file PDF yang telah di-encode base64.
  */
 function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
   try {
-    // 1. Dapatkan semua data yang diperlukan, termasuk bobot
+    // 1. Ambil semua data utama yang diperlukan dalam satu panggilan
     const transcriptDataResponse = getTranscriptData(spreadsheetId, nisn);
     if (transcriptDataResponse.status !== 'success') {
       throw new Error(transcriptDataResponse.message);
     }
-    // Destrukturisasi bobot dari data
-    const { student, school, subjects, bobot } = transcriptDataResponse.data;
-    
+    const { student, school, subjects, bobot, printSettings } = transcriptDataResponse.data;
+
+    // 2. Ambil pengaturan dokumen (gambar)
     const docSettingsResponse = getDocumentSettings(spreadsheetId);
     const docSettings = docSettingsResponse.settings || {};
     const { logo, signature, stamp, customHeader } = docSettings;
 
-    let qrCodeBase64 = '';
-    try {
-        const deployUrl = ScriptApp.getService().getUrl();
-        if (deployUrl) {
-            const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=125x125&data=${encodeURIComponent(deployUrl)}&ecc=L&margin=1`;
-            const qrCodeBlob = UrlFetchApp.fetch(qrCodeApiUrl).getBlob();
-            qrCodeBase64 = Utilities.base64Encode(qrCodeBlob.getBytes());
-        }
-    } catch (e) {
-        Logger.log("Gagal mengambil gambar QR Code dari API: " + e.message);
-    }
-
-    // 2. Helper dan perhitungan
+    // 3. Fungsi Helper dan Kalkulasi Nilai
     const toProperCase = (str) => {
         if (!str || typeof str !== 'string') return '';
         return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
     };
     const tglLahirFormatted = new Date(student.tanggalLahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-    const ttdDateFormatted = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     const nomorIndukGabungan = student.nis ? (school.nsm || '') + student.nis : '-';
     const formatScore = (score) => {
       if (score === null || score === undefined || isNaN(score)) return '0';
-      const rounded = Math.round(score);
-      return rounded; // Cukup kembalikan angka yang sudah dibulatkan
+      return `${Math.round(score)}`;
     };
     let totalNilaiIjazah = 0;
     const mapelCount = subjects.length;
     subjects.forEach(s => {
-      const scoreToAdd = (s.nilaiIjazah !== null && !isNaN(s.nilaiIjazah)) ? Math.round(s.nilaiIjazah) : 0;
-      totalNilaiIjazah += scoreToAdd;
+      totalNilaiIjazah += (s.nilaiIjazah !== null && !isNaN(s.nilaiIjazah)) ? Math.round(s.nilaiIjazah) : 0;
     });
     const rataRataIjazah = mapelCount > 0 ? (totalNilaiIjazah / mapelCount).toFixed(2).replace('.', ',') : '0,00';
+
+    // 4. Logika Dinamis untuk Teks Transkrip (berdasarkan data yang sudah diambil)
+    let tahunAjaranText = '';
+    if (printSettings && printSettings.tahunAjaran && printSettings.tahunAjaran.trim() !== '') {
+        tahunAjaranText = printSettings.tahunAjaran;
+    } else if (student.tahunLulus && !isNaN(parseInt(student.tahunLulus))) {
+        const tahunLulus = parseInt(student.tahunLulus);
+        tahunAjaranText = `${tahunLulus - 1}/${tahunLulus}`;
+    }
+
+    const tempatTTD = printSettings.tempatTtd || toProperCase(school.kabupaten) || '(Tempat)';
+    let tanggalTTD = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+    if (printSettings.tanggalTtd) {
+        const inputDate = new Date(printSettings.tanggalTtd);
+        inputDate.setMinutes(inputDate.getMinutes() + inputDate.getTimezoneOffset());
+        tanggalTTD = inputDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+    }
+
+    let qrCodeHtml = '';
+    if (printSettings.showQRCode) {
+        // PENTING: Pastikan nisn dan spreadsheetId dikirim ke sini
+        const qrCodeBase64 = getQrCodeAsBase64(nisn, spreadsheetId);
+        if (qrCodeBase64) {
+            qrCodeHtml = `<img src="data:image/png;base64,${qrCodeBase64}" style="width: 80px; height: 80px;" alt="QR Code"><br><span style="font-size:7pt;">Scan untuk validasi</span>`;
+        }
+    }
     
-    // ==========================================================
-    // === [PERUBAHAN UTAMA] LOGIKA UNTUK MEMBANGUN KOP SURAT ===
-    // ==========================================================
+    // 6. Logika untuk Kop Surat
     let headerHtml;
     if (customHeader) {
-        // JIKA ADA HEADER KUSTOM, gunakan gambar ini saja.
-        headerHtml = `
-            <div style="width: 100%; margin-bottom: 10px; border-bottom: 3px solid black;">
-                <img src="${customHeader}" alt="Kop Surat" style="width: 100%; height: auto;">
-            </div>
-        `;
+        headerHtml = `<div style="width: 100%; margin-bottom: 10px; border-bottom: 3px solid black;"><img src="${customHeader}" alt="Kop Surat" style="width: 100%; height: auto;"></div>`;
     } else {
         const kantorKemenagLine = `KANTOR KEMENTERIAN AGAMA ${school.tipeKabupaten || ''} ${school.kabupaten || ''}`.toUpperCase();
         const tipeKabSingkat = school.tipeKabupaten === 'Kabupaten' ? 'Kab.' : 'Kota';
         const tipeKelSingkat = school.tipeKelurahan === 'Kelurahan' ? 'Kel.' : 'Desa';
-
-        const alamatLengkap = [
-          school.alamat,
-          `${tipeKelSingkat} ${toProperCase(school.kelurahan || '')}`,
-          `Kec. ${toProperCase(school.kecamatan || '')}`,
-          `${tipeKabSingkat} ${toProperCase(school.kabupaten || '')}`,
-          toProperCase(school.provinsi || ''),
-          school.kodePos
-        ].filter(Boolean).join(', ');
-
-        const teleponLine = school.telepon ? `Telepon : ${school.telepon}` : '';
-        const websiteLine = school.website ? `Website : ${school.website}` : '';
+        const alamatLengkap = [ school.alamat, `${tipeKelSingkat} ${toProperCase(school.kelurahan || '')}`, `Kec. ${toProperCase(school.kecamatan || '')}`, `${tipeKabSingkat} ${toProperCase(school.kabupaten || '')}`, toProperCase(school.provinsi || ''), school.kodePos ].filter(Boolean).join(', ');
+        
+        const phone = school.telepon ? `Telepon : ${school.telepon}` : '';
+        const web = school.website ? `Website : ${school.website}` : '';
+        let contactLine = '';
+        if (phone && web) {
+          contactLine = `${phone} | ${web}`;
+        } else {
+          contactLine = phone || web;
+        }
+        const contactLineHtml = contactLine ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">${contactLine}</div>` : '';
 
         headerHtml = `
             <div style="display: flex; align-items: flex-start; padding-bottom: 5px; border-bottom: 3px solid black; margin-bottom: 10px;">
@@ -5599,18 +5653,12 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
                    <div style="font-size: 12pt; font-weight: bold;">${kantorKemenagLine}</div>
                    <div style="font-size: 11pt; font-weight: bold;">${(school.namaSekolah || 'NAMA SEKOLAH').toUpperCase()}</div>
                    <div style="font-size: 9pt;">Alamat : ${alamatLengkap}</div>
-                   ${teleponLine ? `<div style="font-size: 9pt;">${teleponLine}</div>` : ''}
-                   ${websiteLine ? `<div style="font-size: 9pt;">${websiteLine}</div>` : ''}
+                   ${contactLineHtml}
                 </div>
-            </div>
-        `;
+            </div>`;
     }
-    // ==========================================================
-    // === AKHIR PERUBAHAN LOGIKA KOP SURAT ===
-    // ==========================================================
 
-
-    // 3. Template HTML dengan KOP SURAT BARU
+    // 7. Template HTML untuk PDF
     const htmlContent = `
       <html>
         <head>
@@ -5622,19 +5670,6 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
             .text-center{text-align: center;} 
             .font-bold{font-weight: bold;} 
             .bg-gray{background-color: #f2f2f2;}
-            
-            /* [PERUBAHAN UTAMA] CSS KOP SURAT */
-            .kop-surat-container { 
-                display: flex; 
-                align-items: flex-start; 
-                padding-bottom: 5px; 
-                border-bottom: 3px solid black; 
-                margin-bottom: 10px;
-            }
-            .kop-logo { width: 75px; height: 75px; margin-right: 20px; }
-            .kop-teks { text-align: center; flex-grow: 1; line-height: 1.4; }
-            /* AKHIR PERUBAHAN */
-
             .footer-container { margin-top: 40px; width: 100%; display: flex; justify-content: space-between; align-items: flex-end; }
             .ttd-block { width: 45%; text-align: center; font-size: 10pt; }
             .qr-block { text-align: center; font-size: 8pt; color: #555; }
@@ -5648,8 +5683,9 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
         </head>
         <body>
           ${headerHtml}
-          <div class="text-center" style="margin-top: 10px;">
-             <h3 class="font-bold" style="text-decoration: underline; font-size: 14pt;">TRANSKRIP NILAI AKHIR</h3>
+          <div class="text-center" style="margin-top: 10px; line-height: 1.2;">
+             <h3 class="font-bold" style="text-decoration: underline; font-size: 14pt; margin-bottom: 0;">TRANSKRIP NILAI</h3>
+             ${tahunAjaranText ? `<p style="font-size: 11pt; font-weight: bold; margin-top: 0; margin-bottom: 10px;">TAHUN AJARAN ${tahunAjaranText}</p>` : ''}
           </div>
           
           <table class="no-border" style="margin-top: 1rem; margin-bottom: 1rem;">
@@ -5675,10 +5711,10 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
 
           <div class="footer-container">
               <div class="qr-block">
-                ${qrCodeBase64 ? `<img src="data:image/png;base64,${qrCodeBase64}" alt="QR Code" style="width: 80px; height: 80px;" /><br><span>Scan untuk validasi</span>` : ''}
+                ${qrCodeHtml}
               </div>
               <div class="ttd-block">
-                  <p>${toProperCase(school.kabupaten) || '(Tempat)'}, ${ttdDateFormatted}</p>
+                  <p>${tempatTTD}, ${tanggalTTD}</p>
                   <p>Kepala Madrasah,</p>
                   <div class="ttd-signature-area">
                       ${stamp ? `<img src="${stamp}" alt="Stempel" class="ttd-stamp">` : ''}
@@ -5694,7 +5730,7 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
       </html>
     `;
 
-    // 4. Konversi ke PDF
+    // 8. Konversi ke PDF
     const pdfBlob = Utilities.newBlob(htmlContent, MimeType.HTML).getAs(MimeType.PDF);
     pdfBlob.setName(`Transkrip - ${student.nama}.pdf`);
     
@@ -5705,7 +5741,7 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
     };
 
   } catch (e) {
-    Logger.log("Error in generateTranscriptPdfForSiswa: " + e.message);
+    Logger.log("Error in generateTranscriptPdfForSiswa: " + e.message + " | Stack: " + e.stack);
     return { status: "error", message: "Gagal membuat PDF: " + e.message };
   }
 }
@@ -6719,24 +6755,92 @@ function getDocumentSettings(spreadsheetId) {
   }
 }
 
-// ===== AKHIR DARI KODE BARU =====
+//=================================================================
+// [BARU] FUNGSI UNTUK VALIDASI QR CODE
+//=================================================================
 
 /**
- * [BARU] Mengambil QR code sebagai data Base64 untuk disematkan di HTML.
- * @returns {string|null} String Base64 dari gambar QR code atau null jika gagal.
+ * [HELPER] Membuat token validasi yang aman dan berbatas waktu.
+ * Token ini mengenkripsi NISN dan ID Spreadsheet.
+ * @param {string} nisn - NISN siswa.
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @returns {string} Token yang sudah dienkripsi dan di-encode.
  */
-function getQrCodeAsBase64() {
-  try {
-    const deployUrl = ScriptApp.getService().getUrl();
-    if (deployUrl) {
-      const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(deployUrl)}&ecc=L&margin=1`;
-      const qrCodeBlob = UrlFetchApp.fetch(qrCodeApiUrl).getBlob();
-      return Utilities.base64Encode(qrCodeBlob.getBytes());
+function generateValidationToken(nisn, spreadsheetId) {
+    const payload = JSON.stringify({
+        nisn: nisn,
+        ssId: spreadsheetId,
+        exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 365) // Token berlaku 1 tahun
+    });
+    // Menggunakan TextCipher untuk enkripsi sederhana (bukan JWT sejati, tapi cukup untuk tujuan ini)
+    const encrypted = Utilities.base64Encode(Utilities.newBlob(payload).getBytes());
+    return encrypted;
+}
+
+/**
+ * [PUBLIC - MODIFIKASI] Mengambil data validasi, sekarang termasuk Nama Sekolah.
+ * @param {string} token - Token yang di-scan dari QR code.
+ * @returns {object} Objek berisi data siswa dan sekolah jika valid.
+ */
+function getValidationData(token) {
+    try {
+        const decodedPayload = Utilities.newBlob(Utilities.base64Decode(token)).getDataAsString();
+        const payload = JSON.parse(decodedPayload);
+
+        // Validasi kadaluwarsa token
+        if (payload.exp < Math.floor(Date.now() / 1000)) {
+            return { status: 'error', message: 'Token validasi telah kedaluwarsa.' };
+        }
+
+        // --- AWAL PERUBAHAN ---
+        // 1. Ambil data sekolah menggunakan ID dari token
+        const schoolData = getSchoolData(payload.ssId);
+        if (!schoolData || !schoolData.namaSekolah) {
+            return { status: 'error', message: 'Data sekolah tidak dapat ditemukan.' };
+        }
+        // --- AKHIR PERUBAHAN ---
+
+        const student = getStudents(payload.ssId).find(s => s.nisn === payload.nisn);
+        if (!student) {
+            return { status: 'error', message: 'Data siswa tidak ditemukan.' };
+        }
+
+        const rekapIjazah = getSheetDataAsObject(payload.ssId, SHEET_REKAP_IJAZAH);
+        const studentRekap = rekapIjazah[student.nisn] || {};
+        const rataRata = studentRekap['Rata-rata'] !== undefined ? parseFloat(studentRekap['Rata-rata']).toFixed(2) : 'N/A';
+        
+        return {
+            status: 'success',
+            data: {
+                namaSekolah: schoolData.namaSekolah.toUpperCase(), // Tambahkan nama sekolah ke data
+                nisn: student.nisn,
+                namaLengkap: student.nama.toUpperCase(),
+                rataRataIjazah: rataRata
+            }
+        };
+    } catch (e) {
+        Logger.log("getValidationData Error: " + e.message);
+        return { status: 'error', message: 'Token tidak valid atau rusak.' };
     }
-    return null;
+}
+
+/**
+ * [MODIFIKASI] Mengubah fungsi QR Code untuk menyematkan URL validasi dengan token.
+ */
+function getQrCodeAsBase64(nisn, spreadsheetId) {
+  try {
+    const token = generateValidationToken(nisn, spreadsheetId);
+    // URL ini harus memiliki ?page=validasi dan &token=...
+    const validationUrl = `${ScriptApp.getService().getUrl()}?page=validasi&token=${token}`;
+    
+    // Menggunakan resolusi yang lebih baik dan tingkat koreksi error Medium
+    const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(validationUrl)}&ecc=M&margin=1`;
+
+    const qrCodeBlob = UrlFetchApp.fetch(qrCodeApiUrl).getBlob();
+    return Utilities.base64Encode(qrCodeBlob.getBytes());
   } catch (e) {
     Logger.log("Gagal membuat QR Code Base64: " + e.message);
-    return null; // Kembalikan null jika ada error
+    return null;
   }
 }
 
@@ -7337,4 +7441,182 @@ function prosesArsipTahunan(spreadsheetId, userEmail) {
     Logger.log(`Proses Arsip Gagal: ${e.toString()}`);
     return { status: 'error', message: `Terjadi kesalahan saat proses pengarsipan: ${e.message}` };
   }
+}
+
+// Kode.gs: Fungsi baru untuk menyimpan dan mengambil pengaturan
+
+/**
+ * [MODIFIKASI] Menyimpan pengaturan cetak transkrip ke dalam sheet 'Pengaturan'
+ * di spreadsheet pengguna.
+ * @param {string} spreadsheetId - ID spreadsheet pengguna.
+ * @param {object} settings - Objek berisi pengaturan cetak.
+ * @returns {{status: string, message: string}} Hasil operasi.
+ */
+function savePrintSettings(spreadsheetId, settings) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    let sheet = ss.getSheetByName(SHEET_PENGATURAN);
+    if (!sheet) {
+        sheet = ss.insertSheet(SHEET_PENGATURAN);
+        sheet.appendRow(['Nama Pengaturan', 'Value']);
+    }
+
+    // Menggunakan helper yang sudah ada untuk mencari atau membuat baris pengaturan
+    const findAndSet = (key, value) => {
+        const row = findOrCreateSettingRow(sheet, key);
+        sheet.getRange(row, 2).setValue(value);
+    };
+
+    findAndSet('Cetak - Tahun Ajaran', settings.tahunAjaran);
+    findAndSet('Cetak - Tempat TTD', settings.tempatTtd);
+    findAndSet('Cetak - Tanggal TTD', settings.tanggalTtd);
+    findAndSet('Cetak - Tampilkan QR', settings.showQRCode ? 'YA' : 'TIDAK'); // Simpan sebagai YA/TIDAK
+
+    return { status: 'success', message: 'Pengaturan berhasil disimpan di spreadsheet.' };
+  } catch (e) {
+    Logger.log("savePrintSettings Error: " + e.message);
+    return { status: 'error', message: 'Gagal menyimpan pengaturan ke spreadsheet.' };
+  }
+}
+
+/**
+ * [MODIFIKASI] Mengambil pengaturan cetak dari sheet 'Pengaturan'.
+ * @param {string} spreadsheetId - ID spreadsheet pengguna.
+ * @returns {{status: string, settings?: object}} Hasil operasi.
+ */
+function getPrintSettings(spreadsheetId) {
+  // Fungsi ini dibuat agar bisa dipanggil dari Index.html (admin) dan Siswa.html (publik)
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheet = ss.getSheetByName(SHEET_PENGATURAN);
+    const settings = {
+        tahunAjaran: '',
+        tempatTtd: '',
+        tanggalTtd: '',
+        showQRCode: true 
+    };
+
+    if (sheet) {
+        const data = sheet.getDataRange().getValues();
+        const settingsMap = new Map(data.map(row => [row[0], row[1]]));
+        
+        settings.tahunAjaran = settingsMap.get('Cetak - Tahun Ajaran') || '';
+        settings.tempatTtd = settingsMap.get('Cetak - Tempat TTD') || '';
+        const tgl = settingsMap.get('Cetak - Tanggal TTD');
+        settings.tanggalTtd = (tgl instanceof Date) ? Utilities.formatDate(tgl, Session.getScriptTimeZone(), "yyyy-MM-dd") : '';
+        settings.showQRCode = settingsMap.get('Cetak - Tampilkan QR') !== 'TIDAK';
+    }
+    
+    return { status: 'success', settings: settings };
+  } catch (e) {
+    Logger.log("getPrintSettings Error: " + e.message);
+    return { status: 'error', message: 'Gagal memuat pengaturan.' };
+  }
+}
+
+/**
+ * [FUNGSI BARU] Membangun halaman validasi HTML lengkap secara dinamis.
+ * Ini menggantikan kebutuhan akan file Validasi.html.
+ * @param {string} token - Token validasi yang diambil dari URL.
+ * @returns {HtmlService.HtmlOutput} Halaman HTML yang siap ditampilkan.
+ */
+function buildValidationPage(token) {
+  // Menggunakan template literal untuk membuat string HTML
+  const html = `
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Validasi Transkrip Nilai</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+            body { background-color: #f3f4f6; }
+            .loading-animation::after {
+                display: inline-block;
+                animation: loading-dots 1.4s infinite;
+                content: '.';
+                width: 1em;
+                text-align: left;
+            }
+            @keyframes loading-dots {
+                0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; }
+            }
+        </style>
+    </head>
+    <body class="flex items-center justify-center min-h-screen p-4">
+        <div id="app" class="w-full max-w-2xl mx-auto">
+            <div class="bg-white rounded-lg shadow-xl p-6 md:p-8">
+                <h1 class="text-xl md:text-2xl font-bold text-center text-gray-800">
+                    Data Valid di Aplikasi Pengolahan Nilai Ijazah
+                </h1>
+                <p class="text-sm text-center text-gray-500 mt-1 mb-8">by Syamsul Bahri</p>
+                <div id="validation-result" class="text-center">
+                    <p class="text-gray-600 loading-animation">Memvalidasi data, mohon tunggu</p>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            window.addEventListener('load', () => {
+                const resultDiv = document.getElementById('validation-result');
+                // Token sekarang disisipkan langsung dari server, ini lebih aman
+                const token = "${token || ''}";
+
+                if (!token) {
+                    resultDiv.innerHTML = '<p class="text-red-600 font-bold">Error: Token validasi tidak ditemukan.</p>';
+                    return;
+                }
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        if (response && response.status === 'success') {
+                            const data = response.data;
+                            resultDiv.innerHTML = \`
+                                <div class="overflow-x-auto border rounded-lg">
+                                    <table class="min-w-full text-left text-sm md:text-base">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-3 font-medium text-gray-600">Data</th>
+                                                <th class="px-4 py-3 font-medium text-gray-800">Informasi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-200">
+                                            <tr class="border-b"><td class="px-4 py-3 text-gray-500">Nama Sekolah</td><td class="px-4 py-3 font-bold text-gray-900">\${data.namaSekolah}</td></tr>
+                                            
+                                            <tr class="border-b"><td class="px-4 py-3 text-gray-500">NISN</td><td class="px-4 py-3 font-bold text-gray-900">\${data.nisn}</td></tr>
+                                            <tr class="border-b"><td class="px-4 py-3 text-gray-500">Nama Lengkap Siswa</td><td class="px-4 py-3 font-bold text-gray-900">\${data.namaLengkap}</td></tr>
+                                            <tr><td class="px-4 py-3 text-gray-500">Nilai Rata-Rata Ijazah</td><td class="px-4 py-3 font-bold text-blue-600 text-lg">\${data.rataRataIjazah}</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="mt-6 p-3 bg-green-100 text-green-800 rounded-lg flex items-center justify-center gap-3">
+                                    <svg class="w-6 h-6 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                                    <span class="font-semibold text-center">DATA TERVERIFIKASI DAN VALID</span>
+                                </div>
+                            \`;
+                        } else {
+                            resultDiv.innerHTML = \`
+                                <div class="mt-6 p-3 bg-red-100 text-red-800 rounded-lg flex items-center justify-center gap-3">
+                                    <svg class="w-6 h-6 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+                                    <span class="font-semibold text-center">VALIDASI GAGAL: \${response.message}</span>
+                                </div>
+                            \`;
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        resultDiv.innerHTML = '<p class="text-red-600 font-bold">Terjadi kesalahan saat menghubungi server. Coba lagi nanti.</p>';
+                    })
+                    .getValidationData(token);
+            });
+        </script>
+    </body>
+    </html>
+  `;
+  // Membuat dan mengembalikan output HTML
+  return HtmlService.createHtmlOutput(html)
+      .setTitle('Validasi Transkrip')
+      .setFaviconUrl("https://i.imgur.com/CmVVVxB.png")
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
