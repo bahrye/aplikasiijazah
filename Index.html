@@ -1619,6 +1619,42 @@
                             </div>
                         </div>
 
+                        <div id="transcript-print-settings" class="bg-white p-6 rounded-lg shadow-md mb-6 border border-blue-200">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-gray-800">Pengaturan Cetak Transkrip</h2>
+                                <button id="save-print-settings-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center justify-center w-48 h-10">
+                                    <span class="btn-text">Simpan Pengaturan</span>
+                                    <span class="btn-spinner hidden loading-animation">Menyimpan</span>
+                                </button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label for="setting-tahun-ajaran" class="block text-sm font-medium text-gray-700">Tahun Ajaran</label>
+                                    <input type="text" id="setting-tahun-ajaran" class="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Contoh: 2023/2024">
+                                </div>
+                                <div>
+                                    <label for="setting-tempat-ttd" class="block text-sm font-medium text-gray-700">Tempat Tanda Tangan</label>
+                                    <input type="text" id="setting-tempat-ttd" class="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Contoh: Jakarta">
+                                </div>
+                                <div>
+                                    <label for="setting-tanggal-ttd" class="block text-sm font-medium text-gray-700">Tanggal Tanda Tangan</label>
+                                    <input type="date" id="setting-tanggal-ttd" class="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                                </div>
+                                <div class="flex items-center">
+                                    <label for="setting-show-qrcode" class="flex items-center cursor-pointer">
+                                        <div class="relative">
+                                            <input type="checkbox" id="setting-show-qrcode" class="sr-only peer">
+                                            <div class="block bg-gray-300 w-14 h-8 rounded-full peer-checked:bg-blue-500 transition"></div>
+                                            <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition transform peer-checked:translate-x-full"></div>
+                                        </div>
+                                        <div class="ml-3 text-gray-700 font-medium">
+                                            Tampilkan QR Code
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
                         <div id="transcript-bulk-action-bar" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-auto bg-gray-800 text-white rounded-full shadow-2xl p-2 z-40 transition-all duration-300 ease-out transform">
                             <div class="flex items-center justify-between gap-4 px-4">
                                 <span id="selected-transcript-count" class="font-semibold whitespace-nowrap">0 siswa dipilih</span>
@@ -3373,6 +3409,7 @@
             setupPasswordToggles();
             setupHelpAccordion();
             setupAdminInfoModal();
+            setupPrintSettingsSaver();
 
             // Di dalam DOMContentLoaded
             const pengaturanForm = document.getElementById('pengaturanForm');
@@ -4482,7 +4519,10 @@
                 if (targetPageId === 'input-ujian') { calculateUjianAverage(); }
                 if (targetPageId === 'input-rapor') initRaporPage();
                 if (targetPageId === 'rekapitulasi') initRekapitulasiPage();
-                if (targetPageId === 'transkrip') loadTranskripPage();
+                if (targetPageId === 'transkrip') {
+                    loadTranskripPage();
+                    loadAndApplyPrintSettings(); // <-- PANGGIL FUNGSI LOAD DI SINI
+                }
                 if (targetPageId === 'pengaturan') {
                     loadPengaturanPage();
                     loadDocumentSettings(); // <-- TAMBAHKAN PEMANGGILAN FUNGSI INI
@@ -10853,32 +10893,40 @@
         }
 
         /**
-         * [FINAL] Menangani klik tombol "Transkrip" untuk menampilkan modal.
-         * Kini mengirimkan elemen target langsung ke fungsi render.
+         * [MODIFIKASI] Menangani klik pada tombol "Cetak" di tabel transkrip.
+         * Fungsi ini sekarang mengumpulkan pengaturan cetak dan meneruskannya ke fungsi render.
          */
         function handleShowTranscript(nisn) {
             const modal = document.getElementById('transcript-modal');
             const loader = document.getElementById('transcript-loader');
             const printableArea = document.getElementById('transcript-printable-area');
 
-            modal.classList.remove('hidden');
+            // --- AWAL PERBAIKAN ---
+            // 1. Ambil semua nilai dari formulir pengaturan cetak
+            const printOptions = {
+                tahunAjaran: document.getElementById('setting-tahun-ajaran').value.trim(),
+                tempatTtd: document.getElementById('setting-tempat-ttd').value.trim(),
+                tanggalTtd: document.getElementById('setting-tanggal-ttd').value,
+                showQRCode: document.getElementById('setting-show-qrcode').checked
+            };
+            // --- AKHIR PERBAIKAN ---
 
-            // Tambahkan animasi saat membuka
+            modal.classList.remove('hidden');
             setTimeout(() => modal.querySelector('.modal-content').style.transform = 'scale(1)', 10);
-            
-            // ===== TAMBAHKAN BARIS DI BAWAH INI =====
             document.getElementById('closeTranscriptModalBtn').onclick = closeTranscriptModal;
-            // =======================================
 
             loader.classList.remove('hidden');
             printableArea.classList.add('hidden');
-            printableArea.innerHTML = ''; // Kosongkan konten lama
+            printableArea.innerHTML = '';
 
             google.script.run
                 .withSuccessHandler(response => {
                     if (response.status === 'success') {
-                        // [PERUBAIKAN] Kirim elemen 'printableArea' sebagai argumen
-                        renderTranscriptModal(response.data, printableArea);
+                        // --- AWAL PERBAIKAN ---
+                        // 2. Teruskan 'printOptions' yang sudah dikumpulkan ke fungsi render
+                        renderTranscriptModal(response.data, printableArea, printOptions);
+                        // --- AKHIR PERBAIKAN ---
+                        
                         loader.classList.add('hidden');
                         printableArea.classList.remove('hidden');
                     } else {
@@ -10890,104 +10938,126 @@
                     modal.classList.add('hidden');
                     showGlobalStatus(`Error: ${err.message}`, false);
                 })
-                .getTranscriptData(userSpreadsheetId, nisn);
+                .getTranscriptData(userSpreadsheetId, nisn); // Tidak perlu mengirim options di sini
         }
 
 
         /**
-         * [MODIFIKASI FINAL v11] Menampilkan blok TTD & QR Code di pratinjau modal,
-         * dan kini mendukung Header Kustom.
+         * [MODIFIKASI FINAL] Menampilkan pratinjau transkrip dan memasang listener untuk tombol unduh/cetak.
+         * Pratinjau di modal menggunakan data dari form, sedangkan unduh PDF menggunakan data yang tersimpan di server.
+         *
+         * @param {object} data - Objek data transkrip dari server.
+         * @param {HTMLElement} printableArea - Elemen div tempat pratinjau akan dirender.
+         * @param {object} printOptions - Pengaturan dari formulir untuk pratinjau instan.
          */
-        function renderTranscriptModal(data, printableArea) {
+        function renderTranscriptModal(data, printableArea, printOptions) {
             try {
                 const { student, school, subjects, bobot } = data;
 
-                // Fungsi helper (tidak berubah)
+                // Helper dan kalkulasi
                 const toProperCase = (str) => {
                     if (!str || typeof str !== 'string') return '';
                     return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
                 };
                 const formatIndonesianDate = (dateStr) => {
                     if (!dateStr) return '';
-                    return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                    const date = new Date(dateStr);
+                    date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+                    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
                 };
                 const formatScore = (score) => {
                     if (score === null || score === undefined || isNaN(score)) return '0';
                     return `${Math.round(score)}`;
                 };
-                
-                // Kalkulasi nilai (tidak berubah)
                 let totalNilaiIjazah = 0;
+                const mapelCount = subjects.length;
                 subjects.forEach(s => {
                     totalNilaiIjazah += (s.nilaiIjazah !== null && !isNaN(s.nilaiIjazah)) ? Math.round(s.nilaiIjazah) : 0;
                 });
-                const rataRataIjazah = subjects.length > 0 ? (totalNilaiIjazah / subjects.length).toFixed(2).replace('.', ',') : '0,00';
+                const rataRataIjazah = mapelCount > 0 ? (totalNilaiIjazah / mapelCount).toFixed(2).replace('.', ',') : '0,00';
                 
                 printableArea.innerHTML = `<p class="text-center text-gray-500 py-8 loading-animation">Membangun pratinjau transkrip</p>`;
 
                 Promise.all([
                     new Promise(resolve => google.script.run.withSuccessHandler(resolve).getDocumentSettings(userSpreadsheetId)),
-                    new Promise(resolve => google.script.run.withSuccessHandler(resolve).getQrCodeAsBase64())
+                    new Promise(resolve => {
+                        if(printOptions.showQRCode) {
+                            google.script.run.withSuccessHandler(resolve).getQrCodeAsBase64(student.nisn, userSpreadsheetId);
+                        } else {
+                            resolve(null);
+                        }
+                    })
                 ]).then(([settingsResponse, qrCodeBase64]) => {
                     
                     const docSettings = (settingsResponse && settingsResponse.status === 'success') ? settingsResponse.settings : {};
-                    // [MODIFIKASI] Ambil juga 'customHeader' dari settings
-                    const { logo, signature, stamp, customHeader } = docSettings;
+                    const { logo, customHeader, signature, stamp } = docSettings;
 
-                    const signatureHtml = signature ? `<img src="${signature}" style="position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); max-width:150px; max-height:100px; z-index:1;" alt="TTD">` : '';
-                    const stampHtml = stamp ? `<img src="${stamp}" style="position:absolute; left:50%; top:50%; transform:translate(-50%, -50%) rotate(-15deg); opacity:0.75; max-width:120px; max-height:120px; z-index:2;" alt="Stempel">` : '';
-                    const qrHtml = qrCodeBase64 ? `<img src="data:image/png;base64,${qrCodeBase64}" style="width:80px; height:80px;" alt="QR Code"><br><span>Scan untuk validasi</span>` : '';
-                    const nomorIndukGabungan = student.nis ? (school.nsm || '') + student.nis : '-';
-                    
-                    // ==========================================================
-                    // === [PERUBAHAN UTAMA] LOGIKA UNTUK KOP SURAT DINAMIS ===
-                    // ==========================================================
+                    // Logika prioritas Tahun Ajaran untuk PRATINJAU
+                    let tahunAjaranText = '';
+                    if (printOptions.tahunAjaran && printOptions.tahunAjaran.trim() !== '') {
+                        tahunAjaranText = printOptions.tahunAjaran;
+                    } else if (student.tahunLulus && !isNaN(parseInt(student.tahunLulus))) {
+                        const tahunLulus = parseInt(student.tahunLulus);
+                        tahunAjaranText = `${tahunLulus - 1}/${tahunLulus}`;
+                    }
+
+                    // Variabel dari printOptions untuk PRATINJAU
+                    const tempatTTD = printOptions.tempatTtd || toProperCase(school.kabupaten) || '(Tempat)';
+                    let tanggalTTD = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+                    if (printOptions.tanggalTtd) {
+                        const inputDate = new Date(printOptions.tanggalTtd);
+                        inputDate.setMinutes(inputDate.getMinutes() + inputDate.getTimezoneOffset());
+                        tanggalTTD = inputDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+                    }
+                    const qrHtml = qrCodeBase64 ? `<img src="data:image/png;base64,${qrCodeBase64}" style="width: 80px; height: 80px;" alt="QR Code"><br><span style="font-size:7pt;">Scan untuk validasi</span>` : '';
+
+                    // Logika untuk Kop Surat
                     let headerHtml;
                     if (customHeader) {
-                        // JIKA ADA HEADER KUSTOM, gunakan gambar ini.
-                        headerHtml = `
-                            <div style="width: 100%; margin-bottom: 10px; border-bottom: 3px solid black;">
-                                <img src="${customHeader}" alt="Kop Surat" style="width: 100%; height: auto;">
-                            </div>
-                        `;
+                        headerHtml = `<div style="width: 100%; margin-bottom: 10px; border-bottom: 3px solid black;"><img src="${customHeader}" alt="Kop Surat" style="width: 100%; height: auto;"></div>`;
                     } else {
-                        // JIKA TIDAK ADA, gunakan kop surat berbasis teks seperti sebelumnya.
-                        const logoHtml = logo ? `<img src="${logo}" style="width:75px; height:75px;" alt="Logo">` : '';
                         const kantorKemenagLine = `KANTOR KEMENTERIAN AGAMA ${school.tipeKabupaten || ''} ${school.kabupaten || ''}`.toUpperCase();
                         const tipeKabSingkat = school.tipeKabupaten === 'Kabupaten' ? 'Kab.' : 'Kota';
                         const tipeKelSingkat = school.tipeKelurahan === 'Kelurahan' ? 'Kel.' : 'Desa';
                         const alamatLengkap = [ school.alamat, `${tipeKelSingkat} ${toProperCase(school.kelurahan || '')}`, `Kec. ${toProperCase(school.kecamatan || '')}`, `${tipeKabSingkat} ${toProperCase(school.kabupaten || '')}`, toProperCase(school.provinsi || ''), school.kodePos ].filter(Boolean).join(', ');
-                        const teleponLine = school.telepon ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">Telepon : ${school.telepon}</div>` : '';
-                        const websiteLine = school.website ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">Website : ${school.website}</div>` : '';
                         
+                        const phone = school.telepon ? `Telepon : ${school.telepon}` : '';
+                        const web = school.website ? `Website : ${school.website}` : '';
+                        let contactLine = '';
+                        if (phone && web) {
+                          contactLine = `${phone} | ${web}`;
+                        } else {
+                          contactLine = phone || web;
+                        }
+                        const contactLineHtml = contactLine ? `<div style="font-family: Arial, sans-serif; font-size: 9pt;">${contactLine}</div>` : '';
+
                         headerHtml = `
                             <div style="display: flex; align-items: flex-start; padding-bottom: 5px; border-bottom: 3px solid black; margin-bottom: 10px;">
-                                <div style="width: 75px; height: 75px; margin-right: 20px;">${logoHtml}</div>
-                                <div style="text-align: center; flex-grow: 1; line-height: 1.4;">
-                                   <div style="font-family: Arial, sans-serif; font-size: 14pt; font-weight: bold;">KEMENTERIAN AGAMA REPUBLIK INDONESIA</div>
-                                   <div style="font-family: Arial, sans-serif; font-size: 12pt; font-weight: bold;">${kantorKemenagLine}</div>
-                                   <div style="font-family: Arial, sans-serif; font-size: 11pt; font-weight: bold;">${(school.namaSekolah || 'NAMA SEKOLAH').toUpperCase()}</div>
-                                   <div style="font-family: Arial, sans-serif; font-size: 9pt;">Alamat : ${alamatLengkap}</div>
-                                   ${teleponLine}
-                                   ${websiteLine}
+                                ${logo ? `<img src="${logo}" style="width:75px; height:75px; margin-right: 20px;" alt="Logo">` : '<div style="width:75px; height:75px; margin-right: 20px;"></div>'}
+                                <div style="text-align: center; flex-grow: 1; line-height: 1.4; font-family: Arial, sans-serif;">
+                                  <div style="font-size: 14pt; font-weight: bold;">KEMENTERIAN AGAMA REPUBLIK INDONESIA</div>
+                                  <div style="font-size: 12pt; font-weight: bold;">${kantorKemenagLine}</div>
+                                  <div style="font-size: 11pt; font-weight: bold;">${(school.namaSekolah || 'NAMA SEKOLAH').toUpperCase()}</div>
+                                  <div style="font-size: 9pt;">Alamat : ${alamatLengkap}</div>
+                                  ${contactLineHtml}
                                 </div>
-                            </div>
-                        `;
+                            </div>`;
                     }
-                    // ==========================================================
 
-                    // [MODIFIKASI] Gunakan variabel headerHtml yang sudah dinamis
+                    // Membangun HTML lengkap untuk pratinjau
+                    const nomorIndukGabungan = student.nis ? (school.nsm || '') + student.nis : '-';
                     const finalHtml = `
                         <div class="font-sans p-4" id="printable-transcript-content">
                             ${headerHtml}
-                            <div class="text-center" style="margin-top: 10px;">
-                                <h3 class="font-bold" style="text-decoration: underline; font-size: 14pt;">TRANSKRIP NILAI AKHIR</h3>
+                            <div class="text-center" style="margin-top: 10px; line-height: 1.2;">
+                                <h3 class="font-bold" style="text-decoration: underline; font-size: 14pt; margin-bottom: 0;">TRANSKRIP NILAI</h3>
+                                ${tahunAjaranText ? `<p style="font-size: 11pt; font-weight: bold; margin-top: 0; margin-bottom: 10px;">TAHUN AJARAN ${tahunAjaranText}</p>` : ''}
                             </div>
                             <table class="no-border" style="width:100%; margin-top: 1rem; margin-bottom: 1rem; font-size:10pt;">
                               <tbody>
                                   <tr><td style="border:none; padding: 1px; width: 180px;">Nama Peserta Didik</td><td style="border:none; padding: 1px; width: 10px;">:</td><td style="border:none; font-weight:bold; padding: 1px;">${student.nama.toUpperCase()}</td></tr>
                                   <tr><td style="border:none; padding: 1px;">Tempat, Tanggal Lahir</td><td style="border:none; padding: 1px;">:</td><td style="border:none; font-weight:bold; padding: 1px;">${student.tempatLahir ? toProperCase(student.tempatLahir) + ', ' : ''}${formatIndonesianDate(student.tanggalLahir)}</td></tr>
-                                  <tr><td style="border:none; padding: 1px;">Nomor Induk Siswa/NISN</td><td style="border:none; padding: 1px;">:</td><td style="border:none; font-weight:bold; padding: 1px;">${nomorIndukGabungan} / ${student.nisn}</td></tr>
+                                  <tr><td style="border:none; padding: 1px;">Nomor Induk / NISN</td><td style="border:none; padding: 1px;">:</td><td style="border:none; font-weight:bold; padding: 1px;">${nomorIndukGabungan} / ${student.nisn}</td></tr>
                               </tbody>
                             </table>
                             <table class="w-full text-sm border-collapse border border-black" style="border: 1px solid black;">
@@ -11003,112 +11073,96 @@
                                         <th class="border border-black p-1 text-xs font-semibold w-32 text-center">Nilai Ijazah</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    ${subjects.map((s, index) => `
-                                        <tr class="bg-white">
-                                            <td class="border border-black p-2 text-center">${index + 1}</td>
-                                            <td class="border border-black p-2">${s.nama}</td>
-                                            <td class="border border-black p-2 text-center">${formatScore(s.nilaiRapor)}</td>
-                                            <td class="border border-black p-2 text-center">${formatScore(s.nilaiUjian)}</td>
-                                            <td class="border border-black p-2 text-center font-bold">${formatScore(s.nilaiIjazah)}</td>
-                                        </tr>
-                                    `).join('')}
-                                    <tr class="font-bold" style="font-weight: bold; background-color: #f2f2f2;">
-                                        <td class="border border-black p-2 text-center" colspan="4">Rata-rata Nilai Akhir Ijazah</td>
-                                        <td class="border border-black p-2 text-center">${rataRataIjazah}</td>
-                                    </tr>
-                                </tbody>
+                                <tbody>${subjects.map((s, index) => `<tr><td class="border border-black p-2 text-center">${index + 1}</td><td class="border border-black p-2">${s.nama}</td><td class="border border-black p-2 text-center">${formatScore(s.nilaiRapor)}</td><td class="border border-black p-2 text-center">${formatScore(s.nilaiUjian)}</td><td class="border border-black p-2 text-center font-bold">${formatScore(s.nilaiIjazah)}</td></tr>`).join('')}</tbody>
+                                <tfoot class="font-bold" style="font-weight: bold; background-color: #f2f2f2;">
+                                    <tr><td class="border border-black p-2 text-center" colspan="4">Rata-rata Nilai Akhir Ijazah</td><td class="border border-black p-2 text-center">${rataRataIjazah}</td></tr>
+                                </tfoot>
                             </table>
                             <div style="font-style: italic; font-size: 10pt; margin-top: 15px;">
                                 Ket: Nilai Ijazah = ${bobot.bobotUjian}% Nilai Ujian Madrasah + ${bobot.bobotRapor}% Nilai Rapor 5 Semester
                             </div>
-                            <div style="margin-top: 40px; width: 100%; display: flex; justify-content: space-between; align-items: flex-end;">
-                                <div style="text-align: center; font-size: 8pt; color: #555;">${qrHtml}</div>
-                                <div style="width: 45%; text-align: center; font-size: 10pt;">
-                                    <p>${toProperCase(school.kabupaten) || '(Tempat)'}, ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                            <div class="footer-container" style="margin-top: 40px; width: 100%; display: flex; justify-content: space-between; align-items: flex-end;">
+                                <div class="qr-block" style="text-align: center; font-size: 8pt; color: #555;">${qrHtml}</div>
+                                <div class="ttd-block" style="width: 45%; text-align: center; font-size: 10pt;">
+                                    <p>${tempatTTD}, ${tanggalTTD}</p>
                                     <p>Kepala Madrasah,</p>
-                                    <div style="position: relative; height: 80px; margin-top: 10px; margin-bottom: 5px;">
-                                        ${stampHtml}${signatureHtml}
+                                    <div class="ttd-signature-area" style="position: relative; height: 80px; margin-top: 10px; margin-bottom: 5px;">
+                                        ${stamp ? `<img src="${stamp}" style="position:absolute; left:50%; top:50%; transform:translate(-50%, -50%) rotate(-15deg); opacity:0.75; max-width:120px; max-height:120px; z-index:2;" alt="Stempel">` : ''}
+                                        ${signature ? `<img src="${signature}" style="position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); max-width:150px; max-height:100px; z-index:1;" alt="Tanda Tangan">` : ''}
                                     </div>
                                     <p style="font-weight: bold; text-decoration: underline; margin:0;">${school.namaKepsek || '(Nama Kepala Sekolah)'}</p>
                                     <p style="margin:0;">NIP. ${school.nipKepsek || '-'}</p>
                                 </div>
                             </div>
-                        </div>`;
+                        </div>
+                    `;
                     
                     printableArea.innerHTML = finalHtml;
+
+                    // Pasang listener baru untuk tombol unduh PDF
+                    const downloadBtn = document.getElementById('downloadTranscriptBtn');
+                    const newDownloadBtn = downloadBtn.cloneNode(true);
+                    downloadBtn.parentNode.replaceChild(newDownloadBtn, downloadBtn);
+                    
+                    newDownloadBtn.addEventListener('click', () => {
+                        const nisn = student.nisn;
+                        const ssId = userSpreadsheetId;
+                        const btnText = newDownloadBtn.querySelector('.btn-text');
+                        const spinner = newDownloadBtn.querySelector('.btn-spinner');
+                        
+                        newDownloadBtn.disabled = true;
+                        btnText.classList.add('hidden');
+                        spinner.classList.remove('hidden');
+
+                        google.script.run
+                            .withSuccessHandler(response => {
+                                newDownloadBtn.disabled = false;
+                                btnText.classList.remove('hidden');
+                                spinner.classList.add('hidden');
+                                if (response.status === 'success') {
+                                    const link = document.createElement('a');
+                                    link.href = `data:application/pdf;base64,${response.pdfData}`;
+                                    link.download = response.fileName;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                } else {
+                                    alert('Gagal membuat PDF: ' + response.message);
+                                }
+                            })
+                            .withFailureHandler(err => {
+                                newDownloadBtn.disabled = false;
+                                btnText.classList.remove('hidden');
+                                spinner.classList.add('hidden');
+                                alert('Error saat menghubungi server: ' + err.message);
+                            })
+                            .generateTranscriptPdfForSiswa(ssId, nisn);
+                    });
+
+                    // Listener untuk tombol Cetak (tidak perlu diubah)
+                    const printBtn = document.getElementById('printTranscriptBtn');
+                    const newPrintBtn = printBtn.cloneNode(true);
+                    printBtn.parentNode.replaceChild(newPrintBtn, printBtn);
+                    newPrintBtn.addEventListener('click', () => {
+                        const printWindow = window.open('', '', 'height=800,width=800');
+                        printWindow.document.write('<html><head><title>Cetak Transkrip</title>');
+                        printWindow.document.write('<style>body{font-family: Arial, sans-serif; font-size: 10pt;} table{border-collapse: collapse; width: 100%;} th, td{border: 1px solid black; padding: 4px; vertical-align: middle; text-align:left;} .text-center{text-align: center;} .font-bold{font-weight: bold;} .bg-gray{background-color: #f2f2f2;} @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } thead { display: table-header-group; } tr, table, div { page-break-inside: avoid; } }</style>');
+                        printWindow.document.write('</head><body>');
+                        printWindow.document.body.innerHTML = document.getElementById('printable-transcript-content').innerHTML;
+                        printWindow.document.write('</body></html>');
+                        printWindow.document.close();
+                        setTimeout(() => {
+                            printWindow.focus();
+                            printWindow.print();
+                            printWindow.close();
+                        }, 250);
+                    });
                 });
-
-                // Handler tombol Cetak (sekarang lebih sederhana)
-                const printBtn = document.getElementById('printTranscriptBtn');
-                const newPrintBtn = printBtn.cloneNode(true);
-                printBtn.parentNode.replaceChild(newPrintBtn, printBtn);
-                newPrintBtn.addEventListener('click', () => {
-                    const printWindow = window.open('', '', 'height=800,width=800');
-                    printWindow.document.write('<html><head><title>Cetak Transkrip</title>');
-                    printWindow.document.write('<style>body{font-family: Arial, sans-serif; font-size: 10pt;} table{border-collapse: collapse; width: 100%;} th, td{border: 1px solid black; padding: 4px; vertical-align: middle; text-align:left;} .text-center{text-align: center;} .font-bold{font-weight: bold;} .bg-gray{background-color: #f2f2f2;} @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } thead { display: table-header-group; } tr, table, div { page-break-inside: avoid; } }</style>');
-                    printWindow.document.write('</head><body>');
-                    // Ambil konten yang SUDAH ADA di modal, yang sekarang sudah lengkap
-                    printWindow.document.body.innerHTML = document.getElementById('printable-transcript-content').innerHTML;
-                    printWindow.document.write('</body></html>');
-                    printWindow.document.close();
-                    setTimeout(() => {
-                        printWindow.focus();
-                        printWindow.print();
-                        printWindow.close();
-                    }, 250);
-                });
-                
-                // Event listener untuk tombol download (tidak ada perubahan)
-                const downloadBtn = document.getElementById('downloadTranscriptBtn');
-                const newDownloadBtn = downloadBtn.cloneNode(true);
-                downloadBtn.parentNode.replaceChild(newDownloadBtn, downloadBtn);
-                newDownloadBtn.addEventListener('click', () => {
-                    const nisn = student.nisn;
-                    const ssId = userSpreadsheetId;
-                    const btnText = newDownloadBtn.querySelector('.btn-text');
-                    const spinner = newDownloadBtn.querySelector('.btn-spinner');
-                    newDownloadBtn.disabled = true;
-                    btnText.classList.add('hidden');
-                    spinner.classList.remove('hidden');
-                    google.script.run
-                        .withSuccessHandler(response => {
-                            newDownloadBtn.disabled = false;
-                            btnText.classList.remove('hidden');
-                            spinner.classList.add('hidden');
-                            if (response.status === 'success') {
-                                const link = document.createElement('a');
-                                link.href = `data:application/pdf;base64,${response.pdfData}`;
-                                link.download = response.fileName;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                            } else {
-                                alert('Gagal membuat PDF: ' + response.message);
-                            }
-                        })
-                        .withFailureHandler(err => {
-                            newDownloadBtn.disabled = false;
-                            btnText.classList.remove('hidden');
-                            spinner.classList.add('hidden');
-                            alert('Error saat menghubungi server: ' + err.message);
-                        })
-                        .generateTranscriptPdfForSiswa(ssId, nisn);
-                });
-
-                // Secara dinamis memuat gambar logo ke area pratinjau modal
-                google.script.run.withSuccessHandler(response => {
-                    const previewLogoPlaceholder = document.getElementById('preview-logo-placeholder');
-                    if(response && response.status === 'success' && response.settings && response.settings.logo && previewLogoPlaceholder) {
-                        previewLogoPlaceholder.innerHTML = `<img src="${response.settings.logo}" style="width:75px; height:75px;" alt="Logo">`;
-                    }
-                }).getDocumentSettings(userSpreadsheetId);
-
-
             } catch (error) {
                 alert("Gagal menampilkan transkrip. Error: " + error.message);
             }
         }
+
 
         // GANTI FUNGSI LAMA DENGAN VERSI BARU INI
         /**
@@ -13104,6 +13158,71 @@
             }
         }
         // ===== AKHIR FUNGSI BARU =====
+
+        /**
+         * Memasang listener untuk tombol Simpan Pengaturan Cetak.
+         */
+        function setupPrintSettingsSaver() {
+            const saveBtn = document.getElementById('save-print-settings-btn');
+            if (!saveBtn) return;
+
+            saveBtn.addEventListener('click', () => {
+                const btnText = saveBtn.querySelector('.btn-text');
+                const spinner = saveBtn.querySelector('.btn-spinner');
+
+                // Tampilkan animasi loading
+                saveBtn.disabled = true;
+                btnText.classList.add('hidden');
+                spinner.classList.remove('hidden');
+
+                // Kumpulkan data dari formulir
+                const settings = {
+                    tahunAjaran: document.getElementById('setting-tahun-ajaran').value,
+                    tempatTtd: document.getElementById('setting-tempat-ttd').value,
+                    tanggalTtd: document.getElementById('setting-tanggal-ttd').value,
+                    showQRCode: document.getElementById('setting-show-qrcode').checked
+                };
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        // Kembalikan tombol ke keadaan normal
+                        saveBtn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+
+                        if (response.status === 'success') {
+                            // Tampilkan notifikasi sukses yang diminta
+                            showGlobalStatus('Pengaturan Transkrip Berhasil Disimpan', true);
+                        } else {
+                            showGlobalStatus(response.message, false);
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        saveBtn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+                        showGlobalStatus(`Error: ${err.message}`, false);
+                    })
+                    .savePrintSettings(userSpreadsheetId, settings); 
+            });
+        }
+
+        // Tambahkan fungsi baru ini untuk memuat pengaturan saat halaman dibuka
+        function loadAndApplyPrintSettings() {
+            if (!userSpreadsheetId) return;
+
+            google.script.run
+                .withSuccessHandler(response => {
+                    if (response.status === 'success' && response.settings) {
+                        const settings = response.settings;
+                        document.getElementById('setting-tahun-ajaran').value = settings.tahunAjaran || '';
+                        document.getElementById('setting-tempat-ttd').value = settings.tempatTtd || '';
+                        document.getElementById('setting-tanggal-ttd').value = settings.tanggalTtd || '';
+                        document.getElementById('setting-show-qrcode').checked = settings.showQRCode;
+                    }
+                })
+                .getPrintSettings(userSpreadsheetId); // <-- Memanggil fungsi backend baru
+        }
     </script>
 </body>
 </html>
