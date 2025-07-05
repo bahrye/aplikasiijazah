@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Guru</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f0f4f8;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .content-view { 
+            animation: fadeIn 0.6s ease-in-out; 
+        }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(15px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #ffffff;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .mapel-link.active {
+            background-color: #4f46e5; /* indigo-700 */
+            color: white;
+            font-weight: 600;
+        }
+        .mapel-link:not(.active):hover {
+            background-color: #4338ca; /* indigo-800 */
+            color: white;
+        }
+        .tab-btn.active {
+            border-bottom-color: #4f46e5;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+        .semester-btn.active {
+            background-color: #eef2ff; /* indigo-50 */
+            color: #4338ca; /* indigo-800 */
+            font-weight: 600;
+        }
+        .score-input:read-only {
+            background-color: #eef2ff;
+            cursor: not-allowed;
+            border-color: #e0e7ff;
+        }
+        .status-disetujui { background-color: #dcfce7 !important; border-color: #4ade80 !important; color: #166534 !important; }
+        .status-ditolak { background-color: #fee2e2 !important; border-color: #f87171 !important; color: #991b1b !important; }
+        .status-menunggu { background-color: #fef9c3 !important; border-color: #facc15 !important; color: #854d0e !important; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #3730a3; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #6366f1; border-radius: 10px; }
+
+        #notification-container {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.75rem;
+        }
+        .toast {
+            max-width: 350px;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            color: white;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideInRight 0.5s ease-out forwards, fadeOut 0.5s ease-in 4.5s forwards;
+        }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(100%); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        
+        .modal-backdrop {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .modal-content {
+            transition: transform 0.3s ease-in-out;
+        }
+
+        /* [BARU] CSS untuk Hamburger Menu */
+        #hamburger-btn-guru {
+            display: none; /* Sembunyikan di desktop */
+        }
+        @media (max-width: 768px) {
+            #main-app-container > .flex {
+                display: block;
+            }
+            #main-app-container aside {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                width: 280px;
+                z-index: 40;
+                transform: translateX(-100%); 
+                transition: transform 0.3s ease-in-out;
+            }
+            #main-app-container main {
+                width: 100%;
+                padding-top: 5rem;
+            }
+            #main-app-container aside.is-open {
+                transform: translateX(0);
+            }
+            #hamburger-btn-guru {
+                display: block; /* Tampilkan di mobile */
+            }
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div id="app" class="min-h-screen">
+
+        <div id="notification-container"></div>
+
+        <div id="confirmation-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-[999]">
+            <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-md transform scale-95 p-6 text-center">
+                <div id="confirm-icon-container" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 mb-4">
+                    <svg class="h-6 w-6 text-yellow-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <h2 id="confirm-title" class="text-2xl font-bold text-gray-800">Konfirmasi Aksi</h2>
+                <p id="confirm-message" class="mt-2 text-gray-600">Apakah Anda yakin ingin melanjutkan?</p>
+                <div class="mt-6 flex justify-center space-x-4">
+                    <button id="confirm-cancel-btn" class="bg-gray-300 text-gray-800 py-2 px-6 rounded-md hover:bg-gray-400 font-medium">
+                        Batal
+                    </button>
+                    <button id="confirm-action-btn" class="bg-red-600 text-white py-2 px-6 rounded-md hover:bg-red-700 font-medium">
+                        Ya, Lanjutkan
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="login-container" class="content-view min-h-screen flex items-center justify-center gradient-bg p-4">
+            <div class="w-full max-w-md">
+                <div class="bg-white rounded-2xl shadow-2xl p-8 text-center">
+                    <h1 class="text-3xl font-bold text-gray-800">Portal Guru</h1>
+                    <p class="text-gray-500 mt-2 mb-8">Silakan masuk dengan akun Anda.</p>
+                    <form id="loginFormGuru">
+                        <div class="space-y-6">
+                            <input type="text" id="kode_sekolah_guru" placeholder="Kode Sekolah" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-center tracking-widest uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                            <input type="text" id="username_guru" placeholder="Username" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                            <input type="password" id="password_guru" placeholder="Password" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                        </div>
+                    </form>
+                    <div id="login-error-message" class="mt-4 text-center text-red-600 text-sm h-4"></div>
+                    
+                    <div class="mt-6 space-y-3">
+                        <button type="submit" form="loginFormGuru" id="loginButtonGuru" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-transform transform hover:scale-105 shadow-lg">
+                            <span id="loginBtnText">Masuk</span>
+                            <div id="loginSpinner" class="hidden mx-auto loading-spinner" style="width:24px; height:24px; border-width:3px;"></div>
+                        </button>
+                        <button type="button" id="backToMainLoginBtnGuru" class="w-full bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition shadow-md">
+                            <span>Login Utama</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="main-app-container" class="hidden">
+            <!-- [BARU] Tombol Hamburger & Overlay -->
+            <button id="hamburger-btn-guru" class="hidden fixed top-4 left-4 z-50 bg-indigo-600 text-white p-2 rounded-md shadow-lg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                </svg>
+            </button>
+            <div id="sidebar-overlay-guru" class="hidden fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"></div>
+
+            <div class="flex h-screen bg-gray-100">
+                <aside class="w-64 bg-indigo-800 text-white flex flex-col shadow-lg">
+                    <div class="h-20 flex items-center justify-center text-2xl font-extrabold border-b border-indigo-900">
+                        <span>PORTAL GURU</span>
+                    </div>
+                    <nav id="mapel-navigation" class="flex-1 px-4 py-4 space-y-2 overflow-y-auto custom-scrollbar">
+                        <h3 class="px-2 text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-2">Mata Pelajaran</h3>
+                        <div id="pilih-mapel-container"></div>
+                    </nav>
+                    <div class="p-4 border-t border-indigo-900">
+                        <button id="logoutButtonGuru" class="w-full flex items-center justify-center space-x-3 p-3 rounded-lg bg-indigo-700 hover:bg-red-600 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" /></svg>
+                            <span>Logout</span>
+                        </button>
+                    </div>
+                </aside>
+
+                <main class="flex-1 p-6 md:p-8 overflow-y-auto">
+                    <div id="welcome-screen" class="flex flex-col items-center justify-center h-full text-center text-gray-500">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 text-indigo-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-9-5.747h18" /></svg>
+                        <h2 class="text-2xl font-bold mt-4">Selamat Datang, <span id="nama-guru-display"></span>!</h2>
+                        <p class="mt-2 max-w-md">Silakan pilih mata pelajaran dari panel di sebelah kiri untuk mulai mengelola nilai.</p>
+                    </div>
+
+                    <div id="form-container" class="hidden content-view">
+                        <div id="submission-status-bar" class="mb-4 p-4 rounded-lg text-sm font-medium hidden items-center gap-3"></div>
+                        <div class="border-b border-gray-200 bg-white px-6 rounded-t-lg">
+                            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                                <button class="tab-btn active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="ujian">Nilai Ujian</button>
+                                <button class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="rapor">Nilai Rapor</button>
+                            </nav>
+                        </div>
+                        <div id="tab-content" class="bg-white p-6 rounded-b-lg shadow-sm">
+                            <div id="tab-ujian"></div>
+                            <div id="tab-rapor" class="hidden"></div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // [PERBAIKAN] Definisi fungsi helper dipindahkan ke atas
+    const WEB_APP_URL = "<?= webAppUrl ?>";
+
+    function showNotification(message, type = 'success') {
+        const container = document.getElementById('notification-container');
+        const toast = document.createElement('div');
+        let bgColor = 'bg-green-500';
+        let icon = `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+        if (type === 'error') { bgColor = 'bg-red-500'; icon = `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`; } 
+        else if (type === 'info') { bgColor = 'bg-blue-500'; icon = `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`; }
+        toast.className = `toast ${bgColor}`;
+        toast.innerHTML = `${icon}<span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => { toast.remove(); }, 5000);
+    }
+
+    function showConfirmationModal(options) {
+        const modal = document.getElementById('confirmation-modal');
+        const titleEl = document.getElementById('confirm-title');
+        const messageEl = document.getElementById('confirm-message');
+        const actionBtn = document.getElementById('confirm-action-btn');
+        const cancelBtn = document.getElementById('confirm-cancel-btn');
+        titleEl.textContent = options.title || 'Konfirmasi Aksi';
+        messageEl.innerHTML = options.message || 'Apakah Anda yakin?';
+        const newActionBtn = actionBtn.cloneNode(true);
+        actionBtn.parentNode.replaceChild(newActionBtn, actionBtn);
+        newActionBtn.textContent = options.confirmText || 'Ya';
+        newActionBtn.className = `py-2 px-6 rounded-md font-medium text-white ${options.confirmColor || 'bg-red-600 hover:bg-red-700'}`;
+        const closeModal = () => {
+            modal.querySelector('.modal-content').style.transform = 'scale(0.95)';
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        };
+        cancelBtn.onclick = closeModal;
+        newActionBtn.onclick = () => { closeModal(); if (options.onConfirm) { options.onConfirm(); } };
+        modal.classList.remove('hidden');
+        setTimeout(() => { modal.querySelector('.modal-content').style.transform = 'scale(1)'; }, 10);
+    }
+
+    function showView(viewId) { document.querySelectorAll('.content-view').forEach(el => el.classList.add('hidden')); document.getElementById(viewId)?.classList.remove('hidden'); }
+    
+    function handleGuruLogin(e) {
+        e.preventDefault();
+        const schoolCode = document.getElementById('kode_sekolah_guru').value.trim();
+        const username = document.getElementById('username_guru').value.trim();
+        const password = document.getElementById('password_guru').value;
+        const btn = document.getElementById('loginButtonGuru'), btnText = document.getElementById('loginBtnText'), spinner = document.getElementById('loginSpinner'), errorDiv = document.getElementById('login-error-message');
+        btn.disabled = true; btnText.classList.add('hidden'); spinner.classList.remove('hidden'); errorDiv.textContent = '';
+        google.script.run.withSuccessHandler(r => {
+            btn.disabled = false; btnText.classList.remove('hidden'); spinner.classList.add('hidden');
+            if (r.status === 'success') { sessionStorage.setItem('guruData', JSON.stringify(r.data)); initializeAppGuru(r.data); } else { errorDiv.textContent = r.message; }
+        }).withFailureHandler(err => {
+            btn.disabled = false; btnText.classList.remove('hidden'); spinner.classList.add('hidden'); errorDiv.textContent = 'Terjadi kesalahan: ' + err.message;
+        }).loginGuru(schoolCode, username, password);
+    }
+
+    // [FUNGSI BARU] Untuk setup menu hamburger di portal guru
+    function setupGuruHamburgerMenu() {
+        const hamburgerBtn = document.getElementById('hamburger-btn-guru');
+        const sidebar = document.querySelector('#main-app-container aside');
+        const overlay = document.getElementById('sidebar-overlay-guru');
+        const mapelContainer = document.getElementById('pilih-mapel-container');
+
+        const openSidebar = () => {
+            sidebar.classList.add('is-open');
+            overlay.classList.remove('hidden');
+        };
+
+        const closeSidebar = () => {
+            sidebar.classList.remove('is-open');
+            overlay.classList.add('hidden');
+        };
+
+        hamburgerBtn.addEventListener('click', openSidebar);
+        overlay.addEventListener('click', closeSidebar);
+
+        // Gunakan event delegation untuk link mapel
+        mapelContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('mapel-link')) {
+                closeSidebar();
+            }
+        });
+    }
+
+    // [PERBAIKAN FINAL] Fungsi ini sekarang menyimpan status izin ke session storage
+    function initializeAppGuru(guruData) {
+        sessionStorage.setItem('isSubmissionEnabled', guruData.isSubmissionEnabled);
+        showView('main-app-container');
+        document.getElementById('nama-guru-display').textContent = guruData.nama;
+        const mapelContainer = document.getElementById('pilih-mapel-container');
+        mapelContainer.innerHTML = '';
+        guruData.mapel.forEach(m => {
+            const link = document.createElement('a');
+            link.href = '#';
+            link.className = 'mapel-link block p-3 rounded-lg text-sm font-medium transition-colors duration-200';
+            link.dataset.kode = m.kode;
+            link.dataset.jenisUjian = m.jenisUjian;
+            link.textContent = m.nama;
+            link.onclick = (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.mapel-link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                handleMapelSelection(m.kode, m.jenisUjian);
+            };
+            mapelContainer.appendChild(link);
+        });
+        document.getElementById('logoutButtonGuru').addEventListener('click', handleGuruLogout);
+        setupTabs();
+        setupActionListeners();
+        setupGuruHamburgerMenu();
+    }
+
+    function handleMapelSelection(mapelKode, jenisUjian) {
+        document.getElementById('welcome-screen').classList.add('hidden');
+        const formContainer = document.getElementById('form-container');
+        formContainer.classList.remove('hidden');
+        document.querySelector('.tab-btn.active')?.classList.remove('active');
+        document.querySelector('[data-tab="ujian"]').classList.add('active');
+        document.getElementById('tab-ujian').classList.remove('hidden');
+        document.getElementById('tab-rapor').classList.add('hidden');
+        buildUjianForm(mapelKode, jenisUjian);
+        buildRaporForm(mapelKode);
+    }
+
+    function getSavedAndSubmittedValues(mapelKode) {
+        const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+        return new Promise((resolve, reject) => {
+            google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).getGuruNilai(guruData.spreadsheetId, guruData.username, mapelKode);
+        });
+    }
+
+    // [MODIFIKASI] Fungsi ini sekarang mengambil status izin dari session storage
+    async function buildUjianForm(mapelKode, jenisUjian) {
+        const container = document.getElementById('tab-ujian');
+        container.innerHTML = `<p class="loading-animation p-4">Memuat data...</p>`;
+        try {
+            const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+            const students = await new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej).getStudentsForGuru(guruData.spreadsheetId));
+            const { savedValues, submittedValues, approvalStatus } = await getSavedAndSubmittedValues(mapelKode);
+            
+            // Ambil status dari session storage
+            const isSubmissionEnabled = sessionStorage.getItem('isSubmissionEnabled') === 'true';
+
+            if (!students || students.length === 0) { container.innerHTML = `<p class="p-4 text-center text-gray-500">Tidak ada data siswa.</p>`; return; }
+            let formHtml = `<div class="bg-gray-50 p-4 rounded-lg">
+                ${buildActionButtons('ujian', mapelKode, submittedValues, approvalStatus, isSubmissionEnabled)}
+                ${buildScoreTable('ujian', 'Nilai Ujian', mapelKode, students, savedValues, submittedValues, approvalStatus, { jenisUjian })}
+            </div>`;
+            container.innerHTML = formHtml;
+        } catch (error) {
+            container.innerHTML = `<p class="text-red-500 p-4">Gagal memuat data: ${error.message}</p>`;
+        }
+    }
+
+    async function buildRaporForm(mapelKode) {
+        const container = document.getElementById('tab-rapor');
+        container.innerHTML = `<p class="loading-animation p-4">Memuat data...</p>`;
+        try {
+            const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+            const { jenjang } = await new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej).getStudentsAndJenjangForGuru(guruData.spreadsheetId));
+            const semesterMap = {
+                MI: { k4_ganjil: 'Kls 4 Ganjil', k4_genap: 'Kls 4 Genap', k5_ganjil: 'Kls 5 Ganjil', k5_genap: 'Kls 5 Genap', k6_ganjil: 'Kls 6 Ganjil' },
+                MTS: { k7_ganjil: 'Kls 7 Ganjil', k7_genap: 'Kls 7 Genap', k8_ganjil: 'Kls 8 Ganjil', k8_genap: 'Kls 8 Genap', k9_ganjil: 'Kls 9 Ganjil' },
+                MA: { k10_ganjil: 'Kls 10 Ganjil', k10_genap: 'Kls 10 Genap', k11_ganjil: 'Kls 11 Ganjil', k11_genap: 'Kls 11 Genap', k12_ganjil: 'Kls 12 Ganjil' }
+            };
+            const semesters = semesterMap[jenjang] || {};
+            if (Object.keys(semesters).length === 0) { container.innerHTML = `<p class="p-4 text-center text-gray-500">Jenjang sekolah tidak valid.</p>`; return; }
+            let semesterNavHtml = '<div class="flex flex-wrap gap-2 border-b mb-4 pb-2">';
+            Object.entries(semesters).forEach(([key, name], index) => {
+                const activeClass = index === 0 ? 'active' : '';
+                semesterNavHtml += `<button class="semester-btn text-sm px-4 py-2 rounded-md transition-colors ${activeClass}" data-semester-key="${key}">${name}</button>`;
+            });
+            semesterNavHtml += '</div>';
+            const formHtml = `${semesterNavHtml}<div id="rapor-table-container"></div>`;
+            container.innerHTML = formHtml;
+            container.querySelectorAll('.semester-btn').forEach(btn => {
+                btn.onclick = () => {
+                    container.querySelectorAll('.semester-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    renderRaporSemesterTable(btn.dataset.semesterKey, mapelKode);
+                };
+            });
+            const firstSemesterKey = Object.keys(semesters)[0];
+            renderRaporSemesterTable(firstSemesterKey, mapelKode);
+        } catch (error) {
+            container.innerHTML = `<p class="text-red-500 p-4">Gagal memuat data rapor: ${error.message}</p>`;
+        }
+    }
+
+    // [MODIFIKASI] Fungsi ini sekarang mengambil status izin dari session storage
+    async function renderRaporSemesterTable(semesterKey, mapelKode) {
+        const tableContainer = document.getElementById('rapor-table-container');
+        tableContainer.innerHTML = `<p class="loading-animation p-4">Memuat data semester...</p>`;
+        try {
+            const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+            const { students } = await new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej).getStudentsAndJenjangForGuru(guruData.spreadsheetId));
+            const { savedValues, submittedValues, approvalStatus } = await getSavedAndSubmittedValues(mapelKode);
+            
+            // Ambil status dari session storage
+            const isSubmissionEnabled = sessionStorage.getItem('isSubmissionEnabled') === 'true';
+            
+            if (!students || students.length === 0) { tableContainer.innerHTML = `<p class="p-4 text-center text-gray-500">Tidak ada data siswa.</p>`; return; }
+            const type = `rapor_${semesterKey}`;
+            const tableHtml = `<div class="bg-gray-50 p-4 rounded-lg">
+                ${buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled)}
+                ${buildScoreTable(type, '', mapelKode, students, savedValues, submittedValues, approvalStatus, { semesterKey })}
+            </div>`;
+            tableContainer.innerHTML = tableHtml;
+        } catch (error) {
+            tableContainer.innerHTML = `<p class="text-red-500 p-4">Gagal memuat tabel: ${error.message}</p>`;
+        }
+    }
+
+    // [PERBAIKAN FINAL] Fungsi ini sekarang menerima status izin kirim
+    function buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled) {
+        const isSubmitted = submittedValues && submittedValues[type];
+        const statusBar = document.getElementById('submission-status-bar');
+        
+        if (isSubmitted) {
+            let statusMessage = "Nilai untuk mapel ini sudah <b>Terkirim</b> dan sedang menunggu persetujuan admin.";
+            let statusBgColor = 'bg-yellow-100 text-yellow-800';
+            const firstNisn = Object.keys(submittedValues[type])[0]?.split('_')[0];
+            const firstSubtype = Object.keys(submittedValues[type])[0]?.split('_')[1];
+            const statusKey = `${type}_${firstSubtype}_${firstNisn}`;
+            if (approvalStatus && approvalStatus[statusKey]) {
+                const status = approvalStatus[statusKey];
+                if (status === 'Disetujui') {
+                    statusMessage = "Nilai untuk mapel ini telah <b>Disetujui</b> oleh admin.";
+                    statusBgColor = 'bg-green-100 text-green-800';
+                    isApproved = true; // Set flag jika disetujui
+                } 
+                else if (status === 'Ditolak') {
+                    statusMessage = "Nilai untuk mapel ini <b>Ditolak</b> oleh admin. Silakan batalkan pengiriman untuk merevisi.";
+                    statusBgColor = 'bg-red-100 text-red-800';
+                }
+            }
+            statusBar.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg><span>${statusMessage}</span>`;
+            statusBar.className = `mb-4 p-4 rounded-lg text-sm font-medium flex items-center gap-3 ${statusBgColor}`;
+            statusBar.classList.remove('hidden');
+
+            // [PERUBAHAN] Logika untuk menampilkan tombol
+            let buttonsHtml = '<div class="mb-4 flex justify-end space-x-2">';
+            if (isApproved) {
+                buttonsHtml += `<button data-action="print" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-cyan-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-cyan-700 text-sm flex items-center gap-2">Cetak Nilai</button>`;
+            }
+            buttonsHtml += `<button data-action="cancel" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 text-sm flex items-center gap-2">Batal Kirim</button>`;
+            buttonsHtml += '</div>';
+            return buttonsHtml;
+
+        } else {
+            statusBar.classList.add('hidden');
+            
+            const kirimBtnDisabled = !isSubmissionEnabled ? 'disabled' : '';
+            const kirimBtnClass = !isSubmissionEnabled 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-green-600 hover:bg-green-700';
+            const kirimBtnTitle = !isSubmissionEnabled 
+                ? 'title="Pengiriman nilai saat ini sedang ditutup oleh admin."' 
+                : '';
+
+            return `<div class="mb-4 flex justify-end space-x-2">
+                        <button data-action="save" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 text-sm flex items-center gap-2">Simpan Draf</button>
+                        <button data-action="submit" data-type="${type}" data-mapel-kode="${mapelKode}" class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 ${kirimBtnClass}" ${kirimBtnDisabled} ${kirimBtnTitle}>Kirim Nilai</button>
+                    </div>`;
+        }
+    }
+
+    function buildScoreTable(type, title, mapelKode, students, savedValues, submittedValues, approvalStatus, options = {}) {
+        const isSubmitted = submittedValues && submittedValues[type];
+        const isReadOnly = isSubmitted ? 'readonly' : '';
+        const savedData = savedValues ? (savedValues[type] || {}) : {};
+        const submittedData = submittedValues ? (submittedValues[type] || {}) : {};
+        const dataToDisplay = isSubmitted ? submittedData : savedData;
+        let headers = '', inputsHtml = '';
+        headers = `<th class="px-4 py-2 text-left border border-gray-200">NISN</th><th class="px-4 py-2 text-left border border-gray-200">Nama Siswa</th>`;
+        if (type === 'ujian') {
+            const { jenisUjian } = options;
+            const hasUM = jenisUjian === 'Ujian Madrasah' || jenisUjian === 'Keduanya';
+            const hasUPr = jenisUjian === 'Ujian Praktek' || jenisUjian === 'Keduanya';
+            if (hasUM) headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">UM</th>`;
+            if (hasUPr) headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">UPr</th>`;
+            inputsHtml = (s) => {
+                let html = '';
+                if (hasUM) {
+                    const statusKey = `ujian_um_${s.nisn}`;
+                    const statusClass = isSubmitted ? (approvalStatus[statusKey] === 'Disetujui' ? 'status-disetujui' : approvalStatus[statusKey] === 'Ditolak' ? 'status-ditolak' : 'status-menunggu') : '';
+                    html += `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_um" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClass}" value="${dataToDisplay[`${s.nisn}_um`] || ''}" ${isReadOnly}></td>`;
+                }
+                if (hasUPr) {
+                    const statusKey = `ujian_upr_${s.nisn}`;
+                    const statusClass = isSubmitted ? (approvalStatus[statusKey] === 'Disetujui' ? 'status-disetujui' : approvalStatus[statusKey] === 'Ditolak' ? 'status-ditolak' : 'status-menunggu') : '';
+                    html += `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_upr" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClass}" value="${dataToDisplay[`${s.nisn}_upr`] || ''}" ${isReadOnly}></td>`;
+                }
+                return html;
+            };
+        } else {
+            headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">Peng</th><th class="px-2 py-2 text-center w-24 border border-gray-200">Ket</th>`;
+            inputsHtml = (s) => {
+                const statusKeyPeng = `${type}_peng_${s.nisn}`;
+                const statusClassPeng = isSubmitted ? (approvalStatus[statusKeyPeng] === 'Disetujui' ? 'status-disetujui' : approvalStatus[statusKeyPeng] === 'Ditolak' ? 'status-ditolak' : 'status-menunggu') : '';
+                const statusKeyKet = `${type}_ket_${s.nisn}`;
+                const statusClassKet = isSubmitted ? (approvalStatus[statusKeyKet] === 'Disetujui' ? 'status-disetujui' : approvalStatus[statusKeyKet] === 'Ditolak' ? 'status-ditolak' : 'status-menunggu') : '';
+                return `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_peng" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClassPeng}" value="${dataToDisplay[`${s.nisn}_peng`] || ''}" ${isReadOnly}></td><td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_ket" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClassKet}" value="${dataToDisplay[`${s.nisn}_ket`] || ''}" ${isReadOnly}></td>`;
+            };
+        }
+        let tableHtml = `<form id="form-${type}" data-mapel-kode="${mapelKode}" data-type="${type}"><div class="overflow-x-auto"><table class="min-w-full border-collapse text-sm"><thead class="bg-gray-100"><tr>${headers}</tr></thead><tbody>`;
+        students.forEach(s => {
+            tableHtml += `<tr class="hover:bg-gray-50"><td class="px-4 py-2 text-gray-500 border border-gray-200">${s.nisn}</td><td class="px-4 py-2 font-medium border border-gray-200">${s.nama}</td>${inputsHtml(s)}</tr>`;
+        });
+        tableHtml += `</tbody></table></div></form>`;
+        return tableHtml;
+    }
+
+    function getFormData(type, mapelKode) {
+        const form = document.getElementById(`form-${type}`);
+        const inputs = form.querySelectorAll('input[type="number"]');
+        const nilai = {};
+        inputs.forEach(input => { if (input.value !== '') { nilai[input.name] = input.value; } });
+        const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+        return { spreadsheetId: guruData.spreadsheetId, username: guruData.username, mapelKode, type: type, nilai: nilai };
+    }
+
+    // [PERBAIKAN] Memperbarui event listener untuk menangani aksi cetak
+    function setupActionListeners() {
+        const tabContent = document.getElementById('tab-content');
+        tabContent.addEventListener('click', function(e) {
+            const button = e.target.closest('button[data-action]');
+            if (!button) return;
+            e.preventDefault();
+            const action = button.dataset.action;
+            const type = button.dataset.type;
+            const mapelKode = button.dataset.mapelKode;
+            if (action === 'save') { handleSaveDraft(button, type, mapelKode); } 
+            else if (action === 'submit') { handleKirimNilai(button, type, mapelKode); } 
+            else if (action === 'cancel') { handleBatalKirim(button, type, mapelKode); }
+            else if (action === 'print') { handleCetakNilai(button, type, mapelKode); } // [BARU]
+        });
+    }
+
+    // [FUNGSI BARU] Untuk menangani klik tombol cetak
+    function handleCetakNilai(btn, type, mapelKode) {
+        const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+        const payload = {
+            spreadsheetId: guruData.spreadsheetId,
+            tipe: type,
+            mapelKode: mapelKode,
+            guruData: guruData
+        };
+
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<div class="loading-spinner mx-auto" style="width:16px; height:16px; border-width:2px;"></div>';
+
+        google.script.run
+            .withSuccessHandler(response => {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                if (response.status === 'success') {
+                    const link = document.createElement('a');
+                    link.href = `data:application/pdf;base64,${response.pdfData}`;
+                    link.download = response.fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    showNotification('PDF berhasil dibuat.', 'success');
+                } else {
+                    showNotification('Gagal membuat PDF: ' + response.message, 'error');
+                }
+            })
+            .withFailureHandler(err => {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                showNotification('Error saat menghubungi server: ' + err.message, 'error');
+            })
+            .generateNilaiPdfForGuru(payload);
+    }
+
+    function handleSaveDraft(btn, type, mapelKode) {
+        const payload = getFormData(type, mapelKode);
+        if (Object.keys(payload.nilai).length === 0) { showNotification("Tidak ada nilai untuk disimpan.", "error"); return; }
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true; btn.innerHTML = '<div class="loading-spinner mx-auto" style="width:16px; height:16px; border-width:2px;"></div>';
+        google.script.run.withSuccessHandler(res => { 
+            showNotification(res.message, res.status === 'success' ? 'success' : 'error');
+            btn.innerHTML = originalHtml; btn.disabled = false;
+            if (res.status === 'success') {
+                if (type === 'ujian') {
+                    const activeMapelLink = document.querySelector('.mapel-link.active');
+                    buildUjianForm(activeMapelLink.dataset.kode, activeMapelLink.dataset.jenisUjian);
+                } else if (type.startsWith('rapor_')) {
+                    const semesterKey = type.split('_').slice(1).join('_');
+                    renderRaporSemesterTable(semesterKey, mapelKode);
+                }
+            }
+        }).withFailureHandler(err => { 
+            showNotification('Gagal: ' + err.message, 'error'); 
+            btn.innerHTML = originalHtml; btn.disabled = false;
+        }).saveGuruDraftNilai(payload);
+    }
+
+    function handleKirimNilai(btn, type, mapelKode) {
+        showConfirmationModal({
+            title: "Konfirmasi Kirim Nilai",
+            message: "Anda yakin ingin mengirim nilai ini? Setelah dikirim, nilai tidak dapat diubah kecuali dibatalkan oleh admin.",
+            confirmText: "Ya, Kirim",
+            confirmColor: "bg-green-600 hover:bg-green-700",
+            onConfirm: () => {
+                const payload = getFormData(type, mapelKode);
+                if (Object.keys(payload.nilai).length === 0) { showNotification("Tidak ada nilai untuk dikirim.", "error"); return; }
+                const originalHtml = btn.innerHTML;
+                btn.disabled = true; btn.innerHTML = '<div class="loading-spinner mx-auto" style="width:16px; height:16px; border-width:2px;"></div>';
+                google.script.run.withSuccessHandler(res => { 
+                    showNotification(res.message, res.status === 'success' ? 'success' : 'error');
+                    if (res.status === 'success') { 
+                        const activeMapelLink = document.querySelector('.mapel-link.active');
+                        handleMapelSelection(activeMapelLink.dataset.kode, activeMapelLink.dataset.jenisUjian); 
+                    } else { 
+                        btn.innerHTML = originalHtml; btn.disabled = false; 
+                    }
+                }).withFailureHandler(err => { 
+                    showNotification('Gagal: ' + err.message, 'error'); 
+                    btn.innerHTML = originalHtml; btn.disabled = false;
+                }).submitGuruNilai(payload);
+            }
+        });
+    }
+
+    // [PERBAIKAN] Fungsi ini sekarang mengirim 'type' bukan 'tipe'
+    function handleBatalKirim(btn, type, mapelKode) {
+        showConfirmationModal({
+            title: "Konfirmasi Batal Kirim",
+            message: "Anda yakin ingin membatalkan pengiriman nilai ini? Anda dapat mengeditnya kembali setelah dibatalkan.",
+            confirmText: "Ya, Batalkan",
+            confirmColor: "bg-yellow-500 hover:bg-yellow-600",
+            onConfirm: () => {
+                const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+                // [PERBAIKAN KRUSIAL] Mengganti 'tipe' menjadi 'type'
+                const payload = { spreadsheetId: guruData.spreadsheetId, username: guruData.username, mapelKode, type: type };
+                const originalHtml = btn.innerHTML;
+                btn.disabled = true; btn.innerHTML = '<div class="loading-spinner mx-auto" style="width:16px; height:16px; border-width:2px;"></div>';
+                google.script.run.withSuccessHandler(res => { 
+                    showNotification(res.message, res.status === 'success' ? 'success' : 'error');
+                    if (res.status === 'success') { 
+                        const activeMapelLink = document.querySelector('.mapel-link.active');
+                        handleMapelSelection(activeMapelLink.dataset.kode, activeMapelLink.dataset.jenisUjian);
+                    } else { 
+                        btn.innerHTML = originalHtml; btn.disabled = false; 
+                    }
+                }).withFailureHandler(err => { 
+                    showNotification('Gagal: ' + err.message, 'error'); 
+                    btn.innerHTML = originalHtml; btn.disabled = false;
+                }).cancelGuruSubmission(payload);
+            }
+        });
+    }
+
+    function setupTabs() {
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const targetTab = tab.dataset.tab;
+                document.querySelectorAll('#tab-content > div').forEach(content => {
+                    content.id === `tab-${targetTab}` ? content.classList.remove('hidden') : content.classList.add('hidden');
+                });
+            });
+        });
+    }
+
+    function handleGuruLogout() {
+        sessionStorage.removeItem('guruData');
+        showView('login-container');
+        document.getElementById('loginFormGuru').reset();
+        document.getElementById('form-container').classList.add('hidden');
+        document.getElementById('welcome-screen').classList.remove('hidden');
+        document.getElementById('pilih-mapel-container').innerHTML = '';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const storedGuruData = sessionStorage.getItem('guruData');
+        if (storedGuruData) {
+            initializeAppGuru(JSON.parse(storedGuruData));
+        } else {
+            showView('login-container');
+        }
+        document.getElementById('loginFormGuru').addEventListener('submit', handleGuruLogin);
+        document.getElementById('backToMainLoginBtnGuru').addEventListener('click', function() {
+            if (typeof WEB_APP_URL !== 'undefined' && WEB_APP_URL) {
+                window.top.location.href = WEB_APP_URL;
+            } else {
+                showNotification("Gagal kembali ke halaman utama.", "error");
+            }
+        });
+    });
+</script>
+</body>
+</html>
