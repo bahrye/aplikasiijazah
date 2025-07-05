@@ -33,11 +33,15 @@ const SHEET_BROADCAST_READ_STATUS = "Status Baca Broadcast";
 const SHEET_CACHE_AKUN = "Cache Akun";
 const SHEET_SARAN = "Saran & Masalah";
 const SHEET_WILAYAH = "Data Wilayah";
+const SHEET_DATA_GURU = "Data Guru";
+const SHEET_NILAI_GURU_DRAFT = "Draf Nilai Guru";
+const SHEET_NILAI_GURU_SUBMITTED = "Nilai Terkirim Guru";
+const SHEET_PENGAJUAN_NILAI = "Pengajuan Nilai"; // [BARU]
 
 
 /**
  * [MODIFIKASI FINAL] Fungsi utama yang menangani permintaan GET.
- * Sekarang membangun halaman validasi secara dinamis untuk keandalan maksimal.
+ * Sekarang mengenali halaman Portal Guru, Siswa, dan Validasi.
  */
 function doGet(e) {
   const page = e.parameter.page;
@@ -52,13 +56,23 @@ function doGet(e) {
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   } 
+  // ===== BLOK BARU UNTUK HALAMAN GURU =====
+  else if (page === 'guru') {
+    const template = HtmlService.createTemplateFromFile('Guru.html');
+    template.webAppUrl = webAppUrl;
+    return template.evaluate()
+      .setTitle('Portal Guru') // Judul halaman untuk guru
+      .setFaviconUrl("https://i.imgur.com/vJ1gH2p.png") // Contoh ikon baru
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  }
+  // ==========================================
   else if (page === 'validasi') {
-    // Ambil token dari parameter URL
     const token = e.parameter.token;
-    // Panggil fungsi baru untuk membuat halaman HTML secara dinamis
     return buildValidationPage(token);
   } 
   else {
+    // Halaman default (Index.html) untuk admin/pengguna
     const template = HtmlService.createTemplateFromFile('Index');
     template.webAppUrl = webAppUrl;
     return template.evaluate()
@@ -837,10 +851,8 @@ function getSchoolData(spreadsheetId) {
 }
 
 /**
- * [MODIFIKASI & PERBAIKAN FINAL] Mengambil daftar siswa dari sheet 'Data Siswa'.
- * Memastikan semua data yang relevan dibaca sebagai Teks (String) untuk mencegah error.
- * @param {string} spreadsheetId ID spreadsheet target.
- * @returns {Array<object>} Array objek data siswa.
+ * [DIPERBARUI] Mengambil daftar siswa dari sheet 'Data Siswa'.
+ * Membaca 15 kolom untuk menyertakan Kelas, Ruang Ujian, dan Nomor Ujian.
  */
 function getStudents(spreadsheetId) {
   try {
@@ -848,39 +860,41 @@ function getStudents(spreadsheetId) {
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
     if (!sheet || sheet.getLastRow() < 2) return [];
 
-    sheet.getRange("A:B").setNumberFormat('@');
-    sheet.getRange("E:E").setNumberFormat('@');
-    sheet.getRange("H:H").setNumberFormat('@');
+    sheet.getRange("A:C").setNumberFormat('@'); // NISN, NIS, Nomor Ujian
+    sheet.getRange("F:F").setNumberFormat('@'); // Tempat Lahir
+    sheet.getRange("I:I").setNumberFormat('@'); // Telepon
 
-    // [MODIFIKASI] Ubah angka 11 menjadi 12 untuk mengambil kolom baru 'Tampilkan Transkrip'
-    const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, 12); 
+    // Baca hingga kolom O (15 kolom)
+    const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, 15); 
     const values = dataRange.getValues();
 
     return values.map((row, index) => {
       let tanggalLahirStr = '';
-      if (row[5] && row[5] instanceof Date && !isNaN(row[5])) {
-        tanggalLahirStr = Utilities.formatDate(row[5], Session.getScriptTimeZone(), "yyyy-MM-dd");
+      if (row[6] && row[6] instanceof Date && !isNaN(row[6])) { // Indeks 6 untuk tanggal lahir
+        tanggalLahirStr = Utilities.formatDate(row[6], Session.getScriptTimeZone(), "yyyy-MM-dd");
       }
 
       return {
         row: index + 2,
         nisn: String(row[0] || ''),
         nis: String(row[1] || ''),
-        nama: String(row[2] || ''),
-        jenisKelamin: String(row[3] || ''),
-        tempatLahir: String(row[4] || ''),
+        nomorUjian: String(row[2] || ''),
+        nama: String(row[3] || ''),
+        jenisKelamin: String(row[4] || ''),
+        tempatLahir: String(row[5] || ''),
         tanggalLahir: tanggalLahirStr,
-        alamat: String(row[6] || ''),
-        telepon: String(row[7] || ''),
-        emailSiswa: String(row[8] || ''),
-        tahunMasuk: String(row[9] || ''),
-        tahunLulus: String(row[10] || ''),
-        // [TAMBAHAN BARU] Ambil data dari kolom ke-12 (L)
-        tampilkanTranskrip: String(row[11] || 'TIDAK') 
+        alamat: String(row[7] || ''),
+        telepon: String(row[8] || ''),
+        emailSiswa: String(row[9] || ''),
+        tahunMasuk: String(row[10] || ''),
+        tahunLulus: String(row[11] || ''),
+        tampilkanTranskrip: String(row[12] || 'TIDAK'),
+        kelas: String(row[13] || ''),
+        ruangUjian: String(row[14] || '')
       };
     });
   } catch (e) {
-    Logger.log(`getStudents Error: ${e}`);
+    Logger.log(`getStudents Error: ${e.stack}`);
     return [];
   }
 }
@@ -893,9 +907,8 @@ function getStudents(spreadsheetId) {
  * @param {string} userEmail Email pengguna yang melakukan aksi (dikirim dari frontend).
  * @returns {{status: string, message: string, oldData?: object, newData?: object}} Status penambahan.
  */
-function addStudent(spreadsheetId, studentData, userEmail) { // <-- [PERBAIKAN] Tambahkan parameter userEmail
+function addStudent(spreadsheetId, studentData, userEmail) {
   try {
-    // [PERBAIKAN] Panggil fungsi checkStudentLimit dengan userEmail yang dikirim dari frontend
     const limitCheck = checkStudentLimit(spreadsheetId, userEmail); 
     if (limitCheck.limitReached) {
         return { status: "error", message: limitCheck.message };
@@ -904,7 +917,6 @@ function addStudent(spreadsheetId, studentData, userEmail) { // <-- [PERBAIKAN] 
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
     
-    // Cek apakah ada data siswa
     if (sheet.getLastRow() > 1) {
       const allStudents = getStudents(spreadsheetId);
       const existingStudent = allStudents.find(s => s.nisn.toString() === studentData.nisn.toString());
@@ -924,21 +936,19 @@ function addStudent(spreadsheetId, studentData, userEmail) { // <-- [PERBAIKAN] 
       }
     }
 
-    // Jika tidak ada konflik, tambahkan siswa baru
     const nextRow = sheet.getLastRow() + 1;
-    sheet.getRange(nextRow, 1, 1, 2).setNumberFormat('@');
     const tanggalLahirObject = studentData.tanggalLahir ? new Date(studentData.tanggalLahir.replace(/-/g, '/')) : '';
-    sheet.getRange(nextRow, 1, 1, 2).setNumberFormat('@');
-    sheet.getRange(nextRow, 8, 1, 1).setNumberFormat('@');
-
+    
+    // [DIPERBARUI] Susunan data baru untuk ditulis ke sheet
     const newRowData = [
-        studentData.nisn, studentData.nis, studentData.nama, studentData.jenisKelamin, 
-        toProperCase(studentData.tempatLahir), tanggalLahirObject, studentData.alamat, 
-        studentData.telepon, studentData.emailSiswa, studentData.tahunMasuk, studentData.tahunLulus
+        studentData.nisn, studentData.nis, studentData.nomorUjian, studentData.nama, 
+        studentData.jenisKelamin, toProperCase(studentData.tempatLahir), tanggalLahirObject, 
+        studentData.alamat, studentData.telepon, studentData.emailSiswa, 
+        studentData.tahunMasuk, studentData.tahunLulus, 'TIDAK', // Default tampilkanTranskrip
+        studentData.kelas, studentData.ruangUjian
     ];
     sheet.getRange(nextRow, 1, 1, newRowData.length).setValues([newRowData]);
     
-    // -- PERUBAHAN INTI --
     SpreadsheetApp.flush();
     const updatedStudentList = getStudents(spreadsheetId);
     
@@ -954,12 +964,8 @@ function addStudent(spreadsheetId, studentData, userEmail) { // <-- [PERBAIKAN] 
   }
 }
 
-
 /**
- * [MODIFIKASI] Memperbarui data siswa dengan tambahan validasi duplikasi NISN.
- * @param {string} spreadsheetId ID spreadsheet target.
- * @param {object} studentData Objek data siswa yang akan diupdate, termasuk studentRow.
- * @returns {{status: string, message: string}} Status pembaruan.
+ * [DIPERBARUI] Memperbarui data siswa dengan kolom-kolom baru.
  */
 function updateStudent(spreadsheetId, studentData) {
   try {
@@ -968,7 +974,6 @@ function updateStudent(spreadsheetId, studentData) {
       s.nisn.toString().trim() === studentData.nisn.toString().trim() &&
       s.row != studentData.studentRow
     );
-
     if (duplicateStudent) {
       return { status: "error", message: `Gagal: NISN "${studentData.nisn}" sudah digunakan oleh siswa lain (${duplicateStudent.nama}).` };
     }
@@ -976,29 +981,18 @@ function updateStudent(spreadsheetId, studentData) {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
     
-    // [PERIKSA ULANG] Susunan array ini harus cocok persis dengan urutan kolom di sheet
+    // [DIPERBARUI] Susunan data baru untuk diupdate
     const rowToUpdate = [
-      studentData.nisn,
-      studentData.nis,
-      studentData.nama,
-      studentData.jenisKelamin,
-      toProperCase(studentData.tempatLahir),
+      studentData.nisn, studentData.nis, studentData.nomorUjian, studentData.nama,
+      studentData.jenisKelamin, toProperCase(studentData.tempatLahir),
       studentData.tanggalLahir ? new Date(studentData.tanggalLahir.replace(/-/g, '/')) : '',
-      studentData.alamat,
-      studentData.telepon,
-      studentData.emailSiswa,
-      studentData.tahunMasuk,
-      studentData.tahunLulus
+      studentData.alamat, studentData.telepon, studentData.emailSiswa,
+      studentData.tahunMasuk, studentData.tahunLulus, studentData.tampilkanTranskrip,
+      studentData.kelas, studentData.ruangUjian
     ];
 
-    const targetRange = sheet.getRange(studentData.studentRow, 1, 1, rowToUpdate.length);
+    sheet.getRange(studentData.studentRow, 1, 1, rowToUpdate.length).setValues([rowToUpdate]);
 
-    sheet.getRange(studentData.studentRow, 1, 1, 2).setNumberFormat('@');
-    sheet.getRange(studentData.studentRow, 8, 1, 1).setNumberFormat('@');
-
-    targetRange.setValues([rowToUpdate]);
-
-    // -- PERUBAHAN INTI --
     SpreadsheetApp.flush();
     const updatedStudentList = getStudents(spreadsheetId);
 
@@ -1056,8 +1050,7 @@ function deleteAllStudents(spreadsheetId) {
 }
 
 /**
- * Menghasilkan template Excel untuk impor data siswa.
- * @returns {object} Objek berisi data file template.
+ * [DIPERBARUI] Menghasilkan template Excel dengan kolom-kolom baru.
  */
 function generateSiswaTemplate() {
   let tempFile;
@@ -1068,23 +1061,18 @@ function generateSiswaTemplate() {
     
     const sheet = ss.getSheets()[0];
     const headers = [
-      "NISN", "NIS (2 digit tahun masuk, 4 digit no. urut)", "Nama Lengkap", "Jenis Kelamin (L/P)", 
+      "NISN", "NIS", "Nomor Ujian", "Nama Lengkap", "Jenis Kelamin (L/P)", 
       "Tempat Lahir", "Tanggal Lahir (Format: YYYY-MM-DD)",
-      "Alamat Lengkap Siswa", "Nomor Telepon", "Email", "Tahun Masuk", "Tahun Lulus"
+      "Alamat Lengkap Siswa", "Nomor Telepon", "Email", 
+      "Tahun Masuk", "Tahun Lulus", "Kelas", "Ruang Ujian"
     ];
     sheet.appendRow(headers);
-    sheet.getRange("A1:K1").setFontWeight("bold").setBackground("#d9ead3"); // Ubah E1 menjadi J1
+    sheet.getRange("A1:N1").setFontWeight("bold").setBackground("#d9ead3");
     
-    // Set format kolom ke teks
-    sheet.getRange("A:B").setNumberFormat("@"); // NISN & NIS
-    sheet.getRange("H:H").setNumberFormat("@"); // Nomor Telepon
+    sheet.getRange("A:C").setNumberFormat("@");
+    sheet.getRange("I:I").setNumberFormat("@");
+    sheet.getRange("G:G").setNumberFormat("yyyy-mm-dd");
     
-    sheet.setColumnWidths(1, 5, 150); // Kolom A-E
-    sheet.setColumnWidth(7, 250); // Kolom G (Alamat)
-    sheet.setColumnWidths(8, 4, 150); // Kolom G-J
-    
-    sheet.getRange("F:F").setNumberFormat("yyyy-mm-dd");
-
     SpreadsheetApp.flush();
 
     const url = `https://www.googleapis.com/drive/v3/files/${ss.getId()}/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`;
@@ -1110,13 +1098,7 @@ function generateSiswaTemplate() {
 }
 
 /**
- * [MODIFIKASI FINAL & PERBAIKAN] Mengimpor data dari file Excel, dengan logika untuk menambah, memperkaya, atau mendeteksi konflik.
- * Kini juga memeriksa dan MEMBATASI impor sesuai kuota siswa.
- * @param {string} spreadsheetId ID spreadsheet target.
- * @param {object} fileData Data file yang diunggah.
- * @param {string} sheetName Nama sheet tujuan.
- * @param {string} userEmail Email pengguna yang melakukan aksi (dikirim dari frontend).
- * @returns {object} Hasil proses impor yang detail.
+ * [DIPERBARUI] Mengimpor data dari file Excel dengan kolom-kolom baru.
  */
 function importFromExcel(spreadsheetId, fileData, sheetName, userEmail) {
     let tempFile;
@@ -1133,31 +1115,25 @@ function importFromExcel(spreadsheetId, fileData, sheetName, userEmail) {
         const data = importSheet.getDataRange().getValues();
 
         if (data.length <= 1) throw new Error("File kosong atau hanya berisi header.");
-        data.shift(); // Hapus header
+        data.shift();
 
         const targetSpreadsheet = getSpreadsheet(spreadsheetId);
         let targetSheet = targetSpreadsheet.getSheetByName(sheetName);
 
         if (sheetName === SHEET_DATA_SISWA) {
-            // [PERBAIKAN UTAMA] Logika pengecekan kuota diubah total
-            // 1. Dapatkan informasi kuota yang akurat (limit, terpakai, sisa)
             const quotaInfo = getStudentQuotaInfo(userEmail);
             if (quotaInfo.status === 'error') {
                 return { status: "error", message: quotaInfo.message };
             }
-
             let remainingSlots = quotaInfo.remaining;
-            // Jika kuota tak terbatas, beri nilai yang sangat besar.
             if (isNaN(remainingSlots) || remainingSlots < 0) {
-                 remainingSlots = 1000000; // Angka besar untuk "tak terbatas"
+                 remainingSlots = 1000000;
             }
-
             if (remainingSlots <= 0) {
                 return { status: "error", message: `Impor dibatalkan. Kuota siswa Anda sudah penuh (${quotaInfo.usedCount}/${quotaInfo.totalLimit}).` };
             }
-            // --- Akhir dari logika kuota baru ---
 
-            targetSheet.getRange("A:B").setNumberFormat("@");
+            targetSheet.getRange("A:C").setNumberFormat("@");
             const existingStudents = getStudents(spreadsheetId);
             const existingNisnMap = new Map();
             existingStudents.forEach(s => {
@@ -1168,38 +1144,42 @@ function importFromExcel(spreadsheetId, fileData, sheetName, userEmail) {
             const enrichedStudents = [];
             const conflicts = [];
             const skippedDuplicates = [];
-            const skippedDueToLimit = []; // [BARU] Array untuk menampung siswa yang dilewati karena kuota penuh
+            const skippedDueToLimit = [];
             const processedNisns = new Set();
 
             data.forEach((row) => {
                 const nisn = (row[0] || '').toString().trim();
-                const namaFromFile = (row[2] || '').toString().trim();
+                const namaFromFile = (row[3] || '').toString().trim(); // Nama di kolom ke-4 (indeks 3)
                 if (!nisn || !namaFromFile) return;
                 if (processedNisns.has(nisn)) {
-                    skippedDuplicates.push({
-                        nisn,
-                        nama: namaFromFile,
-                        reason: 'Duplikat di dalam file import.'
-                    });
+                    skippedDuplicates.push({ nisn, nama: namaFromFile, reason: 'Duplikat di dalam file import.' });
                     return;
                 }
                 processedNisns.add(nisn);
 
+                const newData = {
+                    nisn: nisn, 
+                    nis: row[1] || '', 
+                    nomorUjian: row[2] || '',
+                    nama: namaFromFile, 
+                    jenisKelamin: row[4] || '',
+                    tempatLahir: toProperCase(row[5] || ''),
+                    tanggalLahir: row[6] ? Utilities.formatDate(new Date(row[6]), Session.getScriptTimeZone(), "yyyy-MM-dd") : '',
+                    alamat: row[7] || '', 
+                    telepon: row[8] || '', 
+                    emailSiswa: row[9] || '',
+                    tahunMasuk: row[10] || '', 
+                    tahunLulus: row[11] || '',
+                    kelas: row[12] || '',
+                    ruangUjian: row[13] || ''
+                };
+
                 if (existingNisnMap.has(nisn)) {
-                    // Logika untuk memperkaya data atau konflik (tidak berubah)
                     const existingStudent = existingNisnMap.get(nisn);
-                    const newData = {
-                        nisn: nisn, nis: row[1] || '', nama: namaFromFile, jenisKelamin: row[3] || '',
-                        tempatLahir: toProperCase(row[4] || ''),
-                        tanggalLahir: row[5] ? Utilities.formatDate(new Date(row[5]), Session.getScriptTimeZone(), "yyyy-MM-dd") : '',
-                        alamat: row[6] || '', telepon: row[7] || '', emailSiswa: row[8] || '',
-                        tahunMasuk: row[9] || '', tahunLulus: row[10] || ''
-                    };
                     const isIdentical = areStudentsIdentical(existingStudent, newData);
                     if (!isIdentical) {
                         conflicts.push({ nisn: nisn, rowToUpdate: existingStudent.row, oldData: existingStudent, newData: newData });
                     } else {
-                        // ... logika enrich atau skip (tidak diubah)
                         let isEnriched = false;
                         const finalData = { ...existingStudent };
                         Object.keys(newData).forEach(key => {
@@ -1215,21 +1195,17 @@ function importFromExcel(spreadsheetId, fileData, sheetName, userEmail) {
                         }
                     }
                 } else {
-                    // [PERBAIKAN UTAMA] Logika untuk siswa baru
-                    // Cek apakah masih ada slot tersisa sebelum menambahkan.
                     if (remainingSlots > 0) {
-                        if (row[4]) {
-                            row[4] = toProperCase(row[4]);
-                        }
-                        newStudents.push(row);
-                        remainingSlots--; // Kurangi jatah slot setiap kali menambahkan siswa baru
+                        // [DIPERBARUI] Pastikan semua kolom baru disertakan saat menambah siswa
+                        const newRowForSheet = [
+                            newData.nisn, newData.nis, newData.nomorUjian, newData.nama, newData.jenisKelamin,
+                            newData.tempatLahir, newData.tanggalLahir ? new Date(newData.tanggalLahir) : '', newData.alamat, newData.telepon,
+                            newData.emailSiswa, newData.tahunMasuk, newData.tahunLulus, 'TIDAK', newData.kelas, newData.ruangUjian
+                        ];
+                        newStudents.push(newRowForSheet);
+                        remainingSlots--;
                     } else {
-                        // Jika tidak ada slot, masukkan ke daftar yang dilewati
-                        skippedDueToLimit.push({
-                            nisn: nisn,
-                            nama: namaFromFile,
-                            reason: 'Batas kuota siswa tercapai.'
-                        });
+                        skippedDueToLimit.push({ nisn: nisn, nama: namaFromFile, reason: 'Batas kuota siswa tercapai.' });
                     }
                 }
             });
@@ -1249,8 +1225,8 @@ function importFromExcel(spreadsheetId, fileData, sheetName, userEmail) {
                 skippedCount: skippedDuplicates.length,
                 conflictCount: conflicts.length,
                 conflicts: conflicts,
-                skippedLimitCount: skippedDueToLimit.length, // [BARU] Kirim jumlah yang dilewati karena limit
-                skippedLimitData: skippedDueToLimit // [BARU] Kirim data yang dilewati
+                skippedLimitCount: skippedDueToLimit.length,
+                skippedLimitData: skippedDueToLimit
             };
         } else {
             // Logika untuk sheet lain (tidak diubah)
@@ -7619,4 +7595,954 @@ function buildValidationPage(token) {
       .setFaviconUrl("https://i.imgur.com/CmVVVxB.png")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+// =================================================================
+// [BARU] FUNGSI UNTUK PORTAL GURU
+// =================================================================
+
+/**
+ * [PERBAIKAN FINAL] Login guru, sekarang juga mengambil status izin pengiriman.
+ */
+function loginGuru(schoolCode, username, password) {
+  try {
+    if (!schoolCode || !username || !password) { return { status: "error", message: "Kode Sekolah, Username, dan Password wajib diisi." }; }
+    
+    const masterSs = SpreadsheetApp.getActiveSpreadsheet();
+    const userSheet = masterSs.getSheetByName(SHEET_PENGGUNA);
+    if (!userSheet) throw new Error("Sheet 'Data Pengguna' tidak ditemukan.");
+    
+    const users = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 13).getValues();
+    const schoolRow = users.find(row => row[12] && row[12].toUpperCase() === schoolCode.toUpperCase());
+    
+    if (!schoolRow) { return { status: "error", message: "Kode Sekolah tidak valid." }; }
+    
+    const schoolSpreadsheetId = schoolRow[5];
+    if (!schoolSpreadsheetId) { return { status: "error", message: "Konfigurasi sekolah ini tidak lengkap. Hubungi Admin." }; }
+    
+    const ss = SpreadsheetApp.openById(schoolSpreadsheetId);
+    const guruSheet = ss.getSheetByName(SHEET_DATA_GURU);
+    if (!guruSheet || guruSheet.getLastRow() < 2) { return { status: "error", message: "Data guru tidak ditemukan di sekolah ini." }; }
+    
+    const data = guruSheet.getRange(2, 1, guruSheet.getLastRow() - 1, 4).getValues();
+    const guruUserRow = data.find(row => row[1] === username && row[2].toString() === password.toString());
+
+    if (guruUserRow) {
+      const mapelSheet = ss.getSheetByName(SHEET_MAPEL);
+      const allMapel = mapelSheet.getRange(2, 1, mapelSheet.getLastRow() - 1, 4).getValues();
+      const kodeMapelGuru = guruUserRow[3].split(',').map(k => k.trim());
+      const mapelGuru = allMapel.filter(m => kodeMapelGuru.includes(m[0])).map(m => ({ kode: m[0], nama: m[1], jenisUjian: m[3] }));
+      
+      const submissionStatus = getNilaiSubmissionStatus(schoolSpreadsheetId);
+
+      return {
+        status: "success",
+        data: {
+          spreadsheetId: schoolSpreadsheetId,
+          nama: guruUserRow[0],
+          username: guruUserRow[1],
+          mapel: mapelGuru,
+          isSubmissionEnabled: submissionStatus.isEnabled
+        }
+      };
+    } else {
+      return { status: "error", message: "Username atau password salah." };
+    }
+  } catch (e) {
+    Logger.log("loginGuru Error: " + e.message);
+    return { status: "error", message: "Terjadi kesalahan server saat login." };
+  }
+}
+
+/**
+ * [DIPERBARUI] Mengambil daftar siswa dari spreadsheet ID tertentu.
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @returns {Array<object>} Daftar siswa.
+ */
+function getStudentsForGuru(spreadsheetId) {
+    const ss = SpreadsheetApp.openById(spreadsheetId);
+    const studentSheet = ss.getSheetByName(SHEET_DATA_SISWA);
+    if (!studentSheet || studentSheet.getLastRow() < 2) return [];
+    const data = studentSheet.getRange(2, 1, studentSheet.getLastRow() - 1, 3).getValues();
+    return data.map(row => ({ nisn: row[0], nama: row[2] }));
+}
+
+/**
+ * [DIPERBARUI] Mengambil daftar siswa dan jenjang dari spreadsheet ID tertentu.
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @returns {object} Objek berisi daftar siswa dan jenjang.
+ */
+function getStudentsAndJenjangForGuru(spreadsheetId) {
+  const jenjang = (getSchoolData(spreadsheetId) || {}).jenjang;
+  const students = getStudentsForGuru(spreadsheetId);
+  return { students, jenjang };
+}
+
+/**
+ * [DIPERBARUI] Menerima data nilai dan menyimpan ke sheet persetujuan di spreadsheet yang benar.
+ * @param {object} payload - Objek berisi data nilai.
+ * @returns {object} Hasil penyimpanan.
+ */
+function submitNilaiUntukPersetujuan(payload) {
+  try {
+    const { spreadsheetId, guru, mapelKode, tipeNilai, dataNilai } = payload;
+    const ss = SpreadsheetApp.openById(spreadsheetId); // Buka spreadsheet sekolah yang benar
+    const sheetName = "Pengajuan Nilai";
+    let approvalSheet = ss.getSheetByName(sheetName);
+
+    if (!approvalSheet) {
+      approvalSheet = ss.insertSheet(sheetName);
+      approvalSheet.appendRow(["ID Pengajuan", "Guru", "Mapel", "Tipe Nilai", "NISN", "Nama Siswa", "Nilai", "Tanggal Ajuan", "Status"]);
+      approvalSheet.getRange("A1:I1").setFontWeight("bold");
+    }
+    
+    const students = getStudentsForGuru(spreadsheetId); // Ambil siswa dari spreadsheet yang sama
+    const studentMap = new Map(students.map(s => [s.nisn.toString(), s.nama]));
+    const submissionId = Utilities.getUuid();
+    const timestamp = new Date();
+
+    const rowsToAppend = dataNilai.map(item => [
+      submissionId, guru, mapelKode, tipeNilai, item.nisn,
+      studentMap.get(item.nisn.toString()) || 'Siswa tidak ditemukan',
+      item.nilai, timestamp, "Menunggu Persetujuan"
+    ]);
+
+    if (rowsToAppend.length > 0) {
+        approvalSheet.getRange(approvalSheet.getLastRow() + 1, 1, rowsToAppend.length, rowsToAppend[0].length).setValues(rowsToAppend);
+    }
+
+    return { status: "success", message: "Nilai berhasil dikirim dan menunggu persetujuan admin." };
+  } catch(e) {
+    Logger.log("submitNilaiUntukPersetujuan Error: " + e.message);
+    return { status: "error", message: "Gagal mengirim nilai: " + e.message };
+  }
+}
+
+// =================================================================
+// [BARU] FUNGSI UNTUK PERSETUJUAN NILAI OLEH ADMIN
+// =================================================================
+
+/**
+ * [ADMIN] Mengambil semua data dari sheet "Pengajuan Nilai" yang statusnya "Menunggu Persetujuan".
+ */
+function getPengajuanNilaiUntukAdmin(spreadsheetId) { // Terima spreadsheetId
+  try {
+    const ss = SpreadsheetApp.openById(spreadsheetId); // Buka spreadsheet sekolah
+    const sheet = ss.getSheetByName(SHEET_PENGAJUAN_NILAI);
+    if (!sheet || sheet.getLastRow() < 2) return [];
+
+    const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues();
+    const result = [];
+    data.forEach((row, index) => {
+      if (row[8] === "Menunggu Persetujuan") {
+        result.push({
+          rowNum: index + 2, guru: row[1], mapelKode: row[2], tipeNilai: row[3],
+          nisn: row[4], namaSiswa: row[5], nilai: row[6],
+          tanggal: row[7].toISOString()
+        });
+      }
+    });
+    return result.sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
+  } catch (e) {
+    Logger.log("getPengajuanNilaiUntukAdmin Error: " + e.message);
+    throw new Error("Gagal mengambil data pengajuan nilai: " + e.message);
+  }
+}
+
+/**
+ * [PERBAIKAN FINAL] Memproses persetujuan nilai dengan memastikan sheet dan kolom tujuan sudah ada.
+ */
+function processNilaiSubmission(spreadsheetId, rowNum, status) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const ss = SpreadsheetApp.openById(spreadsheetId);
+    const approvalSheet = ss.getSheetByName(SHEET_PENGAJUAN_NILAI);
+    const dataRow = approvalSheet.getRange(rowNum, 1, 1, 9).getValues()[0];
+
+    if (dataRow[8] !== 'Menunggu Persetujuan') {
+        return { status: "error", message: "Pengajuan ini sudah pernah diproses." };
+    }
+
+    approvalSheet.getRange(rowNum, 9).setValue(status);
+
+    if (status === 'Disetujui') {
+        const tipeNilaiLengkap = dataRow[3];
+        const nisn = dataRow[4];
+        const mapelKode = dataRow[2];
+        const nilai = dataRow[6];
+
+        let targetSheetName = '';
+        const parts = tipeNilaiLengkap.split('_');
+        let requiredMapelCodes = [];
+
+        if (parts[0] === 'ujian') {
+            if (parts[1] === 'um') {
+                targetSheetName = SHEET_NILAI_UJIAN_MADRASAH;
+                requiredMapelCodes = getMapelByJenis(spreadsheetId, 'madrasah').map(m => m.kode);
+            }
+            if (parts[1] === 'upr') {
+                targetSheetName = SHEET_NILAI_UJIAN_PRAKTEK;
+                requiredMapelCodes = getMapelByJenis(spreadsheetId, 'praktek').map(m => m.kode);
+            }
+        } else if (parts[0] === 'rapor') {
+            const semesterKey = `${parts[1]}_${parts[2]}`;
+            const jenisNilai = parts[3] === 'peng' ? 'Pengetahuan' : 'Keterampilan';
+            targetSheetName = `Rapor_${jenisNilai}_${semesterKey}`;
+            requiredMapelCodes = getMapel(spreadsheetId).map(m => m.kode);
+        }
+
+        if (targetSheetName) {
+            let targetSheet = ss.getSheetByName(targetSheetName);
+            // Jika sheet tidak ada, buat baru
+            if (!targetSheet) {
+                targetSheet = ss.insertSheet(targetSheetName);
+            }
+
+            // Dapatkan atau buat header
+            let headers = [];
+            if (targetSheet.getLastRow() > 0) {
+                headers = targetSheet.getRange(1, 1, 1, targetSheet.getLastColumn()).getValues()[0];
+            }
+            
+            // Periksa dan tambahkan header jika belum ada
+            const allHeaders = ["NISN", "Nama Lengkap", ...requiredMapelCodes];
+            if (headers.join() !== allHeaders.join()) {
+                targetSheet.getRange(1, 1, 1, allHeaders.length).setValues([allHeaders]).setFontWeight("bold");
+                targetSheet.getRange("A:A").setNumberFormat('@');
+            }
+            headers = allHeaders; // Gunakan header yang sudah pasti benar
+
+            // Cari kolom mapel
+            const mapelCol = headers.indexOf(mapelKode) + 1;
+            if (mapelCol === 0) {
+                 throw new Error(`Kolom Mapel ${mapelKode} tidak valid untuk sheet ${targetSheetName}.`);
+            }
+
+            // Cari baris siswa atau buat baru jika belum ada
+            const nisnCol = 1;
+            const nisnValues = targetSheet.getRange(2, nisnCol, targetSheet.getLastRow(), 1).getValues().flat();
+            let studentRowIndex = nisnValues.findIndex(n => n.toString() === nisn.toString());
+            let studentSheetRow;
+
+            if (studentRowIndex !== -1) {
+                studentSheetRow = studentRowIndex + 2;
+            } else {
+                // Siswa belum ada di sheet nilai, tambahkan baris baru
+                const studentName = dataRow[5];
+                targetSheet.appendRow([nisn, studentName]);
+                studentSheetRow = targetSheet.getLastRow();
+            }
+
+            // Set nilai di sel yang benar
+            targetSheet.getRange(studentSheetRow, mapelCol).setValue(nilai);
+        }
+    }
+    SpreadsheetApp.flush();
+    return { status: "success", message: `Nilai berhasil ${status.toLowerCase()}.` };
+  } catch(e) {
+    Logger.log("processNilaiSubmission Error: " + e.message + " Stack: " + e.stack);
+    return { status: "error", message: "Gagal memproses pengajuan: " + e.message };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// =================================================================
+// [BARU] FUNGSI UNTUK MANAJEMEN DATA GURU OLEH PENGGUNA/SEKOLAH
+// =================================================================
+
+/**
+ * [PENGGUNA] Mengambil daftar guru dari spreadsheet sekolah.
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @returns {Array<object>} Daftar guru.
+ */
+function getGuru(spreadsheetId) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    let sheet = ss.getSheetByName(SHEET_DATA_GURU);
+    
+    // Jika sheet belum ada, buatkan untuk pengguna
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_DATA_GURU);
+      sheet.appendRow(["Nama Guru", "Username", "Password", "Kode Mapel"]);
+      sheet.getRange("A1:D1").setFontWeight("bold");
+      return [];
+    }
+    
+    if (sheet.getLastRow() < 2) return [];
+
+    const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 4).getValues();
+    return data.map((row, index) => ({
+        row: index + 2,
+        nama: row[0],
+        username: row[1],
+        password: row[2], // Kirim password agar bisa diedit
+        mapel: row[3]
+    }));
+  } catch (e) {
+    Logger.log(`getGuru Error: ${e.message}`);
+    return [];
+  }
+}
+
+/**
+ * [PENGGUNA] Menyimpan data guru baru.
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @param {object} guruData - Data guru dari form.
+ * @returns {object} Status penyimpanan.
+ */
+function saveGuru(spreadsheetId, guruData) {
+    try {
+        const ss = getSpreadsheet(spreadsheetId);
+        const sheet = ss.getSheetByName(SHEET_DATA_GURU);
+
+        // Cek duplikasi username
+        if (sheet.getLastRow() > 1) {
+            const usernames = sheet.getRange(2, 2, sheet.getLastRow() - 1, 1).getValues().flat();
+            if (usernames.some(u => u.toLowerCase() === guruData.username_guru.toLowerCase())) {
+                return { status: "error", message: "Username sudah digunakan. Harap gunakan username lain." };
+            }
+        }
+        
+        sheet.appendRow([
+            guruData.nama_guru,
+            guruData.username_guru,
+            guruData.password_guru,
+            guruData.mapel_kode_guru
+        ]);
+
+        return { status: "success", message: "Data guru berhasil disimpan." };
+    } catch (e) {
+        Logger.log(`saveGuru Error: ${e.message}`);
+        return { status: "error", message: `Gagal menyimpan: ${e.message}` };
+    }
+}
+
+/**
+ * [PENGGUNA] Memperbarui data guru yang sudah ada.
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @param {object} guruData - Data guru dari form, termasuk guruRow.
+ * @returns {object} Status pembaruan.
+ */
+function updateGuru(spreadsheetId, guruData) {
+    try {
+        const ss = getSpreadsheet(spreadsheetId);
+        const sheet = ss.getSheetByName(SHEET_DATA_GURU);
+        const rowToUpdate = parseInt(guruData.guruRow);
+
+        // Cek duplikasi username (kecuali untuk baris yang sedang diedit)
+        if (sheet.getLastRow() > 1) {
+            const data = sheet.getRange(2, 2, sheet.getLastRow() - 1, 1).getValues();
+            for(let i=0; i < data.length; i++) {
+                if ((i + 2) !== rowToUpdate && data[i][0].toLowerCase() === guruData.username_guru.toLowerCase()) {
+                    return { status: "error", message: "Username sudah digunakan oleh guru lain." };
+                }
+            }
+        }
+
+        sheet.getRange(rowToUpdate, 1, 1, 4).setValues([[
+            guruData.nama_guru,
+            guruData.username_guru,
+            guruData.password_guru,
+            guruData.mapel_kode_guru
+        ]]);
+        
+        return { status: "success", message: "Data guru berhasil diperbarui." };
+    } catch (e) {
+        Logger.log(`updateGuru Error: ${e.message}`);
+        return { status: "error", message: `Gagal memperbarui: ${e.message}` };
+    }
+}
+
+/**
+ * [PENGGUNA] Menghapus data guru.
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @param {number} rowNum - Nomor baris yang akan dihapus.
+ * @returns {object} Status penghapusan.
+ */
+function deleteGuru(spreadsheetId, rowNum) {
+    try {
+        const ss = getSpreadsheet(spreadsheetId);
+        const sheet = ss.getSheetByName(SHEET_DATA_GURU);
+        sheet.deleteRow(rowNum);
+        return { status: "success", message: "Data guru berhasil dihapus." };
+    } catch (e) {
+        Logger.log(`deleteGuru Error: ${e.message}`);
+        return { status: "error", message: `Gagal menghapus: ${e.message}` };
+    }
+}
+
+/**
+ * [DIPERBARUI] Mengambil nilai yang sudah disimpan (draf), yang sudah dikirim,
+ * dan status persetujuan dari admin.
+ */
+function getGuruNilai(spreadsheetId, username, mapelKode) {
+  const ss = SpreadsheetApp.openById(spreadsheetId);
+
+  // Fungsi helper untuk mengambil data dari sheet draf dan terkirim
+  const getValuesFromSheet = (sheetName) => {
+    const sheet = ss.getSheetByName(sheetName);
+    if (!sheet) return {};
+    const data = sheet.getDataRange().getValues();
+    const result = {};
+    data.forEach(row => {
+      // row[0]=username, row[1]=mapelKode, row[2]=tipe, row[3]=nilai (JSON string)
+      if (row[0] === username && row[1] === mapelKode) {
+        try {
+            result[row[2]] = JSON.parse(row[3]);
+        } catch(e){
+            result[row[2]] = {}; // Jika JSON tidak valid, kembalikan objek kosong
+        }
+      }
+    });
+    return result;
+  };
+
+  // [BARU] Fungsi helper untuk mengambil status persetujuan
+  const getApprovalStatus = () => {
+      const approvalSheet = ss.getSheetByName(SHEET_PENGAJUAN_NILAI);
+      if (!approvalSheet) return {};
+      const data = approvalSheet.getDataRange().getValues();
+      const statuses = {};
+      data.forEach(row => {
+          // row[1]=guru, row[2]=mapel, row[3]=tipe, row[4]=nisn, row[8]=status
+          if (row[1] === username && row[2] === mapelKode) {
+              const tipe = row[3];
+              const nisn = row[4];
+              const status = row[8];
+              const key = `${tipe}_${nisn}`; // Buat kunci unik: tipe_nisn
+              statuses[key] = status; // Simpan status terakhir untuk kombinasi tersebut
+          }
+      });
+      return statuses;
+  };
+
+  return {
+    savedValues: getValuesFromSheet(SHEET_NILAI_GURU_DRAFT),
+    submittedValues: getValuesFromSheet(SHEET_NILAI_GURU_SUBMITTED),
+    approvalStatus: getApprovalStatus() // [BARU] Kirim data status
+  };
+}
+
+// [PERBAIKAN] Mengganti 'tipe' menjadi 'type'
+function saveGuruDraftNilai(payload) {
+  const { spreadsheetId, username, mapelKode, type, nilai } = payload;
+  const ss = SpreadsheetApp.openById(spreadsheetId);
+  let sheet = ss.getSheetByName(SHEET_NILAI_GURU_DRAFT);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_NILAI_GURU_DRAFT).hideSheet();
+    sheet.appendRow(["Username", "MapelKode", "Tipe", "NilaiJSON"]);
+  }
+  
+  const data = sheet.getDataRange().getValues();
+  let rowIndex = -1;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === username && data[i][1] === mapelKode && data[i][2] === type) {
+      rowIndex = i + 1;
+      break;
+    }
+  }
+
+  const nilaiJSON = JSON.stringify(nilai);
+  if (rowIndex !== -1) {
+    sheet.getRange(rowIndex, 4).setValue(nilaiJSON);
+  } else {
+    sheet.appendRow([username, mapelKode, type, nilaiJSON]);
+  }
+  return { status: 'success', message: 'Draf berhasil disimpan.' };
+}
+
+// [PERBAIKAN] Mengganti 'tipe' menjadi 'type'
+function submitGuruNilai(payload) {
+  const { spreadsheetId, username, mapelKode, type, nilai } = payload;
+  const ss = SpreadsheetApp.openById(spreadsheetId);
+  
+  let submittedSheet = ss.getSheetByName(SHEET_NILAI_GURU_SUBMITTED);
+  if (!submittedSheet) {
+    submittedSheet = ss.insertSheet(SHEET_NILAI_GURU_SUBMITTED).hideSheet();
+    submittedSheet.appendRow(["Username", "MapelKode", "Tipe", "NilaiJSON", "Tanggal"]);
+  }
+  const nilaiJSON = JSON.stringify(nilai);
+  submittedSheet.appendRow([username, mapelKode, type, nilaiJSON, new Date()]);
+
+  let draftSheet = ss.getSheetByName(SHEET_NILAI_GURU_DRAFT);
+  if (draftSheet) {
+      const data = draftSheet.getDataRange().getValues();
+      for (let i = data.length - 1; i >= 1; i--) {
+          if (data[i][0] === username && data[i][1] === mapelKode && data[i][2] === type) {
+              draftSheet.deleteRow(i + 1);
+          }
+      }
+  }
+
+  let approvalSheet = ss.getSheetByName(SHEET_PENGAJUAN_NILAI);
+  if (!approvalSheet) {
+    approvalSheet = ss.insertSheet(SHEET_PENGAJUAN_NILAI);
+    approvalSheet.appendRow(["ID Pengajuan", "Guru", "Mapel", "Tipe Nilai", "NISN", "Nama Siswa", "Nilai", "Tanggal Ajuan", "Status"]);
+    approvalSheet.getRange("A1:I1").setFontWeight("bold");
+  }
+
+  const students = getStudentsForGuru(spreadsheetId);
+  const studentMap = new Map(students.map(s => [s.nisn.toString(), s.nama]));
+  const submissionId = Utilities.getUuid();
+  const timestamp = new Date();
+  const rowsToAppend = [];
+
+  for (const [key, value] of Object.entries(nilai)) {
+    const parts = key.split('_'); 
+    const nisn = parts[0];
+    const subTipe = parts[1];
+    
+    let tipeNilaiLengkap = '';
+    if (type.startsWith('rapor')) {
+      tipeNilaiLengkap = `${type}_${subTipe}`;
+    } else if (type === 'ujian') {
+      tipeNilaiLengkap = `ujian_${subTipe}`;
+    }
+
+    rowsToAppend.push([
+      submissionId, username, mapelKode, tipeNilaiLengkap,
+      nisn, studentMap.get(nisn) || 'Siswa tidak ditemukan',
+      value, timestamp, "Menunggu Persetujuan"
+    ]);
+  }
+
+  if (rowsToAppend.length > 0) {
+    approvalSheet.getRange(approvalSheet.getLastRow() + 1, 1, rowsToAppend.length, rowsToAppend[0].length).setValues(rowsToAppend);
+  }
+  
+  // [BARU] Kirim email notifikasi ke admin sekolah
+  try {
+    const masterSs = SpreadsheetApp.getActiveSpreadsheet();
+    const userSheet = masterSs.getSheetByName(SHEET_PENGGUNA);
+    const usersData = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 6).getValues();
+    const schoolAdminRow = usersData.find(row => row[5] === spreadsheetId);
+    
+    if (schoolAdminRow) {
+      const adminEmail = schoolAdminRow[1];
+      const schoolName = schoolAdminRow[3];
+      const mapelInfo = getMapel(spreadsheetId).find(m => m.kode === mapelKode);
+      const mapelName = mapelInfo ? mapelInfo.nama : mapelKode;
+      
+      const subject = `[Notifikasi Aplikasi Ijazah] Pengajuan Nilai Baru dari ${username}`;
+      const body = `
+        <p>Halo Admin ${schoolName},</p>
+        <p>Anda telah menerima pengajuan nilai baru dengan detail sebagai berikut:</p>
+        <ul>
+          <li><b>Guru Pengirim:</b> ${username}</li>
+          <li><b>Mata Pelajaran:</b> ${mapelName}</li>
+          <li><b>Jenis Nilai:</b> ${type.replace(/_/g, ' ')}</li>
+          <li><b>Jumlah Data Nilai Diajukan:</b> ${rowsToAppend.length}</li>
+          <li><b>Tanggal Pengajuan:</b> ${timestamp.toLocaleString('id-ID')}</li>
+        </ul>
+        <p>Silakan masuk ke aplikasi untuk meninjau dan memproses pengajuan ini di menu "Persetujuan Nilai".</p>
+        <br>
+        <p>Terima kasih.</p>
+      `;
+      MailApp.sendEmail({
+        to: adminEmail,
+        subject: subject,
+        htmlBody: body
+      });
+    }
+  } catch (e) {
+    Logger.log(`Gagal mengirim email notifikasi pengajuan nilai ke admin: ${e.message}`);
+  }
+  
+  return { status: 'success', message: 'Nilai berhasil dikirim untuk persetujuan admin.' };
+}
+
+/**
+ * [BARU] Menghitung jumlah pengajuan nilai yang masih menunggu.
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @returns {number} Jumlah pengajuan yang pending.
+ */
+function getPendingApprovalCount(spreadsheetId) {
+  try {
+    const ss = SpreadsheetApp.openById(spreadsheetId);
+    const sheet = ss.getSheetByName(SHEET_PENGAJUAN_NILAI);
+    if (!sheet || sheet.getLastRow() < 2) {
+      return 0;
+    }
+    const statusColumn = sheet.getRange(2, 9, sheet.getLastRow() - 1, 1).getValues();
+    const pendingCount = statusColumn.filter(row => row[0] === 'Menunggu Persetujuan').length;
+    return pendingCount;
+  } catch (e) {
+    Logger.log(`getPendingApprovalCount Error: ${e.message}`);
+    return 0;
+  }
+}
+
+/**
+ * [PERBAIKAN FINAL] Membatalkan pengiriman nilai.
+ * Mengganti 'tipe' menjadi 'type' agar konsisten dengan data dari klien.
+ */
+function cancelGuruSubmission(payload) {
+    // [PERBAIKAN] Menggunakan 'type' bukan 'tipe'
+    const { spreadsheetId, username, mapelKode, type } = payload;
+    const ss = SpreadsheetApp.openById(spreadsheetId);
+    let submittedSheet = ss.getSheetByName(SHEET_NILAI_GURU_SUBMITTED);
+
+    if (submittedSheet) {
+        const data = submittedSheet.getDataRange().getValues();
+        for (let i = data.length - 1; i >= 1; i--) {
+            // [PERBAIKAN] Membandingkan dengan variabel 'type' yang benar
+            if (data[i][0] === username && data[i][1] === mapelKode && data[i][2] === type) {
+                const nilaiJSON = data[i][3];
+                // [PERBAIKAN] Mengirim 'type' yang benar ke fungsi saveGuruDraftNilai
+                saveGuruDraftNilai({ spreadsheetId, username, mapelKode, type: type, nilai: JSON.parse(nilaiJSON) });
+                submittedSheet.deleteRow(i + 1);
+                return { status: 'success', message: 'Pengiriman dibatalkan. Nilai dikembalikan ke draf.' };
+            }
+        }
+    }
+    return { status: 'error', message: 'Data terkirim tidak ditemukan.' };
+}
+
+
+/**
+ * [BARU] Memproses beberapa pengajuan nilai sekaligus (aksi massal).
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @param {Array<number>} rowNumbers - Array nomor baris yang akan diproses.
+ * @param {string} status - Keputusan ("Disetujui" atau "Ditolak").
+ * @returns {object} Hasil proses.
+ */
+function processMultipleSubmissions(spreadsheetId, rowNumbers, status) {
+  if (!rowNumbers || rowNumbers.length === 0) {
+    return { status: "info", message: "Tidak ada item yang dipilih." };
+  }
+  let successCount = 0;
+  let errorCount = 0;
+  
+  rowNumbers.forEach(rowNum => {
+    try {
+      // Memanggil fungsi yang sudah ada untuk setiap baris
+      const result = processNilaiSubmission(spreadsheetId, rowNum, status);
+      if (result.status === 'success') {
+        successCount++;
+      } else {
+        errorCount++;
+        Logger.log(`Gagal memproses baris ${rowNum}: ${result.message}`);
+      }
+    } catch (e) {
+      errorCount++;
+      Logger.log(`Error saat memproses baris ${rowNum}: ${e.message}`);
+    }
+  });
+
+  let message = `${successCount} item berhasil diproses.`;
+  if (errorCount > 0) {
+    message += ` ${errorCount} item gagal diproses (lihat log untuk detail).`;
+  }
+  return { status: "success", message: message };
+}
+
+// =================================================================
+// [BARU] FUNGSI CETAK PDF UNTUK GURU
+// =================================================================
+
+/**
+ * Helper function untuk mengubah angka menjadi teks terbilang dalam Bahasa Indonesia.
+ * @param {number} angka - Angka yang akan diubah.
+ * @returns {string} Teks terbilang dari angka.
+ */
+function terbilang(angka) {
+    const bilangan = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
+    if (angka < 12) {
+        return bilangan[angka];
+    } else if (angka < 20) {
+        return terbilang(angka - 10) + " Belas";
+    } else if (angka < 100) {
+        return terbilang(Math.floor(angka / 10)) + " Puluh " + terbilang(angka % 10);
+    } else if (angka < 200) {
+        return "Seratus " + terbilang(angka - 100);
+    } else if (angka < 1000) {
+        return terbilang(Math.floor(angka / 100)) + " Ratus " + terbilang(angka % 100);
+    }
+    return "";
+}
+
+/**
+ * [BARU] Membuat file PDF daftar nilai berdasarkan format yang diberikan.
+ * @param {object} payload - Data yang dikirim dari frontend.
+ * @returns {object} Objek berisi data file PDF yang di-encode base64.
+ */
+function generateNilaiPdfForGuru(payload) {
+  try {
+    const { spreadsheetId, tipe, mapelKode, guruData } = payload;
+    
+    const ss = SpreadsheetApp.openById(spreadsheetId);
+    const schoolData = getSchoolData(spreadsheetId);
+    const students = getStudentsForGuru(spreadsheetId);
+    const allMapel = getMapel(spreadsheetId);
+    const mapelInfo = allMapel.find(m => m.kode === mapelKode);
+
+    // Ambil nilai yang sudah disetujui
+    const submittedSheet = ss.getSheetByName(SHEET_NILAI_GURU_SUBMITTED);
+    if (!submittedSheet) throw new Error("Data nilai terkirim tidak ditemukan.");
+    
+    const submittedDataRaw = submittedSheet.getDataRange().getValues();
+    let nilaiTerkirim = {};
+    for (let i = submittedDataRaw.length - 1; i >= 1; i--) {
+        const row = submittedDataRaw[i];
+        if (row[0] === guruData.username && row[1] === mapelKode && row[2] === tipe) {
+            nilaiTerkirim = JSON.parse(row[3]);
+            break;
+        }
+    }
+
+    if (Object.keys(nilaiTerkirim).length === 0) {
+        throw new Error("Tidak ada data nilai terkirim yang ditemukan untuk dicetak.");
+    }
+    
+    // Menentukan judul dan data nilai berdasarkan tipe
+    let reportTitle = "";
+    let nilaiPerSiswa = [];
+
+    if (tipe === 'ujian') {
+        reportTitle = "NILAI UJIAN MADRASAH";
+        nilaiPerSiswa = students.map(s => {
+            const nilaiUM = nilaiTerkirim[`${s.nisn}_um`];
+            const nilaiUPr = nilaiTerkirim[`${s.nisn}_upr`];
+            let nilaiAkhir = null;
+            if (nilaiUM !== undefined && nilaiUPr !== undefined) {
+                nilaiAkhir = Math.round((parseFloat(nilaiUM) + parseFloat(nilaiUPr)) / 2);
+            } else if (nilaiUM !== undefined) {
+                nilaiAkhir = parseFloat(nilaiUM);
+            } else if (nilaiUPr !== undefined) {
+                nilaiAkhir = parseFloat(nilaiUPr);
+            }
+            return { ...s, nilai: nilaiAkhir };
+        }).filter(s => s.nilai !== null);
+
+    } else if (tipe.startsWith('rapor_')) {
+        const semesterKey = tipe.split('_').slice(1).join('_');
+        const semesterMap = { k4_ganjil: 'KELAS IV SEMESTER GANJIL', k4_genap: 'KELAS IV SEMESTER GENAP', k5_ganjil: 'KELAS V SEMESTER GANJIL', k5_genap: 'KELAS V SEMESTER GENAP', k6_ganjil: 'KELAS VI SEMESTER GANJIL', k7_ganjil: 'KELAS VII SEMESTER GANJIL', k7_genap: 'KELAS VII SEMESTER GENAP', k8_ganjil: 'KELAS VIII SEMESTER GANJIL', k8_genap: 'KELAS VIII SEMESTER GENAP', k9_ganjil: 'KELAS IX SEMESTER GANJIL', k10_ganjil: 'KELAS X SEMESTER GANJIL', k10_genap: 'KELAS X SEMESTER GENAP', k11_ganjil: 'KELAS XI SEMESTER GANJIL', k11_genap: 'KELAS XI SEMESTER GENAP', k12_ganjil: 'KELAS XII SEMESTER GANJIL' };
+        reportTitle = `DAFTAR NILAI RAPOR ${semesterMap[semesterKey] || ''}`;
+        nilaiPerSiswa = students.map(s => {
+            const nilaiPeng = nilaiTerkirim[`${s.nisn}_peng`];
+            const nilaiKet = nilaiTerkirim[`${s.nisn}_ket`];
+            let nilaiAkhir = null;
+            if (nilaiPeng !== undefined) { // Asumsi nilai rapor hanya dari Pengetahuan jika Keterampilan kosong
+                 nilaiAkhir = parseFloat(nilaiPeng);
+            }
+            return { ...s, nilai: nilaiAkhir };
+        }).filter(s => s.nilai !== null);
+    }
+
+    // Membuat HTML untuk PDF
+    const { logo, customHeader, signature, stamp } = getDocumentSettings(spreadsheetId).settings || {};
+    let headerHtml;
+    if (customHeader) {
+        headerHtml = `<div style="width: 100%; margin-bottom: 10px; border-bottom: 3px solid black;"><img src="${customHeader}" alt="Kop Surat" style="width: 100%; height: auto;"></div>`;
+    } else {
+        headerHtml = `
+            <div style="display: flex; align-items: flex-start; padding-bottom: 5px; border-bottom: 3px solid black; margin-bottom: 10px;">
+                ${logo ? `<img src="${logo}" style="width:75px; height:75px; margin-right: 20px;" alt="Logo">` : '<div style="width:75px; height:75px; margin-right: 20px;"></div>'}
+                <div style="text-align: center; flex-grow: 1; line-height: 1.4; font-family: Arial, sans-serif;">
+                   <div style="font-size: 14pt; font-weight: bold;">${(schoolData.namaSekolah || 'NAMA SEKOLAH').toUpperCase()}</div>
+                   <div style="font-size: 9pt;">${schoolData.alamat || 'Alamat Sekolah'}</div>
+                </div>
+            </div>`;
+    }
+
+    const tahunPelajaran = `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`;
+    const tanggalCetak = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    const htmlContent = `
+      <html><head><style>
+        body{font-family: Arial, sans-serif; font-size: 10pt;} 
+        table{border-collapse: collapse; width: 100%;} 
+        th, td{border: 1px solid black; padding: 5px; text-align: left; vertical-align: middle;}
+        .text-center{text-align: center;} .font-bold{font-weight: bold;}
+      </style></head><body>
+        ${headerHtml}
+        <h3 style="text-align:center; font-size: 14pt; margin-bottom: 20px; text-decoration: underline;">${reportTitle}</h3>
+        <table style="width: 50%; border: none; margin-bottom: 15px;">
+            <tr><td style="border:none; width: 150px;">Nama Mata Pelajaran</td><td style="border:none;">: ${mapelInfo.nama.toUpperCase()}</td></tr>
+            <tr><td style="border:none;">Tahun Pelajaran</td><td style="border:none;">: ${tahunPelajaran}</td></tr>
+            <tr><td style="border:none;">Guru Pemeriksa</td><td style="border:none;">: ${guruData.nama.toUpperCase()}</td></tr>
+        </table>
+        <table>
+            <thead style="background-color: #f2f2f2;">
+                <tr>
+                    <th class="text-center">No</th>
+                    <th class="text-center">Nomor Ujian/NISN</th>
+                    <th>Nama Peserta Ujian</th>
+                    <th class="text-center">Nilai</th>
+                    <th>Nilai dengan huruf</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${nilaiPerSiswa.map((s, i) => `
+                    <tr>
+                        <td class="text-center">${i + 1}</td>
+                        <td class="text-center">${s.nisn}</td>
+                        <td>${s.nama}</td>
+                        <td class="text-center font-bold">${s.nilai}</td>
+                        <td>${terbilang(s.nilai)}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+        <div style="margin-top: 40px; width: 100%; display: flex; justify-content: space-between;">
+            <div style="width: 45%; text-align: center;">
+                <p>Mengetahui,</p>
+                <p>Kepala Madrasah,</p>
+                <div style="height: 80px;"></div>
+                <p style="font-weight: bold; text-decoration: underline;">${schoolData.namaKepsek || '(Nama Kepala Sekolah)'}</p>
+                <p>NIP. ${schoolData.nipKepsek || '-'}</p>
+            </div>
+            <div style="width: 45%; text-align: center;">
+                <p>${schoolData.kabupaten || 'Tempat'}, ${tanggalCetak}</p>
+                <p>Guru Pemeriksa,</p>
+                <div style="height: 80px;"></div>
+                <p style="font-weight: bold; text-decoration: underline;">${guruData.nama.toUpperCase()}</p>
+            </div>
+        </div>
+      </body></html>`;
+
+    const pdfBlob = Utilities.newBlob(htmlContent, MimeType.HTML).getAs(MimeType.PDF);
+    const fileName = `Nilai_${mapelKode}_${tipe}.pdf`;
+    pdfBlob.setName(fileName);
+    
+    return {
+      status: 'success',
+      fileName: fileName,
+      pdfData: Utilities.base64Encode(pdfBlob.getBytes())
+    };
+
+  } catch(e) {
+    Logger.log("generateNilaiPdfForGuru Error: " + e.stack);
+    return { status: "error", message: "Gagal membuat PDF: " + e.message };
+  }
+}
+
+/**
+ * [PERBAIKAN FINAL] Mengekspor data siswa ke dalam file Excel.
+ * Menambahkan kutip tunggal di depan NISN, NIS, No. Ujian, dan Telepon
+ * untuk memastikan format teks tetap terjaga (termasuk angka 0 di depan).
+ */
+function exportSiswaToExcel(spreadsheetId) {
+  let tempFile;
+  try {
+    const students = getStudents(spreadsheetId);
+    if (!students || students.length === 0) {
+      return { error: "Tidak ada data siswa untuk diekspor." };
+    }
+
+    const schoolData = getSchoolData(spreadsheetId);
+    const schoolName = schoolData ? schoolData.namaSekolah.replace(/ /g, "_") : "Data_Siswa";
+    const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyyMMdd");
+    const exportFileName = `Data_Siswa_${schoolName}_${timestamp}`;
+    
+    const tempSpreadsheet = SpreadsheetApp.create(exportFileName);
+    tempFile = DriveApp.getFileById(tempSpreadsheet.getId());
+    
+    const sheet = tempSpreadsheet.getSheets()[0];
+    const headers = [
+      "NISN", "NIS", "Nomor Ujian", "Nama Lengkap", "Jenis Kelamin (L/P)", 
+      "Tempat Lahir", "Tanggal Lahir (Format: yyyy-MM-dd)",
+      "Alamat Lengkap Siswa", "Nomor Telepon", "Email", 
+      "Tahun Masuk", "Tahun Lulus", "Kelas", "Ruang Ujian"
+    ];
+    sheet.appendRow(headers);
+    sheet.getRange("A1:N1").setFontWeight("bold").setBackground("#d9ead3");
+
+    // [PERBAIKAN DI SINI] Tambahkan kutip tunggal (') di depan data yang relevan
+    const rowsToWrite = students.map(s => [
+      "'" + s.nisn, 
+      "'" + s.nis, 
+      "'" + s.nomorUjian, 
+      s.nama, 
+      s.jenisKelamin,
+      s.tempatLahir, 
+      s.tanggalLahir, 
+      s.alamat, 
+      "'" + s.telepon,
+      s.emailSiswa, 
+      s.tahunMasuk, 
+      s.tahunLulus, 
+      s.kelas, 
+      s.ruangUjian
+    ]);
+
+    if (rowsToWrite.length > 0) {
+      sheet.getRange(2, 1, rowsToWrite.length, headers.length).setValues(rowsToWrite);
+    }
+    
+    sheet.getRange("G:G").setNumberFormat("yyyy-mm-dd");
+    sheet.autoResizeColumns(1, headers.length);
+
+    SpreadsheetApp.flush();
+
+    const url = `https://www.googleapis.com/drive/v3/files/${tempSpreadsheet.getId()}/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`;
+    const response = UrlFetchApp.fetch(url, {
+      headers: { Authorization: `Bearer ${ScriptApp.getOAuthToken()}` },
+      muteHttpExceptions: true
+    });
+
+    const blob = response.getBlob();
+    return {
+      fileName: `${exportFileName}.xlsx`,
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      base64Data: Utilities.base64Encode(blob.getBytes())
+    };
+  } catch (e) {
+    Logger.log(e);
+    return { error: e.toString() };
+  } finally {
+    if (tempFile) {
+      tempFile.setTrashed(true);
+    }
+  }
+}
+
+// =================================================================
+// [BARU] FUNGSI KONTROL PENGIRIMAN NILAI
+// =================================================================
+
+function setNilaiSubmissionStatus(spreadsheetId, isEnabled) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    let sheet = ss.getSheetByName(SHEET_PENGATURAN);
+    if (!sheet) {
+        sheet = ss.insertSheet(SHEET_PENGATURAN);
+        sheet.appendRow(['Nama Pengaturan', 'Value']);
+    }
+    const settingName = "Izinkan Pengiriman Nilai";
+    const data = sheet.getRange("A:A").getValues().flat();
+    let rowIndex = data.indexOf(settingName);
+
+    if (rowIndex === -1) {
+        sheet.appendRow([settingName, isEnabled ? "YA" : "TIDAK"]);
+    } else {
+        sheet.getRange(rowIndex + 1, 2).setValue(isEnabled ? "YA" : "TIDAK");
+    }
+    
+    const message = isEnabled ? "Pengiriman nilai oleh guru telah diaktifkan." : "Pengiriman nilai oleh guru telah dinonaktifkan.";
+    return { status: 'success', message: message };
+  } catch (e) {
+    Logger.log(`setNilaiSubmissionStatus Error: ${e.message}`);
+    return { status: 'error', message: 'Gagal mengubah pengaturan.' };
+  }
+}
+
+function getNilaiSubmissionStatus(spreadsheetId) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheet = ss.getSheetByName(SHEET_PENGATURAN);
+    if (!sheet) {
+      return { isEnabled: true };
+    }
+    const data = sheet.getRange("A:B").getValues();
+    const settingRow = data.find(row => row[0] === "Izinkan Pengiriman Nilai");
+    
+    const isEnabled = settingRow ? settingRow[1] !== "TIDAK" : true;
+    return { isEnabled: isEnabled };
+  } catch (e) {
+    Logger.log(`getNilaiSubmissionStatus Error: ${e.message}`);
+    return { isEnabled: true };
+  }
 }
