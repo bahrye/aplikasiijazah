@@ -35,12 +35,12 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .mapel-link.active {
+        .nav-link-guru.active, .mapel-link.active {
             background-color: #4f46e5; /* indigo-700 */
             color: white;
             font-weight: 600;
         }
-        .mapel-link:not(.active):hover {
+        .nav-link-guru:not(.active):hover, .mapel-link:not(.active):hover {
             background-color: #4338ca; /* indigo-800 */
             color: white;
         }
@@ -104,9 +104,8 @@
             transition: transform 0.3s ease-in-out;
         }
 
-        /* [BARU] CSS untuk Hamburger Menu */
         #hamburger-btn-guru {
-            display: none; /* Sembunyikan di desktop */
+            display: none;
         }
         @media (max-width: 768px) {
             #main-app-container > .flex {
@@ -130,7 +129,7 @@
                 transform: translateX(0);
             }
             #hamburger-btn-guru {
-                display: block; /* Tampilkan di mobile */
+                display: block;
             }
         }
     </style>
@@ -189,7 +188,6 @@
         </div>
 
         <div id="main-app-container" class="hidden">
-            <!-- [BARU] Tombol Hamburger & Overlay -->
             <button id="hamburger-btn-guru" class="hidden fixed top-4 left-4 z-50 bg-indigo-600 text-white p-2 rounded-md shadow-lg">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
@@ -202,6 +200,16 @@
                     <div class="h-20 flex items-center justify-center text-2xl font-extrabold border-b border-indigo-900">
                         <span>PORTAL GURU</span>
                     </div>
+
+                    <nav class="px-4 py-4 border-b border-indigo-700">
+                        <a href="#" class="nav-link-guru flex items-center space-x-3 p-3 rounded-lg text-sm font-medium transition-colors duration-200" data-page="profil-guru">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zM12 12a5 5 0 00-5 5h10a5 5 0 00-5-5z" clip-rule="evenodd" />
+                            </svg>
+                            <span>Profil Saya</span>
+                        </a>
+                    </nav>
+
                     <nav id="mapel-navigation" class="flex-1 px-4 py-4 space-y-2 overflow-y-auto custom-scrollbar">
                         <h3 class="px-2 text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-2">Mata Pelajaran</h3>
                         <div id="pilih-mapel-container"></div>
@@ -234,13 +242,47 @@
                             <div id="tab-rapor" class="hidden"></div>
                         </div>
                     </div>
+
+                    <div id="page-profil-guru" class="hidden content-view">
+                        <h1 class="text-3xl font-bold text-gray-800">Profil Saya</h1>
+                        <p class="mt-2 text-gray-600 mb-8">Anda dapat mengubah data pribadi dan informasi login Anda di sini.</p>
+        
+                        <div class="bg-white p-8 rounded-lg shadow-md max-w-2xl">
+                            <form id="guruProfileForm">
+                                <div class="space-y-6">
+                                    <div>
+                                        <label for="profile_nama_guru" class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
+                                        <input type="text" id="profile_nama_guru" name="nama" class="mt-1 w-full p-2 border rounded-md" required>
+                                    </div>
+                                    <div>
+                                        <label for="profile_nip_guru" class="block text-sm font-medium text-gray-700">NIP</label>
+                                        <input type="text" id="profile_nip_guru" name="nip" class="mt-1 w-full p-2 border rounded-md">
+                                    </div>
+                                    <div class="border-t pt-6">
+                                        <h3 class="text-lg font-medium text-gray-900">Ubah Akun Login</h3>
+                                        <p class="text-sm text-gray-500 mt-1">Jika Anda mengubah Username atau Password, Anda akan diminta untuk login kembali.</p>
+                                    </div>
+                                    <div>
+                                        <label for="profile_username_guru" class="block text-sm font-medium text-gray-700">Username</label>
+                                        <input type="text" id="profile_username_guru" name="username" class="mt-1 w-full p-2 border rounded-md" required>
+                                    </div>
+                                    <div>
+                                        <label for="profile_password_guru" class="block text-sm font-medium text-gray-700">Password Baru</label>
+                                        <input type="password" id="profile_password_guru" name="password" class="mt-1 w-full p-2 border rounded-md" required>
+                                    </div>
+                                    <div class="mt-2">
+                                        <button type="submit" id="saveProfileBtn" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700">Simpan Perubahan</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </main>
             </div>
         </div>
     </div>
 
 <script>
-    // [PERBAIKAN] Definisi fungsi helper dipindahkan ke atas
     const WEB_APP_URL = "<?= webAppUrl ?>";
 
     function showNotification(message, type = 'success') {
@@ -295,7 +337,6 @@
         }).loginGuru(schoolCode, username, password);
     }
 
-    // [FUNGSI BARU] Untuk setup menu hamburger di portal guru
     function setupGuruHamburgerMenu() {
         const hamburgerBtn = document.getElementById('hamburger-btn-guru');
         const sidebar = document.querySelector('#main-app-container aside');
@@ -314,16 +355,15 @@
 
         hamburgerBtn.addEventListener('click', openSidebar);
         overlay.addEventListener('click', closeSidebar);
-
-        // Gunakan event delegation untuk link mapel
-        mapelContainer.addEventListener('click', (e) => {
-            if (e.target.classList.contains('mapel-link')) {
+        
+        // Event delegation untuk semua link di sidebar
+        sidebar.addEventListener('click', (e) => {
+            if (e.target.closest('a')) {
                 closeSidebar();
             }
         });
     }
 
-    // [PERBAIKAN FINAL] Fungsi ini sekarang menyimpan status izin ke session storage
     function initializeAppGuru(guruData) {
         sessionStorage.setItem('isSubmissionEnabled', guruData.isSubmissionEnabled);
         showView('main-app-container');
@@ -346,56 +386,170 @@
             mapelContainer.appendChild(link);
         });
         document.getElementById('logoutButtonGuru').addEventListener('click', handleGuruLogout);
+        
+        setupScoreInputValidation();
         setupTabs();
         setupActionListeners();
         setupGuruHamburgerMenu();
-    }
-
-    function handleMapelSelection(mapelKode, jenisUjian) {
-        document.getElementById('welcome-screen').classList.add('hidden');
-        const formContainer = document.getElementById('form-container');
-        formContainer.classList.remove('hidden');
-        document.querySelector('.tab-btn.active')?.classList.remove('active');
-        document.querySelector('[data-tab="ujian"]').classList.add('active');
-        document.getElementById('tab-ujian').classList.remove('hidden');
-        document.getElementById('tab-rapor').classList.add('hidden');
-        buildUjianForm(mapelKode, jenisUjian);
-        buildRaporForm(mapelKode);
-    }
-
-    function getSavedAndSubmittedValues(mapelKode) {
-        const guruData = JSON.parse(sessionStorage.getItem('guruData'));
-        return new Promise((resolve, reject) => {
-            google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).getGuruNilai(guruData.spreadsheetId, guruData.username, mapelKode);
+        
+        document.querySelectorAll('.nav-link-guru').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = e.target.closest('.nav-link-guru').dataset.page;
+                showGuruPage(page);
+            });
         });
     }
 
-    // [MODIFIKASI] Fungsi ini sekarang mengambil status izin dari session storage
-    async function buildUjianForm(mapelKode, jenisUjian) {
-        const container = document.getElementById('tab-ujian');
-        container.innerHTML = `<p class="loading-animation p-4">Memuat data...</p>`;
-        try {
-            const guruData = JSON.parse(sessionStorage.getItem('guruData'));
-            const students = await new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej).getStudentsForGuru(guruData.spreadsheetId));
-            const { savedValues, submittedValues, approvalStatus } = await getSavedAndSubmittedValues(mapelKode);
-            
-            // Ambil status dari session storage
-            const isSubmissionEnabled = sessionStorage.getItem('isSubmissionEnabled') === 'true';
+    function showGuruPage(pageId) {
+        document.querySelectorAll('main > .content-view, main > #form-container, main > #welcome-screen').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.nav-link-guru, .mapel-link').forEach(l => l.classList.remove('active'));
+        
+        if (pageId === 'profil-guru') {
+            document.getElementById('page-profil-guru').classList.remove('hidden');
+            document.querySelector('.nav-link-guru[data-page="profil-guru"]').classList.add('active');
+            loadProfilePage();
+        } else {
+            document.getElementById('form-container').classList.remove('hidden');
+            document.querySelector(`.mapel-link[data-kode="${pageId}"]`)?.classList.add('active');
+        }
+    }
 
-            if (!students || students.length === 0) { container.innerHTML = `<p class="p-4 text-center text-gray-500">Tidak ada data siswa.</p>`; return; }
-            let formHtml = `<div class="bg-gray-50 p-4 rounded-lg">
-                ${buildActionButtons('ujian', mapelKode, submittedValues, approvalStatus, isSubmissionEnabled)}
-                ${buildScoreTable('ujian', 'Nilai Ujian', mapelKode, students, savedValues, submittedValues, approvalStatus, { jenisUjian })}
-            </div>`;
-            container.innerHTML = formHtml;
+    function loadProfilePage() {
+        const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+        const form = document.getElementById('guruProfileForm');
+        form.reset();
+        showNotification('Memuat data profil...', 'info');
+
+        google.script.run
+            .withSuccessHandler(response => {
+                if (response.status === 'success') {
+                    const profile = response.profile;
+                    form.elements.nama.value = profile.nama;
+                    form.elements.nip.value = profile.nip;
+                    form.elements.username.value = profile.username;
+                    form.elements.password.value = profile.password;
+                } else {
+                    showNotification(response.message, 'error');
+                }
+            })
+            .withFailureHandler(err => {
+                showNotification(`Gagal memuat profil: ${err.message}`, 'error');
+            })
+            .getGuruProfile(guruData.spreadsheetId, guruData.username);
+    }
+
+    // Ganti fungsi lama Anda dengan versi async yang baru ini
+    async function handleMapelSelection(mapelKode, jenisUjian) {
+        showGuruPage(mapelKode); // Menampilkan kontainer halaman yang benar
+        
+        // Tampilkan pesan loading sementara data diambil
+        const container = document.getElementById('form-container');
+        container.innerHTML = `<div class="p-8 text-center"><p class="loading-animation text-lg font-semibold text-gray-700">Memuat semua data nilai...</p><p class="text-sm text-gray-500">Mohon tunggu sebentar.</p></div>`;
+        
+        const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+
+        try {
+            // 1. Panggil fungsi backend baru SATU KALI untuk mendapatkan semua data
+            const response = await new Promise((resolve, reject) => {
+                google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)
+                    .getGuruDashboardData(guruData.spreadsheetId, guruData.username);
+            });
+
+            if (response.status !== 'success') {
+                throw new Error(response.message);
+            }
+
+            const allData = response.data;
+
+            // 2. Siapkan data khusus untuk mapel yang dipilih
+            const mapelData = {
+                savedValues: allData.savedValues[mapelKode] || {},
+                submittedValues: allData.submittedValues[mapelKode] || {},
+                approvalStatus: allData.approvalStatus[mapelKode] || {},
+                submissionIds: allData.submissionIds // Kirim semua ID untuk diakses nanti
+            };
+
+            // 3. Bangun kembali kerangka UI (tab, dll)
+            container.innerHTML = `
+                <div id="submission-status-bar"></div>
+                <div class="border-b border-gray-200 bg-white px-6 rounded-t-lg">
+                    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                        <button class="tab-btn active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-tab="ujian">Nilai Ujian</button>
+                        <button class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="rapor">Nilai Rapor</button>
+                    </nav>
+                </div>
+                <div id="tab-content" class="bg-white p-6 rounded-b-lg shadow-sm">
+                    <div id="tab-ujian"></div>
+                    <div id="tab-rapor" class="hidden"></div>
+                </div>`;
+            
+            setupTabs(); // Pasang kembali listener untuk tab
+
+            // 4. Kirim data yang sudah siap ke fungsi pembuat form
+            buildUjianForm(mapelKode, jenisUjian, mapelData);
+            buildRaporForm(mapelKode, mapelData);
+
         } catch (error) {
             container.innerHTML = `<p class="text-red-500 p-4">Gagal memuat data: ${error.message}</p>`;
         }
     }
 
-    async function buildRaporForm(mapelKode) {
+    /*function getSavedAndSubmittedValues(mapelKode) {
+        const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+        return new Promise((resolve, reject) => {
+            google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).getGuruNilai(guruData.spreadsheetId, guruData.username, mapelKode);
+        });
+    }*/
+
+    // Ganti fungsi ini di dalam file Guru.html
+    async function buildUjianForm(mapelKode, jenisUjian, mapelData) {
+        const container = document.getElementById('tab-ujian');
+        container.innerHTML = `<p class="loading-animation p-4">Mempersiapkan form ujian...</p>`;
+        
+        // Data sekarang diambil dari parameter, bukan memanggil server lagi
+        const { savedValues, submittedValues, approvalStatus, submissionIds } = mapelData;
+        
+        try {
+            const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+            const students = await new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej).getStudentsForGuru(guruData.spreadsheetId));
+            
+            // Dapatkan submissionId spesifik untuk tab Ujian
+            const submissionId = submissionIds['ujian_um'] || submissionIds['ujian_upr'];
+            const batchStatus = await new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej).getSubmissionBatchStatus(guruData.spreadsheetId, submissionId));
+            const isSubmissionEnabled = sessionStorage.getItem('isSubmissionEnabled') === 'true';
+
+            if (!students || students.length === 0) { container.innerHTML = `<p class="p-4 text-center text-gray-500">Tidak ada data siswa.</p>`; return; }
+            
+            // === BLOK NOTIFIKASI BARU ===
+            if (submittedValues && submittedValues['ujian']) {
+                if (batchStatus.allApproved) {
+                    showNotification(`Semua nilai (${batchStatus.total}) untuk ujian ini telah disetujui.`, 'success');
+                } else if (batchStatus.rejected > 0) {
+                    showNotification(`Perhatian: ${batchStatus.rejected} nilai ditolak oleh admin. Silakan revisi.`, 'error');
+                } else if (batchStatus.pending > 0) {
+                    showNotification(`Nilai terkirim. Menunggu ${batchStatus.pending} nilai untuk disetujui admin.`, 'info');
+                }
+            }
+            // ============================
+
+            let formHtml = `<div class="bg-gray-50 p-4 rounded-lg">
+                ${buildActionButtons('ujian', mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus)}
+                ${buildScoreTable('ujian', 'Nilai Ujian', mapelKode, students, savedValues, submittedValues, approvalStatus, { jenisUjian })}
+            </div>`;
+            container.innerHTML = formHtml;
+        } catch (error) {
+            container.innerHTML = `<p class="text-red-500 p-4">Gagal membangun form ujian: ${error.message}</p>`;
+        }
+    }
+
+    async function buildRaporForm(mapelKode, mapelData) {
         const container = document.getElementById('tab-rapor');
-        container.innerHTML = `<p class="loading-animation p-4">Memuat data...</p>`;
+        container.innerHTML = `<p class="loading-animation p-4">Mempersiapkan form rapor...</p>`;
+        
+        // Data sekarang diambil dari parameter, bukan memanggil server lagi
+        const { savedValues, submittedValues, approvalStatus, submissionIds } = mapelData;
+        
         try {
             const guruData = JSON.parse(sessionStorage.getItem('guruData'));
             const { jenjang } = await new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej).getStudentsAndJenjangForGuru(guruData.spreadsheetId));
@@ -406,6 +560,7 @@
             };
             const semesters = semesterMap[jenjang] || {};
             if (Object.keys(semesters).length === 0) { container.innerHTML = `<p class="p-4 text-center text-gray-500">Jenjang sekolah tidak valid.</p>`; return; }
+            
             let semesterNavHtml = '<div class="flex flex-wrap gap-2 border-b mb-4 pb-2">';
             Object.entries(semesters).forEach(([key, name], index) => {
                 const activeClass = index === 0 ? 'active' : '';
@@ -414,36 +569,54 @@
             semesterNavHtml += '</div>';
             const formHtml = `${semesterNavHtml}<div id="rapor-table-container"></div>`;
             container.innerHTML = formHtml;
+            
             container.querySelectorAll('.semester-btn').forEach(btn => {
                 btn.onclick = () => {
                     container.querySelectorAll('.semester-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
-                    renderRaporSemesterTable(btn.dataset.semesterKey, mapelKode);
+                    // Kirim data yang sudah siap ke renderRaporSemesterTable
+                    renderRaporSemesterTable(btn.dataset.semesterKey, mapelKode, mapelData);
                 };
             });
+
             const firstSemesterKey = Object.keys(semesters)[0];
-            renderRaporSemesterTable(firstSemesterKey, mapelKode);
+            if(firstSemesterKey) {
+                renderRaporSemesterTable(firstSemesterKey, mapelKode, mapelData);
+            }
         } catch (error) {
             container.innerHTML = `<p class="text-red-500 p-4">Gagal memuat data rapor: ${error.message}</p>`;
         }
     }
 
-    // [MODIFIKASI] Fungsi ini sekarang mengambil status izin dari session storage
+    // Ganti juga fungsi ini di dalam file Guru.html
     async function renderRaporSemesterTable(semesterKey, mapelKode) {
         const tableContainer = document.getElementById('rapor-table-container');
         tableContainer.innerHTML = `<p class="loading-animation p-4">Memuat data semester...</p>`;
         try {
             const guruData = JSON.parse(sessionStorage.getItem('guruData'));
             const { students } = await new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej).getStudentsAndJenjangForGuru(guruData.spreadsheetId));
-            const { savedValues, submittedValues, approvalStatus } = await getSavedAndSubmittedValues(mapelKode);
             
-            // Ambil status dari session storage
+            const { savedValues, submittedValues, approvalStatus, submissionId } = await getSavedAndSubmittedValues(mapelKode);
+            const batchStatus = await new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej).getSubmissionBatchStatus(guruData.spreadsheetId, submissionId));
             const isSubmissionEnabled = sessionStorage.getItem('isSubmissionEnabled') === 'true';
             
             if (!students || students.length === 0) { tableContainer.innerHTML = `<p class="p-4 text-center text-gray-500">Tidak ada data siswa.</p>`; return; }
             const type = `rapor_${semesterKey}`;
+            
+            // === BLOK NOTIFIKASI BARU ===
+            if (submittedValues && submittedValues[type]) {
+                if (batchStatus.allApproved) {
+                    showNotification(`Semua nilai (${batchStatus.total}) untuk rapor ini telah disetujui.`, 'success');
+                } else if (batchStatus.rejected > 0) {
+                    showNotification(`Perhatian: ${batchStatus.rejected} nilai ditolak oleh admin. Silakan revisi.`, 'error');
+                } else if (batchStatus.pending > 0) {
+                    showNotification(`Nilai terkirim. Menunggu ${batchStatus.pending} nilai untuk disetujui admin.`, 'info');
+                }
+            }
+            // ============================
+            
             const tableHtml = `<div class="bg-gray-50 p-4 rounded-lg">
-                ${buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled)}
+                ${buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus)}
                 ${buildScoreTable(type, '', mapelKode, students, savedValues, submittedValues, approvalStatus, { semesterKey })}
             </div>`;
             tableContainer.innerHTML = tableHtml;
@@ -451,46 +624,28 @@
             tableContainer.innerHTML = `<p class="text-red-500 p-4">Gagal memuat tabel: ${error.message}</p>`;
         }
     }
-
-    // [PERBAIKAN FINAL] Fungsi ini sekarang menerima status izin kirim
-    function buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled) {
+    
+    /**
+     * [PERBAIKAN FINAL] Fungsi ini sekarang menerima status izin kirim
+     * dan akan menonaktifkan tombol 'Kirim Nilai' jika tidak diizinkan.
+     */
+    function buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus) {
         const isSubmitted = submittedValues && submittedValues[type];
-        const statusBar = document.getElementById('submission-status-bar');
+        
+        // Logika untuk status bar sekarang dihapus dari sini.
         
         if (isSubmitted) {
-            let statusMessage = "Nilai untuk mapel ini sudah <b>Terkirim</b> dan sedang menunggu persetujuan admin.";
-            let statusBgColor = 'bg-yellow-100 text-yellow-800';
-            const firstNisn = Object.keys(submittedValues[type])[0]?.split('_')[0];
-            const firstSubtype = Object.keys(submittedValues[type])[0]?.split('_')[1];
-            const statusKey = `${type}_${firstSubtype}_${firstNisn}`;
-            if (approvalStatus && approvalStatus[statusKey]) {
-                const status = approvalStatus[statusKey];
-                if (status === 'Disetujui') {
-                    statusMessage = "Nilai untuk mapel ini telah <b>Disetujui</b> oleh admin.";
-                    statusBgColor = 'bg-green-100 text-green-800';
-                    isApproved = true; // Set flag jika disetujui
-                } 
-                else if (status === 'Ditolak') {
-                    statusMessage = "Nilai untuk mapel ini <b>Ditolak</b> oleh admin. Silakan batalkan pengiriman untuk merevisi.";
-                    statusBgColor = 'bg-red-100 text-red-800';
-                }
-            }
-            statusBar.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg><span>${statusMessage}</span>`;
-            statusBar.className = `mb-4 p-4 rounded-lg text-sm font-medium flex items-center gap-3 ${statusBgColor}`;
-            statusBar.classList.remove('hidden');
+            const cetakBtnDisabled = !batchStatus.allApproved ? 'disabled' : '';
+            const cetakBtnClass = !batchStatus.allApproved ? 'bg-gray-400 cursor-not-allowed' : 'bg-cyan-600 hover:bg-cyan-700';
+            const cetakBtnTitle = !batchStatus.allApproved ? 'title="Tombol akan aktif setelah semua nilai disetujui oleh admin."' : '';
 
-            // [PERUBAHAN] Logika untuk menampilkan tombol
             let buttonsHtml = '<div class="mb-4 flex justify-end space-x-2">';
-            if (isApproved) {
-                buttonsHtml += `<button data-action="print" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-cyan-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-cyan-700 text-sm flex items-center gap-2">Cetak Nilai</button>`;
-            }
+            buttonsHtml += `<button data-action="print" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 ${cetakBtnClass}" ${cetakBtnDisabled} ${cetakBtnTitle}>Cetak Nilai</button>`;
             buttonsHtml += `<button data-action="cancel" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 text-sm flex items-center gap-2">Batal Kirim</button>`;
             buttonsHtml += '</div>';
             return buttonsHtml;
 
         } else {
-            statusBar.classList.add('hidden');
-            
             const kirimBtnDisabled = !isSubmissionEnabled ? 'disabled' : '';
             const kirimBtnClass = !isSubmissionEnabled 
                 ? 'bg-gray-400 cursor-not-allowed' 
@@ -506,20 +661,41 @@
         }
     }
 
+    /**
+     * [PERBAIKAN FINAL] Membangun tabel nilai lengkap dengan kolom Jumlah & Rata-rata.
+     */
     function buildScoreTable(type, title, mapelKode, students, savedValues, submittedValues, approvalStatus, options = {}) {
         const isSubmitted = submittedValues && submittedValues[type];
         const isReadOnly = isSubmitted ? 'readonly' : '';
         const savedData = savedValues ? (savedValues[type] || {}) : {};
         const submittedData = submittedValues ? (submittedValues[type] || {}) : {};
         const dataToDisplay = isSubmitted ? submittedData : savedData;
-        let headers = '', inputsHtml = '';
-        headers = `<th class="px-4 py-2 text-left border border-gray-200">NISN</th><th class="px-4 py-2 text-left border border-gray-200">Nama Siswa</th>`;
+        
+        let headers = `<th class="px-4 py-2 text-left border border-gray-200">NISN</th>
+                      <th class="px-4 py-2 text-left border border-gray-200">Nama Siswa</th>`;
+        let inputsHtml = '';
+        
+        // ==========================================================
+        // === AWAL BLOK BARU: Membuat Keterangan Header Dinamis ===
+        // ==========================================================
+        let legendHtml = '<div class="text-xs text-gray-500 mb-3 p-2 bg-gray-100 rounded-md"><b>Keterangan:</b> ';
+        const legends = [];
+        // ==========================================================
+        
         if (type === 'ujian') {
             const { jenisUjian } = options;
             const hasUM = jenisUjian === 'Ujian Madrasah' || jenisUjian === 'Keduanya';
             const hasUPr = jenisUjian === 'Ujian Praktek' || jenisUjian === 'Keduanya';
-            if (hasUM) headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">UM</th>`;
-            if (hasUPr) headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">UPr</th>`;
+
+            if (hasUM) {
+                headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">UM</th>`;
+                legends.push('<b>UM</b> = Ujian Madrasah');
+            }
+            if (hasUPr) {
+                headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">UPr</th>`;
+                legends.push('<b>UPr</b> = Ujian Praktek');
+            }
+            
             inputsHtml = (s) => {
                 let html = '';
                 if (hasUM) {
@@ -534,22 +710,129 @@
                 }
                 return html;
             };
-        } else {
-            headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">Peng</th><th class="px-2 py-2 text-center w-24 border border-gray-200">Ket</th>`;
+        } else { // Untuk rapor
+            headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">Peng</th>
+                        <th class="px-2 py-2 text-center w-24 border border-gray-200">Ket</th>`;
+            
+            legends.push('<b>Peng</b> = Pengetahuan');
+            legends.push('<b>Ket</b> = Keterampilan');
+
             inputsHtml = (s) => {
                 const statusKeyPeng = `${type}_peng_${s.nisn}`;
                 const statusClassPeng = isSubmitted ? (approvalStatus[statusKeyPeng] === 'Disetujui' ? 'status-disetujui' : approvalStatus[statusKeyPeng] === 'Ditolak' ? 'status-ditolak' : 'status-menunggu') : '';
                 const statusKeyKet = `${type}_ket_${s.nisn}`;
                 const statusClassKet = isSubmitted ? (approvalStatus[statusKeyKet] === 'Disetujui' ? 'status-disetujui' : approvalStatus[statusKeyKet] === 'Ditolak' ? 'status-ditolak' : 'status-menunggu') : '';
-                return `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_peng" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClassPeng}" value="${dataToDisplay[`${s.nisn}_peng`] || ''}" ${isReadOnly}></td><td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_ket" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClassKet}" value="${dataToDisplay[`${s.nisn}_ket`] || ''}" ${isReadOnly}></td>`;
+                return `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_peng" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClassPeng}" value="${dataToDisplay[`${s.nisn}_peng`] || ''}" ${isReadOnly}></td>
+                        <td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_ket" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClassKet}" value="${dataToDisplay[`${s.nisn}_ket`] || ''}" ${isReadOnly}></td>`;
             };
         }
-        let tableHtml = `<form id="form-${type}" data-mapel-kode="${mapelKode}" data-type="${type}"><div class="overflow-x-auto"><table class="min-w-full border-collapse text-sm"><thead class="bg-gray-100"><tr>${headers}</tr></thead><tbody>`;
+
+        headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">Jumlah</th>
+                    <th class="px-2 py-2 text-center w-24 border border-gray-200">Rata-rata</th>`;
+
+        // Gabungkan legenda menjadi satu string
+        legendHtml += legends.join(' | ') + '</div>';
+
+        // Bangun HTML Tabel Lengkap dengan menyisipkan legenda baru
+        let tableHtml = `${legendHtml}
+                        <form id="form-${type}" data-mapel-kode="${mapelKode}" data-type="${type}">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full border-collapse text-sm">
+                                    <thead class="bg-gray-100"><tr>${headers}</tr></thead>
+                                    <tbody>`;
+        
         students.forEach(s => {
-            tableHtml += `<tr class="hover:bg-gray-50"><td class="px-4 py-2 text-gray-500 border border-gray-200">${s.nisn}</td><td class="px-4 py-2 font-medium border border-gray-200">${s.nama}</td>${inputsHtml(s)}</tr>`;
+            tableHtml += `<tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2 text-gray-500 border border-gray-200">${s.nisn}</td>
+                            <td class="px-4 py-2 font-medium border border-gray-200">${s.nama}</td>
+                            ${inputsHtml(s)}
+                            <td class="px-2 py-1 border border-gray-200 text-center font-bold jumlah-nilai">0</td>
+                            <td class="px-2 py-1 border border-gray-200 text-center font-bold rata-rata-nilai">0</td>
+                          </tr>`;
         });
         tableHtml += `</tbody></table></div></form>`;
+        
+        setTimeout(() => {
+            const tableContainer = document.getElementById(`form-${type}`);
+            if(tableContainer) {
+                tableContainer.querySelectorAll('tbody tr').forEach(row => updateRowStats(row));
+                tableContainer.addEventListener('input', e => {
+                    if (e.target.classList.contains('score-input')) {
+                        updateRowStats(e.target.closest('tr'));
+                    }
+                });
+            }
+        }, 0);
+        
         return tableHtml;
+    }
+    
+    /**
+     * [FUNGSI BARU] Menghitung dan memperbarui kolom Jumlah & Rata-rata untuk satu baris.
+     */
+    function updateRowStats(tableRow) {
+        if (!tableRow) return;
+
+        const scoreInputs = tableRow.querySelectorAll('.score-input');
+        const jumlahCell = tableRow.querySelector('.jumlah-nilai');
+        const rataRataCell = tableRow.querySelector('.rata-rata-nilai');
+
+        if (!jumlahCell || !rataRataCell) return;
+
+        let total = 0;
+        let count = 0;
+
+        scoreInputs.forEach(input => {
+            const value = parseFloat(input.value);
+            if (!isNaN(value)) {
+                total += value;
+                count++;
+            }
+        });
+
+        const average = count > 0 ? (total / count) : 0;
+
+        jumlahCell.textContent = total;
+        rataRataCell.textContent = Math.round(average); // Membulatkan nilai rata-rata
+    }
+
+    /**
+     * [FUNGSI BARU] Memasang validasi real-time pada semua input nilai.
+     * Mencegah input di luar rentang 0-100.
+     */
+    function setupScoreInputValidation() {
+        const tabContent = document.getElementById('tab-content');
+        if (!tabContent) return;
+
+        // Menggunakan 'event delegation' untuk memantau semua input di dalam tab
+        tabContent.addEventListener('input', function(e) {
+            // Hanya proses jika targetnya adalah input nilai
+            if (e.target.classList.contains('score-input') && e.target.type === 'number') {
+                const input = e.target;
+                
+                // Konversi nilai input menjadi angka
+                let value = parseInt(input.value, 10);
+
+                // Jika nilai lebih besar dari 100, secara otomatis ubah kembali menjadi 100.
+                if (value > 100) {
+                    input.value = 100;
+                }
+            }
+        });
+
+        // Tambahkan listener untuk event 'blur' (saat pengguna meninggalkan input field)
+        tabContent.addEventListener('blur', function(e) {
+            if (e.target.classList.contains('score-input') && e.target.type === 'number') {
+                const input = e.target;
+                let value = parseInt(input.value, 10);
+
+                // Jika input bukan angka yang valid (misal kosong atau berisi "e") atau di bawah 0,
+                // kosongkan input tersebut.
+                if (isNaN(value) || value < 0) {
+                    input.value = '';
+                }
+            }
+        }, true); // 'true' untuk event capturing
     }
 
     function getFormData(type, mapelKode) {
@@ -560,7 +843,7 @@
         const guruData = JSON.parse(sessionStorage.getItem('guruData'));
         return { spreadsheetId: guruData.spreadsheetId, username: guruData.username, mapelKode, type: type, nilai: nilai };
     }
-
+    
     // [PERBAIKAN] Memperbarui event listener untuk menangani aksi cetak
     function setupActionListeners() {
         const tabContent = document.getElementById('tab-content');
@@ -578,14 +861,35 @@
         });
     }
 
-    // [FUNGSI BARU] Untuk menangani klik tombol cetak
+    /**
+     * [PERBAIKAN FINAL] Menangani klik tombol cetak dengan validasi ID Pengajuan
+     * untuk mencegah error 'submissionId is not defined'.
+     */
     function handleCetakNilai(btn, type, mapelKode) {
         const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+        
+        // Ambil submissionId dari atribut data tombol
+        const submissionId = btn.dataset.submissionId;
+
+        // ==========================================================
+        // === AWAL BLOK VALIDASI BARU ===
+        // ==========================================================
+        // Periksa apakah submissionId valid sebelum melanjutkan.
+        // Terkadang, nilainya bisa menjadi string "undefined" atau "null".
+        if (!submissionId || submissionId === 'null' || submissionId === 'undefined') {
+            showNotification("Gagal mencetak: Tidak dapat menemukan ID pengajuan yang valid. Coba segarkan halaman.", "error");
+            return; // Hentikan eksekusi jika ID tidak valid
+        }
+        // ==========================================================
+        // === AKHIR BLOK VALIDASI BARU ===
+        // ==========================================================
+
         const payload = {
             spreadsheetId: guruData.spreadsheetId,
             tipe: type,
             mapelKode: mapelKode,
-            guruData: guruData
+            guruData: guruData,
+            submissionId: submissionId // Kirim ID yang sudah valid
         };
 
         const originalHtml = btn.innerHTML;
@@ -605,6 +909,7 @@
                     document.body.removeChild(link);
                     showNotification('PDF berhasil dibuat.', 'success');
                 } else {
+                    // Tampilkan pesan error dari server jika ada
                     showNotification('Gagal membuat PDF: ' + response.message, 'error');
                 }
             })
@@ -694,7 +999,7 @@
             }
         });
     }
-
+    
     function setupTabs() {
         const tabs = document.querySelectorAll('.tab-btn');
         tabs.forEach(tab => {
@@ -716,6 +1021,7 @@
         document.getElementById('form-container').classList.add('hidden');
         document.getElementById('welcome-screen').classList.remove('hidden');
         document.getElementById('pilih-mapel-container').innerHTML = '';
+        document.getElementById('page-profil-guru').classList.add('hidden');
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -732,6 +1038,50 @@
             } else {
                 showNotification("Gagal kembali ke halaman utama.", "error");
             }
+        });
+
+        document.getElementById('guruProfileForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('saveProfileBtn');
+            btn.disabled = true;
+            btn.textContent = 'Menyimpan...';
+
+            const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+            const oldUsername = guruData.username;
+            const oldPassword = guruData.password;
+            
+            const form = e.target;
+            const newData = {
+                nama: form.elements.nama.value,
+                nip: form.elements.nip.value,
+                username: form.elements.username.value,
+                password: form.elements.password.value,
+                mapel: guruData.mapel.map(m => m.kode).join(',')
+            };
+
+            google.script.run
+                .withSuccessHandler(response => {
+                    btn.disabled = false;
+                    btn.textContent = 'Simpan Perubahan';
+                    showNotification(response.message, response.status);
+                    if(response.status === 'success') {
+                        if (newData.username !== oldUsername || newData.password !== oldPassword) {
+                            showNotification('Login Anda diperbarui. Silakan masuk kembali.', 'info');
+                            setTimeout(handleGuruLogout, 2000);
+                        } else {
+                            guruData.nama = newData.nama;
+                            sessionStorage.setItem('guruData', JSON.stringify(guruData));
+                            document.getElementById('nama-guru-display').textContent = newData.nama;
+                            showGuruPage(guruData.mapel[0].kode); // Kembali ke mapel pertama
+                        }
+                    }
+                })
+                .withFailureHandler(err => {
+                    btn.disabled = false;
+                    btn.textContent = 'Simpan Perubahan';
+                    showNotification(`Error: ${err.message}`, 'error');
+                })
+                .updateGuruProfile(guruData.spreadsheetId, oldUsername, newData);
         });
     });
 </script>
