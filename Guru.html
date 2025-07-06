@@ -136,21 +136,66 @@
             }
         }
 
-        /* Sisipkan kode ini di dalam tag <style> */
+        /* GANTI KODE CSS LAMA UNTUK SUBMENU DENGAN KODE BARU INI */
+
+        /* === Gaya untuk Header Submenu (Contoh: Bahasa Arab) - Tidak Berubah === */
         .nav-link-header {
             cursor: pointer;
         }
+
         .nav-link-header .chevron {
-            transition: transform 0.2s ease-in-out;
+            transition: transform 0.3s ease-in-out;
         }
+
         .nav-link-header.open .chevron {
             transform: rotate(90deg);
         }
+
+        /* === Gaya untuk Kontainer Submenu - DIPERBARUI === */
         .submenu-mapel {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.3s ease-out;
-            background-color: rgba(0, 0, 0, 0.2);
+            transition: max-height 0.35s ease-in-out;
+            background-color: rgba(0, 0, 0, 0.2); 
+            
+            /* [MODIFIKASI] Padding untuk memberi jarak di dalam, tanpa margin luar */
+            padding: 0.25rem 0.5rem; /* Atas/Bawah: 4px, Kiri/Kanan: 8px */
+        }
+
+        /* === Gaya untuk Item Submenu (Contoh: Kelas VI) - DIPERBARUI === */
+        .mapel-link {
+            /* [MODIFIKASI] Padding kiri dikurangi agar tidak terlalu menjorok */
+            padding: 0.75rem 1rem; 
+            display: block;
+            border-radius: 0.375rem; /* Sudut sedikit melengkung */
+            font-size: 0.875rem; 
+            color: #e0e7ff; /* Warna teks default (indigo-200) */
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        /* [MODIFIKASI] Mengubah indikator menjadi tanda hubung (—) */
+        .mapel-link::before {
+            content: "— "; /* Tanda hubung dan spasi */
+            font-weight: 600;
+            color: #a5b4fc; /* Warna indikator (indigo-300) */
+        }
+
+        /* Efek hover pada item submenu */
+        .mapel-link:not(.active):hover {
+            background-color: #4f46e5; /* indigo-700 */
+            color: #ffffff;
+        }
+
+        /* Item submenu yang sedang aktif (sesuai gambar Anda) */
+        .mapel-link.active {
+            background-color: #eef2ff; /* Warna terang (indigo-50) */
+            color: #3730a3; /* Warna teks gelap (indigo-900) */
+            font-weight: 600;
+        }
+
+        /* Saat aktif, ubah juga warna indikator tanda hubung */
+        .mapel-link.active::before {
+            color: #4f46e5; /* indigo-700 */
         }
     </style>
 </head>
@@ -263,41 +308,46 @@
                     <div id="page-profil-guru" class="hidden content-view">
                         <h1 class="text-3xl font-bold text-gray-800">Profil Saya</h1>
                         <p class="mt-2 text-gray-600 mb-8">Anda dapat mengubah data pribadi dan informasi login Anda di sini.</p>
-        
+
                         <div class="bg-white p-8 rounded-lg shadow-md max-w-2xl">
-                            <form id="guruProfileForm">
-                                <div class="space-y-6">
-                                    <div>
-                                        <label for="profile_nama_guru" class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
-                                        <input type="text" id="profile_nama_guru" name="nama" class="mt-1 w-full p-2 border rounded-md" required>
-                                    </div>
-                                    <div>
-                                        <label for="profile_nip_guru" class="block text-sm font-medium text-gray-700">NIP</label>
-                                        <input type="text" id="profile_nip_guru" name="nip" class="mt-1 w-full p-2 border rounded-md">
-                                    </div>
-                                    <div class="border-t pt-6">
-                                        <h3 class="text-lg font-medium text-gray-900">Ubah Akun Login</h3>
-                                        <p class="text-sm text-gray-500 mt-1">Jika Anda mengubah Username atau Password, Anda akan diminta untuk login kembali.</p>
-                                    </div>
-                                    <div>
-                                        <label for="profile_username_guru" class="block text-sm font-medium text-gray-700">Username</label>
-                                        <input type="text" id="profile_username_guru" name="username" class="mt-1 w-full p-2 border rounded-md" required>
-                                    </div>
-                                    <div>
-                                        <label for="profile_password_guru" class="block text-sm font-medium text-gray-700">Password Baru</label>
-                                        <div class="relative mt-1">
-                                            <input type="password" id="profile_password_guru" name="password" class="mt-1 w-full p-2 pr-10 border rounded-md" required>
-                                            <button type="button" data-toggle-password="profile_password_guru" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600">
-                                                <svg class="eye-icon h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                                <svg class="eye-slash-icon h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="mt-2">
-                                        <button type="submit" id="saveProfileBtn" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700">Simpan Perubahan</button>
+                            <div class="space-y-6">
+                                <h3 class="text-xl font-semibold text-gray-900 border-b pb-3">Data Pribadi</h3>
+                                <div>
+                                    <label for="profile_nama_guru" class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
+                                    <input type="text" id="profile_nama_guru" class="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label for="profile_nip_guru" class="block text-sm font-medium text-gray-700">NIP (Opsional)</label>
+                                    <input type="text" id="profile_nip_guru" class="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                                </div>
+                                <div class="pt-2">
+                                    <button id="saveProfileDataBtn" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors">Simpan Data Pribadi</button>
+                                </div>
+                            </div>
+
+                            <div class="border-t pt-6 mt-8 space-y-6">
+                                <h3 class="text-xl font-semibold text-gray-900 border-b pb-3">Akun Login</h3>
+                                <p class="text-sm p-3 bg-yellow-50 text-yellow-800 border-l-4 border-yellow-400 rounded-r-lg">
+                                    <strong>PENTING:</strong> Jika Anda mengubah Username atau Password, Anda akan otomatis logout dan perlu masuk kembali dengan kredensial baru.
+                                </p>
+                                <div>
+                                    <label for="profile_username_guru" class="block text-sm font-medium text-gray-700">Username</label>
+                                    <input type="text" id="profile_username_guru" class="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label for="profile_password_guru" class="block text-sm font-medium text-gray-700">Password Baru</label>
+                                    <div class="relative mt-1">
+                                        <input type="password" id="profile_password_guru" class="w-full p-2 pr-10 border border-gray-300 rounded-md shadow-sm">
+                                        <button type="button" data-toggle-password="profile_password_guru" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600">
+                                            <svg class="eye-icon h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                            <svg class="eye-slash-icon h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                                        </button>
                                     </div>
                                 </div>
-                            </form>
+                                <div class="pt-2">
+                                    <button id="saveProfileCredentialsBtn" class="bg-red-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-700 transition-colors">Simpan Akun Login</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -307,6 +357,22 @@
                         <div id="siswa-tanpa-kelas-container" class="bg-white p-4 rounded-lg shadow-md">
                             </div>
                     </div>
+
+                    <div id="page-daftar-siswa" class="hidden content-view">
+                        <h1 class="text-3xl font-bold text-gray-800">Daftar Siswa</h1>
+                        <p class="mt-2 text-gray-600 mb-8">Lihat dan filter daftar siswa berdasarkan kelas yang Anda ajar.</p>
+
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <div class="mb-6">
+                                <label for="filter-kelas-siswa" class="block text-sm font-medium text-gray-700">Filter berdasarkan Kelas:</label>
+                                <select id="filter-kelas-siswa" class="mt-1 block w-full md:w-1/2 lg:w-1/3 p-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                    </select>
+                            </div>
+                            
+                            <div id="daftar-siswa-container" class="overflow-x-auto">
+                                </div>
+                        </div>
+                    </div>
                 </main>
             </div>
         </div>
@@ -314,6 +380,7 @@
 
 <script>
     const WEB_APP_URL = "<?= webAppUrl ?>";
+    let allStudentsForGuruPage = [];
 
     function showNotification(message, type = 'success') {
         const container = document.getElementById('notification-container');
@@ -388,11 +455,13 @@
         }).loginGuru(schoolCode, username, password);
     }
 
+    // File: Guru.html (di dalam tag <script>)
+    // Ganti fungsi lama setupGuruHamburgerMenu() dengan versi ini.
+
     function setupGuruHamburgerMenu() {
         const hamburgerBtn = document.getElementById('hamburger-btn-guru');
         const sidebar = document.querySelector('#main-app-container aside');
         const overlay = document.getElementById('sidebar-overlay-guru');
-        const mapelContainer = document.getElementById('pilih-mapel-container');
 
         const openSidebar = () => {
             sidebar.classList.add('is-open');
@@ -407,17 +476,34 @@
         hamburgerBtn.addEventListener('click', openSidebar);
         overlay.addEventListener('click', closeSidebar);
         
-        // Event delegation untuk semua link di sidebar
+        // --- [AWAL PERUBAHAN UTAMA] ---
+        // Logika event listener yang disempurnakan
         sidebar.addEventListener('click', (e) => {
-            if (e.target.closest('a')) {
-                closeSidebar();
+            // Cari tag <a> terdekat yang diklik oleh pengguna
+            const link = e.target.closest('a');
+
+            // Jika tidak ada link yang diklik, abaikan
+            if (!link) {
+                return;
             }
+
+            // Cek apakah link yang diklik adalah header dropdown
+            if (link.classList.contains('nav-link-header')) {
+                // Jika YA, JANGAN tutup sidebar. Biarkan event listener lain
+                // yang menangani buka/tutup submenu bekerja.
+                return; 
+            }
+            
+            // Jika BUKAN header dropdown (misalnya link "Profil Saya" atau link kelas),
+            // maka tutup sidebar.
+            closeSidebar();
         });
+        // --- [AKHIR PERUBAHAN UTAMA] ---
     }
 
     // File: Guru.html (di dalam tag <script>)
+    // Ganti keseluruhan fungsi initializeAppGuru() Anda dengan kode ini.
 
-    // GANTI KESELURUHAN FUNGSI LAMA DENGAN VERSI FINAL INI
     function initializeAppGuru(guruData) {
         sessionStorage.setItem('isSubmissionEnabled', guruData.isSubmissionEnabled);
         document.getElementById('nama-guru-display').textContent = guruData.nama;
@@ -435,6 +521,18 @@
             </a>
         `);
         
+        // --- [AWAL PERUBAHAN] ---
+        // Tambahkan menu "Daftar Siswa" yang baru di sini
+        mapelContainer.insertAdjacentHTML('beforeend', `
+            <a href="#" class="nav-link-guru flex items-center space-x-3 p-3 rounded-lg text-sm font-medium" data-page="daftar-siswa">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                </svg>
+                <span>Daftar Siswa</span>
+            </a>
+        `);
+        // --- [AKHIR PERUBAHAN] ---
+
         // Tambahkan menu "Siswa Tanpa Kelas"
         mapelContainer.insertAdjacentHTML('beforeend', `
             <a href="#" id="nav-siswa-tanpa-kelas" class="nav-link-guru flex items-center space-x-3 p-3 rounded-lg text-sm font-medium" data-page="siswa-tanpa-kelas">
@@ -449,13 +547,16 @@
 
         // Loop melalui setiap mata pelajaran
         guruData.mapel.forEach(m => {
-            // KASUS 1: Jika mapel diajar di BANYAK kelas (buat dropdown)
-            if (m.kelas && m.kelas.length > 1) {
+            // [PERUBAHAN UTAMA]
+            // Kondisi diubah dari '> 1' menjadi '>= 1' (lebih dari atau sama dengan 1).
+            // Ini memastikan mapel dengan 1 kelas pun akan dibuatkan dropdown.
+            if (m.kelas && m.kelas.length >= 1) {
                 let submenuHtml = '';
+                // Logika loop ini akan tetap berfungsi baik untuk 1 kelas maupun banyak kelas.
                 m.kelas.forEach(k => {
                     submenuHtml += `
-                        <a href="#" class="mapel-link block p-3 rounded-lg text-sm font-medium transition-colors duration-200" data-kode="${m.kode}" data-kelas="${k}" data-jenis-ujian="${m.jenisUjian}">
-                            <span class="font-semibold">Kelas ${k}</span>
+                        <a href="#" class="mapel-link block" data-kode="${m.kode}" data-kelas="${k}" data-jenis-ujian="${m.jenisUjian}">
+                            <span>Kelas ${k}</span>
                         </a>
                     `;
                 });
@@ -469,53 +570,50 @@
                             </span>
                             <svg class="chevron h-4 w-4 transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                         </a>
-                        <div class="submenu-mapel pl-6">${submenuHtml}</div>
+                        <div class="submenu-mapel">${submenuHtml}</div>
                     </div>
                 `);
             
-            // KASUS 2: Jika mapel diajar hanya di SATU kelas (buat link langsung)
-            } else if (m.kelas && m.kelas.length === 1) {
-                const kelasTunggal = m.kelas[0];
-                mapelContainer.insertAdjacentHTML('beforeend', `
-                    <a href="#" class="mapel-link nav-link-guru flex items-center space-x-3 p-3 rounded-lg text-sm font-medium" data-kode="${m.kode}" data-kelas="${kelasTunggal}" data-jenis-ujian="${m.jenisUjian}">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" /><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" /></svg>
-                        <span>${m.nama} - ${kelasTunggal}</span>
-                    </a>
-                `);
+            // Blok "else if" untuk link tunggal telah dihapus karena logikanya sudah digabung ke atas.
             }
         });
 
-        // Hapus semua event listener lama dan pasang yang baru (event delegation)
+        // Event listener tidak perlu diubah, karena sudah dirancang untuk menangani dropdown
         const newMapelContainer = mapelContainer.cloneNode(true);
         mapelContainer.parentNode.replaceChild(newMapelContainer, mapelContainer);
 
         newMapelContainer.addEventListener('click', function(e) {
             const target = e.target;
             
-            // Menangani klik pada header dropdown
             const header = target.closest('.nav-link-header');
             if (header) {
                 e.preventDefault();
+                const currentGroup = header.closest('.mapel-group');
                 const submenu = header.nextElementSibling;
+                const isOpen = header.classList.contains('open');
+
+                document.querySelectorAll('.submenu-mapel').forEach(sm => {
+                    if (sm !== submenu) {
+                        sm.style.maxHeight = '0';
+                        sm.previousElementSibling.classList.remove('open');
+                    }
+                });
+
+                if (isOpen) {
+                    submenu.style.maxHeight = '0';
+                } else {
+                    submenu.style.maxHeight = submenu.scrollHeight + "px";
+                }
                 header.classList.toggle('open');
-                submenu.style.maxHeight = header.classList.contains('open') ? submenu.scrollHeight + "px" : '0';
                 return;
             }
 
-            // Menangani klik pada link mapel/kelas
             const mapelLink = target.closest('.mapel-link');
             if (mapelLink) {
                 e.preventDefault();
-                document.querySelectorAll('.mapel-link, .nav-link-guru, .nav-link-header').forEach(l => l.classList.remove('active'));
-                mapelLink.classList.add('active');
-                if (mapelLink.closest('.mapel-group')) {
-                    mapelLink.closest('.mapel-group').querySelector('.nav-link-header').classList.add('active');
-                }
-                // Mengambil data dari atribut data-* untuk memastikan data yang benar
                 handleMapelSelection(mapelLink.dataset.kode, mapelLink.dataset.jenisUjian, mapelLink.dataset.kelas);
             }
             
-            // Menangani klik pada link non-mapel
             const navLink = target.closest('.nav-link-guru');
             if (navLink && !navLink.classList.contains('mapel-link') && !navLink.classList.contains('nav-link-header')) {
                 e.preventDefault();
@@ -533,7 +631,9 @@
         showView('welcome-screen');
     }
 
-    // Ganti fungsi lama dengan yang ini di Guru.html
+    // File: Guru.html (di dalam tag <script>)
+    // Ganti fungsi showGuruPage() dengan versi ini
+
     function showGuruPage(pageId) {
         document.querySelectorAll('main > .content-view, main > #form-container, main > #welcome-screen').forEach(el => el.classList.add('hidden'));
         document.querySelectorAll('.nav-link-guru, .mapel-link').forEach(l => l.classList.remove('active'));
@@ -542,30 +642,49 @@
             document.getElementById('page-profil-guru').classList.remove('hidden');
             document.querySelector('.nav-link-guru[data-page="profil-guru"]').classList.add('active');
             loadProfilePage();
-        } else if (pageId === 'siswa-tanpa-kelas') { // <-- BLOK BARU
+        } else if (pageId === 'daftar-siswa') { // --- [PERUBAHAN] ---
+            document.getElementById('page-daftar-siswa').classList.remove('hidden');
+            document.querySelector('.nav-link-guru[data-page="daftar-siswa"]').classList.add('active');
+            loadDaftarSiswaPage(); // Panggil fungsi baru untuk memuat halaman ini
+        } else if (pageId === 'siswa-tanpa-kelas') {
             document.getElementById('page-siswa-tanpa-kelas').classList.remove('hidden');
             document.getElementById('nav-siswa-tanpa-kelas').classList.add('active');
-            loadSiswaTanpaKelas(); // <-- FUNGSI BARU
+            loadSiswaTanpaKelas();
         } else {
+            // Ini untuk halaman input nilai, biarkan seperti ini
             document.getElementById('form-container').classList.remove('hidden');
-            document.querySelector(`.mapel-link[data-kode="${pageId}"]`)?.classList.add('active');
         }
     }
 
+    // File: Guru.html (di dalam tag <script>)
+    // GANTI FUNGSI loadProfilePage() YANG LAMA DENGAN INI
+
     function loadProfilePage() {
         const guruData = JSON.parse(sessionStorage.getItem('guruData'));
-        const form = document.getElementById('guruProfileForm');
-        form.reset();
+        
+        // [PERBAIKAN] Langsung targetkan setiap input field, bukan form
+        const namaInput = document.getElementById('profile_nama_guru');
+        const nipInput = document.getElementById('profile_nip_guru');
+        const usernameInput = document.getElementById('profile_username_guru');
+        const passwordInput = document.getElementById('profile_password_guru');
+
+        // Kosongkan nilai saat memuat
+        namaInput.value = '';
+        nipInput.value = '';
+        usernameInput.value = '';
+        passwordInput.value = '';
+        
         showNotification('Memuat data profil...', 'info');
 
         google.script.run
             .withSuccessHandler(response => {
                 if (response.status === 'success') {
                     const profile = response.profile;
-                    form.elements.nama.value = profile.nama;
-                    form.elements.nip.value = profile.nip;
-                    form.elements.username.value = profile.username;
-                    form.elements.password.value = profile.password;
+                    // [PERBAIKAN] Isi nilai ke setiap input secara langsung
+                    namaInput.value = profile.nama;
+                    nipInput.value = profile.nip || ''; // Gunakan string kosong jika NIP null/undefined
+                    usernameInput.value = profile.username;
+                    passwordInput.value = profile.password;
                 } else {
                     showNotification(response.message, 'error');
                 }
@@ -576,15 +695,39 @@
             .getGuruProfile(guruData.spreadsheetId, guruData.username);
     }
 
-    // Ganti juga fungsi handleMapelSelection untuk menerima parameter 'kelas'
+    // File: Guru.html (di dalam tag <script>)
+
     function handleMapelSelection(mapelKode, jenisUjian, kelas) {
-        showGuruPage(mapelKode);
+        // 1. Secara manual tampilkan container form dan sembunyikan halaman lain
+        document.getElementById('welcome-screen').classList.add('hidden');
+        document.getElementById('page-profil-guru').classList.add('hidden');
+        document.getElementById('page-siswa-tanpa-kelas').classList.add('hidden');
+        document.getElementById('form-container').classList.remove('hidden');
+
+        // 2. Hapus status aktif dari semua link navigasi
+        document.querySelectorAll('.nav-link-guru.active, .mapel-link.active').forEach(l => l.classList.remove('active'));
+
+        // 3. Buat selector yang spesifik untuk kode mapel DAN kelas
+        const selector = `.mapel-link[data-kode="${mapelKode}"][data-kelas="${kelas}"]`;
+        const activeLink = document.querySelector(selector);
+        
+        // 4. Terapkan kelas .active pada link yang benar
+        if (activeLink) {
+            activeLink.classList.add('active');
+            // Jika link ada di dalam dropdown, aktifkan juga headernya
+            const parentGroup = activeLink.closest('.mapel-group');
+            if (parentGroup) {
+                parentGroup.querySelector('.nav-link-header').classList.add('active');
+            }
+        }
+
+        // 5. Reset tab ke "Nilai Ujian" (logika ini tidak berubah)
         document.querySelector('.tab-btn.active')?.classList.remove('active');
         document.querySelector('[data-tab="ujian"]').classList.add('active');
         document.getElementById('tab-ujian').classList.remove('hidden');
         document.getElementById('tab-rapor').classList.add('hidden');
         
-        // Kirim 'kelas' ke fungsi build form
+        // 6. Muat data form dengan parameter yang sudah benar (logika ini tidak berubah)
         buildUjianForm(mapelKode, jenisUjian, kelas);
         buildRaporForm(mapelKode, kelas);
     }
@@ -596,8 +739,9 @@
         });
     }
 
-    // GANTI FUNGSI LAMA buildUjianForm DENGAN YANG INI
-    async function buildUjianForm(mapelKode, jenisUjian, kelas) { // Tambahkan 'kelas'
+    // File: Guru.html (di dalam tag <script>)
+
+    async function buildUjianForm(mapelKode, jenisUjian, kelas) {
         const container = document.getElementById('tab-ujian');
         container.innerHTML = `<p class="loading-animation p-4">Memuat data nilai ujian...</p>`;
         
@@ -608,7 +752,6 @@
                 google.script.run
                     .withSuccessHandler(resolve)
                     .withFailureHandler(reject)
-                    // ===== PERUBAHAN DI SINI: Kirim 'kelas' sebagai parameter terakhir =====
                     .getNilaiPageData_Guru(guruData.spreadsheetId, guruData.username, mapelKode, 'ujian', kelas);
             });
 
@@ -619,13 +762,13 @@
             const { students, savedValues, submittedValues, approvalStatus, submissionId, batchStatus, isSubmissionEnabled } = response;
 
             if (!students || students.length === 0) {
-                container.innerHTML = `<p class="p-4 text-center text-gray-500">Tidak ada data siswa.</p>`;
+                container.innerHTML = `<p class="p-4 text-center text-gray-500">Tidak ada data siswa untuk kelas ${kelas}.</p>`;
                 return;
             }
 
             if (submittedValues && submittedValues['ujian']) {
                 if (batchStatus.allApproved) {
-                    showNotification(`Semua nilai (${batchStatus.total}) untuk ujian ini telah disetujui. Silahkan klik Cetak Nilai.`, 'success');
+                    showNotification(`Semua nilai (${batchStatus.total}) untuk ujian ini telah disetujui. Silakan klik Cetak Nilai.`, 'success');
                 } else if (batchStatus.rejected > 0) {
                     showNotification(`Perhatian: ${batchStatus.rejected} nilai ditolak oleh admin. Silakan revisi.`, 'error');
                 } else if (batchStatus.pending > 0) {
@@ -633,10 +776,25 @@
                 }
             }
 
+            // --- AWAL PERUBAHAN ---
+            // Mencari nama mapel lengkap dari data guru yang tersimpan di sesi
+            const mapelInfo = guruData.mapel.find(m => m.kode === mapelKode);
+            const namaMapel = mapelInfo ? mapelInfo.nama : mapelKode; // Fallback ke kode jika nama tidak ditemukan
+
+            // Struktur HTML baru dengan judul dan tombol yang sejajar
             let formHtml = `<div class="bg-gray-50 p-4 rounded-lg">
-                ${buildActionButtons('ujian', mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus)}
+                <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-800">${namaMapel} - Kelas ${kelas}</h3>
+                    </div>
+                    <div>
+                        ${buildActionButtons('ujian', mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus)}
+                    </div>
+                </div>
                 ${buildScoreTable('ujian', 'Nilai Ujian', mapelKode, students, savedValues, submittedValues, approvalStatus, { jenisUjian })}
             </div>`;
+            // --- AKHIR PERUBAHAN ---
+
             container.innerHTML = formHtml;
 
         } catch (error) {
@@ -685,8 +843,9 @@
         }
     }
 
-    // GANTI FUNGSI LAMA renderRaporSemesterTable DENGAN YANG INI
-    async function renderRaporSemesterTable(semesterKey, mapelKode, kelas) { // Tambahkan 'kelas'
+    // File: Guru.html (di dalam tag <script>)
+
+    async function renderRaporSemesterTable(semesterKey, mapelKode, kelas) {
         const tableContainer = document.getElementById('rapor-table-container');
         tableContainer.innerHTML = `<p class="loading-animation p-4">Memuat data semester...</p>`;
         const type = `rapor_${semesterKey}`;
@@ -698,7 +857,6 @@
                 google.script.run
                     .withSuccessHandler(resolve)
                     .withFailureHandler(reject)
-                    // ===== PERUBAHAN DI SINI: Kirim 'kelas' sebagai parameter terakhir =====
                     .getNilaiPageData_Guru(guruData.spreadsheetId, guruData.username, mapelKode, type, kelas);
             });
 
@@ -709,7 +867,7 @@
             const { students, savedValues, submittedValues, approvalStatus, submissionId, batchStatus, isSubmissionEnabled } = response;
 
             if (!students || students.length === 0) {
-                tableContainer.innerHTML = `<p class="p-4 text-center text-gray-500">Tidak ada data siswa.</p>`;
+                tableContainer.innerHTML = `<p class="p-4 text-center text-gray-500">Tidak ada data siswa untuk kelas ${kelas}.</p>`;
                 return;
             }
             
@@ -723,10 +881,25 @@
                 }
             }
             
+            // --- AWAL PERUBAHAN ---
+            // Mencari nama mapel lengkap
+            const mapelInfo = guruData.mapel.find(m => m.kode === mapelKode);
+            const namaMapel = mapelInfo ? mapelInfo.nama : mapelKode;
+
+            // Struktur HTML baru dengan judul
             const tableHtml = `<div class="bg-gray-50 p-4 rounded-lg">
-                ${buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus)}
+                <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-800">${namaMapel} - Kelas ${kelas}</h3>
+                    </div>
+                    <div>
+                        ${buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus)}
+                    </div>
+                </div>
                 ${buildScoreTable(type, '', mapelKode, students, savedValues, submittedValues, approvalStatus, { semesterKey })}
             </div>`;
+            // --- AKHIR PERUBAHAN ---
+            
             tableContainer.innerHTML = tableHtml;
 
         } catch (error) {
@@ -1264,53 +1437,8 @@
             }
         });
 
-        document.getElementById('guruProfileForm')?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('saveProfileBtn');
-            btn.disabled = true;
-            btn.textContent = 'Menyimpan...';
-
-            const guruData = JSON.parse(sessionStorage.getItem('guruData'));
-            const oldUsername = guruData.username;
-            // Dapatkan password dari session storage, jika tidak ada, gunakan string kosong
-            const oldPassword = guruData.password || ''; 
-            
-            const form = e.target;
-            const newData = {
-                nama: form.elements.nama.value,
-                nip: form.elements.nip.value,
-                username: form.elements.username.value,
-                password: form.elements.password.value,
-                mapel: guruData.mapel.map(m => m.kode).join(',')
-            };
-
-            google.script.run
-                .withSuccessHandler(response => {
-                    btn.disabled = false;
-                    btn.textContent = 'Simpan Perubahan';
-                    showNotification(response.message, response.status);
-                    if(response.status === 'success') {
-                        // Cek apakah username atau password yang BARU diinput berbeda dari yang LAMA tersimpan
-                        if (newData.username !== oldUsername || newData.password !== oldPassword) {
-                            showNotification('Login Anda diperbarui. Silakan masuk kembali.', 'info');
-                            setTimeout(handleGuruLogout, 2000);
-                        } else {
-                            // Jika tidak ada perubahan kredensial, hanya update nama di sesi
-                            guruData.nama = newData.nama;
-                            sessionStorage.setItem('guruData', JSON.stringify(guruData));
-                            document.getElementById('nama-guru-display').textContent = newData.nama;
-                            // Kembali ke halaman profil setelah simpan data non-kredensial
-                            showGuruPage('profil-guru');
-                        }
-                    }
-                })
-                .withFailureHandler(err => {
-                    btn.disabled = false;
-                    btn.textContent = 'Simpan Perubahan';
-                    showNotification(`Error: ${err.message}`, 'error');
-                })
-                .updateGuruProfile(guruData.spreadsheetId, oldUsername, newData);
-        });
+        document.getElementById('saveProfileDataBtn')?.addEventListener('click', handleSaveProfileData);
+        document.getElementById('saveProfileCredentialsBtn')?.addEventListener('click', handleSaveProfileCredentials);
     });
 
     // Tambahkan fungsi baru ini
@@ -1382,6 +1510,187 @@
                 container.innerHTML = `<p class="text-center text-red-500 p-4">Error: ${err.message}</p>`;
             })
             .getSiswaTanpaKelas(guruData.spreadsheetId);
+    }
+
+    // File: Guru.html (di dalam tag <script>)
+
+    function toProperCase(str) {
+      if (!str || typeof str !== 'string') return '';
+      return str.replace(/\w\S*/g, function(txt) {
+        return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+      });
+    }
+
+    function formatIndonesianDate(dateInput) {
+        if (!dateInput) return "-";
+        const date = new Date(dateInput);
+        if (isNaN(date.getTime())) return "-";
+        return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    /**
+     * Memuat data awal untuk halaman Daftar Siswa.
+     */
+    function loadDaftarSiswaPage() {
+        const container = document.getElementById('daftar-siswa-container');
+        const filterSelect = document.getElementById('filter-kelas-siswa');
+        container.innerHTML = `<p class="text-center p-4 loading-animation">Memuat data siswa...</p>`;
+
+        const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+        if (!guruData) return;
+
+        // 1. Ambil semua kelas unik yang diajar guru untuk mengisi filter
+        const uniqueKelas = [...new Set(guruData.mapel.flatMap(m => m.kelas))].sort();
+        
+        // 2. Isi dropdown filter
+        filterSelect.innerHTML = '<option value="semua">Tampilkan Semua Kelas</option>';
+        uniqueKelas.forEach(k => {
+            filterSelect.add(new Option(`Kelas ${k}`, k));
+        });
+
+        // 3. Pasang event listener untuk filter
+        filterSelect.onchange = () => {
+            const selectedKelas = filterSelect.value;
+            const studentsToRender = selectedKelas === 'semua' 
+                ? allStudentsForGuruPage 
+                : allStudentsForGuruPage.filter(s => s.kelas === selectedKelas);
+            renderDaftarSiswaTable(studentsToRender);
+        };
+
+        // 4. Panggil data siswa dari server
+        google.script.run
+            .withSuccessHandler(response => {
+                if (response.status === 'success') {
+                    allStudentsForGuruPage = response.data; // Simpan data di cache
+                    renderDaftarSiswaTable(allStudentsForGuruPage); // Tampilkan semua siswa pada awalnya
+                } else {
+                    container.innerHTML = `<p class="text-center text-red-500 p-4">${response.message}</p>`;
+                }
+            })
+            .withFailureHandler(err => {
+                container.innerHTML = `<p class="text-center text-red-500 p-4">Error: ${err.message}</p>`;
+            })
+            .getStudentListForGuru(guruData.spreadsheetId);
+    }
+
+    /**
+     * Merender tabel daftar siswa ke dalam kontainer.
+     * @param {Array} studentsToDisplay - Array siswa yang akan ditampilkan.
+     */
+    function renderDaftarSiswaTable(studentsToDisplay) {
+        const container = document.getElementById('daftar-siswa-container');
+        
+        if (studentsToDisplay.length === 0) {
+            container.innerHTML = `<p class="text-center p-4 text-gray-500">Tidak ada data siswa untuk ditampilkan.</p>`;
+            return;
+        }
+
+        let tableHtml = `<table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Lengkap</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jenis Kelamin</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tempat, Tanggal Lahir</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">`;
+
+        studentsToDisplay.forEach(s => {
+            const ttl = `${toProperCase(s.tempatLahir)}, ${formatIndonesianDate(s.tanggalLahir)}`;
+            tableHtml += `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${s.nisn}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${s.nama}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${s.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ttl}</td>
+                </tr>
+            `;
+        });
+
+        tableHtml += `</tbody></table>`;
+        container.innerHTML = tableHtml;
+    }
+
+    /**
+     * Menangani penyimpanan data pribadi guru (Nama & NIP).
+     */
+    function handleSaveProfileData() {
+        const btn = document.getElementById('saveProfileDataBtn');
+        btn.disabled = true;
+        btn.textContent = 'Menyimpan...';
+
+        const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+        const profileData = {
+            nama: document.getElementById('profile_nama_guru').value,
+            nip: document.getElementById('profile_nip_guru').value,
+        };
+
+        google.script.run
+            .withSuccessHandler(response => {
+                btn.disabled = false;
+                btn.textContent = 'Simpan Data Pribadi';
+                showNotification(response.message, response.status === 'success' ? 'success' : 'error');
+                if (response.status === 'success') {
+                    // Perbarui nama di sidebar dan session
+                    document.getElementById('nama-guru-display').textContent = profileData.nama;
+                    guruData.nama = profileData.nama;
+                    sessionStorage.setItem('guruData', JSON.stringify(guruData));
+                }
+            })
+            .withFailureHandler(err => {
+                btn.disabled = false;
+                btn.textContent = 'Simpan Data Pribadi';
+                showNotification(`Error: ${err.message}`, 'error');
+            })
+            .updateGuruData_Guru(guruData.spreadsheetId, guruData.username, profileData);
+    }
+
+    /**
+     * Menangani penyimpanan kredensial login guru (Username & Password).
+     */
+    function handleSaveProfileCredentials() {
+        showConfirmationModal({
+            title: "Konfirmasi Ubah Akun",
+            message: "Anda yakin ingin mengubah Username atau Password? Anda akan diminta untuk login kembali setelah ini.",
+            confirmText: "Ya, Ubah & Logout",
+            confirmColor: "bg-red-600 hover:bg-red-700",
+            onConfirm: () => {
+                const btn = document.getElementById('saveProfileCredentialsBtn');
+                btn.disabled = true;
+                btn.textContent = 'Menyimpan...';
+                
+                const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+                const credentialData = {
+                    username: document.getElementById('profile_username_guru').value,
+                    password: document.getElementById('profile_password_guru').value,
+                };
+
+                if (!credentialData.username || !credentialData.password) {
+                    showNotification("Username dan Password tidak boleh kosong.", "error");
+                    btn.disabled = false;
+                    btn.textContent = 'Simpan Akun Login';
+                    return;
+                }
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        btn.disabled = false;
+                        btn.textContent = 'Simpan Akun Login';
+                        showNotification(response.message, response.status === 'success' ? 'success' : 'error');
+                        if (response.status === 'success') {
+                            showNotification('Login Anda diperbarui. Anda akan logout dalam 3 detik...', 'info');
+                            setTimeout(handleGuruLogout, 3000);
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        btn.disabled = false;
+                        btn.textContent = 'Simpan Akun Login';
+                        showNotification(`Error: ${err.message}`, 'error');
+                    })
+                    .updateGuruCredentials_Guru(guruData.spreadsheetId, guruData.username, credentialData);
+            }
+        });
     }
 </script>
 </body>
