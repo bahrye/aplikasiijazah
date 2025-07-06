@@ -9286,3 +9286,194 @@ function getSiswaTanpaKelas(spreadsheetId) {
         return { status: 'error', message: `Gagal mengambil data: ${e.message}` };
     }
 }
+
+// File: Kode.gs.html
+// TAMBAHKAN FUNGSI BARU INI
+
+/**
+ * [BARU] Mengambil daftar lengkap siswa untuk ditampilkan di Portal Guru.
+ * @param {string} spreadsheetId ID spreadsheet sekolah.
+ * @returns {object} Objek berisi status dan daftar lengkap siswa.
+ */
+function getStudentListForGuru(spreadsheetId) {
+    try {
+        // Menggunakan kembali fungsi getStudents() yang sudah ada dan lengkap
+        const students = getStudents(spreadsheetId); 
+        return { status: 'success', data: students };
+    } catch (e) {
+        Logger.log(`getStudentListForGuru Error: ${e.message}`);
+        return { status: 'error', message: e.message, data: [] };
+    }
+}
+
+// File: Kode.gs.html
+// TAMBAHKAN DUA FUNGSI BARU INI
+
+/**
+ * [BARU] Guru memperbarui data pribadinya (Nama & NIP).
+ * Aksi ini TIDAK akan mengubah status 'Diubah Guru'.
+ */
+function updateGuruData_Guru(spreadsheetId, username, data) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheet = ss.getSheetByName(SHEET_DATA_GURU);
+    const usernames = sheet.getRange(2, 2, sheet.getLastRow() - 1, 1).getDisplayValues().flat();
+    const guruIndex = usernames.findIndex(u => u === username);
+
+    if (guruIndex === -1) {
+      throw new Error("Profil guru tidak ditemukan untuk diperbarui.");
+    }
+    const rowToUpdate = guruIndex + 2;
+    
+    // Update Nama (kolom A) dan NIP (kolom E)
+    sheet.getRange(rowToUpdate, 1).setValue(data.nama);
+    sheet.getRange(rowToUpdate, 5).setValue(data.nip ? "'" + data.nip : '');
+    
+    return { status: 'success', message: 'Data pribadi berhasil diperbarui.' };
+  } catch(e) {
+    Logger.log(`updateGuruData_Guru Error: ${e.message}`);
+    return { status: 'error', message: 'Gagal memperbarui data pribadi: ' + e.message };
+  }
+}
+
+/**
+ * [BARU] Guru memperbarui kredensial loginnya (Username & Password).
+ * Aksi ini akan mengubah status 'Diubah Guru' menjadi YA.
+ */
+function updateGuruCredentials_Guru(spreadsheetId, oldUsername, newData) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheet = ss.getSheetByName(SHEET_DATA_GURU);
+    const usernames = sheet.getRange(2, 2, sheet.getLastRow() - 1, 1).getDisplayValues().flat();
+    const guruIndex = usernames.findIndex(u => u === oldUsername);
+
+    if (guruIndex === -1) {
+      throw new Error("Profil guru tidak ditemukan.");
+    }
+    const rowToUpdate = guruIndex + 2;
+    
+    // Cek duplikasi username jika diubah
+    if(newData.username.toLowerCase() !== oldUsername.toLowerCase()) {
+        const isDuplicate = usernames.some((u, index) => index !== guruIndex && u.toLowerCase() === newData.username.toLowerCase());
+        if(isDuplicate) {
+            return { status: 'error', message: 'Username baru sudah digunakan oleh guru lain.' };
+        }
+    }
+
+    // Update Username (B), Password (C), dan set 'Diubah Guru' (F) menjadi 'YA'
+    sheet.getRange(rowToUpdate, 2).setValue(newData.username);
+    sheet.getRange(rowToUpdate, 3).setValue(newData.password);
+    sheet.getRange(rowToUpdate, 6).setValue('YA');
+
+    return { status: 'success', message: 'Kredensial login berhasil diperbarui.' };
+  } catch(e) {
+    Logger.log(`updateGuruCredentials_Guru Error: ${e.message}`);
+    return { status: 'error', message: 'Gagal memperbarui akun login: ' + e.message };
+  }
+}
+
+// File: Kode.gs.html
+// TAMBAHKAN FUNGSI BARU INI
+
+/**
+ * [AKSI MASSAL BARU] Memperbarui kolom Kelas (N) dan Ruang Ujian (O) untuk beberapa siswa sekaligus.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {Array<number>} rowNumbers Array berisi nomor baris siswa yang akan diupdate.
+ * @param {string} newKelas Nama kelas baru.
+ * @param {string} newRuang Nama ruang baru.
+ * @returns {object} Status operasi.
+ */
+function bulkUpdateKelasAndRuang(spreadsheetId, rowNumbers, newKelas, newRuang) {
+  try {
+    if (!rowNumbers || rowNumbers.length === 0) {
+      return { status: "info", message: "Tidak ada siswa yang dipilih." };
+    }
+    // Validasi input: setidaknya salah satu harus diisi.
+    if (!newKelas && !newRuang) {
+      return { status: "error", message: "Harap isi kolom Kelas atau Ruang." };
+    }
+      
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
+    const kelasColumn = 14;  // Kolom N
+    const ruangColumn = 15;  // Kolom O
+    
+    // Looping melalui setiap baris yang dipilih untuk diupdate
+    rowNumbers.forEach(rowNum => {
+      if (newKelas) {
+        sheet.getRange(rowNum, kelasColumn).setValue(newKelas);
+      }
+      if (newRuang) {
+        sheet.getRange(rowNum, ruangColumn).setValue(newRuang);
+      }
+    });
+
+    SpreadsheetApp.flush(); // Pastikan perubahan segera tersimpan
+    
+    // Kirim kembali daftar siswa terbaru setelah diupdate
+    const updatedStudentList = getStudents(spreadsheetId);
+
+    return { 
+      status: "success", 
+      message: `${rowNumbers.length} data siswa berhasil diupdate.`,
+      updatedStudentList: updatedStudentList
+    };
+  } catch (e) {
+    Logger.log(e);
+    return { status: "error", message: "Gagal mengupdate data kelas/ruang secara massal: " + e.message };
+  }
+}
+
+// File: Kode.gs.html
+// TAMBAHKAN FUNGSI BARU INI
+
+/**
+ * [BARU] Menerima urutan NISN baru dan menulis ulang data di sheet Data Siswa.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {Array<string>} orderedNisnList Array berisi NISN dalam urutan baru.
+ * @returns {object} Status operasi.
+ */
+function saveSiswaOrder(spreadsheetId, orderedNisnList) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
+    if (sheet.getLastRow() < 2) {
+      return { status: "error", message: "Tidak ada data siswa untuk diurutkan." };
+    }
+
+    // 1. Baca semua data yang ada saat ini
+    const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn());
+    const allData = dataRange.getValues();
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const nisnIndex = headers.indexOf("NISN");
+
+    if (nisnIndex === -1) throw new Error("Kolom NISN tidak ditemukan.");
+
+    // 2. Buat Peta (Map) untuk pencarian cepat data siswa berdasarkan NISN
+    const studentDataMap = new Map();
+    allData.forEach(row => {
+      studentDataMap.set(String(row[nisnIndex]), row);
+    });
+
+    // 3. Buat array baru dengan urutan yang benar
+    const sortedData = orderedNisnList.map(nisn => {
+      return studentDataMap.get(String(nisn));
+    }).filter(Boolean); // Filter untuk mengabaikan NISN yang mungkin tidak ditemukan
+
+    if (sortedData.length !== allData.length) {
+      // Ini adalah pengecekan keamanan jika ada ketidaksesuaian data
+      throw new Error("Gagal mengurutkan, jumlah data tidak cocok. Coba refresh halaman.");
+    }
+
+    // 4. Hapus data lama dan tulis ulang dengan data yang sudah diurutkan
+    dataRange.clearContent();
+    sheet.getRange(2, 1, sortedData.length, sortedData[0].length).setValues(sortedData);
+    
+    SpreadsheetApp.flush();
+    return { status: "success", message: "Urutan siswa berhasil disimpan." };
+
+  } catch (e) {
+    Logger.log(e);
+    return { status: "error", message: `Gagal menyimpan urutan: ${e.message}` };
+  }
+}
