@@ -7984,79 +7984,69 @@ function deleteGuru(spreadsheetId, rowNum) {
 }
 
 /**
- * [OPTIMASI BARU] Mengambil semua data nilai (draf & terkirim) dan status persetujuan
- * untuk seorang guru dalam satu panggilan server untuk meningkatkan kecepatan muat.
- * @param {string} spreadsheetId - ID spreadsheet sekolah.
- * @param {string} username - Username guru yang sedang login.
- * @returns {object} Objek komprehensif berisi semua data yang dibutuhkan portal guru.
+ * [DIPERBARUI] Mengambil nilai yang sudah disimpan (draf), yang sudah dikirim,
+ * dan status persetujuan dari admin.
  */
-function getGuruDashboardData(spreadsheetId, username) {
-  try {
-    const ss = SpreadsheetApp.openById(spreadsheetId);
-    const result = {
-      savedValues: {},
-      submittedValues: {},
-      approvalStatus: {},
-      submissionIds: {} // Untuk melacak ID setiap batch pengajuan
-    };
+function getGuruNilai(spreadsheetId, username, mapelKode) {
+  const ss = SpreadsheetApp.openById(spreadsheetId);
 
-    // 1. Ambil data DRAF
-    const draftSheet = ss.getSheetByName(SHEET_NILAI_GURU_DRAFT);
-    if (draftSheet && draftSheet.getLastRow() > 1) {
-      const draftData = draftSheet.getDataRange().getValues();
-      draftData.forEach(row => {
-        if (row[0] === username) { // Username di kolom A
-          const mapelKode = row[1];
-          const tipe = row[2];
-          if (!result.savedValues[mapelKode]) result.savedValues[mapelKode] = {};
-          result.savedValues[mapelKode][tipe] = JSON.parse(row[3]);
+  // Fungsi helper untuk mengambil data dari sheet draf dan terkirim
+  const getValuesFromSheet = (sheetName) => {
+    const sheet = ss.getSheetByName(sheetName);
+    if (!sheet) return {};
+    const data = sheet.getDataRange().getValues();
+    const result = {};
+    data.forEach(row => {
+      // row[0]=username, row[1]=mapelKode, row[2]=tipe, row[3]=nilai (JSON string)
+      if (row[0] === username && row[1] === mapelKode) {
+        try {
+            result[row[2]] = JSON.parse(row[3]);
+        } catch(e){
+            result[row[2]] = {}; // Jika JSON tidak valid, kembalikan objek kosong
         }
+      }
+    });
+    return result;
+  };
+
+  const getApprovalData = () => {
+      const approvalSheet = ss.getSheetByName(SHEET_PENGAJUAN_NILAI);
+      if (!approvalSheet) return { statuses: {}, latestSubmissionId: null };
+
+      const data = approvalSheet.getRange(2, 1, approvalSheet.getLastRow() - 1, 9).getValues();
+      const statuses = {};
+      let latestTimestamp = new Date(0);
+      let latestSubmissionId = null;
+
+      data.forEach(row => {
+          if (row[1] === username && row[2] === mapelKode) {
+              const tipe = row[3];
+              const nisn = row[4];
+              const status = row[8];
+              const timestamp = new Date(row[7]);
+              const submissionId = row[0];
+
+              const key = `${tipe}_${nisn}`;
+              statuses[key] = status;
+
+              // Cek dan simpan ID pengajuan terbaru
+              if (timestamp > latestTimestamp) {
+                  latestTimestamp = timestamp;
+                  latestSubmissionId = submissionId;
+              }
+          }
       });
-    }
+      return { statuses, latestSubmissionId };
+  };
+  
+  const approvalData = getApprovalData();
 
-    // 2. Ambil data TERKIRIM
-    const submittedSheet = ss.getSheetByName(SHEET_NILAI_GURU_SUBMITTED);
-    if (submittedSheet && submittedSheet.getLastRow() > 1) {
-      const submittedData = submittedSheet.getDataRange().getValues();
-      submittedData.forEach(row => {
-        if (row[0] === username) { // Username di kolom A
-          const mapelKode = row[1];
-          const tipe = row[2];
-          if (!result.submittedValues[mapelKode]) result.submittedValues[mapelKode] = {};
-          result.submittedValues[mapelKode][tipe] = JSON.parse(row[3]);
-        }
-      });
-    }
-
-    // 3. Ambil STATUS PERSETUJUAN dan SUBMISSION ID
-    const approvalSheet = ss.getSheetByName(SHEET_PENGAJUAN_NILAI);
-    if (approvalSheet && approvalSheet.getLastRow() > 1) {
-      const approvalData = approvalSheet.getRange(2, 1, approvalSheet.getLastRow() - 1, 9).getValues();
-      approvalData.forEach(row => {
-        if (row[1] === username) { // Guru di kolom B
-          const submissionId = row[0];
-          const mapelKode = row[2];
-          const tipe = row[3];
-          const nisn = row[4];
-          const status = row[8];
-          
-          const key = `${tipe}_${nisn}`;
-          if (!result.approvalStatus[mapelKode]) result.approvalStatus[mapelKode] = {};
-          result.approvalStatus[mapelKode][key] = status;
-
-          // Simpan submission ID terbaru untuk setiap kombinasi mapel & tipe
-          if (!result.submissionIds[mapelKode]) result.submissionIds[mapelKode] = {};
-          result.submissionIds[mapelKode][tipe.split('_').slice(0, 2).join('_')] = submissionId;
-        }
-      });
-    }
-
-    return { status: 'success', data: result };
-
-  } catch (e) {
-    Logger.log("getGuruDashboardData Error: " + e.message);
-    return { status: 'error', message: e.message };
-  }
+  return {
+      savedValues: getValuesFromSheet(SHEET_NILAI_GURU_DRAFT),
+      submittedValues: getValuesFromSheet(SHEET_NILAI_GURU_SUBMITTED),
+      approvalStatus: approvalData.statuses,
+      submissionId: approvalData.latestSubmissionId // <-- Kirim ID ini
+  };
 }
 
 // [PERBAIKAN] Mengganti 'tipe' menjadi 'type'
