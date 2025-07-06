@@ -7601,9 +7601,9 @@ function buildValidationPage(token) {
 // [BARU] FUNGSI UNTUK PORTAL GURU
 // =================================================================
 
-/**
- * [PERBAIKAN FINAL] Login guru, sekarang juga mengambil status izin pengiriman.
- */
+// File: Kode.gs.html
+
+// GANTI LAGI FUNGSI LAMA DENGAN VERSI FINAL INI
 function loginGuru(schoolCode, username, password) {
   try {
     if (!schoolCode || !username || !password) { return { status: "error", message: "Kode Sekolah, Username, dan Password wajib diisi." }; }
@@ -7624,14 +7624,49 @@ function loginGuru(schoolCode, username, password) {
     const guruSheet = ss.getSheetByName(SHEET_DATA_GURU);
     if (!guruSheet || guruSheet.getLastRow() < 2) { return { status: "error", message: "Data guru tidak ditemukan di sekolah ini." }; }
     
-    const data = guruSheet.getRange(2, 1, guruSheet.getLastRow() - 1, 4).getValues();
+    const data = guruSheet.getRange(2, 1, guruSheet.getLastRow() - 1, 7).getValues();
     const guruUserRow = data.find(row => row[1] === username && row[2].toString() === password.toString());
 
     if (guruUserRow) {
       const mapelSheet = ss.getSheetByName(SHEET_MAPEL);
-      const allMapel = mapelSheet.getRange(2, 1, mapelSheet.getLastRow() - 1, 4).getValues();
+      const allMapel = mapelSheet.getLastRow() > 1 ? mapelSheet.getRange(2, 1, mapelSheet.getLastRow() - 1, 4).getValues() : [];
       const kodeMapelGuru = guruUserRow[3].split(',').map(k => k.trim());
-      const mapelGuru = allMapel.filter(m => kodeMapelGuru.includes(m[0])).map(m => ({ kode: m[0], nama: m[1], jenisUjian: m[3] }));
+      
+      // ===== AWAL LOGIKA PARSING KELAS YANG JAUH LEBIH BAIK =====
+      const kelasDiajarString = guruUserRow[6] || ''; // Kolom G
+      const kelasMap = new Map();
+
+      if (kelasDiajarString) {
+        // 1. Pisahkan setiap penugasan dengan koma.
+        // Contoh: "B-ARAB:VI, B-ARAB:IX, MTK:VI"
+        const assignments = kelasDiajarString.split(',').map(a => a.trim()).filter(Boolean);
+        
+        assignments.forEach(assignment => {
+          // 2. Untuk setiap penugasan, pisahkan kode mapel dan kelasnya dengan titik dua.
+          const parts = assignment.split(':');
+          if (parts.length === 2) {
+              const mapelCode = parts[0].trim().toUpperCase();
+              const kelas = parts[1].trim();
+
+              // 3. Kelompokkan kelas berdasarkan kode mapelnya.
+              if (!kelasMap.has(mapelCode)) {
+                  kelasMap.set(mapelCode, []);
+              }
+              kelasMap.get(mapelCode).push(kelas);
+          }
+        });
+      }
+
+      const mapelGuru = allMapel
+        .filter(m => kodeMapelGuru.includes(m[0]))
+        .map(m => ({ 
+            kode: m[0], 
+            nama: m[1], 
+            jenisUjian: m[3],
+            // Ambil daftar kelas dari Map yang sudah dikelompokkan
+            kelas: kelasMap.get(m[0]) || [] 
+        }));
+      // ===== AKHIR PERUBAHAN LOGIKA =====
       
       const submissionStatus = getNilaiSubmissionStatus(schoolSpreadsheetId);
 
@@ -7649,7 +7684,7 @@ function loginGuru(schoolCode, username, password) {
       return { status: "error", message: "Username atau password salah." };
     }
   } catch (e) {
-    Logger.log("loginGuru Error: " + e.message);
+    Logger.log("loginGuru Error: " + e.message + " Stack: " + e.stack);
     return { status: "error", message: "Terjadi kesalahan server saat login." };
   }
 }
@@ -7658,21 +7693,31 @@ function loginGuru(schoolCode, username, password) {
  * [PERBAIKAN FINAL] Mengambil daftar siswa dari spreadsheet ID tertentu.
  * Menggunakan .getDisplayValues() untuk memastikan NISN terbaca sebagai Teks.
  */
-function getStudentsForGuru(spreadsheetId) {
+function getStudentsForGuru(spreadsheetId, className = null) { // Tambah parameter opsional
     const ss = SpreadsheetApp.openById(spreadsheetId);
     const studentSheet = ss.getSheetByName(SHEET_DATA_SISWA);
     if (!studentSheet || studentSheet.getLastRow() < 2) return [];
 
-    // Menggunakan .getDisplayValues() untuk membaca semua data sebagai Teks.
-    // Ini akan menjaga angka nol di depan untuk NISN, Nomor Ujian, dll.
     const data = studentSheet.getRange(2, 1, studentSheet.getLastRow() - 1, 15).getDisplayValues();
     
-    return data.map(row => ({ 
-        nisn: row[0], // Sekarang ini adalah string "098"
+    let filteredData = data;
+    // Jika nama kelas diberikan, filter data
+    if(className) {
+        // Kolom Kelas adalah kolom ke-14 (indeks 13)
+        filteredData = data.filter(row => row[13] === className);
+    }
+
+    const students = filteredData.map(row => ({ 
+        nisn: row[0],
         nama: row[3],
         nomorUjian: row[2],
         ruangUjian: row[14]
     }));
+
+    // Urutkan berdasarkan nama (A-Z)
+    students.sort((a, b) => a.nama.localeCompare(b.nama));
+
+    return students;
 }
 
 /**
@@ -8884,7 +8929,7 @@ function updateGuruProfile(spreadsheetId, oldUsername, newData) {
 
 // GANTI FUNGSI LAMA DENGAN VERSI BARU INI
 /**
- * [DIPERBARUI] Admin membuat ulang username dan password untuk guru,
+ * [DIPERBARUI & PERBAIKAN] Admin membuat ulang username dan password untuk guru,
  * lalu mengirimkan notifikasi email ke admin sekolah.
  */
 function regenerateGuruCredentials(spreadsheetId, rowNum) {
@@ -8947,6 +8992,10 @@ function regenerateGuruCredentials(spreadsheetId, rowNum) {
     });
     // ===== AKHIR KODE BARU =====
     
+    // ===== TAMBAHKAN BARIS INI UNTUK MEMASTIKAN PERUBAHAN TERSIMPAN =====
+    SpreadsheetApp.flush(); //
+    // =====================================================================
+
     // Pesan sukses tidak lagi menyertakan kredensial
     return {
       status: 'success',
@@ -8957,40 +9006,43 @@ function regenerateGuruCredentials(spreadsheetId, rowNum) {
   }
 }
 
-// Tambahkan fungsi baru ini di Kode.gs.html
+// File: Kode.gs.html
 
 /**
- * [OPTIMASI] Mengambil semua data yang diperlukan untuk merender satu halaman/tabel nilai guru
- * dalam satu panggilan server tunggal untuk mengurangi latensi.
+ * [OPTIMASI V2] Mengambil semua data yang diperlukan untuk merender satu halaman/tabel nilai guru,
+ * kini dengan filter kelas yang ditambahkan.
  *
  * @param {string} spreadsheetId - ID spreadsheet sekolah.
  * @param {string} username - Username guru yang sedang login.
  * @param {string} mapelKode - Kode mata pelajaran yang sedang dilihat.
  * @param {string} tipeNilai - Tipe nilai yang akan ditampilkan (cth: 'ujian', 'rapor_k7_ganjil').
+ * @param {string} [className=null] - Nama kelas untuk memfilter siswa (opsional).
  * @returns {object} Objek komprehensif berisi semua data yang diperlukan oleh frontend.
  */
-function getNilaiPageData_Guru(spreadsheetId, username, mapelKode, tipeNilai) {
+function getNilaiPageData_Guru(spreadsheetId, username, mapelKode, tipeNilai, className = null) {
   try {
     const ss = SpreadsheetApp.openById(spreadsheetId);
     
-    // 1. Ambil data siswa & jenjang
+    // 1. Ambil data siswa yang sudah terfilter berdasarkan kelas
+    const students = getStudentsForGuru(spreadsheetId, className);
+
+    // 2. Ambil data sekolah & jenjang
     const schoolData = getSchoolData(spreadsheetId);
     const jenjang = schoolData ? schoolData.jenjang : null;
-    const students = getStudentsForGuru(spreadsheetId);
 
-    // 2. Ambil semua jenis nilai (draf, terkirim, status)
+    // 3. Ambil semua jenis nilai (draf, terkirim, status)
     const { savedValues, submittedValues, approvalStatus, submissionId } = getGuruNilai(spreadsheetId, username, mapelKode);
     
-    // 3. Ambil status batch pengajuan
+    // 4. Ambil status batch pengajuan
     const batchStatus = getSubmissionBatchStatus(spreadsheetId, submissionId);
 
-    // 4. Ambil status izin pengiriman nilai
+    // 5. Ambil status izin pengiriman nilai
     const submissionSettings = getNilaiSubmissionStatus(spreadsheetId);
     
-    // 5. Gabungkan semuanya ke dalam satu objek respons
+    // 6. Gabungkan semuanya ke dalam satu objek respons
     return {
       status: "success",
-      students: students,
+      students: students, // Siswa yang dikirim sudah terfilter
       jenjang: jenjang,
       savedValues: savedValues,
       submittedValues: submittedValues,
@@ -9002,7 +9054,6 @@ function getNilaiPageData_Guru(spreadsheetId, username, mapelKode, tipeNilai) {
 
   } catch(e) {
     Logger.log("getNilaiPageData_Guru Error: " + e.message + " | Stack: " + e.stack);
-    // Kembalikan objek error agar frontend bisa menanganinya dengan baik
     return { status: "error", message: "Gagal memuat data nilai secara teroptimasi: " + e.message };
   }
 }
@@ -9203,4 +9254,35 @@ function getKelas(spreadsheetId) {
     Logger.log(`getKelas Error: ${e.message}`);
     return { status: 'error', message: e.message, kelasList: [] };
   }
+}
+
+// Tambahkan fungsi baru ini di Kode.gs.html
+function getSiswaTanpaKelas(spreadsheetId) {
+    try {
+        const ss = getSpreadsheet(spreadsheetId);
+        const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
+        if (!sheet || sheet.getLastRow() < 2) {
+            return { status: 'success', data: [] };
+        }
+        
+        // Baca data termasuk kolom Kelas (kolom N, indeks 13)
+        const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 14).getValues();
+
+        const siswaTanpaKelas = data
+            .filter(row => !row[13] || row[13].toString().trim() === '') // Filter baris dimana kolom kelas kosong
+            .map(row => ({
+                nisn: row[0],
+                nama: row[3],
+                jenisKelamin: row[4],
+                tempatLahir: row[5],
+                tanggalLahir: row[6] instanceof Date ? row[6].toISOString() : null,
+            }))
+            .sort((a, b) => a.nama.localeCompare(b.nama)); // Urutkan berdasarkan nama
+        
+        return { status: 'success', data: siswaTanpaKelas };
+
+    } catch (e) {
+        Logger.log(`getSiswaTanpaKelas Error: ${e.message}`);
+        return { status: 'error', message: `Gagal mengambil data: ${e.message}` };
+    }
 }
