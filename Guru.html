@@ -439,83 +439,32 @@
             .getGuruProfile(guruData.spreadsheetId, guruData.username);
     }
 
-    // Ganti fungsi lama Anda dengan versi async yang baru ini
-    async function handleMapelSelection(mapelKode, jenisUjian) {
-        showGuruPage(mapelKode); // Menampilkan kontainer halaman yang benar
-        
-        // Tampilkan pesan loading sementara data diambil
-        const container = document.getElementById('form-container');
-        container.innerHTML = `<div class="p-8 text-center"><p class="loading-animation text-lg font-semibold text-gray-700">Memuat semua data nilai...</p><p class="text-sm text-gray-500">Mohon tunggu sebentar.</p></div>`;
-        
-        const guruData = JSON.parse(sessionStorage.getItem('guruData'));
-
-        try {
-            // 1. Panggil fungsi backend baru SATU KALI untuk mendapatkan semua data
-            const response = await new Promise((resolve, reject) => {
-                google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)
-                    .getGuruDashboardData(guruData.spreadsheetId, guruData.username);
-            });
-
-            if (response.status !== 'success') {
-                throw new Error(response.message);
-            }
-
-            const allData = response.data;
-
-            // 2. Siapkan data khusus untuk mapel yang dipilih
-            const mapelData = {
-                savedValues: allData.savedValues[mapelKode] || {},
-                submittedValues: allData.submittedValues[mapelKode] || {},
-                approvalStatus: allData.approvalStatus[mapelKode] || {},
-                submissionIds: allData.submissionIds // Kirim semua ID untuk diakses nanti
-            };
-
-            // 3. Bangun kembali kerangka UI (tab, dll)
-            container.innerHTML = `
-                <div id="submission-status-bar"></div>
-                <div class="border-b border-gray-200 bg-white px-6 rounded-t-lg">
-                    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                        <button class="tab-btn active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-tab="ujian">Nilai Ujian</button>
-                        <button class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="rapor">Nilai Rapor</button>
-                    </nav>
-                </div>
-                <div id="tab-content" class="bg-white p-6 rounded-b-lg shadow-sm">
-                    <div id="tab-ujian"></div>
-                    <div id="tab-rapor" class="hidden"></div>
-                </div>`;
-            
-            setupTabs(); // Pasang kembali listener untuk tab
-
-            // 4. Kirim data yang sudah siap ke fungsi pembuat form
-            buildUjianForm(mapelKode, jenisUjian, mapelData);
-            buildRaporForm(mapelKode, mapelData);
-
-        } catch (error) {
-            container.innerHTML = `<p class="text-red-500 p-4">Gagal memuat data: ${error.message}</p>`;
-        }
+    function handleMapelSelection(mapelKode, jenisUjian) {
+        showGuruPage(mapelKode);
+        document.querySelector('.tab-btn.active')?.classList.remove('active');
+        document.querySelector('[data-tab="ujian"]').classList.add('active');
+        document.getElementById('tab-ujian').classList.remove('hidden');
+        document.getElementById('tab-rapor').classList.add('hidden');
+        buildUjianForm(mapelKode, jenisUjian);
+        buildRaporForm(mapelKode);
     }
 
-    /*function getSavedAndSubmittedValues(mapelKode) {
+    function getSavedAndSubmittedValues(mapelKode) {
         const guruData = JSON.parse(sessionStorage.getItem('guruData'));
         return new Promise((resolve, reject) => {
             google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).getGuruNilai(guruData.spreadsheetId, guruData.username, mapelKode);
         });
-    }*/
+    }
 
     // Ganti fungsi ini di dalam file Guru.html
-    async function buildUjianForm(mapelKode, jenisUjian, mapelData) {
+    async function buildUjianForm(mapelKode, jenisUjian) {
         const container = document.getElementById('tab-ujian');
-        container.innerHTML = `<p class="loading-animation p-4">Mempersiapkan form ujian...</p>`;
-        
-        // Data sekarang diambil dari parameter, bukan memanggil server lagi
-        const { savedValues, submittedValues, approvalStatus, submissionIds } = mapelData;
-        
+        container.innerHTML = `<p class="loading-animation p-4">Memuat data...</p>`;
         try {
             const guruData = JSON.parse(sessionStorage.getItem('guruData'));
             const students = await new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej).getStudentsForGuru(guruData.spreadsheetId));
             
-            // Dapatkan submissionId spesifik untuk tab Ujian
-            const submissionId = submissionIds['ujian_um'] || submissionIds['ujian_upr'];
+            const { savedValues, submittedValues, approvalStatus, submissionId } = await getSavedAndSubmittedValues(mapelKode);
             const batchStatus = await new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej).getSubmissionBatchStatus(guruData.spreadsheetId, submissionId));
             const isSubmissionEnabled = sessionStorage.getItem('isSubmissionEnabled') === 'true';
 
@@ -539,17 +488,13 @@
             </div>`;
             container.innerHTML = formHtml;
         } catch (error) {
-            container.innerHTML = `<p class="text-red-500 p-4">Gagal membangun form ujian: ${error.message}</p>`;
+            container.innerHTML = `<p class="text-red-500 p-4">Gagal memuat data: ${error.message}</p>`;
         }
     }
 
-    async function buildRaporForm(mapelKode, mapelData) {
+    async function buildRaporForm(mapelKode) {
         const container = document.getElementById('tab-rapor');
-        container.innerHTML = `<p class="loading-animation p-4">Mempersiapkan form rapor...</p>`;
-        
-        // Data sekarang diambil dari parameter, bukan memanggil server lagi
-        const { savedValues, submittedValues, approvalStatus, submissionIds } = mapelData;
-        
+        container.innerHTML = `<p class="loading-animation p-4">Memuat data...</p>`;
         try {
             const guruData = JSON.parse(sessionStorage.getItem('guruData'));
             const { jenjang } = await new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej).getStudentsAndJenjangForGuru(guruData.spreadsheetId));
@@ -574,14 +519,12 @@
                 btn.onclick = () => {
                     container.querySelectorAll('.semester-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
-                    // Kirim data yang sudah siap ke renderRaporSemesterTable
-                    renderRaporSemesterTable(btn.dataset.semesterKey, mapelKode, mapelData);
+                    renderRaporSemesterTable(btn.dataset.semesterKey, mapelKode);
                 };
             });
-
             const firstSemesterKey = Object.keys(semesters)[0];
             if(firstSemesterKey) {
-                renderRaporSemesterTable(firstSemesterKey, mapelKode, mapelData);
+              renderRaporSemesterTable(firstSemesterKey, mapelKode);
             }
         } catch (error) {
             container.innerHTML = `<p class="text-red-500 p-4">Gagal memuat data rapor: ${error.message}</p>`;
