@@ -9424,14 +9424,12 @@ function bulkUpdateKelasAndRuang(spreadsheetId, rowNumbers, newKelas, newRuang) 
   }
 }
 
-// File: Kode.gs.html
-// TAMBAHKAN FUNGSI BARU INI
-
 /**
- * [BARU] Menerima urutan NISN baru dan menulis ulang data di sheet Data Siswa.
+ * [VERSI FINAL] Menerima urutan NISN baru, menulis ulang data, dan mengembalikan daftar siswa
+ * yang sudah terurut langsung dari memori untuk menghindari race condition.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @param {Array<string>} orderedNisnList Array berisi NISN dalam urutan baru.
- * @returns {object} Status operasi.
+ * @returns {object} Status operasi dan daftar siswa yang sudah terupdate.
  */
 function saveSiswaOrder(spreadsheetId, orderedNisnList) {
   try {
@@ -9441,7 +9439,6 @@ function saveSiswaOrder(spreadsheetId, orderedNisnList) {
       return { status: "error", message: "Tidak ada data siswa untuk diurutkan." };
     }
 
-    // 1. Baca semua data yang ada saat ini
     const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn());
     const allData = dataRange.getValues();
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
@@ -9449,28 +9446,55 @@ function saveSiswaOrder(spreadsheetId, orderedNisnList) {
 
     if (nisnIndex === -1) throw new Error("Kolom NISN tidak ditemukan.");
 
-    // 2. Buat Peta (Map) untuk pencarian cepat data siswa berdasarkan NISN
     const studentDataMap = new Map();
     allData.forEach(row => {
       studentDataMap.set(String(row[nisnIndex]), row);
     });
 
-    // 3. Buat array baru dengan urutan yang benar
     const sortedData = orderedNisnList.map(nisn => {
       return studentDataMap.get(String(nisn));
-    }).filter(Boolean); // Filter untuk mengabaikan NISN yang mungkin tidak ditemukan
+    }).filter(Boolean);
 
-    if (sortedData.length !== allData.length) {
-      // Ini adalah pengecekan keamanan jika ada ketidaksesuaian data
-      throw new Error("Gagal mengurutkan, jumlah data tidak cocok. Coba refresh halaman.");
+    if (sortedData.length > 0 && sortedData.length === allData.length) {
+      dataRange.clearContent();
+      sheet.getRange(2, 1, sortedData.length, sortedData[0].length).setValues(sortedData);
+    } else {
+      throw new Error("Gagal mengurutkan, terjadi ketidaksesuaian data. Coba refresh halaman.");
     }
-
-    // 4. Hapus data lama dan tulis ulang dengan data yang sudah diurutkan
-    dataRange.clearContent();
-    sheet.getRange(2, 1, sortedData.length, sortedData[0].length).setValues(sortedData);
     
     SpreadsheetApp.flush();
-    return { status: "success", message: "Urutan siswa berhasil disimpan." };
+    
+    const updatedStudentList = sortedData.map((row, index) => {
+      let tanggalLahirStr = '';
+      if (row[6] && row[6] instanceof Date && !isNaN(row[6])) {
+        tanggalLahirStr = Utilities.formatDate(row[6], Session.getScriptTimeZone(), "yyyy-MM-dd");
+      }
+
+      return {
+        row: index + 2,
+        nisn: String(row[0] || ''),
+        nis: String(row[1] || ''),
+        nomorUjian: String(row[2] || ''),
+        nama: String(row[3] || ''),
+        jenisKelamin: String(row[4] || ''),
+        tempatLahir: String(row[5] || ''),
+        tanggalLahir: tanggalLahirStr,
+        alamat: String(row[7] || ''),
+        telepon: String(row[8] || ''),
+        emailSiswa: String(row[9] || ''),
+        tahunMasuk: String(row[10] || ''),
+        tahunLulus: String(row[11] || ''),
+        tampilkanTranskrip: String(row[12] || 'TIDAK'),
+        kelas: String(row[13] || ''),
+        ruangUjian: String(row[14] || '')
+      };
+    });
+
+    return { 
+      status: "success", 
+      message: "Urutan siswa berhasil disimpan.",
+      updatedStudentList: updatedStudentList
+    };
 
   } catch (e) {
     Logger.log(e);
