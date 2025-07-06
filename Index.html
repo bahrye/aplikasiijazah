@@ -14379,29 +14379,31 @@
                 .getPendingApprovalCount(userSpreadsheetId);
         }
 
-        // Tambahkan fungsi baru ini di dalam <script> pada Index.html
         function handleGenerateNewCredentials(rowNum, guruName) {
-            if (!confirm(`Anda yakin ingin membuat ulang username dan password untuk guru "${guruName}"? \n\nAksi ini akan mengembalikan hak edit kepada Anda, dan guru perlu menggunakan kredensial baru untuk login.`)) {
-                return;
-            }
-
-            showGlobalStatus(`Membuat kredensial baru untuk ${guruName}...`, 'info');
-            google.script.run
-                .withSuccessHandler(response => {
-                    // ===== PERUBAHAN DI SINI =====
-                    // Tidak lagi menggunakan alert, cukup tampilkan pesan sukses dari backend
-                    showGlobalStatus(response.message, response.status);
-                    
-                    if (response.status === 'success') {
-                        // Muat ulang tabel untuk melihat perubahan tombol dari "Generate Ulang" kembali ke "Edit"
-                        loadGuruData(); 
-                    }
-                    // =============================
-                })
-                .withFailureHandler(err => {
-                    showGlobalStatus(err.message, 'error');
-                })
-                .regenerateGuruCredentials(userSpreadsheetId, rowNum);
+            showConfirmationModal({
+                title: "Konfirmasi Buat Ulang Kredensial",
+                body: `Anda yakin ingin membuat ulang username dan password untuk guru <strong>"${guruName}"</strong>?<br><br>Aksi ini akan mengembalikan hak edit kepada Anda, dan guru perlu menggunakan kredensial baru untuk login.`,
+                confirmText: "Ya, Buat Ulang",
+                confirmColor: "bg-purple-600 hover:bg-purple-700", // Menggunakan warna kustom
+                onConfirm: () => {
+                    // Semua logika yang sebelumnya ada di dalam 'if' sekarang ada di sini
+                    showGlobalStatus(`Membuat kredensial baru untuk ${guruName}...`, 'info');
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            // Cukup gunakan response.status yang sudah berupa 'success' atau 'error'
+                            showGlobalStatus(response.message, response.status === 'success');
+                            
+                            if (response.status === 'success') {
+                                // Muat ulang tabel untuk melihat kredensial baru
+                                loadGuruData(); 
+                            }
+                        })
+                        .withFailureHandler(err => {
+                            showGlobalStatus(err.message, 'error');
+                        })
+                        .regenerateGuruCredentials(userSpreadsheetId, rowNum);
+                }
+            });
         }
 
         // GANTI FUNGSI LAMA setupMapelAutocomplete DENGAN VERSI BARU INI
