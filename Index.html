@@ -5754,8 +5754,9 @@
                 });
             }
 
-            /**
-             * [DIPERBARUI] Merender tabel data siswa dengan kolom-kolom baru.
+/**
+             * [VERSI FINAL OTOMATIS] Merender tabel siswa dan memasang fungsionalitas
+             * simpan-otomatis setiap kali urutan diubah oleh pengguna.
              */
             function renderSiswaTable(studentsToRender) {
                 const container = document.getElementById('siswaTableContainer');
@@ -5763,20 +5764,16 @@
 
                 if (!studentsToRender || studentsToRender.length === 0) {
                     container.innerHTML = `<p class="text-center text-gray-500 py-4">Belum ada data siswa atau data tidak ditemukan.</p>`;
-                    document.getElementById('saveOrderBtn').classList.add('hidden'); // Sembunyikan tombol jika tidak ada data
                     return;
                 }
 
                 const table = document.createElement('table');
                 table.className = 'min-w-full divide-y divide-gray-200';
                 
-                // [PERBAIKAN] Header tabel diubah sesuai permintaan
                 table.innerHTML = `
                     <thead class="bg-gray-50 sticky-header">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                <input type="checkbox" id="select-all-students-checkbox" class="h-4 w-4 rounded border-gray-300">
-                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase"><input type="checkbox" id="select-all-students-checkbox" class="h-4 w-4 rounded border-gray-300"></th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NAMA & NISN</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KELAS & NOMOR UJIAN</th>
                             <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">JK</th>
@@ -5784,12 +5781,12 @@
                             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider sticky-col">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200"></tbody>`;
+                    <tbody id="siswa-tbody" class="bg-white divide-y divide-gray-200"></tbody>`;
                 
                 const tbody = table.querySelector('tbody');
-                studentsToRender.forEach(s => {
+
+                studentsToRender.forEach((s) => {
                     const tr = document.createElement('tr');
-                    // [PERUBAHAN] Tambahkan class 'draggable-row' dan atribut 'data-nisn'
                     tr.className = 'draggable-row';
                     tr.dataset.nisn = s.nisn;
                     
@@ -5797,19 +5794,10 @@
                     const tempatLahirFormatted = s.tempatLahir ? toProperCase(s.tempatLahir) : '';
                     const ttl = s.tempatLahir ? `${tempatLahirFormatted}, ${tglLahirFormatted}` : tglLahirFormatted;
                     
-                    // [PERBAIKAN] Isi baris tabel disesuaikan dengan header baru
                     tr.innerHTML = `
-                        <td class="px-4 py-4 whitespace-nowrap">
-                            <input type="checkbox" class="student-checkbox h-4 w-4 rounded border-gray-300" data-row="${s.row}" data-nisn="${s.nisn}">
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <div class="font-medium text-gray-900">${s.nama.toUpperCase()}</div>
-                            <div class="text-gray-500">${s.nisn}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <div>Kelas: <span class="font-medium text-gray-800">${s.kelas || '-'}</span></div>
-                            <div>No. Ujian: <span class="font-mono text-gray-800">${s.nomorUjian || '-'}</span></div>
-                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap"><input type="checkbox" class="student-checkbox h-4 w-4 rounded border-gray-300" data-row="${s.row}" data-nisn="${s.nisn}"></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm"><div class="font-medium text-gray-900">${s.nama.toUpperCase()}</div><div class="text-gray-500">${s.nisn}</div></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><div>Kelas: <span class="font-medium text-gray-800">${s.kelas || '-'}</span></div><div>No. Ujian: <span class="font-mono text-gray-800">${s.nomorUjian || '-'}</span></div></td>
                         <td class="px-3 py-4 whitespace-nowrap text-sm text-center text-gray-500">${s.jenisKelamin || '-'}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ttl}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium sticky-col">
@@ -5827,16 +5815,44 @@
                 attachTableCheckboxListeners();
                 updateBulkActionBar();
 
-                // [PERUBAHAN] Inisialisasi SortableJS pada tbody
+                // Inisialisasi SortableJS dengan fungsi simpan-otomatis
                 new Sortable(tbody, {
                     animation: 150,
                     ghostClass: 'ghost-row',
                     chosenClass: 'chosen-row',
                     onEnd: function() {
-                        // Tampilkan tombol "Simpan Urutan" setelah ada perubahan urutan
-                        document.getElementById('saveOrderBtn').classList.remove('hidden');
+                        // Setiap kali drag-and-drop selesai, panggil fungsi penyimpanan
+                        const newOrderNisn = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.nisn);
+                        saveNewSiswaOrder(newOrderNisn);
                     },
                 });
+            }
+
+            /**
+             * [BARU] Fungsi terpusat untuk menangani penyimpanan otomatis urutan siswa.
+             * @param {Array<string>} newOrderNisn - Daftar NISN yang sudah terurut.
+             */
+            function saveNewSiswaOrder(newOrderNisn) {
+                showGlobalStatus("Menyimpan urutan...", 'info');
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        showGlobalStatus(response.message, response.status === 'success');
+                        if (response.status === 'success' && response.updatedStudentList) {
+                            // Perbarui data global dan render ulang untuk memastikan konsistensi
+                            allStudentsData = response.updatedStudentList;
+                            renderSiswaTable(allStudentsData);
+                        } else {
+                            // Jika gagal, muat ulang dari server untuk mendapatkan state terakhir yang valid
+                            loadStudentsData();
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        showGlobalStatus(`Gagal menyimpan urutan: ${err.message}`, false);
+                        // Jika gagal, muat ulang untuk mengembalikan ke state aman terakhir
+                        loadStudentsData();
+                    })
+                    .saveSiswaOrder(userSpreadsheetId, newOrderNisn);
             }
 
             /**
@@ -7191,15 +7207,9 @@
                 }
             });
 
-            // --- AWAL DARI BLOK KODE TAMBAHAN ---
             // Listener untuk tombol Simpan Urutan Siswa
             document.getElementById('saveOrderBtn').addEventListener('click', () => {
-                const tbody = document.getElementById('siswa-tbody');
-                if (!tbody) return;
-
-                // Ambil urutan NISN baru dari atribut data-nisn di setiap baris
-                const newOrderNisn = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.nisn);
-
+                const newOrderNisn = allStudentsData.map(s => s.nisn);
                 const btn = document.getElementById('saveOrderBtn');
                 const originalHtml = btn.innerHTML;
                 btn.disabled = true;
@@ -7211,9 +7221,9 @@
                         btn.disabled = false;
                         btn.innerHTML = originalHtml;
                         if (response.status === 'success') {
-                            btn.classList.add('hidden'); // Sembunyikan lagi setelah berhasil disimpan
-                            // Muat ulang data untuk memastikan urutan di backend dan frontend sinkron
-                            loadStudentsData();
+                            btn.classList.add('hidden');
+                            allStudentsData = response.updatedStudentList;
+                            renderSiswaTable(allStudentsData);
                         }
                     })
                     .withFailureHandler(err => {
@@ -14750,6 +14760,26 @@
                     console.error("Gagal memuat daftar kelas untuk dropdown: ", err);
                 })
                 .getKelas(userSpreadsheetId);
+        }
+
+        /**
+         * [BARU] Menangani klik tombol panah pada tabel siswa.
+         * @param {number} index - Posisi item yang akan dipindahkan.
+         * @param {'up'|'down'} direction - Arah perpindahan.
+         */
+        function handleMoveSiswa(index, direction) {
+            // Tukar posisi elemen dalam array global 'allStudentsData'
+            if (direction === 'up' && index > 0) {
+                [allStudentsData[index - 1], allStudentsData[index]] = [allStudentsData[index], allStudentsData[index - 1]];
+            } else if (direction === 'down' && index < allStudentsData.length - 1) {
+                [allStudentsData[index], allStudentsData[index + 1]] = [allStudentsData[index + 1], allStudentsData[index]];
+            }
+
+            // Gambar ulang tabel dengan urutan baru secara instan
+            renderSiswaTable(allStudentsData);
+            
+            // Tampilkan tombol Simpan Urutan
+            document.getElementById('saveOrderBtn').classList.remove('hidden');
         }
     </script>
 </body>
