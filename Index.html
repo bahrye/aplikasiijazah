@@ -1540,7 +1540,18 @@
                                 <h1 class="text-3xl font-bold text-gray-800">Manajemen Data Guru</h1>
                                 <p class="mt-2 text-gray-600">Tambah, lihat, edit, atau hapus data guru di sekolah Anda.</p>
                             </div>
-                            <button id="addGuruBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">+ Tambah Guru</button>
+                            
+                            <div class="flex space-x-2">
+                                <button id="importGuruBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-md text-sm transition-colors flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+                                    <span>Import dari Excel</span>
+                                </button>
+                                <button id="exportGuruBtn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-3 rounded-md text-sm transition-colors flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                                    <span>Export ke Excel</span>
+                                </button>
+                                <button id="addGuruBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">+ Tambah Guru</button>
+                            </div>
                         </div>
 
                         <div class="bg-white p-4 rounded-lg shadow-md mt-4">
@@ -3434,6 +3445,11 @@
                         <label for="nama_guru" class="block text-sm font-medium text-gray-700">Nama Lengkap Guru</label>
                         <input type="text" id="nama_guru" name="nama_guru" class="mt-1 w-full p-2 border rounded-md" required>
                     </div>
+                    
+                    <div>
+                        <label for="nip_guru" class="block text-sm font-medium text-gray-700">NIP (Nomor Induk Pegawai)</label>
+                        <input type="text" id="nip_guru" name="nip_guru" class="mt-1 w-full p-2 border rounded-md" placeholder="Kosongkan jika tidak ada">
+                    </div>
                     <div>
                         <label for="username_guru_form" class="block text-sm font-medium text-gray-700">Username</label>
                         <input type="text" id="username_guru_form" name="username_guru" class="mt-1 w-full p-2 border rounded-md" required>
@@ -3462,8 +3478,34 @@
                     <button type="button" id="cancelGuruBtn" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-md mr-3 hover:bg-gray-300">Batal</button>
                     <button type="submit" id="saveGuruBtn" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Simpan</button>
                 </div>
-                
             </form>
+        </div>
+    </div>
+
+    <div id="guru-upload-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-3xl transform scale-95 flex flex-col max-h-[90vh]">
+            <div class="flex-shrink-0 flex justify-between items-center border-b p-4">
+                <h2 class="text-xl font-bold text-gray-800">Upload Data Guru</h2>
+                <button id="closeGuruUploadModalBtn" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div class="flex-grow overflow-y-auto p-6 space-y-6">
+                <div>
+                    <button id="downloadGuruTemplateBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg inline-flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                        </svg>
+                        Download Template Excel
+                    </button>
+                </div>
+                <form action="#" class="dropzone" id="guru-dropzone-form">
+                    <div class="dz-message" data-dz-message>
+                        <span>Letakkan File Excel di sini atau Klik untuk memilih</span>
+                    </div>
+                </form>
+            </div>
+            <div class="flex-shrink-0 mt-auto p-4 border-t flex justify-end">
+                <button id="closeGuruUploadModalBtn2" type="button" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">Tutup</button>
+            </div>
         </div>
     </div>
 
@@ -4214,6 +4256,98 @@
                     }
                 });
             }
+
+
+            // === Tambahkan event listener baru untuk tombol Export Guru ===
+            document.getElementById('exportGuruBtn')?.addEventListener('click', () => {
+                const btn = document.getElementById('exportGuruBtn');
+                const originalContent = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="loading-animation">Mengekspor</span>';
+
+                google.script.run
+                    .withSuccessHandler(result => {
+                        btn.disabled = false;
+                        btn.innerHTML = originalContent;
+                        if (result.base64Data) {
+                            const link = document.createElement('a');
+                            link.href = `data:${result.mimeType};base64,${result.base64Data}`;
+                            link.download = result.fileName;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            showGlobalStatus('File data guru berhasil diekspor.', true);
+                        } else {
+                            showGlobalStatus('Gagal mengekspor: ' + (result.error || 'Unknown error'), false);
+                        }
+                    })
+                    .withFailureHandler(error => {
+                        btn.disabled = false;
+                        btn.innerHTML = originalContent;
+                        showGlobalStatus('Error: ' + error.message, false);
+                    })
+                    .exportGuruToExcel(userSpreadsheetId);
+            });
+
+            // === Logika untuk Modal Upload Guru ===
+            let guruDropzone;
+            const guruUploadModal = document.getElementById('guru-upload-modal');
+            
+            const openGuruUploadModal = () => {
+                guruUploadModal.classList.remove('hidden');
+                if (!guruDropzone) {
+                    guruDropzone = new Dropzone("#guru-dropzone-form", {
+                        url: "#", autoProcessQueue: false, maxFiles: 1, acceptedFiles: '.xlsx, .xls', addRemoveLinks: true,
+                        init: function() {
+                            this.on("addedfile", function(file) {
+                                const reader = new FileReader();
+                                reader.onload = (e) => {
+                                    const fileData = { fileName: file.name, mimeType: file.type, content: e.target.result.split(',')[1] };
+                                    this.emit("processing", file);
+                                    google.script.run
+                                        .withSuccessHandler(res => {
+                                            this.emit("success", file);
+                                            showGlobalStatus(res.message, res.status === 'success');
+                                            if (res.status === 'success') {
+                                                loadGuruData();
+                                                setTimeout(closeGuruUploadModal, 1500);
+                                            }
+                                        })
+                                        .withFailureHandler(err => this.emit("error", file, err.message))
+                                        .importGuruFromExcel(userSpreadsheetId, fileData);
+                                };
+                                reader.readAsDataURL(file);
+                            });
+                        }
+                    });
+                }
+            };
+            
+            const closeGuruUploadModal = () => {
+                guruUploadModal.classList.add('hidden');
+                if (guruDropzone) {
+                    guruDropzone.removeAllFiles(true);
+                }
+            };
+
+            document.getElementById('importGuruBtn')?.addEventListener('click', openGuruUploadModal);
+            document.getElementById('closeGuruUploadModalBtn')?.addEventListener('click', closeGuruUploadModal);
+            document.getElementById('closeGuruUploadModalBtn2')?.addEventListener('click', closeGuruUploadModal);
+            
+            document.getElementById('downloadGuruTemplateBtn')?.addEventListener('click', () => {
+                google.script.run
+                    .withSuccessHandler(result => {
+                        if (result.base64Data) {
+                            const link = document.createElement('a');
+                            link.href = `data:${result.mimeType};base64,${result.base64Data}`;
+                            link.download = result.fileName;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        } else { showGlobalStatus('Gagal membuat template: ' + (result.error || 'Error'), false); }
+                    })
+                    .generateGuruTemplate();
+            });
         });
 
         function setupPasswordToggles() {
@@ -13766,7 +13900,7 @@
             updateApprovalBulkActionBar();
         }
 
-        // Fungsi untuk merender tabel HTML
+        // GANTI LAGI FUNGSI INI DI FILE Index.html
         function renderPersetujuanTable(data) {
             const container = document.getElementById('persetujuan-table-container');
             if (!data || data.length === 0) {
@@ -13790,18 +13924,18 @@
                 const formattedJenis = item.tipeNilai.replace(/_/g, ' ').replace(/(^\w{1})|(\s+\w{1})/g, l => l.toUpperCase());
                 tableHtml += `
                     <tr id="row-${item.rowNum}">
-                        <td class="p-4"><input type="checkbox" class="approval-checkbox h-4 w-4 rounded border-gray-300" data-row-num="${item.rowNum}"></td>
-                        <td class="px-4 py-4 text-sm">
+                        <td class="p-4 align-top"><input type="checkbox" class="approval-checkbox h-4 w-4 rounded border-gray-300" data-row-num="${item.rowNum}"></td>
+                        <td class="px-4 py-4 text-sm align-top">
                             <div class="font-bold">${item.mapelKode} - ${formattedJenis}</div>
                             <div class="text-gray-500">Oleh: ${item.guru}</div>
                             <div class="text-xs text-gray-400">${new Date(item.tanggal).toLocaleString('id-ID')}</div>
                         </td>
-                        <td class="px-4 py-4 text-sm">
+                        <td class="px-4 py-4 text-sm align-top">
                             <div class="font-medium">${item.namaSiswa}</div>
-                            <div class="text-gray-500">${item.nisn}</div>
+                            <div class="text-gray-500">${item.nisn}</div> 
                         </td>
-                        <td class="px-4 py-4 text-center font-bold text-lg text-blue-600">${item.nilai}</td>
-                        <td class="px-4 py-4 text-right text-sm space-x-2">
+                        <td class="px-4 py-4 text-center align-top font-bold text-lg text-blue-600">${item.nilai}</td>
+                        <td class="px-4 py-4 text-right text-sm align-top space-x-2">
                             <button onclick="handleSingleApproval('${item.rowNum}', 'Disetujui', this)" class="bg-green-100 text-green-700 font-semibold py-1 px-3 rounded-full hover:bg-green-200">Setujui</button>
                             <button onclick="handleSingleApproval('${item.rowNum}', 'Ditolak', this)" class="bg-red-100 text-red-700 font-semibold py-1 px-3 rounded-full hover:bg-red-200">Tolak</button>
                         </td>
@@ -13940,7 +14074,7 @@
             table.innerHTML = `
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Guru</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama & NIP</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mapel Diajar</th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aksi</th>
@@ -13951,12 +14085,27 @@
             const tbody = table.querySelector('tbody');
             guruList.forEach(guru => {
                 const tr = document.createElement('tr');
+
+                // === AWAL LOGIKA KONDISIONAL BARU ===
+                let actionButtons;
+                if (guru.isModifiedByGuru === 'YA') {
+                    // Jika diubah guru, tampilkan tombol Generate
+                    actionButtons = `<button class="text-purple-600 hover:text-purple-900" onclick="handleGenerateNewCredentials(${guru.row}, '${guru.nama}')">Generate Ulang</button>`;
+                } else {
+                    // Jika tidak, tampilkan tombol Edit
+                    actionButtons = `<button class="text-indigo-600 hover:text-indigo-900" onclick='handleEditGuru(${JSON.stringify(guru)})'>Edit</button>`;
+                }
+                // === AKHIR LOGIKA KONDISIONAL BARU ===
+
                 tr.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${guru.nama}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <div class="font-medium text-gray-900">${guru.nama}</div>
+                        <div class="text-gray-500">NIP: ${guru.nip || '-'}</div>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${guru.username}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${guru.mapel}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button class="text-indigo-600 hover:text-indigo-900" onclick='handleEditGuru(${JSON.stringify(guru)})'>Edit</button>
+                        ${actionButtons}
                         <button class="text-red-600 hover:text-red-900 ml-4" onclick='handleDeleteGuru(${guru.row}, "${guru.nama}", this)'>Hapus</button>
                     </td>`;
                 tbody.appendChild(tr);
@@ -13992,8 +14141,23 @@
             document.getElementById('guru-modal').classList.add('hidden');
         }
 
+        // Ganti fungsi handleEditGuru yang lama dengan ini
         function handleEditGuru(guruData) {
-            openGuruModal(guruData);
+            const modal = document.getElementById('guru-modal');
+            const title = document.getElementById('guru-modal-title');
+            const form = document.getElementById('guruForm');
+            form.reset();
+            document.getElementById('username-error-msg').textContent = '';
+
+            title.textContent = "Edit Data Guru";
+            document.getElementById('guruRow').value = guruData.row;
+            document.getElementById('nama_guru').value = guruData.nama;
+            document.getElementById('nip_guru').value = guruData.nip || ''; // Isi NIP
+            document.getElementById('username_guru_form').value = guruData.username;
+            document.getElementById('password_guru_form').value = guruData.password;
+            document.getElementById('mapel_kode_guru').value = guruData.mapel;
+
+            modal.classList.remove('hidden');
         }
 
         function handleDeleteGuru(rowNum, namaGuru, btn) {
@@ -14046,6 +14210,30 @@
                     console.error("Gagal mengambil jumlah persetujuan:", err);
                 })
                 .getPendingApprovalCount(userSpreadsheetId);
+        }
+
+        // Tambahkan fungsi baru ini di dalam <script> pada Index.html
+        function handleGenerateNewCredentials(rowNum, guruName) {
+            if (!confirm(`Anda yakin ingin membuat ulang username dan password untuk guru "${guruName}"? \n\nAksi ini akan mengembalikan hak edit kepada Anda, dan guru perlu menggunakan kredensial baru untuk login.`)) {
+                return;
+            }
+
+            showGlobalStatus(`Membuat kredensial baru untuk ${guruName}...`, 'info');
+            google.script.run
+                .withSuccessHandler(response => {
+                    if (response.status === 'success') {
+                        const creds = response.newCreds;
+                        // Tampilkan username dan password baru di alert agar bisa dicatat admin
+                        alert(`Kredensial baru berhasil dibuat:\n\nUsername: ${creds.username}\nPassword: ${creds.password}\n\nHarap catat dan berikan informasi ini kepada guru yang bersangkutan.`);
+                        loadGuruData(); // Muat ulang tabel untuk melihat perubahan tombol
+                    } else {
+                        showGlobalStatus(response.message, 'error');
+                    }
+                })
+                .withFailureHandler(err => {
+                    showGlobalStatus(err.message, 'error');
+                })
+                .regenerateGuruCredentials(userSpreadsheetId, rowNum);
         }
     </script>
 </body>
