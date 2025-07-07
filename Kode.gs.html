@@ -7668,6 +7668,8 @@ function loginGuru(schoolCode, username, password) {
           spreadsheetId: schoolSpreadsheetId,
           nama: guruUserRow[0],
           username: guruUserRow[1],
+          // PERBAIKAN: Tambahkan NIP (dari kolom ke-5, yaitu indeks 4) ke data guru
+          nip: guruUserRow[4], 
           mapel: mapelGuru,
           isSubmissionEnabled: submissionStatus.isEnabled
         }
@@ -8316,6 +8318,8 @@ function processMultipleSubmissions(spreadsheetId, rowNumbers, status) {
  */
 function terbilang(angka) {
     const bilangan = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
+    // PERBAIKAN: Tambahkan kondisi ini untuk menangani angka nol
+    if (angka === 0) return "Nol";
     if (angka < 12) {
         return bilangan[angka];
     } else if (angka < 20) {
@@ -8498,7 +8502,7 @@ function generateNilaiPdfForGuru(payload) {
             </div>
             <div style="width: 45%; text-align: center;">
                 <p style="margin-bottom: 60px;">${tempatCetak}, ${tanggalCetak}<br>Guru Pemeriksa,</p>
-                <p style="font-weight: bold; text-decoration: underline;">${guruData.nama.toUpperCase()}</p>
+                <p style="font-weight: bold; text-decoration: underline; margin: 0; padding: 0;">${guruData.nama.toUpperCase()}</p>
                 <p style="margin: 0; padding: 0;">NIP. ${guruData.nip || '-'}</p>
             </div>
         </div>
@@ -9695,4 +9699,30 @@ function importNilaiFromExcelForGuru(spreadsheetId, fileData, username, mapelKod
             tempFile.setTrashed(true);
         }
     }
+}
+
+/**
+ * [BARU] Memproses satu "batch" pengajuan nilai. Dirancang untuk dipanggil berulang kali.
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @param {Array<number>} rowNumbers - Array nomor baris dalam batch ini.
+ * @param {string} status - Keputusan ("Disetujui" atau "Ditolak").
+ * @returns {object} Hasil proses batch.
+ */
+function processApprovalChunk_Admin(spreadsheetId, rowNumbers, status) {
+  try {
+    let successCount = 0;
+    
+    rowNumbers.forEach(rowNum => {
+      // Memanggil fungsi yang sudah ada untuk setiap item dalam batch
+      const result = processNilaiSubmission(spreadsheetId, rowNum, status);
+      if (result.status === 'success') {
+        successCount++;
+      }
+    });
+
+    return { status: "success", message: `${successCount} item dalam batch berhasil diproses.` };
+  } catch(e) {
+    Logger.log("processApprovalChunk_Admin Error: " + e.message);
+    return { status: "error", message: e.message };
+  }
 }
