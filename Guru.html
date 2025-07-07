@@ -772,7 +772,6 @@
     }
 
     // Ganti keseluruhan fungsi buildUjianForm di Guru.html dengan ini:
-
     async function buildUjianForm(mapelKode, jenisUjian, kelas) {
         const container = document.getElementById('tab-ujian');
         container.innerHTML = `<p class="loading-animation p-4">Memuat data nilai ujian...</p>`;
@@ -798,7 +797,6 @@
             const mapelInfo = guruData.mapel.find(m => m.kode === mapelKode);
             const namaMapel = mapelInfo ? mapelInfo.nama : mapelKode;
 
-            // --- Perubahan Urutan Pemuatan ---
             const wrapperDiv = document.createElement('div');
             wrapperDiv.className = 'bg-gray-50 p-4 rounded-lg';
             
