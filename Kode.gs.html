@@ -9486,14 +9486,16 @@ function saveSiswaOrder(spreadsheetId, orderedNisnList) {
   }
 }
 
-// [PERUBAHAN] Tambahkan dua fungsi baru ini ke Kode.gs.html
+// File: Kode.gs.html
 
 /**
- * Membuat template Excel untuk diisi nilai oleh guru.
+ * [PERBAIKAN] Membuat template Excel untuk diisi nilai oleh guru.
+ * Versi ini sudah di-upgrade untuk menyertakan nilai yang sudah ada (draf/terkirim) ke dalam template.
  * @param {string} spreadsheetId ID spreadsheet sekolah.
  * @param {string} className Nama kelas yang dipilih.
  * @param {string} mapelKode Kode mata pelajaran yang dipilih.
  * @param {string} tipeNilai Tipe nilai (misal: 'ujian' atau 'rapor_k4_ganjil').
+ * @param {object} guruData Data guru yang sedang login.
  * @returns {object} Objek file Excel yang siap diunduh.
  */
 function generateNilaiTemplateForGuru(spreadsheetId, className, mapelKode, tipeNilai, guruData) {
@@ -9504,94 +9506,80 @@ function generateNilaiTemplateForGuru(spreadsheetId, className, mapelKode, tipeN
     const sheet = ss.getSheets()[0];
 
     const students = getStudentsForGuru(spreadsheetId, className);
-    const studentData = (students || []).map(s => ["'" + s.nisn, s.nama]);
-
     const allMapel = getMapel(spreadsheetId);
     const mapelInfo = allMapel.find(m => m.kode === mapelKode);
     if (!mapelInfo) throw new Error("Mata pelajaran tidak ditemukan.");
+    if (!guruData || !guruData.nama) throw new Error("Data guru tidak lengkap.");
+
+    // ==========================================================
+    // === AWAL BLOK KODE BARU: Mengambil Nilai yang Sudah Ada ===
+    // ==========================================================
+    const nilaiInfo = getGuruNilai(spreadsheetId, guruData.username, mapelKode);
+    const isSubmitted = nilaiInfo.submittedValues && nilaiInfo.submittedValues[tipeNilai];
+    const dataNilai = isSubmitted 
+        ? (nilaiInfo.submittedValues[tipeNilai] || {}) 
+        : (nilaiInfo.savedValues ? (nilaiInfo.savedValues[tipeNilai] || {}) : {});
+    // ==========================================================
+    // === AKHIR BLOK KODE BARU =================================
+    // ==========================================================
     
-    if (!guruData || !guruData.nama) {
-        throw new Error("Data guru tidak lengkap atau tidak terkirim dengan benar.");
-    }
-
     let headers = ["NISN", "Nama Siswa"];
-    let sheetName = "Nilai";
     let keteranganSingkatan = [];
-    let fileNameSuffix = ''; // [PERUBAHAN] Variabel baru untuk nama file
-
-    // [PERUBAHAN] Peta untuk menerjemahkan nama semester menjadi lebih deskriptif
+    let fileNameSuffix = '';
     const semesterNameMap = {
-        k4_ganjil: 'Kelas_4_Ganjil', k4_genap: 'Kelas_4_Genap',
-        k5_ganjil: 'Kelas_5_Ganjil', k5_genap: 'Kelas_5_Genap',
-        k6_ganjil: 'Kelas_6_Ganjil',
-        k7_ganjil: 'Kelas_7_Ganjil', k7_genap: 'Kelas_7_Genap',
-        k8_ganjil: 'Kelas_8_Ganjil', k8_genap: 'Kelas_8_Genap',
-        k9_ganjil: 'Kelas_9_Ganjil',
-        k10_ganjil: 'Kelas_10_Ganjil', k10_genap: 'Kelas_10_Genap',
-        k11_ganjil: 'Kelas_11_Ganjil', k11_genap: 'Kelas_11_Genap',
-        k12_ganjil: 'Kelas_12_Ganjil'
+        k4_ganjil: 'Kelas_4_Ganjil', k4_genap: 'Kelas_4_Genap', k5_ganjil: 'Kelas_5_Ganjil', k5_genap: 'Kelas_5_Genap', k6_ganjil: 'Kelas_6_Ganjil',
+        k7_ganjil: 'Kelas_7_Ganjil', k7_genap: 'Kelas_7_Genap', k8_ganjil: 'Kelas_8_Ganjil', k8_genap: 'Kelas_8_Genap', k9_ganjil: 'Kelas_9_Ganjil',
+        k10_ganjil: 'Kelas_10_Ganjil', k10_genap: 'Kelas_10_Genap', k11_ganjil: 'Kelas_11_Ganjil', k11_genap: 'Kelas_11_Genap', k12_ganjil: 'Kelas_12_Ganjil'
     };
 
     if (tipeNilai === 'ujian') {
-      sheetName = "Nilai Ujian";
-      fileNameSuffix = 'Ujian'; // [PERUBAHAN]
-      if (mapelInfo.jenisUjian === 'Ujian Madrasah' || mapelInfo.jenisUjian === 'Keduanya') {
-        headers.push("UM");
-        keteranganSingkatan.push("UM = Ujian Madrasah");
-      }
-      if (mapelInfo.jenisUjian === 'Ujian Praktek' || mapelInfo.jenisUjian === 'Keduanya') {
-        headers.push("UPr");
-        keteranganSingkatan.push("UPr = Ujian Praktek");
-      }
+      fileNameSuffix = 'Ujian';
+      if (mapelInfo.jenisUjian === 'Ujian Madrasah' || mapelInfo.jenisUjian === 'Keduanya') { headers.push("UM"); keteranganSingkatan.push("UM = Ujian Madrasah"); }
+      if (mapelInfo.jenisUjian === 'Ujian Praktek' || mapelInfo.jenisUjian === 'Keduanya') { headers.push("UPr"); keteranganSingkatan.push("UPr = Ujian Praktek"); }
     } else if (tipeNilai.startsWith('rapor_')) {
-      sheetName = "Nilai Rapor";
-      const semesterKey = tipeNilai.substring(6); // Ambil bagian setelah 'rapor_'
-      fileNameSuffix = `Rapor_${semesterNameMap[semesterKey] || semesterKey}`; // [PERUBAHAN]
+      const semesterKey = tipeNilai.substring(6);
+      fileNameSuffix = `Rapor_${semesterNameMap[semesterKey] || semesterKey}`;
       headers.push("Pengetahuan");
       headers.push("Keterampilan");
-      keteranganSingkatan.push("Pengetahuan = Nilai Pengetahuan", "Keterampilan = Nilai Keterampilan");
     }
-    sheet.setName(sheetName);
+    sheet.setName(tipeNilai);
 
     const keteranganHeader = [
-      ["Mata Pelajaran", `: ${mapelInfo.nama}`],
-      ["Kelas", `: ${className}`],
-      ["Guru", `: ${guruData.nama}`],
-      ["Petunjuk", ": Isi nilai pada kolom yang sesuai. Kolom NISN dan Nama Siswa jangan diubah."],
+      ["Mata Pelajaran", `: ${mapelInfo.nama}`], ["Kelas", `: ${className}`], ["Guru", `: ${guruData.nama}`],
+      ["Petunjuk", ": Isi atau ubah nilai pada kolom yang sesuai. Kolom NISN dan Nama Siswa jangan diubah."],
       ["Keterangan", `: ${keteranganSingkatan.join('; ')}`]
     ];
-    sheet.getRange("A1:B5").setValues(keteranganHeader);
+    sheet.getRange("A1:B5").setValues(keteranganHeader).setFontStyle("italic");
     sheet.getRange("A1:A5").setFontWeight("bold");
-    sheet.getRange("A1:B5").setFontStyle("italic");
+    sheet.getRange(7, 1, 1, headers.length).setValues([headers]).setFontWeight("bold").setBackground("#d9ead3");
 
-    const headerRow = 7;
-    sheet.getRange(headerRow, 1, 1, headers.length).setValues([headers]).setFontWeight("bold").setBackground("#d9ead3");
-
-    if (studentData.length > 0) {
-      sheet.getRange(headerRow + 1, 1, studentData.length, headers.length).setValues(
-        studentData.map(studentRow => {
-            const row = [...studentRow];
-            while (row.length < headers.length) {
-                row.push('');
-            }
-            return row;
-        })
-      );
+    if (students && students.length > 0) {
+      const rowsToWrite = students.map(s => {
+        const studentRow = ["'" + s.nisn, s.nama];
+        // ===============================================================
+        // === AWAL BLOK KODE BARU: Mengisi nilai yang sudah ada =========
+        // ===============================================================
+        if (tipeNilai === 'ujian') {
+            if (headers.includes("UM")) { studentRow.push(dataNilai[`${s.nisn}_um`] || ''); }
+            if (headers.includes("UPr")) { studentRow.push(dataNilai[`${s.nisn}_upr`] || ''); }
+        } else if (tipeNilai.startsWith('rapor_')) {
+            studentRow.push(dataNilai[`${s.nisn}_peng`] || '');
+            studentRow.push(dataNilai[`${s.nisn}_ket`] || '');
+        }
+        // ===============================================================
+        // === AKHIR BLOK KODE BARU =======================================
+        // ===============================================================
+        return studentRow;
+      });
+      sheet.getRange(8, 1, rowsToWrite.length, headers.length).setValues(rowsToWrite);
     }
     sheet.getRange("A:A").setNumberFormat('@');
     sheet.autoResizeColumns(1, headers.length);
 
     SpreadsheetApp.flush();
-
     const url = `https://www.googleapis.com/drive/v3/files/${ss.getId()}/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`;
-    const response = UrlFetchApp.fetch(url, {
-      headers: { Authorization: `Bearer ${ScriptApp.getOAuthToken()}` },
-      muteHttpExceptions: true
-    });
-
+    const response = UrlFetchApp.fetch(url, { headers: { Authorization: `Bearer ${ScriptApp.getOAuthToken()}` }, muteHttpExceptions: true });
     const blob = response.getBlob();
-    
-    // [PERUBAHAN] Membuat nama file yang lebih deskriptif
     const finalFileName = `Template_Nilai_${mapelKode}_${className}_${fileNameSuffix}.xlsx`;
 
     return {
