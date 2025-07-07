@@ -224,9 +224,25 @@
                             </div>
                         </div>
                     </form>
-                    <div id="login-error-message" class="mt-4 text-center text-red-600 text-sm h-4"></div>
-                    
-                    <div class="mt-6 space-y-3">
+                    <div class="mt-4 text-left">
+                        <div class="p-3 bg-blue-50 border-l-4 border-blue-400">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-blue-700">
+                                        Jika lupa password, silakan hubungi <b>Admin Sekolah</b> untuk membuatkan username & password baru.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="login-error-message" class="mt-2 text-center text-red-600 text-sm h-4"></div>
+                    </div>
+
+                    <div class="mt-2 space-y-3">
                         <button type="submit" form="loginFormGuru" id="loginButtonGuru" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-transform transform hover:scale-105 shadow-lg">
                             <span id="loginBtnText">Masuk</span>
                             <div id="loginSpinner" class="hidden mx-auto loading-spinner" style="width:24px; height:24px; border-width:3px;"></div>
@@ -755,7 +771,7 @@
         });
     }
 
-    // [PERUBAHAN] Modifikasi fungsi buildUjianForm di Guru.html
+    // Ganti keseluruhan fungsi buildUjianForm di Guru.html dengan ini:
 
     async function buildUjianForm(mapelKode, jenisUjian, kelas) {
         const container = document.getElementById('tab-ujian');
@@ -763,52 +779,52 @@
         
         try {
             const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+            const type = 'ujian';
             
             const response = await new Promise((resolve, reject) => {
                 google.script.run
                     .withSuccessHandler(resolve)
                     .withFailureHandler(reject)
-                    .getNilaiPageData_Guru(guruData.spreadsheetId, guruData.username, mapelKode, 'ujian', kelas);
+                    .getNilaiPageData_Guru(guruData.spreadsheetId, guruData.username, mapelKode, type, kelas);
             });
 
-            if (response.status !== 'success') {
-                throw new Error(response.message);
-            }
+            if (response.status !== 'success') throw new Error(response.message);
 
             const { students, savedValues, submittedValues, approvalStatus, submissionId, batchStatus, isSubmissionEnabled, kkm } = response;
-
             if (!students || students.length === 0) {
-                container.innerHTML = `<p class="p-4 text-center text-gray-500">Tidak ada data siswa untuk kelas ${kelas}.</p>`;
-                return;
-            }
-
-            if (submittedValues && submittedValues['ujian']) {
-                if (batchStatus.allApproved) {
-                    showNotification(`Semua nilai (${batchStatus.total}) untuk ujian ini telah disetujui. Silakan klik Cetak Nilai.`, 'success');
-                } else if (batchStatus.rejected > 0) {
-                    showNotification(`Perhatian: ${batchStatus.rejected} nilai ditolak oleh admin. Silakan revisi.`, 'error');
-                } else if (batchStatus.pending > 0) {
-                    showNotification(`Nilai terkirim. Menunggu ${batchStatus.pending} nilai untuk disetujui admin.`, 'info');
-                }
+                container.innerHTML = `<p class="p-4 text-center text-gray-500">Tidak ada data siswa untuk kelas ${kelas}.</p>`; return;
             }
 
             const mapelInfo = guruData.mapel.find(m => m.kode === mapelKode);
             const namaMapel = mapelInfo ? mapelInfo.nama : mapelKode;
 
-            let formHtml = `<div class="bg-gray-50 p-4 rounded-lg">
-                <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-800">${namaMapel} - Kelas ${kelas}</h3>
-                    </div>
-                    <div>
-                        <!-- [PERBAIKAN] Menambahkan parameter 'kelas' di sini -->
-                        ${buildActionButtons('ujian', mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus, kelas)}
-                    </div>
-                </div>
-                ${buildScoreTable('ujian', 'Nilai Ujian', mapelKode, students, savedValues, submittedValues, approvalStatus, kkm, { jenisUjian })}
-            </div>`;
+            // --- Perubahan Urutan Pemuatan ---
+            const wrapperDiv = document.createElement('div');
+            wrapperDiv.className = 'bg-gray-50 p-4 rounded-lg';
+            
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'flex justify-between items-center mb-4 flex-wrap gap-4';
+            
+            const titleDiv = document.createElement('div');
+            titleDiv.innerHTML = `<h3 class="text-xl font-bold text-gray-800">${namaMapel} - Kelas ${kelas}</h3>`;
+            
+            const buttonContainer = document.createElement('div');
+            
+            headerDiv.appendChild(titleDiv);
+            headerDiv.appendChild(buttonContainer);
+            
+            const scoreTableHtml = buildScoreTable(type, 'Nilai Ujian', mapelKode, students, savedValues, submittedValues, approvalStatus, kkm, { jenisUjian });
+            
+            wrapperDiv.appendChild(headerDiv);
+            const tableContentDiv = document.createElement('div');
+            tableContentDiv.innerHTML = scoreTableHtml;
+            wrapperDiv.appendChild(tableContentDiv);
+            
+            container.innerHTML = '';
+            container.appendChild(wrapperDiv);
 
-            container.innerHTML = formHtml;
+            const buttonsHtml = buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus, kelas);
+            buttonContainer.innerHTML = buttonsHtml;
 
         } catch (error) {
             container.innerHTML = `<p class="text-red-500 p-4">Gagal memuat data: ${error.message}</p>`;
@@ -856,7 +872,7 @@
         }
     }
 
-    // [PERUBAHAN] Modifikasi fungsi renderRaporSemesterTable di Guru.html
+    // Ganti keseluruhan fungsi renderRaporSemesterTable di Guru.html dengan ini:
 
     async function renderRaporSemesterTable(semesterKey, mapelKode, kelas) {
         const tableContainer = document.getElementById('rapor-table-container');
@@ -873,44 +889,43 @@
                     .getNilaiPageData_Guru(guruData.spreadsheetId, guruData.username, mapelKode, type, kelas);
             });
 
-            if (response.status !== 'success') {
-                throw new Error(response.message);
-            }
+            if (response.status !== 'success') throw new Error(response.message);
             
             const { students, savedValues, submittedValues, approvalStatus, submissionId, batchStatus, isSubmissionEnabled, kkm } = response;
-
             if (!students || students.length === 0) {
-                tableContainer.innerHTML = `<p class="p-4 text-center text-gray-500">Tidak ada data siswa untuk kelas ${kelas}.</p>`;
-                return;
-            }
-            
-            if (submittedValues && submittedValues[type]) {
-                if (batchStatus.allApproved) {
-                    showNotification(`Semua nilai (${batchStatus.total}) untuk rapor ini telah disetujui.`, 'success');
-                } else if (batchStatus.rejected > 0) {
-                    showNotification(`Perhatian: ${batchStatus.rejected} nilai ditolak oleh admin. Silakan revisi.`, 'error');
-                } else if (batchStatus.pending > 0) {
-                    showNotification(`Nilai terkirim. Menunggu ${batchStatus.pending} nilai untuk disetujui admin.`, 'info');
-                }
+                tableContainer.innerHTML = `<p class="p-4 text-center text-gray-500">Tidak ada data siswa untuk kelas ${kelas}.</p>`; return;
             }
             
             const mapelInfo = guruData.mapel.find(m => m.kode === mapelKode);
             const namaMapel = mapelInfo ? mapelInfo.nama : mapelKode;
 
-            const tableHtml = `<div class="bg-gray-50 p-4 rounded-lg">
-                <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-800">${namaMapel} - Kelas ${kelas}</h3>
-                    </div>
-                    <div>
-                        <!-- [PERBAIKAN] Menambahkan parameter 'kelas' di sini -->
-                        ${buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus, kelas)}
-                    </div>
-                </div>
-                ${buildScoreTable(type, '', mapelKode, students, savedValues, submittedValues, approvalStatus, kkm, { semesterKey })}
-            </div>`;
+            // --- Perubahan Urutan Pemuatan ---
+            const wrapperDiv = document.createElement('div');
+            wrapperDiv.className = 'bg-gray-50 p-4 rounded-lg';
             
-            tableContainer.innerHTML = tableHtml;
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'flex justify-between items-center mb-4 flex-wrap gap-4';
+            
+            const titleDiv = document.createElement('div');
+            titleDiv.innerHTML = `<h3 class="text-xl font-bold text-gray-800">${namaMapel} - Kelas ${kelas}</h3>`;
+            
+            const buttonContainer = document.createElement('div');
+            
+            headerDiv.appendChild(titleDiv);
+            headerDiv.appendChild(buttonContainer);
+            
+            const tableHtml = buildScoreTable(type, '', mapelKode, students, savedValues, submittedValues, approvalStatus, kkm, { semesterKey });
+            
+            wrapperDiv.appendChild(headerDiv);
+            const tableContentDiv = document.createElement('div');
+            tableContentDiv.innerHTML = tableHtml;
+            wrapperDiv.appendChild(tableContentDiv);
+
+            tableContainer.innerHTML = '';
+            tableContainer.appendChild(wrapperDiv);
+            
+            const buttonsHtml = buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus, kelas);
+            buttonContainer.innerHTML = buttonsHtml;
 
         } catch (error) {
             tableContainer.innerHTML = `<p class="text-red-500 p-4">Gagal memuat tabel: ${error.message}</p>`;
@@ -924,51 +939,17 @@
      */
     function buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus, kelas) {
         const isSubmitted = submittedValues && submittedValues[type];
-        
-        let importExportButtons = '';
-
-        if (!isSubmitted || (batchStatus && batchStatus.rejected > 0)) {
-            // ==========================================================
-            // === AWAL PERBAIKAN CSS TOMBOL ============================
-            // ==========================================================
-            // Dihapus: w-44 h-9 justify-center
-            // Ditambahkan: whitespace-nowrap
-            importExportButtons = `
-                <button data-action="export" data-type="${type}" data-mapel-kode="${mapelKode}" data-kelas="${kelas}" class="bg-teal-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700 text-sm flex items-center whitespace-nowrap">
-                    <div class="btn-content flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V3" /></svg>
-                        <span>Download Template</span>
-                    </div>
-                    <div class="btn-spinner hidden loading-spinner" style="width:20px; height:20px; border-width:3px;"></div>
-                </button>
-                <button data-action="import" data-type="${type}" data-mapel-kode="${mapelKode}" data-kelas="${kelas}" class="bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-700 text-sm flex items-center whitespace-nowrap">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                    <span>Import Nilai</span>
-                </button>
-                <div class="h-6 border-l border-gray-300"></div>
-            `;
-            // ==========================================================
-            // === AKHIR PERBAIKAN CSS TOMBOL ===========================
-            // ==========================================================
-        }
-
         let actionButtonsHtml = '';
 
+        // A. JIKA NILAI SUDAH PERNAH DIKIRIM
         if (isSubmitted) {
-            // PERBAIKAN: Logika baru untuk menampilkan tombol secara kondisional
-            
-            // Kondisi 1: Jika SEMUA nilai telah disetujui
-            if (batchStatus && batchStatus.allApproved) {
-                actionButtonsHtml = `
-                    <button data-action="print" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700">
-                        Cetak Nilai
-                    </button>
-                    <button data-action="cancel" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 text-sm flex items-center gap-2">
-                        Batal Kirim
-                    </button>`;
-            
-            // Kondisi 2: Jika ADA nilai yang ditolak
-            } else if (batchStatus && batchStatus.rejected > 0) {
+            // Cek kondisi tabel saat ini secara langsung dari layar
+            const form = document.getElementById(`form-${type}`);
+            const hasRejectedInputs = form ? !!form.querySelector('.score-input.status-ditolak') : false;
+            const hasEmptyInputs = form ? Array.from(form.querySelectorAll('.score-input')).some(input => input.value.trim() === '') : false;
+
+            // Kondisi 1: Jika ada nilai yang perlu direvisi (ditolak) atau diisi (kosong)
+            if (hasRejectedInputs || hasEmptyInputs) {
                 actionButtonsHtml = `
                     <button data-action="resubmit" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 text-sm flex items-center gap-2">
                         Kirim Kembali Revisi
@@ -977,10 +958,19 @@
                         Batal Kirim
                     </button>`;
             
-            // Kondisi 3: Jika masih menunggu (belum semua disetujui & tidak ada yang ditolak)
+            // Kondisi 2: Jika semua nilai terisi dan tidak ada yang ditolak
             } else {
+                const isFullyApproved = batchStatus && batchStatus.allApproved;
+                const printButtonClass = isFullyApproved 
+                    ? "bg-cyan-600 hover:bg-cyan-700" 
+                    : "bg-gray-400 cursor-not-allowed";
+                const printButtonDisabled = isFullyApproved ? "" : "disabled";
+                const printButtonTitle = isFullyApproved 
+                    ? "" 
+                    : 'title="Tombol akan aktif setelah semua nilai disetujui oleh admin."';
+                
                 actionButtonsHtml = `
-                    <button title="Tombol akan aktif setelah semua nilai disetujui oleh admin." class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 bg-gray-400 cursor-not-allowed" disabled>
+                    <button data-action="print" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 ${printButtonClass}" ${printButtonDisabled} ${printButtonTitle}>
                         Cetak Nilai
                     </button>
                     <button data-action="cancel" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 text-sm flex items-center gap-2">
@@ -988,12 +978,28 @@
                     </button>`;
             }
 
+        // B. JIKA NILAI BELUM PERNAH DIKIRIM SAMA SEKALI
         } else {
             const kirimBtnDisabled = !isSubmissionEnabled ? 'disabled' : '';
             const kirimBtnClass = !isSubmissionEnabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700';
             const kirimBtnTitle = !isSubmissionEnabled ? 'title="Pengiriman nilai saat ini sedang ditutup oleh admin."' : '';
-            actionButtonsHtml += `<button data-action="save" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 text-sm flex items-center gap-2">Simpan Draf</button>
+            actionButtonsHtml = `<button data-action="save" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 text-sm flex items-center gap-2">Simpan Draf</button>
                               <button data-action="submit" data-type="${type}" data-mapel-kode="${mapelKode}" class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 ${kirimBtnClass}" ${kirimBtnDisabled} ${kirimBtnTitle}>Kirim Nilai</button>`;
+        }
+
+        // Untuk tombol import/export, logikanya tetap sama
+        let importExportButtons = '';
+        if (!isSubmitted) {
+            importExportButtons = `
+                <button data-action="export" data-type="${type}" data-mapel-kode="${mapelKode}" data-kelas="${kelas}" class="bg-teal-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700 text-sm flex items-center whitespace-nowrap">
+                    <div class="btn-content flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V3"></path></svg><span>Download Template</span></div>
+                    <div class="btn-spinner hidden loading-spinner" style="width:20px; height:20px; border-width:3px;"></div>
+                </button>
+                <button data-action="import" data-type="${type}" data-mapel-kode="${mapelKode}" data-kelas="${kelas}" class="bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-700 text-sm flex items-center whitespace-nowrap">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg><span>Import Nilai</span>
+                </button>
+                <div class="h-6 border-l border-gray-300"></div>
+            `;
         }
 
         return `<div class="mb-4 flex justify-end items-center space-x-2">${importExportButtons} ${actionButtonsHtml}</div>`;
@@ -1007,87 +1013,95 @@
         const dataToDisplay = isSubmitted ? (submittedValues[type] || {}) : (savedValues ? (savedValues[type] || {}) : {});
         
         let headers = `<th class="px-4 py-2 text-left border border-gray-200">NISN</th>
-                      <th class="px-4 py-2 text-left border border-gray-200">Nama Siswa</th>`;
+                        <th class="px-4 py-2 text-left border border-gray-200">Nama Siswa</th>`;
         
-        // [PERUBAHAN] Tambahkan KKM ke dalam legenda
         let legendHtml = `<div class="text-xs text-gray-500 mb-3 p-2 bg-gray-100 rounded-md"><b>Keterangan:</b> `;
         const legends = [`<b>KKM</b> = ${kkm || 'N/A'}`];
         
-        let inputsHtml = '';
+        let inputsHtml;
         
         if (type === 'ujian') {
             const { jenisUjian } = options;
             const hasUM = jenisUjian === 'Ujian Madrasah' || jenisUjian === 'Keduanya';
             const hasUPr = jenisUjian === 'Ujian Praktek' || jenisUjian === 'Keduanya';
 
-            if (hasUM) {
-                headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">UM</th>`;
-                legends.push('<b>UM</b> = Ujian Madrasah');
-            }
-            if (hasUPr) {
-                headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">UPr</th>`;
-                legends.push('<b>UPr</b> = Ujian Praktek');
-            }
+            if (hasUM) { headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">UM</th>`; legends.push('<b>UM</b> = Ujian Madrasah'); }
+            if (hasUPr) { headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">UPr</th>`; legends.push('<b>UPr</b> = Ujian Praktek'); }
             
             inputsHtml = (s) => {
                 let html = '';
+                const nisn = s.nisn;
                 if (hasUM) {
-                    const statusKey = `ujian_um_${s.nisn}`;
-                    const status = approvalStatus[statusKey];
-                    const isRejected = isSubmitted && status === 'Ditolak';
-                    const isReadOnly = isSubmitted && !isRejected;
-                    const statusClass = isSubmitted ? (status === 'Disetujui' ? 'status-disetujui' : status === 'Ditolak' ? 'status-ditolak' : 'status-menunggu') : '';
-                    
-                    const value = dataToDisplay[`${s.nisn}_um`] || '';
+                    const value = dataToDisplay[`${nisn}_um`] || '';
+                    const status = approvalStatus[`ujian_um_${nisn}`];
+                    // ==========================================================
+                    // === AWAL LOGIKA PERBAIKAN UNTUK SETIAP SEL ===============
+                    // ==========================================================
+                    let isReadOnly = false;
+                    let statusClass = '';
+
+                    // Kunci & beri warna HANYA jika tabel sudah terkirim DAN sel ini punya nilai
+                    if (isSubmitted && value !== '') {
+                        const isRejected = status === 'Ditolak';
+                        isReadOnly = !isRejected; // Kunci jika tidak ditolak
+                        statusClass = status === 'Disetujui' ? 'status-disetujui' : status === 'Ditolak' ? 'status-ditolak' : 'status-menunggu';
+                    }
+                    // ==========================================================
+                    // === AKHIR LOGIKA PERBAIKAN ===============================
+                    // ==========================================================
                     const numericValue = parseFloat(value);
                     const kkmClass = (!isNaN(numericValue) && numericValue < kkm) ? 'text-red-600 font-bold' : '';
-
-                    html += `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_um" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClass} ${kkmClass}" value="${value}" ${isReadOnly ? 'readonly' : ''}></td>`;
+                    html += `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${nisn}_um" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClass} ${kkmClass}" value="${value}" ${isReadOnly ? 'readonly' : ''}></td>`;
                 }
                 if (hasUPr) {
-                    const statusKey = `ujian_upr_${s.nisn}`;
-                    const status = approvalStatus[statusKey];
-                    const isRejected = isSubmitted && status === 'Ditolak';
-                    const isReadOnly = isSubmitted && !isRejected;
-                    const statusClass = isSubmitted ? (status === 'Disetujui' ? 'status-disetujui' : status === 'Ditolak' ? 'status-ditolak' : 'status-menunggu') : '';
-
-                    const value = dataToDisplay[`${s.nisn}_upr`] || '';
+                    const value = dataToDisplay[`${nisn}_upr`] || '';
+                    const status = approvalStatus[`ujian_upr_${nisn}`];
+                    let isReadOnly = false;
+                    let statusClass = '';
+                    if (isSubmitted && value !== '') {
+                        const isRejected = status === 'Ditolak';
+                        isReadOnly = !isRejected;
+                        statusClass = status === 'Disetujui' ? 'status-disetujui' : status === 'Ditolak' ? 'status-ditolak' : 'status-menunggu';
+                    }
                     const numericValue = parseFloat(value);
                     const kkmClass = (!isNaN(numericValue) && numericValue < kkm) ? 'text-red-600 font-bold' : '';
-
-                    html += `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_upr" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClass} ${kkmClass}" value="${value}" ${isReadOnly ? 'readonly' : ''}></td>`;
+                    html += `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${nisn}_upr" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClass} ${kkmClass}" value="${value}" ${isReadOnly ? 'readonly' : ''}></td>`;
                 }
                 return html;
             };
-        } else {
+        } else { // Untuk rapor
             headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">Peng</th>
                         <th class="px-2 py-2 text-center w-24 border border-gray-200">Ket</th>`;
-            
             legends.push('<b>Peng</b> = Pengetahuan', '<b>Ket</b> = Keterampilan');
 
             inputsHtml = (s) => {
-                const statusKeyPeng = `${type}_peng_${s.nisn}`;
-                const statusPeng = approvalStatus[statusKeyPeng];
-                const isRejectedPeng = isSubmitted && statusPeng === 'Ditolak';
-                const isReadOnlyPeng = isSubmitted && !isRejectedPeng;
-                const statusClassPeng = isSubmitted ? (statusPeng === 'Disetujui' ? 'status-disetujui' : statusPeng === 'Ditolak' ? 'status-ditolak' : 'status-menunggu') : '';
-                
-                const valuePeng = dataToDisplay[`${s.nisn}_peng`] || '';
+                const nisn = s.nisn;
+                // Sel Pengetahuan
+                const valuePeng = dataToDisplay[`${nisn}_peng`] || '';
+                const statusPeng = approvalStatus[`${type}_peng_${nisn}`];
+                let isReadOnlyPeng = false;
+                let statusClassPeng = '';
+                if (isSubmitted && valuePeng !== '') {
+                    isReadOnlyPeng = statusPeng !== 'Ditolak';
+                    statusClassPeng = statusPeng === 'Disetujui' ? 'status-disetujui' : statusPeng === 'Ditolak' ? 'status-ditolak' : 'status-menunggu';
+                }
                 const numericValuePeng = parseFloat(valuePeng);
                 const kkmClassPeng = (!isNaN(numericValuePeng) && numericValuePeng < kkm) ? 'text-red-600 font-bold' : '';
 
-                const statusKeyKet = `${type}_ket_${s.nisn}`;
-                const statusKet = approvalStatus[statusKeyKet];
-                const isRejectedKet = isSubmitted && statusKet === 'Ditolak';
-                const isReadOnlyKet = isSubmitted && !isRejectedKet;
-                const statusClassKet = isSubmitted ? (statusKet === 'Disetujui' ? 'status-disetujui' : statusKet === 'Ditolak' ? 'status-ditolak' : 'status-menunggu') : '';
-                
-                const valueKet = dataToDisplay[`${s.nisn}_ket`] || '';
+                // Sel Keterampilan
+                const valueKet = dataToDisplay[`${nisn}_ket`] || '';
+                const statusKet = approvalStatus[`${type}_ket_${nisn}`];
+                let isReadOnlyKet = false;
+                let statusClassKet = '';
+                if (isSubmitted && valueKet !== '') {
+                    isReadOnlyKet = statusKet !== 'Ditolak';
+                    statusClassKet = statusKet === 'Disetujui' ? 'status-disetujui' : statusKet === 'Ditolak' ? 'status-ditolak' : 'status-menunggu';
+                }
                 const numericValueKet = parseFloat(valueKet);
                 const kkmClassKet = (!isNaN(numericValueKet) && numericValueKet < kkm) ? 'text-red-600 font-bold' : '';
 
-                return `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_peng" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClassPeng} ${kkmClassPeng}" value="${valuePeng}" ${isReadOnlyPeng ? 'readonly' : ''}></td>
-                        <td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_ket" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClassKet} ${kkmClassKet}" value="${valueKet}" ${isReadOnlyKet ? 'readonly' : ''}></td>`;
+                return `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${nisn}_peng" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClassPeng} ${kkmClassPeng}" value="${valuePeng}" ${isReadOnlyPeng ? 'readonly' : ''}></td>
+                        <td class="px-2 py-1 border border-gray-200"><input type="number" name="${nisn}_ket" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClassKet} ${kkmClassKet}" value="${valueKet}" ${isReadOnlyKet ? 'readonly' : ''}></td>`;
             };
         }
 
@@ -1227,9 +1241,8 @@
         const form = document.getElementById(`form-${type}`);
         const inputs = form.querySelectorAll('input[type="number"]');
         const nilai = {};
-        inputs.forEach(input => { if (input.value !== '') { nilai[input.name] = input.value; } });
+        inputs.forEach(input => { nilai[input.name] = input.value; }); // <-- PERUBAHAN DI SINI
         const guruData = JSON.parse(sessionStorage.getItem('guruData'));
-        // Nama guru dihapus dari sini untuk mencegah data tercampur
         return { spreadsheetId: guruData.spreadsheetId, username: guruData.username, mapelKode, type: type, nilai: nilai };
     }
     
