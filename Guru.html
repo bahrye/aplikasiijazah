@@ -198,6 +198,11 @@
             color: #4f46e5; /* indigo-700 */
         }
     </style>
+
+    <!-- [PERBAIKAN] Tambahkan dua baris ini di dalam <head> pada Guru.html -->
+    <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />
+
 </head>
 <body class="text-gray-800">
 
@@ -328,7 +333,7 @@
                             <div class="border-t pt-6 mt-8 space-y-6">
                                 <h3 class="text-xl font-semibold text-gray-900 border-b pb-3">Akun Login</h3>
                                 <p class="text-sm p-3 bg-yellow-50 text-yellow-800 border-l-4 border-yellow-400 rounded-r-lg">
-                                    <strong>PENTING:</strong> Jika Anda mengubah Username atau Password, Anda akan otomatis logout dan perlu masuk kembali dengan kredensial baru.
+                                    <strong>PENTING:</strong> Jika Anda mengubah Username atau Password, Anda akan otomatis logout dan perlu masuk kembali dengan kredensial baru. Operator sekolah tidak akan memiliki izin untuk melihat password yang sudah Anda ubah. Jadi Anda tidak perlu khawatir akan mengungkap password baru Anda.
                                 </p>
                                 <div>
                                     <label for="profile_username_guru" class="block text-sm font-medium text-gray-700">Username</label>
@@ -375,6 +380,34 @@
                     </div>
                 </main>
             </div>
+        </div>
+
+        <!-- [PERUBAHAN] Tambahkan modal ini ke Guru.html -->
+        <div id="guru-nilai-import-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-[999]">
+            <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-3xl transform scale-95 flex flex-col max-h-[90vh]">
+                <div class="flex-shrink-0 flex justify-between items-center border-b p-4">
+                    <h2 id="guru-import-modal-title" class="text-xl font-bold text-gray-800">Import Nilai</h2>
+                    <button id="closeGuruImportModalBtn" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+                </div>
+                <div class="flex-grow overflow-y-auto p-6 space-y-6">
+                    <p class="text-sm text-gray-600">Unduh template, isi nilai, lalu unggah kembali file tersebut. Nilai yang diimpor akan disimpan sebagai draf.</p>
+                    <form action="#" class="dropzone" id="guru-nilai-dropzone-form">
+                        <div class="dz-message" data-dz-message>
+                            <span>Letakkan File Excel di sini atau Klik untuk memilih</span>
+                        </div>
+                    </form>
+                </div>
+                <div class="flex-shrink-0 mt-auto p-4 border-t flex justify-end">
+                    <button id="closeGuruImportModalBtn2" type="button" class="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600">Tutup</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- [PERUBAHAN] Tambahkan blok div ini di dalam <body>, sebelum tag penutup </body> -->
+        <div id="loading-overlay" class="hidden fixed inset-0 bg-white bg-opacity-90 flex flex-col items-center justify-center text-center z-[9999] p-4">
+            <h2 id="overlay-title" class="text-2xl font-bold text-gray-800">Memproses Permintaan Anda</h2>
+            <p id="overlay-subtitle" class="mt-2 text-gray-600">Mohon tunggu dan jangan menutup jendela ini...</p>
+            <div id="overlay-button-container" class="mt-6"></div>
         </div>
     </div>
 
@@ -428,6 +461,7 @@
         }
     }
     
+    // [PERUBAHAN] Ganti fungsi handleGuruLogin dengan versi ini
     function handleGuruLogin(e) {
         e.preventDefault();
         const schoolCode = document.getElementById('kode_sekolah_guru').value.trim();
@@ -435,18 +469,16 @@
         const password = document.getElementById('password_guru').value;
         const btn = document.getElementById('loginButtonGuru'), btnText = document.getElementById('loginBtnText'), spinner = document.getElementById('loginSpinner'), errorDiv = document.getElementById('login-error-message');
         btn.disabled = true; btnText.classList.add('hidden'); spinner.classList.remove('hidden'); errorDiv.textContent = '';
+        
         google.script.run.withSuccessHandler(r => {
             btn.disabled = false; btnText.classList.remove('hidden'); spinner.classList.add('hidden');
             if (r.status === 'success') { 
                 sessionStorage.setItem('guruData', JSON.stringify(r.data));
-                
-                // ===== AWAL PERUBAHAN =====
-                // Secara eksplisit tampilkan portal utama dan sembunyikan login
                 document.getElementById('login-container').classList.add('hidden');
                 document.getElementById('main-app-container').classList.remove('hidden');
-                // ===== AKHIR PERUBAHAN =====
-
                 initializeAppGuru(r.data); 
+            } else if (r.status === 'locked') { // <-- [PERUBAHAN] Menangani respons 'locked'
+                errorDiv.textContent = r.message;
             } else { 
                 errorDiv.textContent = r.message; 
             }
@@ -739,7 +771,7 @@
         });
     }
 
-    // File: Guru.html (di dalam tag <script>)
+    // [PERUBAHAN] Modifikasi fungsi buildUjianForm di Guru.html
 
     async function buildUjianForm(mapelKode, jenisUjian, kelas) {
         const container = document.getElementById('tab-ujian');
@@ -759,7 +791,7 @@
                 throw new Error(response.message);
             }
 
-            const { students, savedValues, submittedValues, approvalStatus, submissionId, batchStatus, isSubmissionEnabled } = response;
+            const { students, savedValues, submittedValues, approvalStatus, submissionId, batchStatus, isSubmissionEnabled, kkm } = response;
 
             if (!students || students.length === 0) {
                 container.innerHTML = `<p class="p-4 text-center text-gray-500">Tidak ada data siswa untuk kelas ${kelas}.</p>`;
@@ -776,24 +808,21 @@
                 }
             }
 
-            // --- AWAL PERUBAHAN ---
-            // Mencari nama mapel lengkap dari data guru yang tersimpan di sesi
             const mapelInfo = guruData.mapel.find(m => m.kode === mapelKode);
-            const namaMapel = mapelInfo ? mapelInfo.nama : mapelKode; // Fallback ke kode jika nama tidak ditemukan
+            const namaMapel = mapelInfo ? mapelInfo.nama : mapelKode;
 
-            // Struktur HTML baru dengan judul dan tombol yang sejajar
             let formHtml = `<div class="bg-gray-50 p-4 rounded-lg">
                 <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
                     <div>
                         <h3 class="text-xl font-bold text-gray-800">${namaMapel} - Kelas ${kelas}</h3>
                     </div>
                     <div>
-                        ${buildActionButtons('ujian', mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus)}
+                        <!-- [PERBAIKAN] Menambahkan parameter 'kelas' di sini -->
+                        ${buildActionButtons('ujian', mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus, kelas)}
                     </div>
                 </div>
-                ${buildScoreTable('ujian', 'Nilai Ujian', mapelKode, students, savedValues, submittedValues, approvalStatus, { jenisUjian })}
+                ${buildScoreTable('ujian', 'Nilai Ujian', mapelKode, students, savedValues, submittedValues, approvalStatus, kkm, { jenisUjian })}
             </div>`;
-            // --- AKHIR PERUBAHAN ---
 
             container.innerHTML = formHtml;
 
@@ -843,7 +872,7 @@
         }
     }
 
-    // File: Guru.html (di dalam tag <script>)
+    // [PERUBAHAN] Modifikasi fungsi renderRaporSemesterTable di Guru.html
 
     async function renderRaporSemesterTable(semesterKey, mapelKode, kelas) {
         const tableContainer = document.getElementById('rapor-table-container');
@@ -864,7 +893,7 @@
                 throw new Error(response.message);
             }
             
-            const { students, savedValues, submittedValues, approvalStatus, submissionId, batchStatus, isSubmissionEnabled } = response;
+            const { students, savedValues, submittedValues, approvalStatus, submissionId, batchStatus, isSubmissionEnabled, kkm } = response;
 
             if (!students || students.length === 0) {
                 tableContainer.innerHTML = `<p class="p-4 text-center text-gray-500">Tidak ada data siswa untuk kelas ${kelas}.</p>`;
@@ -881,24 +910,21 @@
                 }
             }
             
-            // --- AWAL PERUBAHAN ---
-            // Mencari nama mapel lengkap
             const mapelInfo = guruData.mapel.find(m => m.kode === mapelKode);
             const namaMapel = mapelInfo ? mapelInfo.nama : mapelKode;
 
-            // Struktur HTML baru dengan judul
             const tableHtml = `<div class="bg-gray-50 p-4 rounded-lg">
                 <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
                     <div>
                         <h3 class="text-xl font-bold text-gray-800">${namaMapel} - Kelas ${kelas}</h3>
                     </div>
                     <div>
-                        ${buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus)}
+                        <!-- [PERBAIKAN] Menambahkan parameter 'kelas' di sini -->
+                        ${buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus, kelas)}
                     </div>
                 </div>
-                ${buildScoreTable(type, '', mapelKode, students, savedValues, submittedValues, approvalStatus, { semesterKey })}
+                ${buildScoreTable(type, '', mapelKode, students, savedValues, submittedValues, approvalStatus, kkm, { semesterKey })}
             </div>`;
-            // --- AKHIR PERUBAHAN ---
             
             tableContainer.innerHTML = tableHtml;
 
@@ -911,61 +937,60 @@
      * [PERBAIKAN FINAL] Fungsi ini sekarang menerima status izin kirim
      * dan akan menonaktifkan tombol 'Kirim Nilai' jika tidak diizinkan.
      */
-    function buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus) {
+    function buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus, kelas) {
         const isSubmitted = submittedValues && submittedValues[type];
         
-        if (isSubmitted) {
-            // Skenario 1: Sebagian ditolak, sebagian disetujui/menunggu
-            if (batchStatus && batchStatus.rejected > 0) {
-                let buttonsHtml = '<div class="mb-4 flex justify-end space-x-2">';
-                buttonsHtml += `<button data-action="resubmit" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 text-sm flex items-center gap-2">Kirim Kembali Revisi</button>`;
-                buttonsHtml += `<button data-action="cancel" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 text-sm flex items-center gap-2">Batal Kirim</button>`;
-                buttonsHtml += '</div>';
-                return buttonsHtml;
-            }
+        // [PERUBAHAN] Menambahkan data-kelas="${kelas}" ke tombol
+        let importExportButtons = `
+            <button data-action="export" data-type="${type}" data-mapel-kode="${mapelKode}" data-kelas="${kelas}" class="bg-teal-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700 text-sm flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V3" /></svg>
+                <span class="btn-text">Download Template</span>
+                <span class="btn-spinner hidden loading-animation"></span>
+            </button>
+            <button data-action="import" data-type="${type}" data-mapel-kode="${mapelKode}" data-kelas="${kelas}" class="bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-700 text-sm flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                <span class="btn-text">Import Nilai</span>
+            </button>
+            <div class="h-6 border-l border-gray-300"></div>
+        `;
 
-            // Skenario 2: Semua sudah terkirim dan tidak ada yang ditolak
+        let actionButtonsHtml = '';
+
+        if (isSubmitted) {
+            if (batchStatus && batchStatus.rejected > 0) {
+                actionButtonsHtml += `<button data-action="resubmit" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 text-sm flex items-center gap-2">Kirim Kembali Revisi</button>`;
+            }
             const cetakBtnDisabled = !batchStatus.allApproved ? 'disabled' : '';
             const cetakBtnClass = !batchStatus.allApproved ? 'bg-gray-400 cursor-not-allowed' : 'bg-cyan-600 hover:bg-cyan-700';
             const cetakBtnTitle = !batchStatus.allApproved ? 'title="Tombol akan aktif setelah semua nilai disetujui oleh admin."' : '';
-
-            let buttonsHtml = '<div class="mb-4 flex justify-end space-x-2">';
-            buttonsHtml += `<button data-action="print" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 ${cetakBtnClass}" ${cetakBtnDisabled} ${cetakBtnTitle}>Cetak Nilai</button>`;
-            buttonsHtml += `<button data-action="cancel" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 text-sm flex items-center gap-2">Batal Kirim</button>`;
-            buttonsHtml += '</div>';
-            return buttonsHtml;
-
+            actionButtonsHtml += `<button data-action="print" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 ${cetakBtnClass}" ${cetakBtnDisabled} ${cetakBtnTitle}>Cetak Nilai</button>`;
+            actionButtonsHtml += `<button data-action="cancel" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 text-sm flex items-center gap-2">Batal Kirim</button>`;
         } else {
-            // Skenario 3: Belum pernah dikirim
             const kirimBtnDisabled = !isSubmissionEnabled ? 'disabled' : '';
-            const kirimBtnClass = !isSubmissionEnabled 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-green-600 hover:bg-green-700';
-            const kirimBtnTitle = !isSubmissionEnabled 
-                ? 'title="Pengiriman nilai saat ini sedang ditutup oleh admin."' 
-                : '';
-
-            return `<div class="mb-4 flex justify-end space-x-2">
-                        <button data-action="save" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 text-sm flex items-center gap-2">Simpan Draf</button>
-                        <button data-action="submit" data-type="${type}" data-mapel-kode="${mapelKode}" class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 ${kirimBtnClass}" ${kirimBtnDisabled} ${kirimBtnTitle}>Kirim Nilai</button>
-                    </div>`;
+            const kirimBtnClass = !isSubmissionEnabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700';
+            const kirimBtnTitle = !isSubmissionEnabled ? 'title="Pengiriman nilai saat ini sedang ditutup oleh admin."' : '';
+            actionButtonsHtml += `<button data-action="save" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 text-sm flex items-center gap-2">Simpan Draf</button>
+                              <button data-action="submit" data-type="${type}" data-mapel-kode="${mapelKode}" class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 ${kirimBtnClass}" ${kirimBtnDisabled} ${kirimBtnTitle}>Kirim Nilai</button>`;
         }
+
+        return `<div class="mb-4 flex justify-end items-center space-x-2">${importExportButtons} ${actionButtonsHtml}</div>`;
     }
 
     /**
      * [PERBAIKAN FINAL] Membangun tabel nilai lengkap dengan kolom Jumlah & Rata-rata.
      */
-    function buildScoreTable(type, title, mapelKode, students, savedValues, submittedValues, approvalStatus, options = {}) {
+    function buildScoreTable(type, title, mapelKode, students, savedValues, submittedValues, approvalStatus, kkm, options = {}) {
         const isSubmitted = submittedValues && submittedValues[type];
-        
-        // JIKA SUDAH DIKIRIM, GUNAKAN submittedData, JIKA BELUM, GUNAKAN savedData
         const dataToDisplay = isSubmitted ? (submittedValues[type] || {}) : (savedValues ? (savedValues[type] || {}) : {});
         
         let headers = `<th class="px-4 py-2 text-left border border-gray-200">NISN</th>
                       <th class="px-4 py-2 text-left border border-gray-200">Nama Siswa</th>`;
+        
+        // [PERUBAHAN] Tambahkan KKM ke dalam legenda
+        let legendHtml = `<div class="text-xs text-gray-500 mb-3 p-2 bg-gray-100 rounded-md"><b>Keterangan:</b> `;
+        const legends = [`<b>KKM</b> = ${kkm || 'N/A'}`];
+        
         let inputsHtml = '';
-        let legendHtml = '<div class="text-xs text-gray-500 mb-3 p-2 bg-gray-100 rounded-md"><b>Keterangan:</b> ';
-        const legends = [];
         
         if (type === 'ujian') {
             const { jenisUjian } = options;
@@ -989,7 +1014,12 @@
                     const isRejected = isSubmitted && status === 'Ditolak';
                     const isReadOnly = isSubmitted && !isRejected;
                     const statusClass = isSubmitted ? (status === 'Disetujui' ? 'status-disetujui' : status === 'Ditolak' ? 'status-ditolak' : 'status-menunggu') : '';
-                    html += `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_um" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClass}" value="${dataToDisplay[`${s.nisn}_um`] || ''}" ${isReadOnly ? 'readonly' : ''}></td>`;
+                    
+                    const value = dataToDisplay[`${s.nisn}_um`] || '';
+                    const numericValue = parseFloat(value);
+                    const kkmClass = (!isNaN(numericValue) && numericValue < kkm) ? 'text-red-600 font-bold' : '';
+
+                    html += `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_um" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClass} ${kkmClass}" value="${value}" ${isReadOnly ? 'readonly' : ''}></td>`;
                 }
                 if (hasUPr) {
                     const statusKey = `ujian_upr_${s.nisn}`;
@@ -997,11 +1027,16 @@
                     const isRejected = isSubmitted && status === 'Ditolak';
                     const isReadOnly = isSubmitted && !isRejected;
                     const statusClass = isSubmitted ? (status === 'Disetujui' ? 'status-disetujui' : status === 'Ditolak' ? 'status-ditolak' : 'status-menunggu') : '';
-                    html += `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_upr" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClass}" value="${dataToDisplay[`${s.nisn}_upr`] || ''}" ${isReadOnly ? 'readonly' : ''}></td>`;
+
+                    const value = dataToDisplay[`${s.nisn}_upr`] || '';
+                    const numericValue = parseFloat(value);
+                    const kkmClass = (!isNaN(numericValue) && numericValue < kkm) ? 'text-red-600 font-bold' : '';
+
+                    html += `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_upr" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClass} ${kkmClass}" value="${value}" ${isReadOnly ? 'readonly' : ''}></td>`;
                 }
                 return html;
             };
-        } else { // Untuk rapor
+        } else {
             headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">Peng</th>
                         <th class="px-2 py-2 text-center w-24 border border-gray-200">Ket</th>`;
             
@@ -1014,14 +1049,22 @@
                 const isReadOnlyPeng = isSubmitted && !isRejectedPeng;
                 const statusClassPeng = isSubmitted ? (statusPeng === 'Disetujui' ? 'status-disetujui' : statusPeng === 'Ditolak' ? 'status-ditolak' : 'status-menunggu') : '';
                 
+                const valuePeng = dataToDisplay[`${s.nisn}_peng`] || '';
+                const numericValuePeng = parseFloat(valuePeng);
+                const kkmClassPeng = (!isNaN(numericValuePeng) && numericValuePeng < kkm) ? 'text-red-600 font-bold' : '';
+
                 const statusKeyKet = `${type}_ket_${s.nisn}`;
                 const statusKet = approvalStatus[statusKeyKet];
                 const isRejectedKet = isSubmitted && statusKet === 'Ditolak';
                 const isReadOnlyKet = isSubmitted && !isRejectedKet;
                 const statusClassKet = isSubmitted ? (statusKet === 'Disetujui' ? 'status-disetujui' : statusKet === 'Ditolak' ? 'status-ditolak' : 'status-menunggu') : '';
                 
-                return `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_peng" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClassPeng}" value="${dataToDisplay[`${s.nisn}_peng`] || ''}" ${isReadOnlyPeng ? 'readonly' : ''}></td>
-                        <td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_ket" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClassKet}" value="${dataToDisplay[`${s.nisn}_ket`] || ''}" ${isReadOnlyKet ? 'readonly' : ''}></td>`;
+                const valueKet = dataToDisplay[`${s.nisn}_ket`] || '';
+                const numericValueKet = parseFloat(valueKet);
+                const kkmClassKet = (!isNaN(numericValueKet) && numericValueKet < kkm) ? 'text-red-600 font-bold' : '';
+
+                return `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_peng" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClassPeng} ${kkmClassPeng}" value="${valuePeng}" ${isReadOnlyPeng ? 'readonly' : ''}></td>
+                        <td class="px-2 py-1 border border-gray-200"><input type="number" name="${s.nisn}_ket" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClassKet} ${kkmClassKet}" value="${valueKet}" ${isReadOnlyKet ? 'readonly' : ''}></td>`;
             };
         }
 
@@ -1033,7 +1076,7 @@
         let tableHtml = `${legendHtml}
                         <form id="form-${type}" data-mapel-kode="${mapelKode}" data-type="${type}">
                             <div class="overflow-x-auto">
-                                <table class="min-w-full border-collapse text-sm">
+                                <table class="min-w-full border-collapse text-sm" data-kkm="${kkm}">
                                     <thead class="bg-gray-100"><tr>${headers}</tr></thead>
                                     <tbody>`;
         
@@ -1062,7 +1105,7 @@
         
         return tableHtml;
     }
-    
+
     /**
      * [FUNGSI BARU] Menghitung dan memperbarui kolom Jumlah & Rata-rata untuk satu baris.
      */
@@ -1072,6 +1115,9 @@
         const scoreInputs = tableRow.querySelectorAll('.score-input');
         const jumlahCell = tableRow.querySelector('.jumlah-nilai');
         const rataRataCell = tableRow.querySelector('.rata-rata-nilai');
+        
+        // [PERUBAHAN] Ambil KKM dari atribut data di tabel
+        const kkm = parseFloat(tableRow.closest('table')?.dataset.kkm) || 75;
 
         if (!jumlahCell || !rataRataCell) return;
 
@@ -1084,12 +1130,24 @@
                 total += value;
                 count++;
             }
+            // [PERUBAHAN] Logika pewarnaan real-time saat mengetik
+            input.classList.remove('text-red-600', 'font-bold');
+            if (!isNaN(value) && value < kkm) {
+                input.classList.add('text-red-600', 'font-bold');
+            }
         });
 
         const average = count > 0 ? (total / count) : 0;
+        const roundedAverage = Math.round(average);
 
         jumlahCell.textContent = total;
-        rataRataCell.textContent = Math.round(average); // Membulatkan nilai rata-rata
+        rataRataCell.textContent = roundedAverage;
+
+        // [PERUBAHAN] Logika pewarnaan untuk rata-rata
+        rataRataCell.classList.remove('text-red-600');
+        if (roundedAverage < kkm && count > 0) {
+            rataRataCell.classList.add('text-red-600');
+        }
     }
 
     /**
@@ -1100,33 +1158,43 @@
         const tabContent = document.getElementById('tab-content');
         if (!tabContent) return;
 
-        // Menggunakan 'event delegation' untuk memantau semua input di dalam tab
+        // Listener ini memberikan feedback instan jika nilai > 100
         tabContent.addEventListener('input', function(e) {
-            // Hanya proses jika targetnya adalah input nilai
             if (e.target.classList.contains('score-input') && e.target.type === 'number') {
                 const input = e.target;
-                
-                // Konversi nilai input menjadi angka
                 let value = parseInt(input.value, 10);
-
-                // Jika nilai lebih besar dari 100, secara otomatis ubah kembali menjadi 100.
                 if (value > 100) {
                     input.value = 100;
                 }
             }
         });
 
-        // Tambahkan listener untuk event 'blur' (saat pengguna meninggalkan input field)
+        // Listener ini membersihkan nilai saat guru selesai mengisi (menghilangkan '0' di depan)
         tabContent.addEventListener('blur', function(e) {
             if (e.target.classList.contains('score-input') && e.target.type === 'number') {
                 const input = e.target;
-                let value = parseInt(input.value, 10);
+                const rawValue = input.value;
 
-                // Jika input bukan angka yang valid (misal kosong atau berisi "e") atau di bawah 0,
-                // kosongkan input tersebut.
-                if (isNaN(value) || value < 0) {
-                    input.value = '';
+                // Jika input kosong, biarkan kosong
+                if (rawValue.trim() === '') {
+                    updateRowStats(input.closest('tr'));
+                    return;
                 }
+
+                // Konversi ke integer untuk validasi dan menghilangkan leading zero
+                const value = parseInt(rawValue, 10);
+
+                if (isNaN(value) || value < 0) {
+                    input.value = ''; // Hapus jika tidak valid atau negatif
+                } else {
+                    // Set nilai kembali ke input. Ini akan otomatis menghapus leading zero.
+                    // Contoh: parseInt('09') adalah 9, jadi input.value akan menjadi '9'.
+                    // parseInt('010') adalah 10, jadi input.value akan menjadi '10'.
+                    input.value = value;
+                }
+                
+                // Panggil updateRowStats lagi untuk memastikan pewarnaan KKM dan perhitungan diperbarui
+                updateRowStats(input.closest('tr'));
             }
         }, true); // 'true' untuk event capturing
     }
@@ -1142,7 +1210,7 @@
         return { spreadsheetId: guruData.spreadsheetId, username: guruData.username, mapelKode, type: type, nilai: nilai };
     }
     
-    // [PERBAIKAN] Memperbarui event listener untuk menangani aksi cetak
+    // [PERUBAHAN] Ganti fungsi setupActionListeners
     function setupActionListeners() {
         const tabContent = document.getElementById('tab-content');
         tabContent.addEventListener('click', function(e) {
@@ -1152,13 +1220,127 @@
             const action = button.dataset.action;
             const type = button.dataset.type;
             const mapelKode = button.dataset.mapelKode;
-            
+            const kelas = button.dataset.kelas;
+
             if (action === 'save') { handleSaveDraft(button, type, mapelKode); } 
             else if (action === 'submit') { handleKirimNilai(button, type, mapelKode); } 
             else if (action === 'cancel') { handleBatalKirim(button, type, mapelKode); }
             else if (action === 'print') { handleCetakNilai(button, type, mapelKode); }
-            else if (action === 'resubmit') { handleResendNilai(button, type, mapelKode); } // [BARU]
+            else if (action === 'resubmit') { handleResendNilai(button, type, mapelKode); }
+            else if (action === 'export') { handleExportNilaiTemplate(button, type, mapelKode, kelas); }
+            else if (action === 'import') { openGuruImportModal(button, type, mapelKode, kelas); }
         });
+    }
+
+    // [PERUBAHAN] Tambahkan 3 fungsi baru ini
+    let guruNilaiDropzone;
+    Dropzone.autoDiscover = false;
+
+    function handleExportNilaiTemplate(btn, type, mapelKode, kelas) {
+        const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+        const btnText = btn.querySelector('.btn-text');
+        const spinner = btn.querySelector('.btn-spinner');
+        
+        btn.disabled = true;
+        if(btnText) btnText.classList.add('hidden');
+        if(spinner) spinner.classList.remove('hidden');
+
+        google.script.run
+            .withSuccessHandler(result => {
+                if (result.base64Data) {
+                    const link = document.createElement('a');
+                    link.href = `data:${result.mimeType};base64,${result.base64Data}`;
+                    link.download = result.fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    showNotification('Template berhasil diekspor.', 'success');
+                } else {
+                    showNotification('Gagal ekspor: ' + (result.error || 'Unknown error'), 'error');
+                }
+                // Kembalikan tombol ke normal setelah sukses
+                btn.disabled = false;
+                if(btnText) btnText.classList.remove('hidden');
+                if(spinner) spinner.classList.add('hidden');
+            })
+            .withFailureHandler(err => {
+                showNotification('Error: ' + err.message, 'error');
+                // Kembalikan tombol ke normal jika gagal
+                btn.disabled = false;
+                if(btnText) btnText.classList.remove('hidden');
+                if(spinner) spinner.classList.add('hidden');
+            })
+            // [PERBAIKAN] Menambahkan parameter 'guruData' di sini
+            .generateNilaiTemplateForGuru(guruData.spreadsheetId, kelas, mapelKode, type, guruData);
+    }
+
+    function openGuruImportModal(btn, type, mapelKode, kelas) {
+        const modal = document.getElementById('guru-nilai-import-modal');
+        const title = document.getElementById('guru-import-modal-title');
+        title.textContent = `Import Nilai untuk ${mapelKode} - Kelas ${kelas}`;
+        
+        modal.classList.remove('hidden');
+        setTimeout(() => modal.querySelector('.modal-content').style.transform = 'scale(1)', 10);
+
+        if (guruNilaiDropzone) {
+            guruNilaiDropzone.destroy();
+        }
+
+        guruNilaiDropzone = new Dropzone("#guru-nilai-dropzone-form", {
+            url: "#", autoProcessQueue: false, maxFiles: 1, acceptedFiles: '.xlsx, .xls', addRemoveLinks: true,
+            init: function() {
+                this.on("addedfile", function(file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const fileData = { fileName: file.name, mimeType: file.type, content: e.target.result.split(',')[1] };
+                        const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+                        
+                        const overlay = document.getElementById('loading-overlay');
+                        const overlayTitle = document.getElementById('overlay-title');
+                        
+                        // [PERBAIKAN] Pastikan overlay dan overlayTitle ada sebelum digunakan
+                        if (overlay && overlayTitle) {
+                            overlayTitle.textContent = "Mengimpor Nilai Guru...";
+                            overlay.classList.remove('hidden');
+                        }
+
+                        this.emit("processing", file);
+                        google.script.run
+                            .withSuccessHandler(res => {
+                                if (overlay) overlay.classList.add('hidden');
+                                this.emit("success", file);
+                                showNotification(res.message, res.status === 'success' ? 'success' : 'error');
+                                if (res.status === 'success') {
+                                    closeGuruImportModal();
+                                    if (type === 'ujian') {
+                                        buildUjianForm(mapelKode, guruData.mapel.find(m => m.kode === mapelKode).jenisUjian, kelas);
+                                    } else {
+                                        renderRaporSemesterTable(type.split('_').slice(1).join('_'), mapelKode, kelas);
+                                    }
+                                }
+                            })
+                            .withFailureHandler(err => {
+                                if (overlay) overlay.classList.add('hidden');
+                                this.emit("error", file, err.message);
+                                showNotification('Gagal impor: ' + err.message, 'error');
+                            })
+                            .importNilaiFromExcelForGuru(guruData.spreadsheetId, fileData, guruData.username, mapelKode, type);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+        });
+
+        document.getElementById('closeGuruImportModalBtn').onclick = closeGuruImportModal;
+        document.getElementById('closeGuruImportModalBtn2').onclick = closeGuruImportModal;
+    }
+
+    function closeGuruImportModal() {
+        const modal = document.getElementById('guru-nilai-import-modal');
+        modal.classList.add('hidden');
+        if (guruNilaiDropzone) {
+            guruNilaiDropzone.removeAllFiles(true);
+        }
     }
 
     // TAMBAHKAN FUNGSI BARU INI
