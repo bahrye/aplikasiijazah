@@ -6285,15 +6285,12 @@
                 calculateUjianAverage();
             });
 
-            // GANTI SELURUH FUNGSI LAMA ANDA DENGAN VERSI BARU INI
-
             // GANTI FUNGSI LAMA DENGAN VERSI YANG SUDAH DIPERBAIKI INI
             function buildScoreTable(jenis, title) {
                 resetFloatingButtons();
-
-                clearHistoryAndHideButtons(); 
-                document.getElementById('undo-redo-container').classList.remove('hidden'); 
-                setupScoreInputListeners('input-ujian-container'); 
+                clearHistoryAndHideButtons();
+                document.getElementById('undo-redo-container').classList.remove('hidden');
+                setupScoreInputListeners('input-ujian-container');
 
                 const container = document.getElementById('input-ujian-container');
                 container.innerHTML = `<div class="text-center p-8"><p class="font-bold loading-animation">Memuat data untuk tabel nilai</p><p>Silakan tunggu sebentar...</p></div>`;
@@ -6307,7 +6304,7 @@
                     new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getKkm(userSpreadsheetId))
                 ]).then(([students, mapelList, existingScores, kkmResponse]) => {
                     activeTableKey = jenis;
-                    container.innerHTML = ''; 
+                    container.innerHTML = '';
 
                     if (!students || students.length === 0) {
                         container.innerHTML = `<p class="text-center text-red-500 p-4">Data siswa tidak ditemukan. Harap isi data siswa terlebih dahulu.</p>`;
@@ -6317,61 +6314,92 @@
                         container.innerHTML = `<p class="text-center text-red-500 p-4">Tidak ada mata pelajaran yang ditandai untuk Ujian ${jenis}. Silahkan edit dan ubah Jenis Ujian pada Mata Pelajaran.</p>`;
                         return;
                     }
-                    
+
                     const kkmValue = (kkmResponse && kkmResponse.status === 'success') ? kkmResponse.kkm : 75;
+                    const uniqueKelas = [...new Set(students.map(s => s.kelas).filter(Boolean))].sort();
 
                     const mainWrapper = document.createElement('div');
-                    mainWrapper.className = 'bg-white p-6 rounded-lg shadow-md'; 
+                    mainWrapper.className = 'bg-white p-6 rounded-lg shadow-md';
 
-                    const tableHtml = `
+                    const filterHtml = `
+                        <div class="mb-4 flex flex-wrap items-end gap-4">
+                            <div>
+                                <label for="filter-kelas-ujian" class="block text-sm font-medium text-gray-700">Filter Berdasarkan Kelas</label>
+                                <select id="filter-kelas-ujian" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    <option value="semua">Tampilkan Semua Kelas</option>
+                                    ${uniqueKelas.map(k => `<option value="${k}">${k}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const tableContainer = document.createElement('div');
+                    tableContainer.id = `table-ujian-${jenis}-wrapper`; // Beri ID unik untuk kontainer tabel
+
+                    mainWrapper.innerHTML = `
                         <div class="mb-4">
                             <h2 class="text-2xl font-bold text-gray-800">${title}</h2>
                             <p class="mt-1 text-gray-600">Gunakan tombol pensil (Ubah) pada panel mengambang di bawah untuk mulai mengisi nilai. Rata-rata di bawah KKM (${kkmValue}) akan ditandai merah.</p>
                         </div>
-                        <form id="form-nilai-${jenis}">
-                            <div class="overflow-x-auto">
-                                <table id="score-table-${jenis}" class="score-table min-w-full divide-y divide-gray-200" data-kkm="${kkmValue}">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th>
-                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th>
-                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>
-                                            ${mapelList.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}
-                                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th>
-                                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="bg-white divide-y divide-gray-200">
-                                        ${students.map((s, index) => {
-                                            const studentScores = existingScores[s.nisn] || {};
-                                            let rowHtml = `<tr data-nisn="${s.nisn}" data-nama="${s.nama.toUpperCase()}"><td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${index + 1}</td><td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 nama-siswa-cell">${s.nama.toUpperCase()}</td>`;
-                                            mapelList.forEach(m => {
-                                                const score = studentScores[m.kode] ?? '';
-                                                const numericScore = parseFloat(score);
-                                                // Tambahkan baris ini untuk menentukan class berdasarkan KKM
-                                                const kkmClass = (!isNaN(numericScore) && numericScore < kkmValue) ? 'text-red-600 font-bold' : '';
-                                                // Tambahkan variabel kkmClass ke dalam class input
-                                                rowHtml += `<td class="px-2 py-1"><input type="number" min="0" max="100" class="score-input p-1 border rounded-md ${kkmClass}" data-mapel-kode="${m.kode}" value="${score}" readonly></td>`;
-                                            });
-                                            rowHtml += `<td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell jumlah-nilai">0</td><td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell rata-rata-nilai">0.00</td></tr>`;
-                                            return rowHtml;
-                                        }).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </form>
+                        ${filterHtml}
                     `;
-                    
-                    mainWrapper.innerHTML = tableHtml;
+                    mainWrapper.appendChild(tableContainer);
                     container.appendChild(mainWrapper);
 
-                    const scoreTable = document.getElementById(`score-table-${jenis}`);
-                    scoreTable.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row));
-                    scoreTable.addEventListener('input', handleScoreInput);
-                    scoreTable.addEventListener('paste', handleSmartPaste);
-                    document.getElementById(`form-nilai-${jenis}`).addEventListener('submit', (e) => handleSaveNilai(e, jenis));
+                    const renderTable = (filteredStudents) => {
+                        const tableHtml = `
+                            <form id="form-nilai-${jenis}">
+                                <div class="overflow-x-auto">
+                                    <table id="score-table-${jenis}" class="score-table min-w-full divide-y divide-gray-200" data-kkm="${kkmValue}">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kelas</th>
+                                                ${mapelList.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}
+                                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th>
+                                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-gray-200">
+                                            ${filteredStudents.map((s, index) => {
+                                                const studentScores = existingScores[s.nisn] || {};
+                                                let rowHtml = `<tr data-nisn="${s.nisn}" data-nama="${s.nama.toUpperCase()}"><td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${index + 1}</td><td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 nama-siswa-cell">${s.nama.toUpperCase()}</td><td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${s.kelas || '-'}</td>`;
+                                                mapelList.forEach(m => {
+                                                    const score = studentScores[m.kode] ?? '';
+                                                    const numericScore = parseFloat(score);
+                                                    const kkmClass = (!isNaN(numericScore) && numericScore < kkmValue) ? 'text-red-600 font-bold' : '';
+                                                    rowHtml += `<td class="px-2 py-1"><input type="number" min="0" max="100" class="score-input p-1 border rounded-md ${kkmClass}" data-mapel-kode="${m.kode}" value="${score}" readonly></td>`;
+                                                });
+                                                rowHtml += `<td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell jumlah-nilai">0</td><td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell rata-rata-nilai">0.00</td></tr>`;
+                                                return rowHtml;
+                                            }).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </form>
+                        `;
+                        tableContainer.innerHTML = tableHtml;
+                        const scoreTable = document.getElementById(`score-table-${jenis}`);
+                        scoreTable.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row));
+                        scoreTable.addEventListener('input', handleScoreInput);
+                        scoreTable.addEventListener('paste', handleSmartPaste);
+                        document.getElementById(`form-nilai-${jenis}`).addEventListener('submit', (e) => handleSaveNilai(e, jenis));
+                        initializeCellSelection(`score-table-${jenis}`, jenis);
+                    }
+                    
+                    // Render tabel awal dengan semua siswa
+                    renderTable(students);
 
-                    initializeCellSelection(`score-table-${jenis}`, jenis);
+                    // Pasang event listener untuk dropdown filter
+                    document.getElementById('filter-kelas-ujian').addEventListener('change', function() {
+                        const selectedKelas = this.value;
+                        const filtered = selectedKelas === 'semua' ? students : students.filter(s => s.kelas === selectedKelas);
+                        renderTable(filtered);
+                        resetFloatingButtons(); // Reset tombol setiap kali filter berubah
+                    });
+
 
                 }).catch(err => {
                     container.innerHTML = `<p class="text-center text-red-500 p-4">Terjadi kesalahan saat memuat data: ${err.message}</p>`;
@@ -6464,13 +6492,9 @@
                     .getSchoolData(userSpreadsheetId);
             }
 
-            // GANTI FUNGSI LAMA ANDA DENGAN VERSI BARU INI
-
-            // ===== GANTI FUNGSI LAMA DENGAN VERSI BARU INI =====
-            // GANTI SELURUH FUNGSI LAMA DENGAN VERSI BARU YANG SUDAH DIPERBAIKI INI
+            // GANTI FUNGSI LAMA DENGAN VERSI YANG SUDAH DIPERBAIKI INI
             function calculateUjianAverage() {
                 resetFloatingButtons();
-
                 clearHistoryAndHideButtons();
                 updateUjianButtonState('btn-cek-rata-ujian');
                 const container = document.getElementById('input-ujian-container');
@@ -6481,11 +6505,10 @@
                     new Promise(resolve => google.script.run.withSuccessHandler(resolve).getMapel(userSpreadsheetId)),
                     new Promise(resolve => google.script.run.withSuccessHandler(resolve).getExistingNilai(userSpreadsheetId, 'Nilai Ujian Madrasah')),
                     new Promise(resolve => google.script.run.withSuccessHandler(resolve).getExistingNilai(userSpreadsheetId, 'Nilai Ujian Praktek')),
-                    // ▼▼▼ LANGKAH 1: Tambahkan pemanggilan untuk mengambil KKM ▼▼▼
                     new Promise(resolve => google.script.run.withSuccessHandler(resolve).getKkm(userSpreadsheetId))
                 ]).then(([students, allMapel, nilaiMadrasah, nilaiPraktek, kkmResponse]) => {
                     
-                    container.innerHTML = ''; 
+                    container.innerHTML = '';
 
                     if (!students || students.length === 0) {
                         container.innerHTML = `<p class="text-red-500 text-center p-4">Data siswa tidak ditemukan.</p>`;
@@ -6496,77 +6519,107 @@
                         return;
                     }
                     
-                    // ▼▼▼ LANGKAH 2: Simpan nilai KKM ▼▼▼
                     const kkmValue = (kkmResponse && kkmResponse.status === 'success') ? kkmResponse.kkm : 75;
+                    const uniqueKelas = [...new Set(students.map(s => s.kelas).filter(Boolean))].sort();
 
                     const mainWrapper = document.createElement('div');
                     mainWrapper.className = 'bg-white p-6 rounded-lg shadow-md mt-4';
 
-                    let tableHtml = `
+                    const filterHtml = `
+                        <div class="mb-4 flex flex-wrap items-end gap-4">
+                            <div>
+                                <label for="filter-kelas-rata-ujian" class="block text-sm font-medium text-gray-700">Filter Berdasarkan Kelas</label>
+                                <select id="filter-kelas-rata-ujian" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    <option value="semua">Tampilkan Semua Kelas</option>
+                                    ${uniqueKelas.map(k => `<option value="${k}">${k}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                    `;
+
+                    const tableContainer = document.createElement('div');
+                    tableContainer.id = 'rata-rata-ujian-table-wrapper';
+
+                    mainWrapper.innerHTML = `
                         <h2 class="text-2xl font-bold text-gray-800 mb-4">Tabel Rata-Rata Nilai Ujian</h2>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full text-sm">
-                                <thead class="bg-gray-100">
-                                    <tr>
-                                        <th class="border border-gray-300 px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">No</th>
-                                        <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">NISN</th>
-                                        <th class="border border-gray-300 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>
-                                        ${allMapel.map(m => `<th class="border border-gray-300 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}
-                                        <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th>
-                                        <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th>
-                                        <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Pembulatan (Input PDUM)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>`;
-                    
-                    students.forEach((student, index) => {
-                        tableHtml += `<tr>
-                                        <td class="border border-gray-300 px-3 py-2 text-sm text-center">${index + 1}</td>
-                                        <td class="border border-gray-300 px-4 py-2 text-sm text-center">${student.nisn}</td>
-                                        <td class="border border-gray-300 px-4 py-2 text-sm font-medium nama-siswa-cell">${student.nama.toUpperCase()}</td>`;
+                        ${filterHtml}
+                    `;
+                    mainWrapper.appendChild(tableContainer);
+                    container.appendChild(mainWrapper);
+
+                    const renderTable = (filteredStudents) => {
+                        let tableHtml = `
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full text-sm">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="border border-gray-300 px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">No</th>
+                                            <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">NISN</th>
+                                            <th class="border border-gray-300 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>
+                                            <th class="border border-gray-300 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kelas</th>
+                                            ${allMapel.map(m => `<th class="border border-gray-300 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}
+                                            <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th>
+                                            <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th>
+                                            <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Pembulatan (Input PDUM)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>`;
                         
-                        const studentScores = [];
-                        allMapel.forEach(mapel => {
-                            const nilaiM = parseFloat((nilaiMadrasah[student.nisn] || {})[mapel.kode]);
-                            const nilaiP = parseFloat((nilaiPraktek[student.nisn] || {})[mapel.kode]);
+                        filteredStudents.forEach((student, index) => {
+                            tableHtml += `<tr>
+                                            <td class="border border-gray-300 px-3 py-2 text-sm text-center">${index + 1}</td>
+                                            <td class="border border-gray-300 px-4 py-2 text-sm text-center">${student.nisn}</td>
+                                            <td class="border border-gray-300 px-4 py-2 text-sm font-medium nama-siswa-cell">${student.nama.toUpperCase()}</td>
+                                            <td class="border border-gray-300 px-4 py-2 text-sm">${student.kelas || '-'}</td>`;
                             
-                            let avgScore = null;
-                            const hasM = !isNaN(nilaiM);
-                            const hasP = !isNaN(nilaiP);
+                            const studentScores = [];
+                            allMapel.forEach(mapel => {
+                                const nilaiM = parseFloat((nilaiMadrasah[student.nisn] || {})[mapel.kode]);
+                                const nilaiP = parseFloat((nilaiPraktek[student.nisn] || {})[mapel.kode]);
+                                
+                                let avgScore = null;
+                                const hasM = !isNaN(nilaiM);
+                                const hasP = !isNaN(nilaiP);
 
-                            if (hasM && hasP) avgScore = (nilaiM + nilaiP) / 2;
-                            else if (hasM) avgScore = nilaiM;
-                            else if (hasP) avgScore = nilaiP;
+                                if (hasM && hasP) avgScore = (nilaiM + nilaiP) / 2;
+                                else if (hasM) avgScore = nilaiM;
+                                else if (hasP) avgScore = nilaiP;
 
-                            studentScores.push(avgScore);
+                                studentScores.push(avgScore);
+                                
+                                const roundedAvgScore = avgScore !== null ? Math.round(avgScore) : null;
+                                const kkmClass = (roundedAvgScore !== null && roundedAvgScore < kkmValue) ? 'text-red-600 font-bold' : '';
+                                tableHtml += `<td class="border border-gray-300 px-2 py-1 text-center average-score-cell ${kkmClass}">${roundedAvgScore !== null ? roundedAvgScore : '-'}</td>`;
+                            });
+
+                            const validScores = studentScores.filter(s => s !== null);
+                            const total = validScores.reduce((sum, score) => sum + Math.round(score), 0);
+                            const count = validScores.length;
+                            const average = count > 0 ? (total / count) : 0;
                             
-                            // ▼▼▼ LANGKAH 3: Tambahkan logika pewarnaan KKM untuk setiap sel nilai ▼▼▼
-                            const roundedAvgScore = avgScore !== null ? Math.round(avgScore) : null;
-                            const kkmClass = (roundedAvgScore !== null && roundedAvgScore < kkmValue) ? 'text-red-600 font-bold' : '';
-                            tableHtml += `<td class="border border-gray-300 px-2 py-1 text-center average-score-cell ${kkmClass}">${roundedAvgScore !== null ? roundedAvgScore : '-'}</td>`;
+                            const roundedAverage = Math.round(average);
+                            const avgClass = (average < kkmValue && count > 0) ? 'text-red-600 font-bold' : 'font-bold';
+                            const roundedAvgClass = (roundedAverage < kkmValue && count > 0) ? 'text-red-600 font-bold' : 'text-blue-600 font-bold';
+
+                            tableHtml += `<td class="border border-gray-300 px-4 py-2 text-center font-bold">${total}</td>
+                                          <td class="border border-gray-300 px-4 py-2 text-center ${avgClass}">${average.toFixed(2)}</td>
+                                          <td class="border border-gray-300 px-4 py-2 text-center ${roundedAvgClass}">${roundedAverage}</td>
+                                        </tr>`;
                         });
 
-                        const validScores = studentScores.filter(s => s !== null);
-                        const total = validScores.reduce((sum, score) => sum + Math.round(score), 0);
-                        const count = validScores.length;
-                        const average = count > 0 ? (total / count) : 0;
-                        
-                        const roundedAverage = Math.round(average);
+                        tableHtml += `</tbody></table></div>`;
+                        tableContainer.innerHTML = tableHtml;
+                    }
 
-                        // ▼▼▼ LANGKAH 4: Tambahkan logika pewarnaan KKM untuk rata-rata akhir dan pembulatan ▼▼▼
-                        const avgClass = (average < kkmValue && count > 0) ? 'text-red-600 font-bold' : 'font-bold';
-                        const roundedAvgClass = (roundedAverage < kkmValue && count > 0) ? 'text-red-600 font-bold' : 'text-blue-600 font-bold';
+                    // Render tabel awal dengan semua siswa
+                    renderTable(students);
 
-                        tableHtml += `<td class="border border-gray-300 px-4 py-2 text-center font-bold">${total}</td>
-                                      <td class="border border-gray-300 px-4 py-2 text-center ${avgClass}">${average.toFixed(2)}</td>
-                                      <td class="border border-gray-300 px-4 py-2 text-center ${roundedAvgClass}">${roundedAverage}</td>
-                                    </tr>`;
+                    // Pasang event listener untuk dropdown filter
+                    document.getElementById('filter-kelas-rata-ujian').addEventListener('change', function() {
+                        const selectedKelas = this.value;
+                        const filtered = selectedKelas === 'semua' ? students : students.filter(s => s.kelas === selectedKelas);
+                        renderTable(filtered);
                     });
-
-                    tableHtml += `</tbody></table></div>`;
-                    
-                    mainWrapper.innerHTML = tableHtml;
-                    container.appendChild(mainWrapper);
 
                 }).catch(err => {
                     container.innerHTML = `<p class="text-red-500 text-center p-4">Gagal memuat data rata-rata: ${err.message}</p>`;
@@ -7403,70 +7456,99 @@
                 if (!mapelList || mapelList.length === 0) { container.innerHTML = `<p class="text-center text-red-500 p-4">Data mata pelajaran tidak ditemukan.</p>`; return; }
                 
                 const kkmValue = (kkmResponse && kkmResponse.status === 'success') ? kkmResponse.kkm : 75;
+                const uniqueKelas = [...new Set(students.map(s => s.kelas).filter(Boolean))].sort();
 
                 const tableWrapper = document.createElement('div');
                 tableWrapper.className = 'p-4 border rounded-lg mt-3';
+
+                const filterHtml = `
+                    <div class="mb-4 flex flex-wrap items-end gap-4">
+                        <div>
+                            <label for="filter-kelas-rapor-${tableKey}" class="block text-sm font-medium text-gray-700">Filter Berdasarkan Kelas</label>
+                            <select id="filter-kelas-rapor-${tableKey}" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                <option value="semua">Tampilkan Semua Kelas</option>
+                                ${uniqueKelas.map(k => `<option value="${k}">${k}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                `;
                 
+                const tableContainer = document.createElement('div');
+                tableContainer.id = `table-rapor-${tableKey}-wrapper`;
+
                 tableWrapper.innerHTML = `
                     <h4 class="text-lg font-semibold">Tabel Nilai ${jenisNilai}</h4>
                     <p class="text-sm mt-1 mb-3 text-gray-600">Gunakan tombol pensil (Ubah) pada panel mengambang di bawah untuk mulai mengisi nilai. Rata-rata di bawah KKM (${kkmValue}) akan ditandai merah.</p>
-                    <form id="form-nilai-${tableKey}">
-                        <div class="overflow-x-auto">
-                            <table id="score-table-${sheetName}" class="score-table min-w-full divide-y divide-gray-200" data-kkm="${kkmValue}">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>
-                                        ${mapelList.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}
-                                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th>
-                                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    ${students.map((s, index) => {
-                                        const studentScores = existingScores[s.nisn] || {};
-                                        let rowHtml = `<tr data-nisn="${s.nisn}" data-nama="${s.nama.toUpperCase()}"><td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${index + 1}</td><td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 nama-siswa-cell">${s.nama.toUpperCase()}</td>`;
-                                        mapelList.forEach(m => {
-                                            const score = studentScores[m.kode] ?? '';
-                                            const numericScore = parseFloat(score);
-                                            // Tambahkan baris ini untuk menentukan class berdasarkan KKM
-                                            const kkmClass = (!isNaN(numericScore) && numericScore < kkmValue) ? 'text-red-600 font-bold' : '';
-                                            // Tambahkan variabel kkmClass ke dalam class input
-                                            rowHtml += `<td class="px-2 py-1"><input type="number" min="0" max="100" class="score-input p-1 border rounded-md ${kkmClass}" data-mapel-kode="${m.kode}" value="${score}" readonly></td>`;
-                                        });
-                                        rowHtml += `<td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell jumlah-nilai">0</td><td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell rata-rata-nilai">0.00</td></tr>`;
-                                        return rowHtml;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </form>
+                    ${filterHtml}
                 `;
-                
+                tableWrapper.appendChild(tableContainer);
                 container.innerHTML = '';
                 container.appendChild(tableWrapper);
 
-                const scoreTable = document.getElementById(`score-table-${sheetName}`);
-                scoreTable.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row));
-                scoreTable.addEventListener('input', handleScoreInput);
-                scoreTable.addEventListener('paste', handleSmartPaste);
-                document.getElementById(`form-nilai-${tableKey}`).addEventListener('submit', (e) => handleSaveRapor(e, semesterKey, jenisNilai));
+                const renderTable = (filteredStudents) => {
+                    const tableHtml = `
+                        <form id="form-nilai-${tableKey}">
+                            <div class="overflow-x-auto">
+                                <table id="score-table-${sheetName}" class="score-table min-w-full divide-y divide-gray-200" data-kkm="${kkmValue}">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NISN</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kelas</th>
+                                            ${mapelList.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}
+                                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th>
+                                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        ${filteredStudents.map((s, index) => {
+                                            const studentScores = existingScores[s.nisn] || {};
+                                            let rowHtml = `<tr data-nisn="${s.nisn}" data-nama="${s.nama.toUpperCase()}"><td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${index + 1}</td><td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${s.nisn}</td><td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 nama-siswa-cell">${s.nama.toUpperCase()}</td><td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${s.kelas || '-'}</td>`;
+                                            mapelList.forEach(m => {
+                                                const score = studentScores[m.kode] ?? '';
+                                                const numericScore = parseFloat(score);
+                                                const kkmClass = (!isNaN(numericScore) && numericScore < kkmValue) ? 'text-red-600 font-bold' : '';
+                                                rowHtml += `<td class="px-2 py-1"><input type="number" min="0" max="100" class="score-input p-1 border rounded-md ${kkmClass}" data-mapel-kode="${m.kode}" value="${score}" readonly></td>`;
+                                            });
+                                            rowHtml += `<td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell jumlah-nilai">0</td><td class="px-4 py-2 whitespace-nowrap text-sm text-center text-gray-800 total-cell rata-rata-nilai">0.00</td></tr>`;
+                                            return rowHtml;
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </form>
+                    `;
+                    tableContainer.innerHTML = tableHtml;
+                    const scoreTable = document.getElementById(`score-table-${sheetName}`);
+                    scoreTable.querySelectorAll('tbody tr').forEach(row => updateRowTotals(row));
+                    scoreTable.addEventListener('input', handleScoreInput);
+                    scoreTable.addEventListener('paste', handleSmartPaste);
+                    document.getElementById(`form-nilai-${tableKey}`).addEventListener('submit', (e) => handleSaveRapor(e, semesterKey, jenisNilai));
+                    initializeCellSelection(`score-table-${sheetName}`, tableKey);
+                }
 
-                // ▼▼▼ TAMBAHKAN BARIS DI BAWAH INI ▼▼▼
-                initializeCellSelection(`score-table-${sheetName}`, tableKey);
-                // ▲▲▲ AKHIR DARI PENAMBAHAN ▲▲▲
+                // Render tabel awal dengan semua siswa
+                renderTable(students);
+
+                // Pasang event listener untuk dropdown filter
+                document.getElementById(`filter-kelas-rapor-${tableKey}`).addEventListener('change', function() {
+                    const selectedKelas = this.value;
+                    const filtered = selectedKelas === 'semua' ? students : students.filter(s => s.kelas === selectedKelas);
+                    renderTable(filtered);
+                    resetFloatingButtons(); // Reset tombol setiap kali filter berubah
+                });
 
                 const semesterContainer = btnElement.closest('.rapor-semester-container');
                 if (semesterContainer) {
                     semesterContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             }).catch(err => {
-                container.innerHTML = `<p class="text-red-500 text-center p-4">Terjadi kesalahan saat memuat data: ${err.message}</p>`;
+                container.innerHTML = `<p class="text-center text-red-500 p-4">Terjadi kesalahan saat memuat data: ${err.message}</p>`;
             });
         }
 
-        // ===== GANTI FUNGSI LAMA DENGAN VERSI BARU YANG SUDAH DIPERBAIKI INI =====
+        // ===== GANTI FUNGSI LAMA DENGAN VERSI BARU INI =====
         function calculateRaporAverage(btnElement, semesterKey) {
             // ===== AWAL BLOK KODE YANG DITAMBAHKAN =====
             // 1. Tutup semua kontainer tabel di semester LAIN
@@ -7504,71 +7586,105 @@
                 if (!mapelList || mapelList.length === 0) { container.innerHTML = `<p class="text-red-500 text-center p-4">Data mata pelajaran tidak ditemukan.</p>`; return; }
                 
                 const kkmValue = (kkmResponse && kkmResponse.status === 'success') ? kkmResponse.kkm : 75;
+                const uniqueKelas = [...new Set(students.map(s => s.kelas).filter(Boolean))].sort();
 
                 const tableWrapper = document.createElement('div');
                 tableWrapper.className = 'bg-white p-6 rounded-lg shadow-md'; 
 
-                let tableHtml = `
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Tabel Rata-Rata Nilai</h2>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full text-sm">
-                            <thead class="bg-gray-100">
-                                <tr>
-                                    <th class="border border-gray-300 px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">No</th>
-                                    <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">NISN</th>
-                                    <th class="border border-gray-300 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>
-                                    ${mapelList.map(m => `<th class="border border-gray-300 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}
-                                    <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th>
-                                    <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th>
-                                </tr>
-                            </thead>
-                            <tbody>`;
-                
-                students.forEach((student, index) => {
-                    let rowInitialHtml = `<tr>
-                                            <td class="border border-gray-300 px-3 py-2 text-sm text-center">${index + 1}</td>
-                                            <td class="border border-gray-300 px-4 py-2 text-sm text-center">${student.nisn}</td>
-                                            <td class="border border-gray-300 px-4 py-2 text-sm font-medium nama-siswa-cell">${student.nama.toUpperCase()}</td>`;
-                    
-                    let scoresForThisRow = [];
-                    let scoreCellsHtml = '';
-                    
-                    mapelList.forEach(mapel => {
-                        const nilaiP = parseFloat((nilaiPengetahuan[student.nisn] || {})[mapel.kode]);
-                        const nilaiK = parseFloat((nilaiKeterampilan[student.nisn] || {})[mapel.kode]);
-                        
-                        let avgScore = null;
-                        const hasP = !isNaN(nilaiP);
-                        const hasK = !isNaN(nilaiK);
+                const filterHtml = `
+                    <div class="mb-4 flex flex-wrap items-end gap-4">
+                        <div>
+                            <label for="filter-kelas-rata-rapor-${semesterKey}" class="block text-sm font-medium text-gray-700">Filter Berdasarkan Kelas</label>
+                            <select id="filter-kelas-rata-rapor-${semesterKey}" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                <option value="semua">Tampilkan Semua Kelas</option>
+                                ${uniqueKelas.map(k => `<option value="${k}">${k}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                `;
 
-                        if (hasP && hasK) avgScore = (nilaiP + nilaiK) / 2;
-                        else if (hasP) avgScore = nilaiP;
-                        else if (hasK) avgScore = nilaiK;
+                const tableContainer = document.createElement('div');
+                tableContainer.id = `rata-rata-rapor-table-wrapper-${semesterKey}`;
+
+                tableWrapper.innerHTML = `
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Tabel Rata-Rata Nilai</h2>
+                    ${filterHtml}
+                `;
+                tableWrapper.appendChild(tableContainer);
+                container.innerHTML = '';
+                container.appendChild(tableWrapper);
+
+                const renderTable = (filteredStudents) => {
+                    let tableHtml = `
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="border border-gray-300 px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">No</th>
+                                        <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">NISN</th>
+                                        <th class="border border-gray-300 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>
+                                        <th class="border border-gray-300 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kelas</th>
+                                        ${mapelList.map(m => `<th class="border border-gray-300 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}
+                                        <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th>
+                                        <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+                    
+                    filteredStudents.forEach((student, index) => {
+                        let rowInitialHtml = `<tr>
+                                                <td class="border border-gray-300 px-3 py-2 text-sm text-center">${index + 1}</td>
+                                                <td class="border border-gray-300 px-4 py-2 text-sm text-center">${student.nisn}</td>
+                                                <td class="border border-gray-300 px-4 py-2 text-sm font-medium nama-siswa-cell">${student.nama.toUpperCase()}</td>
+                                                <td class="border border-gray-300 px-4 py-2 text-sm">${student.kelas || '-'}</td>`;
                         
-                        scoresForThisRow.push(avgScore);
+                        let scoresForThisRow = [];
+                        let scoreCellsHtml = '';
                         
-                        const roundedAvgScore = avgScore !== null ? Math.round(avgScore) : null;
-                        const kkmClass = (roundedAvgScore !== null && roundedAvgScore < kkmValue) ? 'text-red-600 font-bold' : '';
-                        scoreCellsHtml += `<td class="border border-gray-300 px-2 py-1 text-center average-score-cell ${kkmClass}">${roundedAvgScore !== null ? roundedAvgScore : '-'}</td>`;
+                        mapelList.forEach(mapel => {
+                            const nilaiP = parseFloat((nilaiPengetahuan[student.nisn] || {})[mapel.kode]);
+                            const nilaiK = parseFloat((nilaiKeterampilan[student.nisn] || {})[mapel.kode]);
+                            
+                            let avgScore = null;
+                            const hasP = !isNaN(nilaiP);
+                            const hasK = !isNaN(nilaiK);
+
+                            if (hasP && hasK) avgScore = (nilaiP + nilaiK) / 2;
+                            else if (hasP) avgScore = nilaiP;
+                            else if (hasK) avgScore = nilaiK;
+                            
+                            scoresForThisRow.push(avgScore);
+                            
+                            const roundedAvgScore = avgScore !== null ? Math.round(avgScore) : null;
+                            const kkmClass = (roundedAvgScore !== null && roundedAvgScore < kkmValue) ? 'text-red-600 font-bold' : '';
+                            scoreCellsHtml += `<td class="border border-gray-300 px-2 py-1 text-center average-score-cell ${kkmClass}">${roundedAvgScore !== null ? roundedAvgScore : '-'}</td>`;
+                        });
+
+                        const validScores = scoresForThisRow.filter(s => s !== null);
+                        const total = validScores.reduce((sum, score) => sum + Math.round(score), 0);
+                        const average = validScores.length > 0 ? (total / validScores.length) : 0;
+                        
+                        const avgClass = (average < kkmValue && validScores.length > 0) ? 'text-red-600 font-bold' : 'font-bold';
+
+                        const rowTotalsHtml = `<td class="border border-gray-300 px-4 py-2 text-center font-bold">${total}</td>
+                                              <td class="border border-gray-300 px-4 py-2 text-center ${avgClass}">${average.toFixed(2)}</td>`;
+
+                        tableHtml += rowInitialHtml + scoreCellsHtml + rowTotalsHtml + `</tr>`;
                     });
 
-                    const validScores = scoresForThisRow.filter(s => s !== null);
-                    const total = validScores.reduce((sum, score) => sum + Math.round(score), 0);
-                    const average = validScores.length > 0 ? (total / validScores.length) : 0;
-                    
-                    const avgClass = (average < kkmValue && validScores.length > 0) ? 'text-red-600 font-bold' : 'font-bold';
+                    tableHtml += `</tbody></table></div>`;
+                    tableContainer.innerHTML = tableHtml;
+                }
 
-                    const rowTotalsHtml = `<td class="border border-gray-300 px-4 py-2 text-center font-bold">${total}</td>
-                                          <td class="border border-gray-300 px-4 py-2 text-center ${avgClass}">${average.toFixed(2)}</td>`;
+                // Render tabel awal dengan semua siswa
+                renderTable(students);
 
-                    tableHtml += rowInitialHtml + scoreCellsHtml + rowTotalsHtml + `</tr>`;
+                // Pasang event listener untuk dropdown filter
+                document.getElementById(`filter-kelas-rata-rapor-${semesterKey}`).addEventListener('change', function() {
+                    const selectedKelas = this.value;
+                    const filtered = selectedKelas === 'semua' ? students : students.filter(s => s.kelas === selectedKelas);
+                    renderTable(filtered);
                 });
-
-                tableHtml += `</tbody></table></div>`;
-                
-                container.innerHTML = '';
-                tableWrapper.innerHTML = tableHtml;
-                container.appendChild(tableWrapper);
 
                 const semesterContainer = btnElement.closest('.rapor-semester-container');
                 if (semesterContainer) {
