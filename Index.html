@@ -14232,21 +14232,23 @@
             const rowsToProcess = Array.from(selectedApprovalRows);
             if (rowsToProcess.length === 0) return;
 
-            const actionText = status === 'Disetujui' ? 'menyetujui' : 'menolak';
-            if (!confirm(`Anda yakin ingin ${actionText} ${rowsToProcess.length} item yang dipilih?`)) return;
+            const isApproving = status === 'Disetujui';
+            const actionText = isApproving ? 'menyetujui' : 'menolak';
+            const title = isApproving ? "Konfirmasi Setujui Massal" : "Konfirmasi Tolak Massal";
+            const body = `Anda yakin ingin <strong>${actionText} ${rowsToProcess.length} item</strong> yang dipilih?`;
+            const confirmText = isApproving ? "Ya, Setujui" : "Ya, Tolak";
+            const confirmColor = isApproving ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700";
 
-            showGlobalStatus(`Memproses ${rowsToProcess.length} item...`, 'info');
-            google.script.run
-                .withSuccessHandler(response => {
-                    showGlobalStatus(response.message, response.status === 'success');
-                    selectedApprovalRows.clear();
-                    loadPersetujuanNilai();
-                    updateApprovalBadge(); // <-- Tambahkan di sini
-                })
-                .withFailureHandler(err => {
-                    showGlobalStatus(`Gagal: ${err.message}`, false);
-                })
-                .processMultipleSubmissions(userSpreadsheetId, rowsToProcess, status);
+            showConfirmationModal({
+                title: title,
+                body: body,
+                confirmText: confirmText,
+                confirmColor: confirmColor,
+                onConfirm: () => {
+                    // PANGGIL FUNGSI BARU UNTUK MEMULAI PROSES BATCH
+                    processApprovalInBatches(rowsToProcess, status);
+                }
+            });
         }
 
         // ===== [BARU] FUNGSI-FUNGSI UNTUK MANAJEMEN DATA GURU =====
@@ -14878,6 +14880,110 @@
             }
 
             return differences.join('');
+        }
+
+        /**
+         * [BARU] Menampilkan atau memperbarui notifikasi progres.
+         * @param {string} id - ID unik untuk notifikasi ini.
+         * @param {string} message - Pesan yang akan ditampilkan.
+         * @param {number} progress - Progres saat ini (0-100).
+         */
+        function showProgressNotification(id, message, progress) {
+            let notification = document.getElementById(id);
+            const container = document.getElementById('globalStatusMessage');
+
+            // Jika notifikasi belum ada, buat baru
+            if (!notification) {
+                notification = document.createElement('div');
+                notification.id = id;
+                // Menggunakan warna abu-abu (info) untuk proses yang sedang berjalan
+                notification.className = 'toast-notification bg-gray-600 w-full max-w-md';
+                notification.style.animation = 'fadeIn 0.5s ease-out forwards';
+                notification.style.opacity = '0';
+                container.appendChild(notification);
+            }
+            
+            // Perbarui konten notifikasi
+            notification.innerHTML = `
+                <div class="w-full">
+                    <p class="mb-2">${message}</p>
+                    <div class="w-full bg-gray-400 rounded-full h-2.5">
+                        <div class="bg-blue-400 h-2.5 rounded-full" style="width: ${progress}%"></div>
+                    </div>
+                </div>
+            `;
+            
+            // Tampilkan atau perbarui opacity
+            setTimeout(() => { notification.style.opacity = '1'; }, 10);
+        }
+
+        /**
+         * [BARU] Menutup dan menghapus notifikasi progres.
+         * @param {string} id - ID notifikasi yang akan ditutup.
+         * @param {string} finalMessage - Pesan akhir yang akan ditampilkan sebelum notifikasi hilang.
+         * @param {boolean} isSuccess - Menentukan warna pesan akhir.
+         */
+        function closeProgressNotification(id, finalMessage, isSuccess) {
+            let notification = document.getElementById(id);
+            if (!notification) return;
+
+            // Ganti warna dan pesan sesuai hasil akhir
+            notification.className = `toast-notification w-full max-w-md ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`;
+            notification.innerHTML = `<span>${finalMessage}</span>`;
+            
+            // Atur agar notifikasi hilang setelah beberapa detik
+            notification.style.animation = 'fadeInOut 4s ease-in-out forwards';
+            setTimeout(() => {
+                notification.remove();
+            }, 4000);
+        }
+
+        /**
+         * [BARU] Fungsi utama untuk memproses persetujuan dalam beberapa batch.
+         * @param {Array<number>} rowsToProcess - Array berisi nomor baris yang akan diproses.
+         * @param {string} status - Keputusan ("Disetujui" atau "Ditolak").
+         */
+        async function processApprovalInBatches(rowsToProcess, status) {
+            const BATCH_SIZE = 10; // Proses 10 item per panggilan server
+            const totalItems = rowsToProcess.length;
+            let processedCount = 0;
+            const notificationId = `progress-${Date.now()}`;
+            const actionText = status === 'Disetujui' ? 'Menyetujui' : 'Menolak';
+
+            showProgressNotification(notificationId, `${actionText} nilai... (0%)`, 0);
+
+            for (let i = 0; i < totalItems; i += BATCH_SIZE) {
+                const batch = rowsToProcess.slice(i, i + BATCH_SIZE);
+                try {
+                    // Panggil fungsi backend baru yang hanya memproses satu batch
+                    const response = await new Promise((resolve, reject) => {
+                        google.script.run
+                            .withSuccessHandler(resolve)
+                            .withFailureHandler(reject)
+                            .processApprovalChunk_Admin(userSpreadsheetId, batch, status);
+                    });
+
+                    if (response.status !== 'success') {
+                        throw new Error(response.message);
+                    }
+                    
+                    processedCount += batch.length;
+                    const progress = Math.round((processedCount / totalItems) * 100);
+                    showProgressNotification(notificationId, `${actionText} ${processedCount} dari ${totalItems} nilai... (${progress}%)`, progress);
+
+                } catch (error) {
+                    closeProgressNotification(notificationId, `Terjadi error: ${error.message}`, false);
+                    return; // Hentikan proses jika ada error
+                }
+            }
+
+            // Jika semua batch berhasil diproses
+            closeProgressNotification(notificationId, `Selesai! ${totalItems} item berhasil diproses.`, true);
+            
+            // Muat ulang data di halaman setelah selesai
+            selectedApprovalRows.clear();
+            loadPersetujuanNilai();
+            updateApprovalBadge();
         }
     </script>
 </body>
