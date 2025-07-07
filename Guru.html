@@ -955,14 +955,39 @@
         let actionButtonsHtml = '';
 
         if (isSubmitted) {
-            if (batchStatus && batchStatus.rejected > 0) {
-                actionButtonsHtml += `<button data-action="resubmit" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 text-sm flex items-center gap-2">Kirim Kembali Revisi</button>`;
+            // PERBAIKAN: Logika baru untuk menampilkan tombol secara kondisional
+            
+            // Kondisi 1: Jika SEMUA nilai telah disetujui
+            if (batchStatus && batchStatus.allApproved) {
+                actionButtonsHtml = `
+                    <button data-action="print" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700">
+                        Cetak Nilai
+                    </button>
+                    <button data-action="cancel" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 text-sm flex items-center gap-2">
+                        Batal Kirim
+                    </button>`;
+            
+            // Kondisi 2: Jika ADA nilai yang ditolak
+            } else if (batchStatus && batchStatus.rejected > 0) {
+                actionButtonsHtml = `
+                    <button data-action="resubmit" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 text-sm flex items-center gap-2">
+                        Kirim Kembali Revisi
+                    </button>
+                    <button data-action="cancel" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 text-sm flex items-center gap-2">
+                        Batal Kirim
+                    </button>`;
+            
+            // Kondisi 3: Jika masih menunggu (belum semua disetujui & tidak ada yang ditolak)
+            } else {
+                actionButtonsHtml = `
+                    <button title="Tombol akan aktif setelah semua nilai disetujui oleh admin." class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 bg-gray-400 cursor-not-allowed" disabled>
+                        Cetak Nilai
+                    </button>
+                    <button data-action="cancel" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 text-sm flex items-center gap-2">
+                        Batal Kirim
+                    </button>`;
             }
-            const cetakBtnDisabled = !batchStatus.allApproved ? 'disabled' : '';
-            const cetakBtnClass = !batchStatus.allApproved ? 'bg-gray-400 cursor-not-allowed' : 'bg-cyan-600 hover:bg-cyan-700';
-            const cetakBtnTitle = !batchStatus.allApproved ? 'title="Tombol akan aktif setelah semua nilai disetujui oleh admin."' : '';
-            actionButtonsHtml += `<button data-action="print" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 ${cetakBtnClass}" ${cetakBtnDisabled} ${cetakBtnTitle}>Cetak Nilai</button>`;
-            actionButtonsHtml += `<button data-action="cancel" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 text-sm flex items-center gap-2">Batal Kirim</button>`;
+
         } else {
             const kirimBtnDisabled = !isSubmissionEnabled ? 'disabled' : '';
             const kirimBtnClass = !isSubmissionEnabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700';
@@ -1846,6 +1871,10 @@
                     // Perbarui nama di sidebar dan session
                     document.getElementById('nama-guru-display').textContent = profileData.nama;
                     guruData.nama = profileData.nama;
+
+                    // PERBAIKAN: Tambahkan baris ini untuk memperbarui NIP di sesi
+                    guruData.nip = profileData.nip;
+
                     sessionStorage.setItem('guruData', JSON.stringify(guruData));
                 }
             })
