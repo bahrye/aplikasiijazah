@@ -3334,13 +3334,22 @@
                 <div>
                     <button id="downloadNilaiTemplateBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg inline-flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                         </svg>
                         Download Template Excel
                     </button>
                     <p class="text-xs text-gray-500 mt-2">Unduh template untuk memastikan format file Anda benar. Hanya kolom <strong>NISN</strong> dan kolom nilai yang akan dibaca.</p>
                 </div>
-                <form action="/file-upload" class="dropzone" id="nilai-dropzone-form">
+                
+                <div id="upload-kelas-filter-container" class="text-sm text-left">
+                    <label for="upload-kelas-filter" class="font-medium text-gray-800">Filter Kelas (Opsional):</label>
+                    <select id="upload-kelas-filter" class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-white">
+                        <option value="semua">Semua Siswa</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Gunakan template untuk kelas spesifik jika Anda hanya ingin mengupdate nilai untuk kelas tersebut.</p>
+                </div>
+
+                <form action="#" class="dropzone" id="nilai-dropzone-form">
                     <div class="dz-message" data-dz-message>
                         <span>Letakkan File atau Klik Disini untuk upload</span>
                     </div>
@@ -12107,8 +12116,7 @@
         }
 
         /**
-         * [DIPERBAIKI] Membuka dan mengkonfigurasi modal upload.
-         * Selalu menghancurkan instance Dropzone lama untuk memastikan konfigurasi baru diterapkan.
+         * [DIPERBAIKI] Membuka modal upload, mengisi filter kelas HANYA untuk tombol download.
          */
         function openUploadModal(uploadType, templateName, title) {
             const modal = document.getElementById('upload-nilai-modal');
@@ -12116,37 +12124,71 @@
 
             const form = document.getElementById('nilai-dropzone-form');
             form.dataset.uploadType = uploadType;
-            form.dataset.templateName = templateName;
+
+            const downloadBtn = document.getElementById('downloadNilaiTemplateBtn');
+            const kelasDropdown = document.getElementById('upload-kelas-filter');
+
+            // Selalu nonaktifkan dropdown saat modal dibuka, sampai kelas dimuat
+            kelasDropdown.innerHTML = '<option value="semua">Memuat kelas...</option>';
+            kelasDropdown.disabled = true;
+
+            // Ambil daftar kelas dari server untuk mengisi dropdown
+            google.script.run
+                .withSuccessHandler(students => {
+                    if (students && students.length > 0) {
+                        const uniqueKelas = [...new Set(students.map(s => s.kelas).filter(Boolean))].sort();
+                        kelasDropdown.innerHTML = '<option value="semua">Semua Siswa</option>';
+                        uniqueKelas.forEach(k => {
+                            kelasDropdown.add(new Option(k, k));
+                        });
+                        kelasDropdown.disabled = false;
+                    } else {
+                        kelasDropdown.innerHTML = '<option value="semua">Data kelas tidak ada</option>';
+                    }
+                })
+                .getStudents(userSpreadsheetId);
+
+            // [MODIFIKASI] Pindahkan listener download ke sini agar selalu terbarui
+            downloadBtn.onclick = () => {
+                const selectedKelas = kelasDropdown.value; // Ambil kelas yang dipilih saat tombol diklik
+                showGlobalStatus('Mempersiapkan template...', 'info');
+
+                google.script.run
+                    .withSuccessHandler(result => {
+                        if (result.base64Data) {
+                            const link = document.createElement('a');
+                            link.href = `data:${result.mimeType};base64,${result.base64Data}`;
+                            link.download = result.fileName;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        } else {
+                            showGlobalStatus('Gagal membuat template: ' + (result.error || 'Error'), false);
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        showGlobalStatus('Error: ' + err.message, false);
+                    })
+                    // Kirim kelas yang dipilih ke backend
+                    .generateNilaiTemplate(userSpreadsheetId, templateName, selectedKelas);
+            };
 
             modal.classList.remove('hidden');
             setTimeout(() => modal.querySelector('.modal-content').style.transform = 'scale(1)', 10);
 
-            // --- AWAL PERBAIKAN ---
-            // Hancurkan instance Dropzone yang ada sebelum membuat yang baru.
             if (nilaiDropzone) {
                 nilaiDropzone.destroy();
             }
             
-            // Selalu buat instance baru setiap kali modal dibuka.
             nilaiDropzone = new Dropzone("#nilai-dropzone-form", {
-                url: "#", 
-                autoProcessQueue: false,
-                maxFiles: 1,
-                acceptedFiles: '.xlsx, .xls, .csv',
-                addRemoveLinks: true,
-                dictDefaultMessage: "Letakkan File atau Klik Disini untuk upload",
+                url: "#", autoProcessQueue: false, maxFiles: 1, acceptedFiles: '.xlsx, .xls',
                 init: function() {
-                    this.on("maxfilesexceeded", function(file) {
-                        this.removeAllFiles();
-                        this.addFile(file);
-                    });
                     this.on("addedfile", function(file) {
-                        // Panggil handler dengan uploadType yang benar dari dataset form
-                        handleFileUpload(file, this, form.dataset.uploadType); 
+                        // [MODIFIKASI] Panggil handleFileUpload TANPA mengirim filter kelas
+                        handleFileUpload(file, this, form.dataset.uploadType);
                     });
                 }
             });
-            // --- AKHIR PERBAIKAN ---
         }
 
         /**
@@ -12162,53 +12204,27 @@
         }
 
         /**
-         * [DIPERBARUI DENGAN ANIMASI & OVERLAY] Menangani proses pembacaan file dan pengiriman ke server.
+         * [DIPERBAIKI] Menangani upload file TANPA filter kelas dari frontend.
          */
         function handleFileUpload(file, dropzoneInstance, uploadType) {
             const reader = new FileReader();
-            
-            // --- [BARU] Ambil elemen UI & Tampilkan Overlay ---
             const overlay = document.getElementById('loading-overlay');
-            const overlayTitle = document.getElementById('overlay-title');
-            const overlaySubtitle = document.getElementById('overlay-subtitle');
-            const modalButtons = [
-                document.getElementById('closeUploadModalBtn'),
-                document.getElementById('closeUploadModalBtn2'),
-                document.getElementById('downloadNilaiTemplateBtn')
-            ];
-
-            // Nonaktifkan tombol dan tampilkan overlay
-            modalButtons.forEach(btn => btn.disabled = true);
-            overlayTitle.textContent = "Mengunggah dan Memproses File";
-            overlayTitle.classList.add('loading-animation'); // Tambahkan kelas animasi
-            overlaySubtitle.textContent = "Mohon tunggu, proses ini mungkin memerlukan waktu beberapa saat. Jangan menutup jendela ini.";
-            document.getElementById('overlay-button-container').innerHTML = ''; // Kosongkan kontainer tombol overlay
             overlay.classList.remove('hidden');
-            // --- Akhir dari bagian baru ---
 
             reader.onload = (e) => {
                 const fileData = {
                     fileName: file.name,
                     mimeType: file.type,
-                    content: e.target.result.split(',')[1] // Ambil base64 content
+                    content: e.target.result.split(',')[1]
                 };
-
                 dropzoneInstance.emit("processing", file);
-
                 google.script.run
                     .withSuccessHandler(response => {
-                        overlayTitle.classList.remove('loading-animation');
-                        // --- [BARU] Sembunyikan Overlay & Aktifkan Tombol ---
                         overlay.classList.add('hidden');
-                        modalButtons.forEach(btn => btn.disabled = false);
-                        // --- Akhir dari bagian baru ---
-                        
                         if (response.status === 'success') {
                             dropzoneInstance.emit("success", file);
-                            dropzoneInstance.emit("complete", file);
                             showGlobalStatus(response.message, true);
                             syncRekapIndicator();
-                            // [UX Improvement] Tutup modal secara otomatis setelah berhasil
                             setTimeout(closeUploadModal, 1500); 
                         } else {
                             dropzoneInstance.emit("error", file, response.message);
@@ -12216,27 +12232,13 @@
                         }
                     })
                     .withFailureHandler(error => {
-                        overlayTitle.classList.remove('loading-animation'); 
-                        // --- [BARU] Sembunyikan Overlay & Aktifkan Tombol jika Gagal ---
                         overlay.classList.add('hidden');
-                        modalButtons.forEach(btn => btn.disabled = false);
-                        // --- Akhir dari bagian baru ---
-                        
                         dropzoneInstance.emit("error", file, error.message);
                         showGlobalStatus(`Error: ${error.message}`, false);
                     })
+                    // [MODIFIKASI] Panggil backend TANPA menyertakan 'selectedKelas'
                     .uploadNilaiFromExcel(userSpreadsheetId, fileData, uploadType);
             };
-            
-            reader.onerror = (error) => {
-                overlayTitle.classList.remove('loading-animation');
-                // --- [BARU] Sembunyikan Overlay & Aktifkan Tombol jika Gagal Baca File ---
-                overlay.classList.add('hidden');
-                modalButtons.forEach(btn => btn.disabled = false);
-                // --- Akhir dari bagian baru ---
-                dropzoneInstance.emit("error", file, "Gagal membaca file di browser.");
-            };
-
             reader.readAsDataURL(file);
         }
 
@@ -12244,31 +12246,6 @@
         document.getElementById('closeUploadModalBtn').addEventListener('click', closeUploadModal);
         document.getElementById('closeUploadModalBtn2').addEventListener('click', closeUploadModal);
 
-        document.getElementById('downloadNilaiTemplateBtn').addEventListener('click', function() {
-            const form = document.getElementById('nilai-dropzone-form');
-            const templateName = form.dataset.templateName;
-
-            showGlobalStatus('Membuat template...', 'info');
-
-            google.script.run
-                .withSuccessHandler(result => {
-                    if (result.base64Data) {
-                        const link = document.createElement('a');
-                        link.href = `data:${result.mimeType};base64,${result.base64Data}`;
-                        link.download = result.fileName;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        showGlobalStatus('Template berhasil diunduh.', true);
-                    } else {
-                        showGlobalStatus('Gagal membuat template: ' + (result.error || 'Unknown error'), false);
-                    }
-                })
-                .withFailureHandler(error => {
-                    showGlobalStatus('Error: ' + error.message, false);
-                })
-                .generateNilaiTemplate(userSpreadsheetId, templateName);
-        });
 
         // ===== AWAL KODE TAMBAHAN (JavaScript untuk Broadcast) =====
 
