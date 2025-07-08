@@ -1103,17 +1103,18 @@ function generateSiswaTemplate() {
 
 // [PERUBAHAN] Ganti seluruh fungsi importFromExcel dengan ini
 function importFromExcel(spreadsheetId, fileData, sheetName, userEmail) {
-    let tempFile;
+    let tempFileId = null; // Variabel untuk menyimpan ID file sementara
     try {
         const decoded = Utilities.base64Decode(fileData.content, Utilities.Charset.UTF_8);
         const blob = Utilities.newBlob(decoded, fileData.mimeType, fileData.fileName);
-        const tempSpreadsheetFile = Drive.Files.insert({
-            title: `temp_import_${new Date().getTime()}`
-        }, blob, {
-            convert: true
-        });
-        tempFile = DriveApp.getFileById(tempSpreadsheetFile.id);
-        const importSheet = SpreadsheetApp.openById(tempFile.getId()).getSheets()[0];
+        const tempSpreadsheetFile = Drive.Files.insert({ title: `temp_import_${new Date().getTime()}` }, blob, { convert: true });
+
+        if (!tempSpreadsheetFile || !tempSpreadsheetFile.id) {
+            throw new Error("Gagal membuat file sementara di Google Drive.");
+        }
+        
+        tempFileId = tempSpreadsheetFile.id;
+        const importSheet = SpreadsheetApp.openById(tempFileId).getSheets()[0];
         const data = importSheet.getDataRange().getValues();
 
         if (data.length <= 1) throw new Error("File kosong atau hanya berisi header.");
@@ -1612,12 +1613,11 @@ function getExistingNilai(spreadsheetId, sheetName) {
  * @returns {number} Jumlah nilai yang berhasil diupdate atau ditambahkan.
  */
 function processSheetImport(targetSs, targetSheetName, importSheet, mapelForSheet) {
-    if (importSheet.getLastRow() <= 1) return 0; // File impor kosong
+    if (importSheet.getLastRow() <= 1) return 0;
 
-    // 1. Dapatkan daftar siswa utama sebagai sumber kebenaran
     const students = getStudents(targetSs.getId());
     if (!students || students.length === 0) {
-        throw new Error("Tidak ada data siswa di sheet 'Data Siswa'. Harap isi terlebih dahulu.");
+        throw new Error("Tidak ada data siswa di sheet 'Data Siswa'.");
     }
     
     // 2. Baca data dari file Excel dan simpan ke dalam Map untuk pencarian cepat
@@ -4843,16 +4843,22 @@ function bulkUpdateTahunLulus(spreadsheetId, rowNumbers, tahunLulus) {
  * [FINAL v2] Menghasilkan file template Excel untuk upload nilai.
  * Menambahkan sheet '_validation_' tersembunyi yang berisi 'uploadType' untuk validasi.
  */
-function generateNilaiTemplate(spreadsheetId, templateName) {
+function generateNilaiTemplate(spreadsheetId, templateName, selectedKelas) {
   let tempFile;
   try {
     const ss = SpreadsheetApp.create(`Template_Upload_${templateName}_${new Date().getTime()}`);
     tempFile = DriveApp.getFileById(ss.getId());
 
-    const students = getStudents(spreadsheetId);
+    // [MODIFIKASI] Filter siswa berdasarkan kelas yang dipilih
+    let students = getStudents(spreadsheetId);
+    if (selectedKelas && selectedKelas !== 'semua') {
+        students = students.filter(s => s.kelas === selectedKelas);
+    }
+
     const studentData = (students || []).map(s => ["'" + s.nisn, s.nama.toUpperCase()]);
 
     const populateSheet = (sheet, mapel) => {
+      // ... (sisa dari fungsi populateSheet tidak berubah)
       if (!mapel || mapel.length === 0) {
         sheet.appendRow(["Tidak ada mata pelajaran yang dikonfigurasi untuk jenis ini."]);
         return;
@@ -4868,7 +4874,7 @@ function generateNilaiTemplate(spreadsheetId, templateName) {
       sheet.setColumnWidth(2, 250);
     };
 
-    let uploadTypeIdentifier = ''; // Kode unik untuk validasi
+    let uploadTypeIdentifier = '';
 
     if (templateName.startsWith('Rapor_')) {
       const sheetP = ss.getSheets()[0].setName('Pengetahuan');
@@ -4891,12 +4897,9 @@ function generateNilaiTemplate(spreadsheetId, templateName) {
       throw new Error(`Nama template "${templateName}" tidak valid.`);
     }
 
-    // --- [VALIDASI BARU] ---
-    // Buat sheet tersembunyi yang berisi kode identifikasi unik.
     const validationSheet = ss.insertSheet('_validation_');
     validationSheet.getRange("A1").setValue(uploadTypeIdentifier);
-    validationSheet.hideSheet(); // Sembunyikan dari pengguna
-    // --- [AKHIR VALIDASI BARU] ---
+    validationSheet.hideSheet();
     
     SpreadsheetApp.flush();
 
@@ -4917,22 +4920,24 @@ function generateNilaiTemplate(spreadsheetId, templateName) {
   }
 }
 
-
 /**
- * [FINAL v2] Menerima file Excel dan mengimpor nilai ke sheet yang sesuai.
- * Kini melakukan validasi berdasarkan sheet '_validation_' yang tersembunyi.
- * Dan menggunakan helper processSheetImport yang baru dan lebih andal.
+ * [FINAL v3 - DENGAN FILTER KELAS & PERBAIKAN UPLOAD] Menerima file Excel dan mengimpor nilai ke sheet yang sesuai.
  */
-function uploadNilaiFromExcel(spreadsheetId, fileData, uploadType) {
-  let tempFile;
+function uploadNilaiFromExcel(spreadsheetId, fileData, uploadType, selectedKelas) {
+  let tempFileId = null; // Variabel untuk menyimpan ID file sementara
   try {
     const decoded = Utilities.base64Decode(fileData.content, Utilities.Charset.UTF_8);
     const blob = Utilities.newBlob(decoded, fileData.mimeType, fileData.fileName);
     const tempSpreadsheetFile = Drive.Files.insert({ title: `temp_upload_${uploadType}` }, blob, { convert: true });
-    tempFile = DriveApp.getFileById(tempSpreadsheetFile.id);
-    const importSs = SpreadsheetApp.openById(tempFile.getId());
+    
+    // Periksa apakah file berhasil dibuat dan memiliki ID
+    if (!tempSpreadsheetFile || !tempSpreadsheetFile.id) {
+        throw new Error("Gagal membuat file sementara di Google Drive. Pastikan Drive API telah diaktifkan.");
+    }
 
-    // Validasi tipe file upload
+    tempFileId = tempSpreadsheetFile.id; // Simpan ID untuk proses selanjutnya dan penghapusan
+    const importSs = SpreadsheetApp.openById(tempFileId);
+
     const validationSheet = importSs.getSheetByName('_validation_');
     if (!validationSheet) {
       throw new Error("File tidak valid. Harap gunakan template yang diunduh langsung dari aplikasi.");
@@ -4940,7 +4945,7 @@ function uploadNilaiFromExcel(spreadsheetId, fileData, uploadType) {
     const fileIdentifier = validationSheet.getRange("A1").getValue().toString().trim();
     if (fileIdentifier !== uploadType) {
       const formatTypeName = (typeStr) => typeStr.replace(/_/g, ' ').replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase());
-      throw new Error(`Kesalahan Upload: Anda mencoba mengunggah template untuk "${formatTypeName(fileIdentifier)}" ke slot "${formatTypeName(uploadType)}". Harap gunakan file yang benar.`);
+      throw new Error(`Kesalahan Upload: Anda mencoba mengunggah template untuk "${formatTypeName(fileIdentifier)}" ke slot "${formatTypeName(uploadType)}".`);
     }
 
     const targetSs = getSpreadsheet(spreadsheetId);
@@ -4948,21 +4953,16 @@ function uploadNilaiFromExcel(spreadsheetId, fileData, uploadType) {
     if (uploadType.startsWith('rapor_')) {
       const semesterKey = uploadType.split('_').slice(1).join('_');
       const allMapel = getMapel(spreadsheetId);
-      
-      const countP = processSheetImport(targetSs, `Rapor_Pengetahuan_${semesterKey}`, importSs.getSheetByName('Pengetahuan'), allMapel);
-      const countK = processSheetImport(targetSs, `Rapor_Keterampilan_${semesterKey}`, importSs.getSheetByName('Keterampilan'), allMapel);
-      
+      const countP = processSheetImport(targetSs, `Rapor_Pengetahuan_${semesterKey}`, importSs.getSheetByName('Pengetahuan'), allMapel, selectedKelas);
+      const countK = processSheetImport(targetSs, `Rapor_Keterampilan_${semesterKey}`, importSs.getSheetByName('Keterampilan'), allMapel, selectedKelas);
       return { status: "success", message: `Impor Rapor Selesai. Pengetahuan: ${countP} nilai diupdate. Keterampilan: ${countK} nilai diupdate.` };
     
     } else if (uploadType === 'ujian_gabungan') {
       const mapelUM = getMapelByJenis(spreadsheetId, 'madrasah');
       const mapelUP = getMapelByJenis(spreadsheetId, 'praktek');
-
-      const countUM = processSheetImport(targetSs, SHEET_NILAI_UJIAN_MADRASAH, importSs.getSheetByName('Ujian Madrasah'), mapelUM);
-      const countUP = processSheetImport(targetSs, SHEET_NILAI_UJIAN_PRAKTEK, importSs.getSheetByName('Ujian Praktek'), mapelUP);
-
+      const countUM = processSheetImport(targetSs, SHEET_NILAI_UJIAN_MADRASAH, importSs.getSheetByName('Ujian Madrasah'), mapelUM, selectedKelas);
+      const countUP = processSheetImport(targetSs, SHEET_NILAI_UJIAN_PRAKTEK, importSs.getSheetByName('Ujian Praktek'), mapelUP, selectedKelas);
       return { status: "success", message: `Impor Ujian Selesai. U. Madrasah: ${countUM} nilai diupdate. U. Praktek: ${countUP} nilai diupdate.` };
-
     } else {
       throw new Error("Tipe upload tidak dikenali.");
     }
@@ -4971,7 +4971,9 @@ function uploadNilaiFromExcel(spreadsheetId, fileData, uploadType) {
     Logger.log(`uploadNilaiFromExcel Error: ${e.stack}`);
     return { status: "error", message: e.toString() };
   } finally {
-    if (tempFile) tempFile.setTrashed(true);
+    if (tempFileId) {
+      DriveApp.getFileById(tempFileId).setTrashed(true);
+    }
   }
 }
 
@@ -8736,18 +8738,21 @@ function exportGuruToExcel(spreadsheetId) {
 }
 
 /**
- * [DIPERBARUI] Mengimpor data guru dari file Excel, kini dengan kolom Kelas Diajar.
+ * [DIPERBARUI & PERBAIKAN UPLOAD] Mengimpor data guru dari file Excel.
  */
 function importGuruFromExcel(spreadsheetId, fileData) {
-    let tempFile;
+    let tempFileId = null; // Variabel untuk menyimpan ID file sementara
     try {
         const decoded = Utilities.base64Decode(fileData.content, Utilities.Charset.UTF_8);
         const blob = Utilities.newBlob(decoded, fileData.mimeType, fileData.fileName);
-        const tempSpreadsheetFile = Drive.Files.insert({
-            title: `temp_import_guru_${new Date().getTime()}`
-        }, blob, { convert: true });
-        tempFile = DriveApp.getFileById(tempSpreadsheetFile.getId());
-        const importSheet = SpreadsheetApp.openById(tempFile.getId()).getSheets()[0];
+        const tempSpreadsheetFile = Drive.Files.insert({ title: `temp_import_guru_${new Date().getTime()}` }, blob, { convert: true });
+
+        if (!tempSpreadsheetFile || !tempSpreadsheetFile.id) {
+            throw new Error("Gagal membuat file sementara di Google Drive.");
+        }
+        
+        tempFileId = tempSpreadsheetFile.id;
+        const importSheet = SpreadsheetApp.openById(tempFileId).getSheets()[0];
         const data = importSheet.getDataRange().getValues();
 
         if (data.length <= 1) throw new Error("File kosong atau hanya berisi header.");
@@ -8770,31 +8775,24 @@ function importGuruFromExcel(spreadsheetId, fileData) {
         const usernamesInFile = new Set();
 
         data.forEach(row => {
-            const nama = row[0] || '';
-            const nip = row[1] || '';
             const username = (row[2] || '').toString().trim();
             const password = (row[3] || '').toString().trim();
-            const mapel = row[4] || '';
-            // ===== PERUBAHAN 1: Baca data dari kolom ke-6 (indeks 5) =====
-            const kelas = row[5] || '';
-
-            if (!username || !password) {
-                skippedCount++;
-                return;
-            }
-
-            if (existingUsernames.has(username.toLowerCase()) || usernamesInFile.has(username.toLowerCase())) {
-                skippedCount++;
-                return;
-            }
+            if (!username || !password) { skippedCount++; return; }
+            if (existingUsernames.has(username.toLowerCase()) || usernamesInFile.has(username.toLowerCase())) { skippedCount++; return; }
             
-            // ===== PERUBAHAN 2: Tambahkan data 'kelas' ke array yang akan ditulis =====
-            newTeachers.push([nama, username, password, mapel, nip, 'TIDAK', kelas]);
+            newTeachers.push([
+                row[0] || '', // Nama
+                username,
+                password,
+                row[4] || '', // Mapel
+                row[1] || '', // NIP
+                'TIDAK',
+                row[5] || ''  // Kelas
+            ]);
             usernamesInFile.add(username.toLowerCase());
         });
 
         if (newTeachers.length > 0) {
-            // ===== PERUBAHAN 3: Sesuaikan jangkauan penulisan menjadi 7 kolom =====
             targetSheet.getRange(targetSheet.getLastRow() + 1, 1, newTeachers.length, 7).setValues(newTeachers);
         }
 
@@ -8807,8 +8805,8 @@ function importGuruFromExcel(spreadsheetId, fileData) {
         Logger.log(e);
         return { status: "error", message: `Gagal mengimpor data: ${e.toString()}` };
     } finally {
-        if (tempFile) {
-            tempFile.setTrashed(true);
+        if (tempFileId) {
+            DriveApp.getFileById(tempFileId).setTrashed(true);
         }
     }
 }
