@@ -5797,9 +5797,9 @@
                 });
             }
 
-/**
-             * [VERSI FINAL OTOMATIS] Merender tabel siswa dan memasang fungsionalitas
-             * simpan-otomatis setiap kali urutan diubah oleh pengguna.
+            /**
+             * [VERSI FINAL DENGAN DRAG & DROP TERKONTROL] Merender tabel siswa dan memasang fungsionalitas
+             * drag-and-drop yang hanya mengizinkan pengurutan di dalam kelas yang sama.
              */
             function renderSiswaTable(studentsToRender) {
                 const container = document.getElementById('siswaTableContainer');
@@ -5832,6 +5832,8 @@
                     const tr = document.createElement('tr');
                     tr.className = 'draggable-row';
                     tr.dataset.nisn = s.nisn;
+                    // [MODIFIKASI] Tambahkan atribut data-kelas
+                    tr.dataset.kelas = s.kelas || 'tanpa-kelas'; 
                     
                     const tglLahirFormatted = s.tanggalLahir ? formatIndonesianDate(s.tanggalLahir) : '-';
                     const tempatLahirFormatted = s.tempatLahir ? toProperCase(s.tempatLahir) : '';
@@ -5858,13 +5860,23 @@
                 attachTableCheckboxListeners();
                 updateBulkActionBar();
 
-                // Inisialisasi SortableJS dengan fungsi simpan-otomatis
+                // [MODIFIKASI] Inisialisasi SortableJS dengan logika validasi 'onMove'
                 new Sortable(tbody, {
                     animation: 150,
                     ghostClass: 'ghost-row',
                     chosenClass: 'chosen-row',
+                    // 'onMove' akan dipanggil setiap kali Anda mencoba memindahkan item
+                    onMove: function (evt) {
+                        // evt.dragged -> baris yang sedang Anda seret
+                        // evt.related -> baris di sebelahnya (target pemindahan)
+                        const draggedClass = evt.dragged.dataset.kelas;
+                        const relatedClass = evt.related.dataset.kelas;
+
+                        // Kembalikan 'true' (izinkan pindah) hanya jika kelasnya sama.
+                        // Jika berbeda, kembalikan 'false' untuk membatalkan perpindahan.
+                        return draggedClass === relatedClass;
+                    },
                     onEnd: function() {
-                        // Setiap kali drag-and-drop selesai, panggil fungsi penyimpanan
                         const newOrderNisn = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.nisn);
                         saveNewSiswaOrder(newOrderNisn);
                     },
@@ -5900,7 +5912,7 @@
 
             /**
              * [DIPERBARUI] Menyiapkan modal saat tombol 'Edit' diklik,
-             * termasuk mengisi field-field baru.
+             * termasuk mengisi field-field baru dan meneruskan kelas yang sudah dipilih.
              */
             function handleEditStudent(student) {
                 const siswaModalTitle = document.getElementById('siswa-modal-title');
@@ -5917,10 +5929,9 @@
                 document.getElementById('nama').value = student.nama;
                 document.getElementById('nisn').value = student.nisn;
                 document.getElementById('nis').value = student.nis;
-                document.getElementById('nomorUjian').value = student.nomorUjian || ''; // [BARU]
+                document.getElementById('nomorUjian').value = student.nomorUjian || '';
                 document.getElementById('jenisKelamin').value = student.jenisKelamin;
-                document.getElementById('kelas').value = student.kelas || ''; // [BARU]
-                document.getElementById('ruangUjian').value = student.ruangUjian || ''; // [BARU]
+                document.getElementById('ruangUjian').value = student.ruangUjian || '';
                 document.getElementById('tempatLahir').value = toProperCase(student.tempatLahir);
                 document.getElementById('tanggalLahir').value = student.tanggalLahir;
                 document.getElementById('alamatSiswa').value = student.alamat || '';
@@ -5929,12 +5940,8 @@
                 document.getElementById('tahunMasuk').value = student.tahunMasuk || '';
                 document.getElementById('tahunLulus').value = student.tahunLulus || '';
 
-                // Panggil fungsi untuk mengisi dropdown, lalu set nilainya
-                populateKelasDropdown();
-                // Beri jeda singkat agar opsi dropdown sempat terisi sebelum nilainya diatur
-                setTimeout(() => {
-                    document.getElementById('kelas').value = student.kelas || '';
-                }, 200);
+                // [PERBAIKAN] Panggil fungsi untuk mengisi dropdown dengan menyertakan kelas siswa saat ini
+                populateKelasDropdown(student.kelas);
 
                 openSiswaModal();
             }
@@ -6706,7 +6713,7 @@
             });
 
             /**
-             * [FINAL v3] Menampilkan tabel rekapitulasi dengan logika default tahun ajaran yang benar.
+             * [FINAL v4 - DENGAN FILTER KELAS] Menampilkan tabel rekapitulasi dengan logika default tahun ajaran yang benar.
              */
             function displayRekap(type, rekapData) {
                 const { students, mapel, bobot, kkm } = rekapData;
@@ -6741,28 +6748,16 @@
                         break;
                 }
 
-                // [PERUBAHAN DIMULAI] - Menambahkan header baru secara dinamis
-                let tableHtml = `<div class="bg-white p-6 rounded-lg shadow-md">
-                    <div class="flex justify-between items-start flex-wrap gap-2">
-                        <div>
-                            <h3 class="text-xl font-bold">${title}</h3>
-                            ${subtitleHtml}
-                        </div>
-                        <div class="flex space-x-2">
-                            <button id="showExportModalButton" data-rekap-type="${type}" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 text-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 btn-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
-                                <span class="btn-text">Pengaturan & Ekspor</span>
-                                <span class="btn-spinner hidden loading-animation">Memuat</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="overflow-x-auto mt-4">
+                // [MODIFIKASI] Fungsi untuk merender tabel berdasarkan daftar siswa yang diberikan
+                const renderTable = (studentsToRender) => {
+                    let tableHtml = `<div class="overflow-x-auto mt-4">
                         <table class="min-w-full text-sm">
                             <thead class="bg-gray-100">
                                 <tr>
                                     <th class="border border-gray-300 px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">No</th>
                                     <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">NISN</th>
                                     <th class="border border-gray-300 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>
+                                    <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Kelas</th>
                                     ${mapel.map(m => `<th class="border border-gray-300 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase" title="${m.nama}">${m.kode}</th>`).join('')}
                                     <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jumlah</th>
                                     <th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-rata</th>
@@ -6770,56 +6765,94 @@
                                     ${type === 'ujian' ? '<th class="border border-gray-300 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rata-Rata AM (PDUM)</th>' : ''}
                                 </tr>
                             </thead>
-                            <tbody>
-                                ${students && students.length > 0 ? students.map((student, index) => {
-                                    const scores = dataToShow[student.nisn] || {};
-                                    let total = 0;
-                                    const mapelCount = mapel.length;
-                                    let rowHtml = `<tr>
-                                        <td class="border border-gray-300 px-3 py-2 text-center">${index + 1}</td>
-                                        <td class="border border-gray-300 px-4 py-2 text-center">${student.nisn}</td>
-                                        <td class="border border-gray-300 px-4 py-2 nama-siswa-cell">${student.nama.toUpperCase()}</td>`;
+                            <tbody>`;
+                    
+                    if (studentsToRender && studentsToRender.length > 0) {
+                        studentsToRender.forEach((student, index) => {
+                            const scores = dataToShow[student.nisn] || {};
+                            let total = 0;
+                            let rowHtml = `<tr>
+                                <td class="border border-gray-300 px-3 py-2 text-center">${index + 1}</td>
+                                <td class="border border-gray-300 px-4 py-2 text-center">${student.nisn}</td>
+                                <td class="border border-gray-300 px-4 py-2 nama-siswa-cell">${student.nama.toUpperCase()}</td>
+                                <td class="border border-gray-300 px-4 py-2 text-center">${student.kelas || '-'}</td>`;
 
-                                    mapel.forEach(m => {
-                                        const rawScore = scores[m.kode];
-                                        const numericScore = parseFloat(rawScore);
-                                        let displayValue = 0;
-                                        if (!isNaN(numericScore)) {
-                                            displayValue = Math.round(numericScore);
-                                            total += displayValue;
-                                        }
-                                        rowHtml += `<td class="border border-gray-300 text-center">${displayValue}</td>`;
-                                    });
+                            mapel.forEach(m => {
+                                const rawScore = scores[m.kode];
+                                const numericScore = parseFloat(rawScore);
+                                let displayValue = 0;
+                                if (!isNaN(numericScore)) {
+                                    displayValue = Math.round(numericScore);
+                                    total += displayValue;
+                                }
+                                rowHtml += `<td class="border border-gray-300 text-center">${displayValue}</td>`;
+                            });
 
-                                    const average = mapelCount > 0 ? (total / mapelCount) : 0;
-                                    const avgClass = (average < kkmValue && mapelCount > 0) ? 'text-red-600 font-bold' : 'font-bold';
+                            const average = mapelCount > 0 ? (total / mapelCount) : 0;
+                            const avgClass = (average < kkmValue && mapelCount > 0) ? 'text-red-600 font-bold' : 'font-bold';
 
-                                    rowHtml += `<td class="border border-gray-300 text-center font-bold">${total}</td>
-                                                <td class="border border-gray-300 text-center ${avgClass}">${average.toFixed(2).replace('.', ',')}</td>`;
-                                    
-                                    if (type === 'ijazah') {
-                                        const status = (mapelCount > 0 && average >= kkmValue) ? 'LULUS' : 'TIDAK LULUS';
-                                        const statusClass = status === 'LULUS' ? 'bg-green-100 text-green-800 font-bold' : 'bg-red-100 text-red-800 font-bold';
-                                        rowHtml += `<td class="border border-gray-300 text-center whitespace-nowrap ${statusClass}">${status}</td>`;
-                                    }
+                            rowHtml += `<td class="border border-gray-300 text-center font-bold">${total}</td>
+                                        <td class="border border-gray-300 text-center ${avgClass}">${average.toFixed(2).replace('.', ',')}</td>`;
+                            
+                            if (type === 'ijazah') {
+                                const status = (mapelCount > 0 && average >= kkmValue) ? 'LULUS' : 'TIDAK LULUS';
+                                const statusClass = status === 'LULUS' ? 'bg-green-100 text-green-800 font-bold' : 'bg-red-100 text-red-800 font-bold';
+                                rowHtml += `<td class="border border-gray-300 text-center whitespace-nowrap ${statusClass}">${status}</td>`;
+                            }
 
-                                    // Tambahkan sel data untuk kolom baru
-                                    if (type === 'ujian') {
-                                        const roundedAverage = Math.round(average);
-                                        const roundedAvgClass = (roundedAverage < kkmValue && mapelCount > 0) ? 'text-red-600 font-bold' : 'text-blue-600 font-bold';
-                                        rowHtml += `<td class="border border-gray-300 text-center ${roundedAvgClass}">${roundedAverage}</td>`;
-                                    }
-                                    
-                                    rowHtml += `</tr>`;
-                                    return rowHtml;
-                                }).join('') : ''}
-                            </tbody>
-                        </table>
+                            if (type === 'ujian') {
+                                const roundedAverage = Math.round(average);
+                                const roundedAvgClass = (roundedAverage < kkmValue && mapelCount > 0) ? 'text-red-600 font-bold' : 'text-blue-600 font-bold';
+                                rowHtml += `<td class="border border-gray-300 text-center ${roundedAvgClass}">${roundedAverage}</td>`;
+                            }
+                            
+                            rowHtml += `</tr>`;
+                            tableHtml += rowHtml;
+                        });
+                    } else {
+                        tableHtml += `<tr><td colspan="${mapelCount + 6}" class="text-center p-4">Tidak ada siswa di kelas yang dipilih.</td></tr>`;
+                    }
+                    
+                    tableHtml += `</tbody></table></div>`;
+                    return tableHtml;
+                };
+
+                // [MODIFIKASI] Membuat UI filter
+                const uniqueKelas = [...new Set(students.map(s => s.kelas).filter(Boolean))].sort();
+                const filterHtml = `
+                    <div class="mt-4 mb-2 flex items-center space-x-4">
+                        <label for="rekap-filter-kelas" class="text-sm font-medium">Filter Kelas:</label>
+                        <select id="rekap-filter-kelas" class="p-2 border border-gray-300 rounded-md bg-white">
+                            <option value="semua">Semua Kelas</option>
+                            ${uniqueKelas.map(k => `<option value="${k}">${k}</option>`).join('')}
+                        </select>
                     </div>
-                </div>`;
-                // [PERUBAHAN SELESAI]
+                `;
 
-                displayArea.innerHTML = tableHtml;
+                // [MODIFIKASI] Menggabungkan semua elemen UI
+                displayArea.innerHTML = `<div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex justify-between items-start flex-wrap gap-2">
+                        <div><h3 class="text-xl font-bold">${title}</h3>${subtitleHtml}</div>
+                        <div class="flex space-x-2">
+                            <button id="showExportModalButton" data-rekap-type="${type}" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700">Pengaturan & Ekspor</button>
+                        </div>
+                    </div>
+                    ${filterHtml}
+                    <div id="rekap-table-content"></div>
+                </div>`;
+
+                // Render tabel awal dengan semua siswa
+                document.getElementById('rekap-table-content').innerHTML = renderTable(students);
+
+                // [MODIFIKASI] Pasang event listener ke dropdown filter
+                document.getElementById('rekap-filter-kelas').addEventListener('change', function() {
+                    const selectedKelas = this.value;
+                    const studentsToDisplay = (selectedKelas === 'semua')
+                        ? students
+                        : students.filter(s => s.kelas === selectedKelas);
+                    
+                    document.getElementById('rekap-table-content').innerHTML = renderTable(studentsToDisplay);
+                });
 
                 if (type === 'ijazah') {
                     displayArea.addEventListener('change', function(e) {
@@ -14762,9 +14795,11 @@
         }
 
         /**
-         * [BARU] Memuat daftar kelas dari Pengaturan dan mengisinya ke dropdown.
+         * [BARU - DIPERBAIKI] Memuat daftar kelas dari Pengaturan dan mengisinya ke dropdown.
+         * Kini juga menerima parameter untuk memilih kelas yang sudah ada.
+         * @param {string} [selectedKelas=''] - Kelas yang harus dipilih secara default.
          */
-        function populateKelasDropdown() {
+        function populateKelasDropdown(selectedKelas = '') {
             const kelasDropdown = document.getElementById('kelas');
             const kelasInfo = document.getElementById('kelas-info');
             kelasDropdown.innerHTML = '<option value="">Memuat kelas...</option>';
@@ -14774,7 +14809,7 @@
                 .withSuccessHandler(response => {
                     if (response.status === 'success') {
                         const { kelasList } = response;
-                        kelasDropdown.innerHTML = '<option value="" disabled selected>-- Pilih Kelas --</option>';
+                        kelasDropdown.innerHTML = '<option value="">-- Pilih Kelas --</option>';
 
                         if (kelasList.length > 0) {
                             kelasList.forEach(k => {
@@ -14782,8 +14817,11 @@
                             });
                             kelasDropdown.disabled = false;
                             kelasInfo.classList.add('hidden');
+                            // [PERBAIKAN] Set nilai dropdown setelah semua pilihan dimuat
+                            if (selectedKelas) {
+                                kelasDropdown.value = selectedKelas;
+                            }
                         } else {
-                            // Jika daftar kelas kosong
                             kelasDropdown.disabled = true;
                             kelasInfo.classList.remove('hidden');
                         }
