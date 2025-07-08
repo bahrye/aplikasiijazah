@@ -939,15 +939,17 @@ function addStudent(spreadsheetId, studentData, userEmail) {
     const nextRow = sheet.getLastRow() + 1;
     const tanggalLahirObject = studentData.tanggalLahir ? new Date(studentData.tanggalLahir.replace(/-/g, '/')) : '';
     
-    // [DIPERBARUI] Susunan data baru untuk ditulis ke sheet
     const newRowData = [
         studentData.nisn, studentData.nis, studentData.nomorUjian, studentData.nama, 
         studentData.jenisKelamin, toProperCase(studentData.tempatLahir), tanggalLahirObject, 
         studentData.alamat, studentData.telepon, studentData.emailSiswa, 
-        studentData.tahunMasuk, studentData.tahunLulus, 'TIDAK', // Default tampilkanTranskrip
+        studentData.tahunMasuk, studentData.tahunLulus, 'TIDAK',
         studentData.kelas, studentData.ruangUjian
     ];
     sheet.getRange(nextRow, 1, 1, newRowData.length).setValues([newRowData]);
+    
+    // [MODIFIKASI] Panggil fungsi penyortiran setelah menambah siswa baru
+    sortAndRewriteStudentSheet(spreadsheetId);
     
     SpreadsheetApp.flush();
     const updatedStudentList = getStudents(spreadsheetId);
@@ -981,7 +983,6 @@ function updateStudent(spreadsheetId, studentData) {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
     
-    // [DIPERBARUI] Susunan data baru untuk diupdate
     const rowToUpdate = [
       studentData.nisn, studentData.nis, studentData.nomorUjian, studentData.nama,
       studentData.jenisKelamin, toProperCase(studentData.tempatLahir),
@@ -992,6 +993,9 @@ function updateStudent(spreadsheetId, studentData) {
     ];
 
     sheet.getRange(studentData.studentRow, 1, 1, rowToUpdate.length).setValues([rowToUpdate]);
+
+    // [MODIFIKASI] Panggil fungsi penyortiran setelah mengubah data siswa
+    sortAndRewriteStudentSheet(spreadsheetId);
 
     SpreadsheetApp.flush();
     const updatedStudentList = getStudents(spreadsheetId);
@@ -1858,9 +1862,9 @@ function updateRekapitulasi(spreadsheetId) {
 }
 
 /**
- * [PERBAIKAN RATA-RATA v2] Menyimpan data rekapitulasi ke sheet yang ditentukan.
+ * [PERBAIKAN RATA-RATA v2 & PENAMBAHAN KELAS] Menyimpan data rekapitulasi ke sheet yang ditentukan.
  * Rata-rata kini DIHITUNG DARI TOTAL NILAI DIBAGI JUMLAH TOTAL MAPEL.
- * Nilai kosong dianggap 0.
+ * Nilai kosong dianggap 0. Kolom Kelas ditambahkan setelah Nama Siswa.
  */
 function saveRekapSheet(spreadsheetId, sheetName, students, mapel, data) {
     const ss = getSpreadsheet(spreadsheetId);
@@ -1870,27 +1874,25 @@ function saveRekapSheet(spreadsheetId, sheetName, students, mapel, data) {
     }
     sheet.clear();
 
-    // [PERUBAHAN DIMULAI] - Menambahkan header baru secara dinamis
-    const headers = ["NISN", "Nama Lengkap", ...mapel.map(m => m.kode), "Jumlah", "Rata-rata"];
+    // [MODIFIKASI] Menambahkan header "Kelas"
+    const headers = ["NISN", "Nama Lengkap", "Kelas", ...mapel.map(m => m.kode), "Jumlah", "Rata-rata"];
     if (sheetName === SHEET_REKAP_IJAZAH) {
         headers.push("Status");
     } else if (sheetName === SHEET_REKAP_UJIAN) {
-        // Tambahkan header baru untuk rekap ujian
         headers.push("Rata-Rata AM (PDUM)");
     }
-    // [PERUBAHAN SELESAI]
 
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
     sheet.getRange("A:A").setNumberFormat("@");
 
     const isIjazahSheet = sheetName === SHEET_REKAP_IJAZAH;
-    const isUjianSheet = sheetName === SHEET_REKAP_UJIAN; // Tambahkan flag ini
     const kkm = isIjazahSheet ? (getKkm(spreadsheetId).kkm || 75) : 0;
 
     const rows = students.map(student => {
         const nisn = student.nisn.toString().trim();
-        const rowData = [nisn, student.nama];
+        // [MODIFIKASI] Menambahkan data student.kelas
+        const rowData = [nisn, student.nama, student.kelas || '-'];
         
         let roundedTotal = 0;
         const mapelCount = mapel.length; 
@@ -1911,7 +1913,7 @@ function saveRekapSheet(spreadsheetId, sheetName, students, mapel, data) {
         const average = mapelCount > 0 ? (roundedTotal / mapelCount) : 0;
         
         rowData.push(roundedTotal);
-        rowData.push(average);
+        rowData.push(average.toFixed(2).replace('.', ','));
 
         if (isIjazahSheet) {
             let status = '-';
@@ -1921,13 +1923,10 @@ function saveRekapSheet(spreadsheetId, sheetName, students, mapel, data) {
             rowData.push(status);
         }
 
-        // [PERUBAHAN DIMULAI] - Menambahkan data untuk kolom baru
-        if (isUjianSheet) {
-            // Hitung dan tambahkan nilai pembulatan
+        if (sheetName === SHEET_REKAP_UJIAN) {
             rowData.push(Math.round(average));
         }
-        // [PERUBAHAN SELESAI]
-
+        
         return rowData;
     });
 
@@ -1956,15 +1955,14 @@ function getRekapitulasiData(spreadsheetId) {
 }
 
 /**
- * [BARU & OPTIMIZED] Mengambil semua data untuk halaman rekapitulasi dalam satu operasi.
+ * [BARU & OPTIMIZED & PERBAIKAN KELAS] Mengambil semua data untuk halaman rekapitulasi dalam satu operasi.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @returns {object} Objek berisi semua data rekapitulasi.
  */
 function getRekapitulasiData_Optimized(spreadsheetId) {
   try {
-    const ss = getSpreadsheet(spreadsheetId); // Membuka spreadsheet HANYA SEKALI
+    const ss = getSpreadsheet(spreadsheetId);
 
-    // Helper function untuk memproses data dari sheet menjadi objek
     const processSheetData = (sheet) => {
       if (!sheet || sheet.getLastRow() < 2) return {};
       sheet.getRange("A:A").setNumberFormat('@');
@@ -1988,22 +1986,9 @@ function getRekapitulasiData_Optimized(spreadsheetId) {
       return dataObj;
     };
 
-    // 1. Mengambil Data Siswa
-    const studentSheet = ss.getSheetByName(SHEET_DATA_SISWA);
-    let students = [];
-    if (studentSheet && studentSheet.getLastRow() >= 2) {
-      studentSheet.getRange("A:B").setNumberFormat('@');
-      const studentValues = studentSheet.getRange(2, 1, studentSheet.getLastRow() - 1, 5).getValues();
-      students = studentValues.map((row, index) => {
-        let tanggalLahirStr = '';
-        if (row[4] && row[4] instanceof Date) {
-          tanggalLahirStr = Utilities.formatDate(row[4], Session.getScriptTimeZone(), "yyyy-MM-dd");
-        }
-        return { row: index + 2, nisn: row[0], nis: row[1], nama: row[2], tempatLahir: row[3], tanggalLahir: tanggalLahirStr };
-      });
-    }
+    // [PERBAIKAN] Menggunakan fungsi getStudents() untuk memastikan semua data siswa termuat
+    const students = getStudents(spreadsheetId);
 
-    // 2. Mengambil Data Mapel
     const mapelSheet = ss.getSheetByName(SHEET_MAPEL);
     let mapel = [];
     if (mapelSheet && mapelSheet.getLastRow() >= 2) {
@@ -2011,7 +1996,6 @@ function getRekapitulasiData_Optimized(spreadsheetId) {
       mapel = mapelValues.map((row, index) => ({ row: index + 2, kode: row[0], nama: row[1], kelompok: row[2], jenisUjian: row[3] || '' }));
     }
 
-    // 3. Mengambil Data Bobot
     const bobotSheet = ss.getSheetByName(SHEET_BOBOT);
     let bobot = { bobotUjian: 40, bobotRapor: 60 };
     if (bobotSheet && bobotSheet.getLastRow() >= 2) {
@@ -2021,22 +2005,13 @@ function getRekapitulasiData_Optimized(spreadsheetId) {
       }
     }
     
-    // =======================================================
-    // ▼▼▼ PERUBAHAN UTAMA ADA DI SINI ▼▼▼
-    // =======================================================
-    // 4. Mengambil Data KKM
-    const kkmData = getKkm(spreadsheetId); // Panggil fungsi yang sudah kita buat
-    const kkm = kkmData.kkm; // Ambil nilainya
-    // =======================================================
-    // ▲▲▲ AKHIR DARI PERUBAHAN ▲▲▲
-    // =======================================================
+    const kkmData = getKkm(spreadsheetId);
+    const kkm = kkmData.kkm;
 
-    // 5. Mengambil Semua Data Rekapitulasi
     const rekapUjian = processSheetData(ss.getSheetByName(SHEET_REKAP_UJIAN));
     const rekapRapor = processSheetData(ss.getSheetByName(SHEET_REKAP_RAPOR));
     const rekapIjazah = processSheetData(ss.getSheetByName(SHEET_REKAP_IJAZAH));
 
-    // Kirim semua data, termasuk KKM, ke frontend
     return { status: "success", data: { students, mapel, bobot, kkm, rekapUjian, rekapRapor, rekapIjazah } };
 
   } catch (e) {
@@ -9401,17 +9376,15 @@ function bulkUpdateKelasAndRuang(spreadsheetId, rowNumbers, newKelas, newRuang) 
     if (!rowNumbers || rowNumbers.length === 0) {
       return { status: "info", message: "Tidak ada siswa yang dipilih." };
     }
-    // Validasi input: setidaknya salah satu harus diisi.
     if (!newKelas && !newRuang) {
       return { status: "error", message: "Harap isi kolom Kelas atau Ruang." };
     }
       
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
-    const kelasColumn = 14;  // Kolom N
-    const ruangColumn = 15;  // Kolom O
+    const kelasColumn = 14;
+    const ruangColumn = 15;
     
-    // Looping melalui setiap baris yang dipilih untuk diupdate
     rowNumbers.forEach(rowNum => {
       if (newKelas) {
         sheet.getRange(rowNum, kelasColumn).setValue(newKelas);
@@ -9421,9 +9394,10 @@ function bulkUpdateKelasAndRuang(spreadsheetId, rowNumbers, newKelas, newRuang) 
       }
     });
 
-    SpreadsheetApp.flush(); // Pastikan perubahan segera tersimpan
-    
-    // Kirim kembali daftar siswa terbaru setelah diupdate
+    // [MODIFIKASI] Panggil fungsi penyortiran setelah mengubah data kelas secara massal
+    sortAndRewriteStudentSheet(spreadsheetId);
+
+    SpreadsheetApp.flush();
     const updatedStudentList = getStudents(spreadsheetId);
 
     return { 
@@ -9440,9 +9414,6 @@ function bulkUpdateKelasAndRuang(spreadsheetId, rowNumbers, newKelas, newRuang) 
 /**
  * [VERSI FINAL] Menerima urutan NISN baru, menulis ulang data, dan mengembalikan daftar siswa
  * yang sudah terurut langsung dari memori untuk menghindari race condition.
- * @param {string} spreadsheetId ID spreadsheet target.
- * @param {Array<string>} orderedNisnList Array berisi NISN dalam urutan baru.
- * @returns {object} Status operasi dan daftar siswa yang sudah terupdate.
  */
 function saveSiswaOrder(spreadsheetId, orderedNisnList) {
   try {
@@ -9454,54 +9425,41 @@ function saveSiswaOrder(spreadsheetId, orderedNisnList) {
 
     const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn());
     const allData = dataRange.getValues();
-    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    const nisnIndex = headers.indexOf("NISN");
-
-    if (nisnIndex === -1) throw new Error("Kolom NISN tidak ditemukan.");
-
+    
+    // Buat peta dari data mentah untuk akses cepat
     const studentDataMap = new Map();
     allData.forEach(row => {
-      studentDataMap.set(String(row[nisnIndex]), row);
+      // Kolom NISN ada di indeks 0
+      studentDataMap.set(String(row[0]), row);
     });
 
-    const sortedData = orderedNisnList.map(nisn => {
+    // Buat kembali array data berdasarkan urutan dari frontend
+    const reorderedData = orderedNisnList.map(nisn => {
       return studentDataMap.get(String(nisn));
-    }).filter(Boolean);
+    }).filter(Boolean); // Filter untuk menghapus item yang mungkin tidak ditemukan
 
-    if (sortedData.length > 0 && sortedData.length === allData.length) {
-      dataRange.clearContent();
-      sheet.getRange(2, 1, sortedData.length, sortedData[0].length).setValues(sortedData);
-    } else {
-      throw new Error("Gagal mengurutkan, terjadi ketidaksesuaian data. Coba refresh halaman.");
+    // [MODIFIKASI UTAMA] Lakukan penyortiran ulang di backend sebagai pengaman
+    // Ini memastikan urutan kelas selalu benar sebelum disimpan.
+    reorderedData.sort((a, b) => {
+        const keyA = getSortableClassKey(a[13]); // Kolom kelas adalah indeks 13
+        const keyB = getSortableClassKey(b[13]);
+        if (keyA[0] < keyB[0]) return -1;
+        if (keyA[0] > keyB[0]) return 1;
+        if (keyA[1] < keyB[1]) return -1;
+        if (keyA[1] > keyB[1]) return 1;
+        return 0;
+    });
+
+    // Tulis ulang seluruh data siswa dengan urutan yang sudah final
+    dataRange.clearContent();
+    if (reorderedData.length > 0) {
+      sheet.getRange(2, 1, reorderedData.length, reorderedData[0].length).setValues(reorderedData);
     }
     
     SpreadsheetApp.flush();
     
-    const updatedStudentList = sortedData.map((row, index) => {
-      let tanggalLahirStr = '';
-      if (row[6] && row[6] instanceof Date && !isNaN(row[6])) {
-        tanggalLahirStr = Utilities.formatDate(row[6], Session.getScriptTimeZone(), "yyyy-MM-dd");
-      }
-
-      return {
-        row: index + 2,
-        nisn: String(row[0] || ''),
-        nis: String(row[1] || ''),
-        nomorUjian: String(row[2] || ''),
-        nama: String(row[3] || ''),
-        jenisKelamin: String(row[4] || ''),
-        tempatLahir: String(row[5] || ''),
-        tanggalLahir: tanggalLahirStr,
-        alamat: String(row[7] || ''),
-        telepon: String(row[8] || ''),
-        emailSiswa: String(row[9] || ''),
-        tahunMasuk: String(row[10] || ''),
-        tahunLulus: String(row[11] || ''),
-        tampilkanTranskrip: String(row[12] || 'TIDAK'),
-        kelas: String(row[13] || ''),
-        ruangUjian: String(row[14] || '')
-      };
-    });
+    // Ambil data terbaru yang sudah pasti benar dari sheet
+    const updatedStudentList = getStudents(spreadsheetId);
 
     return { 
       status: "success", 
@@ -9750,4 +9708,117 @@ function processApprovalChunk_Admin(spreadsheetId, rowNumbers, status) {
     Logger.log("processApprovalChunk_Admin Error: " + e.message);
     return { status: "error", message: e.message };
   }
+}
+
+/**
+ * [BARU - DIPERBAIKI] Mengubah angka Romawi menjadi integer untuk keperluan sorting.
+ * @param {string} s - String angka Romawi.
+ * @returns {number} Angka integer.
+ */
+function romanToInt(s) {
+    const map = { 'I': 1, 'V': 5, 'X': 10, 'L': 50 };
+    let result = 0;
+    for (let i = 0; i < s.length; i++) {
+        const current = map[s[i].toUpperCase()];
+        if (!current) continue;
+        const next = map[s[i + 1] ? s[i + 1].toUpperCase() : ''] ? map[s[i + 1].toUpperCase()] : 0;
+        if (next > current) {
+            result += next - current;
+            i++;
+        } else {
+            result += current;
+        }
+    }
+    return result;
+}
+
+/**
+ * [BARU - DIPERBAIKI] Membuat kunci yang bisa diurutkan dari nama kelas.
+ * Kini dapat menangani format seperti "VI.A", "10 IPA 1", dll.
+ * @param {string} className - Nama kelas.
+ * @returns {Array} Array berisi [angka_kelas, teks_kelas] untuk sorting.
+ */
+function getSortableClassKey(className) {
+    if (!className || typeof className !== 'string') {
+        return [Infinity, '']; // Menempatkan siswa tanpa kelas di akhir.
+    }
+    const trimmedClass = className.trim();
+    
+    // Coba deteksi angka Romawi (I-XII) di awal string
+    const romanMatch = trimmedClass.match(/^(XII|XI|X|IX|IV|V?I{0,3})(.*)/i);
+    if (romanMatch) {
+        const numPart = romanToInt(romanMatch[1]);
+        const textPart = (romanMatch[2] || '').toLowerCase().trim();
+        return [numPart, textPart];
+    }
+
+    // Coba deteksi angka Arab di awal string
+    const numericMatch = trimmedClass.match(/^(\d+)(.*)/);
+    if (numericMatch) {
+        const numPart = parseInt(numericMatch[1], 10);
+        const textPart = (numericMatch[2] || '').toLowerCase().trim();
+        return [numPart, textPart];
+    }
+
+    // Default untuk kelas yang tidak diawali angka (cth: "Bahasa")
+    return [Infinity, trimmedClass.toLowerCase()];
+}
+
+/**
+ * [BARU & INTI - DIPERBAIKI] Mengambil semua data siswa, mengurutkannya, dan menulis ulang ke sheet.
+ * Fungsi ini menjaga urutan asli untuk siswa di kelas yang sama.
+ * @param {string} spreadsheetId - ID dari spreadsheet yang akan diurutkan.
+ */
+function sortAndRewriteStudentSheet(spreadsheetId) {
+    const lock = LockService.getScriptLock();
+    lock.waitLock(30000);
+
+    try {
+        const ss = getSpreadsheet(spreadsheetId);
+        const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
+        if (!sheet || sheet.getLastRow() < 2) {
+            return;
+        }
+
+        const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn());
+        const values = dataRange.getValues();
+
+        // Buat objek sementara untuk diurutkan, dengan menyertakan data baris asli
+        let studentsToSort = values.map((row) => ({
+            originalRowData: row,
+            kelas: row[13] || '' // Kolom Kelas adalah indeks 13 (kolom N)
+        }));
+
+        // Urutkan array siswa. Sort() di Apps Script bersifat stabil,
+        // yang berarti urutan asli akan dipertahankan jika hasil perbandingan 0.
+        studentsToSort.sort((a, b) => {
+            const keyA = getSortableClassKey(a.kelas);
+            const keyB = getSortableClassKey(b.kelas);
+
+            // 1. Urutkan berdasarkan angka kelas
+            if (keyA[0] < keyB[0]) return -1;
+            if (keyA[0] > keyB[0]) return 1;
+
+            // 2. Jika angka sama, urutkan berdasarkan sisa teksnya (cth: ".a" vs ".b")
+            if (keyA[1] < keyB[1]) return -1;
+            if (keyA[1] > keyB[1]) return 1;
+            
+            // 3. Jika kelas sama persis, kembalikan 0 untuk mempertahankan urutan input asli.
+            return 0;
+        });
+
+        // Ambil kembali data baris yang sudah terurut
+        const sortedValues = studentsToSort.map(item => item.originalRowData);
+
+        // Hapus data lama dan tulis ulang data yang sudah terurut
+        dataRange.clearContent();
+        if (sortedValues.length > 0) {
+            sheet.getRange(2, 1, sortedValues.length, sortedValues[0].length).setValues(sortedValues);
+        }
+        
+    } catch (e) {
+        Logger.log("Error during student sort: " + e.message);
+    } finally {
+        lock.releaseLock();
+    }
 }
