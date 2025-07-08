@@ -1809,6 +1809,12 @@
                                 </button>
                             </div>
                             
+                            <div id="validation-filter-container" class="hidden mb-4 p-4 bg-gray-50 rounded-lg border flex items-center space-x-4">
+                                <label for="validation-filter-kelas" class="text-sm font-medium text-gray-700">Filter Berdasarkan Kelas:</label>
+                                <select id="validation-filter-kelas" class="block w-full max-w-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                    </select>
+                            </div>
+
                             <div id="validationResultContainer" class="mt-2">
                                 <p class="text-center text-gray-500">Pilih salah satu mode validasi di atas untuk memulai.</p>
                             </div>
@@ -1886,6 +1892,15 @@
                                         </div>
                                     </label>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-4 rounded-lg shadow-md mt-6">
+                            <div class="flex items-center">
+                                <label for="transkrip-filter-kelas" class="block text-sm font-medium text-gray-700 mr-3">Filter Kelas:</label>
+                                <select id="transkrip-filter-kelas" class="mt-1 block w-full max-w-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                    <option value="semua">Tampilkan Semua Kelas</option>
+                                    </select>
                             </div>
                         </div>
 
@@ -3640,11 +3655,14 @@
             </div>
             <div class="flex-grow overflow-y-auto p-6 space-y-6">
                 <div>
-                    <button id="downloadGuruTemplateBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg inline-flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-                        </svg>
-                        Download Template Excel
+                    <button id="downloadGuruTemplateBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg inline-flex items-center justify-center gap-2">
+                        <span class="btn-text flex items-center gap-2 whitespace-nowrap">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                            <span>Download Template Excel</span>
+                        </span>
+                        <span class="btn-spinner hidden loading-animation">Mempersiapkan...</span>
                     </button>
                 </div>
                 <form action="#" class="dropzone" id="guru-dropzone-form">
@@ -3716,6 +3734,9 @@
         // Deklarasikan variabel global baru di atas
         let allMapelDataForAutocomplete = [];
         let allKelasDataForAutocomplete = [];
+        // Di dekat variabel global lainnya
+        let validationFullData = null;
+        let currentValidationMode = null;
 
 
         // [TAMBAHKAN] Inisialisasi Dropzone.js (letakan di scope global)
@@ -4049,6 +4070,9 @@
                 btnText.classList.add('hidden');
                 spinner.classList.remove('hidden');
 
+                // AMBIL NILAI FILTER KELAS YANG AKTIF
+                const selectedKelas = document.getElementById('rekap-filter-kelas').value;
+
                 google.script.run
                     .withSuccessHandler(result => {
                         if (result && result.base64Data) {
@@ -4074,7 +4098,7 @@
                         btnText.classList.remove('hidden');
                         spinner.classList.add('hidden');
                     })
-                    .exportRekapData(userSpreadsheetId, rekapType, format, exportOptions);
+                    .exportRekapData(userSpreadsheetId, rekapType, format, exportOptions, selectedKelas);
             };
 
             if (generatePdfBtn) generatePdfBtn.addEventListener('click', (e) => handleExport(e, 'pdf'));
@@ -4480,10 +4504,25 @@
                             this.on("addedfile", function(file) {
                                 const reader = new FileReader();
                                 reader.onload = (e) => {
-                                    const fileData = { fileName: file.name, mimeType: file.type, content: e.target.result.split(',')[1] };
+                                    const fileData = {
+                                        fileName: file.name,
+                                        mimeType: file.type,
+                                        content: e.target.result.split(',')[1]
+                                    };
+                                    
+                                    // ===== AWAL PERUBAHAN BARU =====
+                                    const overlay = document.getElementById('loading-overlay');
+                                    const overlayTitle = document.getElementById('overlay-title');
+                                    
+                                    // Tampilkan overlay dengan pesan yang relevan
+                                    overlayTitle.textContent = "Mengimpor Data Guru...";
+                                    overlay.classList.remove('hidden');
+                                    // ===== AKHIR PERUBAHAN BARU =====
+
                                     this.emit("processing", file);
                                     google.script.run
                                         .withSuccessHandler(res => {
+                                            overlay.classList.add('hidden'); // Sembunyikan overlay setelah selesai
                                             this.emit("success", file);
                                             showGlobalStatus(res.message, res.status === 'success');
                                             if (res.status === 'success') {
@@ -4491,7 +4530,10 @@
                                                 setTimeout(closeGuruUploadModal, 1500);
                                             }
                                         })
-                                        .withFailureHandler(err => this.emit("error", file, err.message))
+                                        .withFailureHandler(err => {
+                                            overlay.classList.add('hidden'); // Sembunyikan overlay jika gagal
+                                            this.emit("error", file, err.message);
+                                        })
                                         .importGuruFromExcel(userSpreadsheetId, fileData);
                                 };
                                 reader.readAsDataURL(file);
@@ -4513,6 +4555,15 @@
             document.getElementById('closeGuruUploadModalBtn2')?.addEventListener('click', closeGuruUploadModal);
             
             document.getElementById('downloadGuruTemplateBtn')?.addEventListener('click', () => {
+                const btn = document.getElementById('downloadGuruTemplateBtn');
+                const btnText = btn.querySelector('.btn-text');
+                const spinner = btn.querySelector('.btn-spinner');
+
+                // Tampilkan animasi saat proses dimulai
+                btn.disabled = true;
+                btnText.classList.add('hidden');
+                spinner.classList.remove('hidden');
+
                 google.script.run
                     .withSuccessHandler(result => {
                         if (result.base64Data) {
@@ -4522,9 +4573,23 @@
                             document.body.appendChild(link);
                             link.click();
                             document.body.removeChild(link);
-                        } else { showGlobalStatus('Gagal membuat template: ' + (result.error || 'Error'), false); }
+                            showGlobalStatus('Template berhasil diunduh.', true);
+                        } else {
+                            showGlobalStatus('Gagal membuat template: ' + (result.error || 'Unknown error'), false);
+                        }
+                        // Kembalikan tombol ke normal setelah selesai
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
                     })
-                    .generateGuruTemplate();
+                    .withFailureHandler(error => {
+                        showGlobalStatus('Error: ' + error.message, false);
+                        // Kembalikan tombol ke normal jika gagal
+                        btn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+                    })
+                    .generateGuruTemplate(userSpreadsheetId);
             });
         });
 
@@ -6843,7 +6908,10 @@
                     <div class="flex justify-between items-start flex-wrap gap-2">
                         <div><h3 class="text-xl font-bold">${title}</h3>${subtitleHtml}</div>
                         <div class="flex space-x-2">
-                            <button id="showExportModalButton" data-rekap-type="${type}" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700">Pengaturan & Ekspor</button>
+                            <button id="showExportModalButton" data-rekap-type="${type}" class="bg-blue-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-700 flex items-center whitespace-nowrap">
+                                <span class="btn-text">Pengaturan & Ekspor</span>
+                                <span class="btn-spinner hidden loading-animation">Memuat...</span>
+                            </button>
                         </div>
                     </div>
                     ${filterHtml}
@@ -10988,25 +11056,23 @@
         }
 
         /**
-         * [BARU] Fungsi pusat untuk menangani permintaan validasi.
-         * @param {'per_ujian'|'per_mapel'} mode - Mode validasi yang dipilih.
+         * [MODIFIKASI] Fungsi pusat untuk menangani permintaan validasi.
+         * Kini juga menyimpan data asli dan menginisialisasi filter.
          */
         function handleValidationRequest(mode) {
             const btns = document.querySelectorAll('.validation-mode-btn');
             const resultContainer = document.getElementById('validationResultContainer');
+            const filterContainer = document.getElementById('validation-filter-container');
 
             btns.forEach(btn => {
                 btn.disabled = true;
                 btn.classList.add('animate-pulse');
             });
 
-            resultContainer.innerHTML = `<div class="text-center p-8">
-                <p class="font-bold text-lg text-blue-700 loading-animation">Memeriksa semua data nilai</p>
-                <p class="text-gray-600 mt-2">Proses ini mungkin memerlukan beberapa saat...</p>
-            </div>`;
+            resultContainer.innerHTML = `<div class="text-center p-8"><p class="font-bold text-lg text-blue-700 loading-animation">Memeriksa semua data nilai</p><p class="text-gray-600 mt-2">Proses ini mungkin memerlukan beberapa saat...</p></div>`;
+            filterContainer.classList.add('hidden'); // Sembunyikan filter saat loading
 
             const backendFunction = mode === 'per_ujian' ? 'validateAllScores' : 'validateScoresBySubject';
-            const successRenderer = mode === 'per_ujian' ? renderValidationBySheet : renderValidationBySubject;
 
             google.script.run
                 .withSuccessHandler(response => {
@@ -11016,7 +11082,12 @@
                     });
 
                     if (response.status === 'success') {
-                        successRenderer(response);
+                        // Simpan data asli ke variabel global
+                        validationFullData = response;
+                        currentValidationMode = mode;
+                        
+                        // Siapkan dan tampilkan filter, lalu render tabel
+                        setupAndRenderValidationView();
                     } else {
                         resultContainer.innerHTML = `<div class="p-4 bg-red-100 text-red-700 rounded-md text-center">${response.message}</div>`;
                     }
@@ -11028,7 +11099,7 @@
                     });
                     resultContainer.innerHTML = `<div class="p-4 bg-red-100 text-red-700 rounded-md text-center">Error: ${err.message}</div>`;
                 })
-                [backendFunction](userSpreadsheetId); // Panggil fungsi backend secara dinamis
+                [backendFunction](userSpreadsheetId);
         }
 
         /**
@@ -13124,35 +13195,53 @@
             };
         }
 
-        // ===== AWAL KODE BARU UNTUK HALAMAN TRANSKRIP =====
+        // Di dalam file Index.html di dalam tag <script>
 
         /**
-         * [MODIFIKASI] Memuat data siswa beserta rekap nilai ijazah mereka.
+         * [MODIFIKASI] Memuat data siswa, mengisi filter kelas, dan merender tabel awal.
          */
         function loadTranskripPage() {
             const container = document.getElementById('transkripTableContainer');
             container.innerHTML = `<p class="text-center text-gray-500 py-4 loading-animation">Memuat data siswa dan nilai akhir</p>`;
 
-            // Menggunakan Promise.all untuk memuat data siswa dan data rekap secara bersamaan
+            // Ambil elemen dropdown filter yang baru
+            const filterDropdown = document.getElementById('transkrip-filter-kelas');
+
             Promise.all([
                 new Promise(resolve => google.script.run.withSuccessHandler(resolve).getStudents(userSpreadsheetId)),
                 new Promise(resolve => google.script.run.withSuccessHandler(resolve).getSheetDataAsObject(userSpreadsheetId, 'Rekap Nilai Ijazah'))
             ]).then(([students, rekapData]) => {
                 
-                // Menggabungkan data siswa dengan data rekap mereka
                 const studentsWithDetails = (students || []).map(student => {
                     const rekap = rekapData[student.nisn] || {};
                     return {
-                        ...student, // Salin semua data siswa yang ada
+                        ...student,
                         rataRataIjazah: rekap['Rata-rata'] !== undefined ? parseFloat(rekap['Rata-rata']).toFixed(2) : 'N/A',
                         statusLulus: rekap['Status'] || 'Belum Diproses'
                     };
                 });
                 
-                // Render tabel dengan data yang sudah digabungkan
+                // ===== AWAL LOGIKA BARU UNTUK FILTER =====
+                // 1. Isi dropdown dengan kelas yang unik
+                const uniqueKelas = [...new Set(students.map(s => s.kelas).filter(Boolean))].sort();
+                filterDropdown.innerHTML = '<option value="semua">Tampilkan Semua Kelas</option>'; // Reset
+                uniqueKelas.forEach(kelas => {
+                    filterDropdown.add(new Option(kelas, kelas));
+                });
+
+                // 2. Tambahkan event listener untuk memfilter saat dropdown diubah
+                filterDropdown.onchange = function() {
+                    const selectedKelas = this.value;
+                    const studentsToRender = selectedKelas === 'semua'
+                        ? studentsWithDetails
+                        : studentsWithDetails.filter(s => s.kelas === selectedKelas);
+                    renderTranskripTable(studentsToRender); // Panggil fungsi render dengan data terfilter
+                };
+                // ===== AKHIR LOGIKA BARU =====
+
+                // Render tabel awal dengan semua siswa
                 renderTranskripTable(studentsWithDetails);
                 
-                // Kosongkan pilihan dan sembunyikan menu aksi massal
                 selectedTranscriptRows.clear();
                 updateTranskripBulkActionBar();
 
@@ -15115,6 +15204,63 @@
             selectedApprovalRows.clear();
             loadPersetujuanNilai();
             updateApprovalBadge();
+        }
+
+        /**
+         * [BARU] Mengisi dropdown filter dan merender tabel validasi.
+         */
+        function setupAndRenderValidationView() {
+            if (!validationFullData) return;
+
+            const filterContainer = document.getElementById('validation-filter-container');
+            const filterDropdown = document.getElementById('validation-filter-kelas');
+            
+            // 1. Dapatkan daftar kelas yang unik dari data
+            const uniqueKelas = [...new Set(validationFullData.data.map(s => s.kelas).filter(Boolean))].sort();
+
+            // 2. Isi dropdown filter
+            filterDropdown.innerHTML = '<option value="semua">Semua Kelas</option>';
+            uniqueKelas.forEach(k => {
+                filterDropdown.add(new Option(k, k));
+            });
+
+            // 3. Tambahkan event listener untuk memfilter saat dropdown diubah
+            filterDropdown.onchange = function() {
+                applyValidationFilter();
+            };
+
+            // 4. Tampilkan kontainer filter
+            filterContainer.classList.remove('hidden');
+
+            // 5. Render tabel awal dengan semua data
+            applyValidationFilter();
+        }
+
+        /**
+         * [BARU] Menerapkan filter kelas dan memanggil fungsi render yang sesuai.
+         */
+        function applyValidationFilter() {
+            if (!validationFullData || !currentValidationMode) return;
+
+            const selectedKelas = document.getElementById('validation-filter-kelas').value;
+            
+            // Filter data siswa berdasarkan kelas yang dipilih
+            const filteredStudentData = (selectedKelas === 'semua')
+                ? validationFullData.data
+                : validationFullData.data.filter(s => s.kelas === selectedKelas);
+
+            // Buat objek respons baru dengan data yang sudah difilter
+            const filteredResponse = {
+                ...validationFullData, // Salin semua properti lain (seperti headers)
+                data: filteredStudentData
+            };
+
+            // Panggil fungsi render yang sesuai dengan mode saat ini
+            if (currentValidationMode === 'per_ujian') {
+                renderValidationBySheet(filteredResponse);
+            } else if (currentValidationMode === 'per_mapel') {
+                renderValidationBySubject(filteredResponse);
+            }
         }
     </script>
 </body>
