@@ -2155,7 +2155,7 @@ function checkRekapSheetsExist(spreadsheetId) {
  * @param {object} exportOptions Objek berisi data dari form modal.
  * @returns {object} Objek berisi data file yang telah di-encode base64.
  */
-function exportRekapData(spreadsheetId, type, format, exportOptions) {
+function exportRekapData(spreadsheetId, type, format, exportOptions, selectedKelas) {
     let tempSpreadsheetFileId = null;
     try {
         // 1. Tentukan Judul Laporan
@@ -2171,15 +2171,29 @@ function exportRekapData(spreadsheetId, type, format, exportOptions) {
         const { students, mapel } = getRekapitulasiData(spreadsheetId);
         if (!students || students.length === 0) throw new Error("Tidak ada data siswa untuk diekspor.");
         
-        // [BARU] Ambil data KKM jika yang diekspor adalah rekap ijazah
+        // ==========================================================
+        // === AWAL BLOK KODE BARU: FILTER SISWA BERDASARKAN KELAS ==
+        // ==========================================================
+        let studentsToExport = students; // Gunakan semua siswa sebagai default
+        if (selectedKelas && selectedKelas !== 'semua') {
+            studentsToExport = students.filter(student => student.kelas === selectedKelas);
+        }
+        // Jika tidak ada siswa yang cocok setelah difilter, berikan pesan error.
+        if (studentsToExport.length === 0) {
+            throw new Error(`Tidak ada siswa yang ditemukan di kelas "${selectedKelas}" untuk diekspor.`);
+        }
+        // ==========================================================
+        // === AKHIR BLOK KODE BARU =================================
+        // ==========================================================
+        
         const kkm = (type === 'ijazah') ? (getKkm(spreadsheetId).kkm || 75) : 75;
-
         const sheetName = `Rekap Nilai ${type.charAt(0).toUpperCase() + type.slice(1)}`;
         const dataToProcess = getSheetDataAsObject(spreadsheetId, sheetName);
 
         // 3. Bangun data tabel
         const tableBodyData = [];
-        students.forEach((student, index) => {
+        // GANTI 'students' MENJADI 'studentsToExport' PADA BAGIAN .forEach
+        studentsToExport.forEach((student, index) => {
             const nisn = student.nisn;
             const studentScores = dataToProcess[nisn] || {};
             const rowData = [index + 1, `'${nisn}`, student.nama.toUpperCase()];
@@ -4538,6 +4552,7 @@ function validateAllScores(spreadsheetId) {
       const studentStatus = {
         nisn: nisn,
         nama: student.nama,
+        kelas: student.kelas,
         completeness: {}
       };
       
@@ -4654,6 +4669,7 @@ function validateScoresBySubject(spreadsheetId) {
       const studentResult = {
         nisn: nisn,
         nama: student.nama,
+        kelas: student.kelas,
         subjectCompleteness: {}
       };
 
@@ -8628,30 +8644,93 @@ function getSubmissionBatchStatus(spreadsheetId, submissionId) {
 }
 
 /**
- * [DIPERBARUI] Menghasilkan template Excel untuk impor data guru, kini dengan kolom Kelas Diajar.
+ * [MODIFIKASI] Menghasilkan template Excel untuk impor data guru, kini dengan kolom Kelas Diajar
+ * dan sheet "Petunjuk & Referensi" yang lengkap.
  */
-function generateGuruTemplate() {
+function generateGuruTemplate(spreadsheetId) { // spreadsheetId ditambahkan sebagai parameter
   let tempFile;
   try {
-    const templateName = `Template_Import_Guru_${new Date().getTime()}`;
-    const ss = SpreadsheetApp.create(templateName);
-    tempFile = DriveApp.getFileById(ss.getId());
+    const tempSpreadsheet = SpreadsheetApp.create("Template Data Guru");
+    tempFile = DriveApp.getFileById(tempSpreadsheet.getId());
     
-    const sheet = ss.getSheets()[0];
-    // ===== PERUBAHAN 1: Tambahkan header "Kelas Diajar" =====
+    // --- SHEET 1: DATA GURU (Untuk Diisi Pengguna) ---
+    const mainSheet = tempSpreadsheet.getSheets()[0].setName("Data Guru");
     const headers = [
       "Nama Guru", "NIP (Opsional)", "Username", "Password", "Kode Mapel (pisahkan dengan koma)", "Kelas Diajar (Format: KODE:KELAS, pisahkan dengan koma)"
     ];
-    sheet.appendRow(headers);
-    // ===== PERUBAHAN 2: Sesuaikan jangkauan styling =====
-    sheet.getRange("A1:F1").setFontWeight("bold").setBackground("#d9ead3");
+    mainSheet.getRange("A1:F1").setValues([headers]).setFontWeight("bold").setBackground("#d9ead3");
+    mainSheet.getRange("B:D").setNumberFormat("@");
+    mainSheet.setColumnWidths(1, headers.length, 250);
+
+    // ==============================================================
+    // === AWAL BLOK KODE BARU: MEMBUAT SHEET PETUNJUK & REFERENSI ==
+    // ==============================================================
     
-    // Set kolom NIP, Username, Password sebagai format Teks
-    sheet.getRange("B:D").setNumberFormat("@");
+    // 1. Buat sheet baru untuk petunjuk
+    const petunjukSheet = tempSpreadsheet.insertSheet("Petunjuk & Referensi");
+    
+    // 2. Ambil data referensi (Mapel dan Kelas)
+    const mapelList = getMapel(spreadsheetId); // Menggunakan spreadsheetId
+    const studentsList = getStudents(spreadsheetId); // Menggunakan spreadsheetId
+    const uniqueKelas = [...new Set(studentsList.map(s => s.kelas).filter(Boolean))].sort();
+
+    // 3. Tulis konten ke dalam sheet "Petunjuk & Referensi"
+    let row = 1;
+
+    petunjukSheet.getRange(row, 1).setValue("Panduan Pengisian Template Data Guru").setFontWeight("bold").setFontSize(14);
+    petunjukSheet.getRange(row, 1, 1, 5).merge();
+    row += 2;
+
+    petunjukSheet.getRange(row, 1).setValue("Petunjuk Pengisian").setFontWeight("bold").setFontSize(12);
+    row++;
+    const petunjuk = [
+      ["Kolom", "Keterangan"],
+      ["Nama Guru", "Isi dengan nama lengkap guru beserta gelar (jika ada). Wajib diisi."],
+      ["NIP (Opsional)", "Isi dengan Nomor Induk Pegawai. Boleh dikosongkan."],
+      ["Username", "Username untuk login ke Portal Guru. Wajib diisi dan harus unik."],
+      ["Password", "Password untuk login. Wajib diisi."],
+      ["Kode Mapel", "Isi dengan Kode Mapel yang diajar. Jika lebih dari satu, pisahkan dengan koma (contoh: MTK,FIS). Lihat referensi di samping."],
+      ["Kelas Diajar", "Format: KODEMAPEL:KELAS. Contoh: Jika guru mengajar MTK di kelas 7A dan 7B, isi 'MTK:7A,MTK:7B'. Lihat referensi di bawah."]
+    ];
+    petunjukSheet.getRange(row, 1, petunjuk.length, 2).setValues(petunjuk).setWrap(true);
+    petunjukSheet.getRange(row, 1, 1, 2).setFontWeight("bold").setBackground("#e0e7ff");
+    petunjukSheet.getRange(row + 1, 1, petunjuk.length - 1, 2).setVerticalAlignment("top");
+    row += petunjuk.length + 2;
+
+    petunjukSheet.getRange(row, 1).setValue("Referensi Mata Pelajaran").setFontWeight("bold").setFontSize(12);
+    petunjukSheet.getRange(row, 4).setValue("Referensi Kelas").setFontWeight("bold").setFontSize(12);
+    row++;
+    petunjukSheet.getRange(row, 1, 1, 2).setValues([["Kode Mapel", "Nama Mata Pelajaran"]]).setFontWeight("bold").setBackground("#e0e7ff");
+    petunjukSheet.getRange(row, 4, 1, 1).setValue("Nama Kelas").setFontWeight("bold").setBackground("#e0e7ff");
+    row++;
+
+    if (mapelList.length > 0) {
+      const mapelFormatted = mapelList.map(m => [m.kode, m.nama]);
+      petunjukSheet.getRange(row, 1, mapelFormatted.length, 2).setValues(mapelFormatted);
+    } else {
+      petunjukSheet.getRange(row, 1).setValue("Data mapel belum diisi.");
+    }
+
+    if (uniqueKelas.length > 0) {
+      const kelasFormatted = uniqueKelas.map(k => [k]);
+      petunjukSheet.getRange(row, 4, kelasFormatted.length, 1).setValues(kelasFormatted);
+    } else {
+      petunjukSheet.getRange(row, 4).setValue("Data kelas belum ada.");
+    }
+    
+    petunjukSheet.setColumnWidths(1, 2, 250);
+    petunjukSheet.setColumnWidth(3, 20);
+    petunjukSheet.setColumnWidth(4, 250);
+
+    mainSheet.activate();
+    
+    // ==============================================================
+    // === AKHIR BLOK KODE BARU =====================================
+    // ==============================================================
     
     SpreadsheetApp.flush();
 
-    const url = `https://www.googleapis.com/drive/v3/files/${ss.getId()}/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`;
+    const url = `https://www.googleapis.com/drive/v3/files/${tempSpreadsheet.getId()}/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`;
     const response = UrlFetchApp.fetch(url, {
       headers: { Authorization: `Bearer ${ScriptApp.getOAuthToken()}` },
       muteHttpExceptions: true
@@ -8699,14 +8778,23 @@ function exportGuruToExcel(spreadsheetId) {
     sheet.getRange("A1:F1").setFontWeight("bold").setBackground("#d9ead3");
 
     // ===== PERUBAHAN 2: Tambahkan g.kelas ke dalam data yang akan ditulis =====
-    const rowsToWrite = guruList.map(g => [
-      g.nama,
-      "'" + g.nip,
-      "'" + g.username,
-      "'" + g.password,
-      g.mapel,
-      g.kelas // <-- Tambahkan ini
-    ]);
+    const rowsToWrite = guruList.map(g => {
+        // Cek apakah akun sudah pernah diubah oleh guru
+        const isModified = g.isModifiedByGuru === 'YA';
+        
+        // Jika sudah diubah, sembunyikan username dan password. Jika belum, tampilkan seperti biasa.
+        const usernameToShow = isModified ? '******' : g.username;
+        const passwordToShow = isModified ? '******' : g.password;
+
+        return [
+            g.nama,
+            "'" + g.nip,
+            "'" + usernameToShow,
+            "'" + passwordToShow,
+            g.mapel,
+            g.kelas
+        ];
+    });
 
     if (rowsToWrite.length > 0) {
       sheet.getRange(2, 1, rowsToWrite.length, headers.length).setValues(rowsToWrite);
