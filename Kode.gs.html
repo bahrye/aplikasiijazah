@@ -8366,7 +8366,7 @@ function terbilang(angka) {
  */
 function generateNilaiPdfForGuru(payload) {
   try {
-    const { spreadsheetId, tipe, mapelKode, guruData, submissionId } = payload;
+    const { spreadsheetId, tipe, mapelKode, guruData, submissionId, kelas } = payload;
     
     // --- PERBAIKAN: Gunakan fungsi helper yang baru ---
     if (!isSubmissionFullyApproved(spreadsheetId, submissionId)) {
@@ -8458,6 +8458,7 @@ function generateNilaiPdfForGuru(payload) {
         <table class="no-border" style="width: 100%; font-size: 12pt; margin-bottom: 15px;">
             <tr><td class="no-border" style="width: 180px;">Nama Mata Pelajaran</td><td class="no-border" style="width:10px;">:</td><td class="no-border font-bold" style="white-space: nowrap;">${mapelInfo.nama.toUpperCase()}</td></tr>
             <tr><td class="no-border">Tahun Pelajaran</td><td class="no-border">:</td><td class="no-border font-bold">${tahunAjaran}</td></tr>
+            <tr><td class="no-border">Kelas</td><td class="no-border">:</td><td class="no-border font-bold">${kelas ? kelas.toUpperCase() : '-'}</td></tr>
             <tr><td class="no-border">Guru Pemeriksa</td><td class="no-border">:</td><td class="no-border font-bold">${guruData.nama.toUpperCase()}</td></tr>
         </table>
         <table><thead style="background-color: #e5e5e5; font-weight:bold;"><tr><th>No</th><th>Ruang<br>Ujian</th><th>Nomor Ujian</th><th>Nama Peserta Ujian</th><th>Nilai</th><th>Nilai dengan huruf</th></tr></thead>
@@ -9890,54 +9891,52 @@ function getPendingSubmissionStatus(spreadsheetId, username) {
     }
 
     const data = approvalSheet.getDataRange().getValues();
-    const activeSubmissions = new Map();
+    const activeSubmissions = {}; // Key: submissionId, Value: {tipe, statuses:[]}
 
-    // Langkah 1: Iterasi untuk menemukan semua pengajuan yang masih aktif (memiliki minimal 1 status 'Menunggu')
-    for (let i = data.length - 1; i >= 1; i--) { // Iterasi dari bawah ke atas lebih efisien
-      const row = data[i];
-      const submissionId = row[0];
-      const guruPengirim = row[1];
-      const status = row[8];
-      
-      // Jika sudah diproses, lewati
-      if (activeSubmissions.has(submissionId)) continue;
-      
-      if (guruPengirim === username && status === 'Menunggu Persetujuan') {
-        activeSubmissions.set(submissionId, true);
-        result.hasPending = true;
-      }
-    }
-    
-    // Jika tidak ada pengajuan aktif sama sekali, hentikan
-    if (!result.hasPending) {
-      return result;
-    }
-
-    // Langkah 2: Iterasi lagi untuk menghitung detail dari setiap pengajuan yang aktif
+    // Langkah 1: Kumpulkan semua status untuk setiap pengajuan dari guru yang sedang login
     for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      const submissionId = row[0];
-
-      if (activeSubmissions.has(submissionId)) {
-        const tipeNilaiLengkap = row[3];
+        const row = data[i];
+        const guruPengirim = row[1];
         const status = row[8];
-        const kategori = tipeNilaiLengkap.startsWith('ujian') ? 'ujian' : 'rapor';
+        const submissionId = row[0];
 
-        if (status === 'Menunggu Persetujuan') {
-          result[kategori].pending++;
-        } else if (status === 'Disetujui') {
-          result[kategori].approved++;
-        } else if (status === 'Ditolak') {
-          result[kategori].rejected++;
+        if (guruPengirim === username) {
+            if (!activeSubmissions[submissionId]) {
+                 const tipeNilaiLengkap = row[3];
+                 const kategori = tipeNilaiLengkap.startsWith('ujian') ? 'ujian' : 'rapor';
+                 activeSubmissions[submissionId] = { tipe: kategori, statuses: [] };
+            }
+            activeSubmissions[submissionId].statuses.push(status);
         }
-      }
+    }
+
+    // Langkah 2: Proses hanya pengajuan yang memiliki item yang masih menunggu
+    for (const subId in activeSubmissions) {
+        const submission = activeSubmissions[subId];
+        const hasPendingItems = submission.statuses.includes('Menunggu Persetujuan');
+
+        if (hasPendingItems) {
+            result.hasPending = true;
+            const category = submission.tipe;
+            
+            // Hitung detail status untuk pengajuan aktif ini
+            submission.statuses.forEach(status => {
+                if (status === 'Menunggu Persetujuan') {
+                    result[category].pending++;
+                } else if (status === 'Disetujui') {
+                    result[category].approved++;
+                } else if (status === 'Ditolak') {
+                    result[category].rejected++;
+                }
+            });
+        }
     }
     
     return result;
 
   } catch (e) {
     Logger.log("getPendingSubmissionStatus Error: " + e.message);
-    return result; // Kembalikan objek kosong jika terjadi error
+    return result; 
   }
 }
 
