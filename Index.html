@@ -2585,6 +2585,9 @@
                         <h1 class="text-3xl font-bold text-gray-800">Persetujuan Nilai dari Guru</h1>
                         <p class="mt-2 text-gray-600 mb-6">Tinjau dan setujui nilai yang telah diinput oleh guru.</p>
 
+                        <div id="admin-polling-status-bar" class="hidden mb-6 p-3 rounded-lg text-sm font-medium flex items-center justify-center gap-3">
+                            </div>
+
                         <!-- [BARU] Panel Pengaturan Izin Pengiriman -->
                         <div class="bg-white p-4 rounded-lg shadow-md mb-6 border-l-4 border-indigo-500">
                             <div class="flex justify-between items-center">
@@ -5159,7 +5162,7 @@
             updateSaranBadge_User();
             setupDataSekolahClickHandlers(); 
             setupStudentFilterListeners();
-            updateApprovalBadge();
+            startAdminPolling();
 
             const navContainer = document.getElementById('main-nav');
             const contentPages = document.querySelectorAll('.content-page');
@@ -7440,6 +7443,9 @@
                     })
                     .saveSiswaOrder(userSpreadsheetId, newOrderNisn);
             });
+
+            startAdminPolling(); // Panggil sekali saat inisialisasi
+            startAdminPolling();   // Mulai polling real-time
         }
 
         /**
@@ -14433,12 +14439,32 @@
         function handleSingleApproval(rowNum, status, btn) {
             const parentTd = btn.parentElement;
             parentTd.innerHTML = `<span class="text-sm loading-animation">Memproses</span>`;
+
             google.script.run
                 .withSuccessHandler(response => {
                     showGlobalStatus(response.message, response.status === 'success');
-                    allApprovalData = allApprovalData.filter(item => item.rowNum.toString() !== rowNum);
-                    renderAndFilterApprovals();
-                    updateApprovalBadge(); // <-- Tambahkan di sini
+                    // Hapus baris dari tabel setelah berhasil diproses
+                    const rowElement = document.getElementById(`row-${rowNum}`);
+                    if (rowElement) {
+                        rowElement.style.transition = 'opacity 0.5s';
+                        rowElement.style.opacity = '0';
+                        setTimeout(() => {
+                            rowElement.remove();
+                            // Cek jika tabel menjadi kosong
+                            const tbody = document.querySelector('#persetujuan-table-container tbody');
+                            if (tbody && tbody.children.length === 0) {
+                                document.getElementById('persetujuan-table-container').innerHTML = '<p class="text-center text-gray-500 p-8">Tidak ada pengajuan nilai yang menunggu.</p>';
+                            }
+                        }, 500);
+                    }
+                    // ===== PERUBAHAN UTAMA: Panggil update badge di sini =====
+                    startAdminPolling();
+                    // =======================================================
+                })
+                .withFailureHandler(err => {
+                    showGlobalStatus(err.message, false);
+                    // Jika gagal, muat ulang tabel untuk mengembalikan tombol
+                    loadPersetujuanNilai();
                 })
                 .processNilaiSubmission(userSpreadsheetId, rowNum, status);
         }
@@ -14461,8 +14487,13 @@
                 confirmText: confirmText,
                 confirmColor: confirmColor,
                 onConfirm: () => {
-                    // PANGGIL FUNGSI BARU UNTUK MEMULAI PROSES BATCH
-                    processApprovalInBatches(rowsToProcess, status);
+                    // Setelah konfirmasi, panggil fungsi pemrosesan batch
+                    processApprovalInBatches(rowsToProcess, status)
+                        .finally(() => {
+                            // ===== PERUBAHAN UTAMA: Panggil update badge setelah selesai =====
+                            startAdminPolling();
+                            // ============================================================
+                        });
                 }
             });
         }
@@ -14657,28 +14688,6 @@
                     btn.textContent = 'Hapus';
                 }, 3000);
             }
-        }
-
-        // [FUNGSI BARU] Untuk memperbarui badge notifikasi
-        function updateApprovalBadge() {
-            if (!userSpreadsheetId) return;
-
-            google.script.run
-                .withSuccessHandler(count => {
-                    const badge = document.getElementById('approval-badge');
-                    if (!badge) return;
-
-                    if (count > 0) {
-                        badge.textContent = count;
-                        badge.classList.remove('hidden');
-                    } else {
-                        badge.classList.add('hidden');
-                    }
-                })
-                .withFailureHandler(err => {
-                    console.error("Gagal mengambil jumlah persetujuan:", err);
-                })
-                .getPendingApprovalCount(userSpreadsheetId);
         }
 
         function handleGenerateNewCredentials(rowNum, guruName) {
@@ -15204,7 +15213,7 @@
             // Muat ulang data di halaman setelah selesai
             selectedApprovalRows.clear();
             loadPersetujuanNilai();
-            updateApprovalBadge();
+            startAdminPolling();
         }
 
         /**
@@ -15262,6 +15271,148 @@
             } else if (currentValidationMode === 'per_mapel') {
                 renderValidationBySubject(filteredResponse);
             }
+        }
+
+        // ===== AWAL KODE BARU UNTUK REALTIME POLLING (ADMIN) =====
+
+        let adminPollingInterval; // Variabel global untuk interval polling admin
+
+        /**
+         * [VERSI FINAL] Memulai polling untuk memeriksa pengajuan nilai baru dari guru
+         * dan menampilkan statusnya di banner.
+         */
+        function startAdminSubmissionPolling() {
+            if (adminPollingInterval) {
+                clearInterval(adminPollingInterval);
+            }
+
+            let lastKnownCount = -1; 
+            const statusBar = document.getElementById('admin-polling-status-bar');
+
+            const updateStatus = (message, type, showSpinner = true) => {
+                if (!statusBar) return;
+                
+                let bgColor = 'bg-gray-100 text-gray-800';
+                if (type === 'new') bgColor = 'bg-blue-100 text-blue-800';
+                if (type === 'success') bgColor = 'bg-green-100 text-green-800';
+
+                const spinnerHtml = showSpinner 
+                    ? '<svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>' 
+                    : '';
+                    
+                statusBar.innerHTML = `${spinnerHtml}<span>${message}</span>`;
+                statusBar.className = `mb-6 p-3 rounded-lg text-sm font-medium flex items-center justify-center gap-3 ${bgColor}`;
+                statusBar.classList.remove('hidden');
+            };
+
+            const poll = () => {
+                // Hanya jalankan jika halaman persetujuan sedang ditampilkan
+                if (document.getElementById('page-persetujuan-nilai').classList.contains('hidden')) {
+                    statusBar.classList.add('hidden'); // Sembunyikan banner jika pindah halaman
+                    return;
+                }
+
+                const currentBadgeCount = parseInt(document.getElementById('approval-badge')?.textContent || '0');
+                lastKnownCount = isNaN(currentBadgeCount) ? -1 : currentBadgeCount;
+                
+                updateStatus('Memeriksa pengajuan baru...', 'info', true);
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        if (response.hasChanged) {
+                            updateStatus('Pengajuan baru terdeteksi! Memuat ulang...', 'new', true);
+                            setTimeout(() => {
+                                loadPersetujuanNilai(); // Muat ulang tabel
+                            }, 1500); // Beri jeda agar user bisa membaca pesan
+                        } else {
+                            updateStatus('Daftar pengajuan sudah yang terbaru.', 'success', false);
+                        }
+                        startAdminPolling();
+                    })
+                    .withFailureHandler(err => {
+                        console.error("Gagal melakukan polling admin:", err);
+                        updateStatus('Gagal memeriksa status. Mencoba lagi...', 'error', false);
+                    })
+                    .checkForNewSubmissions(userSpreadsheetId, lastKnownCount);
+            };
+
+            // Jalankan pertama kali, lalu set interval
+            poll();
+            adminPollingInterval = setInterval(poll, 20000); // Interval 20 detik
+        }
+
+        /**
+         * [VERSI FINAL] Memulai polling untuk memeriksa pengajuan nilai baru, 
+         * memperbarui badge, dan memuat ulang tabel secara otomatis.
+         */
+        function startAdminPolling() {
+            if (adminPollingInterval) {
+                clearInterval(adminPollingInterval);
+            }
+
+            const statusBar = document.getElementById('admin-polling-status-bar');
+
+            const poll = () => {
+                // Hanya jalankan jika halaman persetujuan sedang aktif
+                if (document.getElementById('page-persetujuan-nilai').classList.contains('hidden')) {
+                    if (statusBar) statusBar.classList.add('hidden');
+                    return;
+                }
+
+                // Tampilkan status "Memeriksa..."
+                if (statusBar) {
+                    statusBar.innerHTML = `
+                        <svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        <span>Memeriksa pengajuan baru...</span>`;
+                    statusBar.className = 'mb-6 p-3 rounded-lg text-sm font-medium flex items-center justify-center gap-3 bg-gray-100 text-gray-800';
+                    statusBar.classList.remove('hidden');
+                }
+
+                google.script.run
+                    .withSuccessHandler(newData => {
+                        const newCount = newData ? newData.length : 0;
+                        const badge = document.getElementById('approval-badge');
+                        const tableBody = document.querySelector('#persetujuan-table-container tbody');
+                        const currentCount = tableBody ? tableBody.querySelectorAll('tr').length : 0;
+
+                        // Perbarui badge notifikasi di sidebar
+                        if (badge) {
+                            if (newCount > 0) {
+                                badge.textContent = newCount;
+                                badge.classList.remove('hidden');
+                            } else {
+                                badge.classList.add('hidden');
+                            }
+                        }
+
+                        // Bandingkan jumlah data baru dengan yang ada di tabel
+                        if (newCount !== currentCount) {
+                            statusBar.innerHTML = `<span>Pengajuan baru terdeteksi! Memuat ulang tabel...</span>`;
+                            statusBar.className = 'mb-6 p-3 rounded-lg text-sm font-medium flex items-center justify-center gap-3 bg-blue-100 text-blue-800';
+                            
+                            // Muat ulang data karena ada perubahan
+                            setTimeout(() => {
+                                allApprovalData = newData || [];
+                                renderAndFilterApprovals();
+                            }, 1500);
+
+                        } else {
+                            statusBar.innerHTML = `<span>Daftar pengajuan sudah yang terbaru.</span>`;
+                            statusBar.className = 'mb-6 p-3 rounded-lg text-sm font-medium flex items-center justify-center gap-3 bg-green-100 text-green-800';
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        if (statusBar) {
+                            statusBar.innerHTML = `<span>Gagal memeriksa status. Mencoba lagi...</span>`;
+                            statusBar.className = 'mb-6 p-3 rounded-lg text-sm font-medium flex items-center justify-center gap-3 bg-red-100 text-red-800';
+                        }
+                        console.error("Gagal melakukan polling admin:", err);
+                    })
+                    .getPengajuanNilaiUntukAdmin(userSpreadsheetId); // Langsung ambil data terbaru
+            };
+
+            poll(); // Jalankan sekali saat pertama kali
+            adminPollingInterval = setInterval(poll, 20000); // Ulangi setiap 20 detik
         }
     </script>
 </body>
