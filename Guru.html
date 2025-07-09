@@ -173,6 +173,28 @@
         .mapel-link:not(.active):hover { background-color: #4f46e5; color: #ffffff; }
         .mapel-link.active { background-color: #eef2ff; color: #3730a3; font-weight: 600; }
         .mapel-link.active::before { color: #4f46e5; }
+
+        /* Tambahkan ini di dalam <style> pada Guru.html */
+        .sticky-col-left {
+            position: -webkit-sticky; /* Untuk Safari */
+            position: sticky;
+            left: 0;
+            z-index: 10;
+            background-color: white; /* Warna latar agar tidak transparan */
+        }
+        .sticky-col-left.header {
+            background-color: #f9fafb; /* Warna latar header (bg-gray-50) */
+        }
+        /* Efek bayangan untuk pemisah visual */
+        .sticky-col-left::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -8px; /* Posisi bayangan */
+            width: 8px;
+            height: 100%;
+            box-shadow: inset -10px 0 8px -8px rgba(0,0,0,0.1);
+        }
     </style>
 
     <!-- [PERBAIKAN] Tambahkan dua baris ini di dalam <head> pada Guru.html -->
@@ -734,6 +756,7 @@
         document.getElementById('welcome-screen').classList.add('hidden');
         document.getElementById('page-profil-guru').classList.add('hidden');
         document.getElementById('page-siswa-tanpa-kelas').classList.add('hidden');
+        document.getElementById('page-daftar-siswa').classList.add('hidden');
         document.getElementById('form-container').classList.remove('hidden');
 
         // 2. Hapus status aktif dari semua link navigasi
@@ -996,22 +1019,23 @@
                 <button data-action="import" data-type="${type}" data-mapel-kode="${mapelKode}" data-kelas="${kelas}" class="bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-700 text-sm flex items-center whitespace-nowrap">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg><span>Import Nilai</span>
                 </button>
-                <div class="h-6 border-l border-gray-300"></div>
+                <div class="h-6 border-l border-gray-300 hidden md:block"></div>
             `;
         }
 
-        return `<div class="mb-4 flex justify-end items-center space-x-2">${importExportButtons} ${actionButtonsHtml}</div>`;
+        return `<div class="mb-4 flex flex-col md:flex-row md:justify-end md:items-center gap-2">${importExportButtons} ${actionButtonsHtml}</div>`;
     }
 
     /**
-     * [PERBAIKAN FINAL] Membangun tabel nilai lengkap dengan kolom Jumlah & Rata-rata.
+     * [MODIFIKASI] Membangun tabel nilai lengkap dengan kolom Nama & NISN yang sticky di ponsel.
      */
     function buildScoreTable(type, title, mapelKode, students, savedValues, submittedValues, approvalStatus, kkm, options = {}) {
         const isSubmitted = submittedValues && submittedValues[type];
         const dataToDisplay = isSubmitted ? (submittedValues[type] || {}) : (savedValues ? (savedValues[type] || {}) : {});
         
-        let headers = `<th class="px-4 py-2 text-left border border-gray-200">NISN</th>
-                        <th class="px-4 py-2 text-left border border-gray-200">Nama Siswa</th>`;
+        // --- PERUBAHAN 1: Tambahkan kelas sticky dan lebar pada header ---
+        let headers = `<th class="px-4 py-2 text-left border border-gray-200 sticky-col-left header w-28">NISN</th>
+                      <th class="px-4 py-2 text-left border border-gray-200 sticky-col-left header w-48">Nama Siswa</th>`;
         
         let legendHtml = `<div class="text-xs text-gray-500 mb-3 p-2 bg-gray-100 rounded-md"><b>Keterangan:</b> `;
         const legends = [`<b>KKM</b> = ${kkm || 'N/A'}`];
@@ -1032,21 +1056,13 @@
                 if (hasUM) {
                     const value = dataToDisplay[`${nisn}_um`] || '';
                     const status = approvalStatus[`ujian_um_${nisn}`];
-                    // ==========================================================
-                    // === AWAL LOGIKA PERBAIKAN UNTUK SETIAP SEL ===============
-                    // ==========================================================
                     let isReadOnly = false;
                     let statusClass = '';
-
-                    // Kunci & beri warna HANYA jika tabel sudah terkirim DAN sel ini punya nilai
                     if (isSubmitted && value !== '') {
                         const isRejected = status === 'Ditolak';
-                        isReadOnly = !isRejected; // Kunci jika tidak ditolak
+                        isReadOnly = !isRejected;
                         statusClass = status === 'Disetujui' ? 'status-disetujui' : status === 'Ditolak' ? 'status-ditolak' : 'status-menunggu';
                     }
-                    // ==========================================================
-                    // === AKHIR LOGIKA PERBAIKAN ===============================
-                    // ==========================================================
                     const numericValue = parseFloat(value);
                     const kkmClass = (!isNaN(numericValue) && numericValue < kkm) ? 'text-red-600 font-bold' : '';
                     html += `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${nisn}_um" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClass} ${kkmClass}" value="${value}" ${isReadOnly ? 'readonly' : ''}></td>`;
@@ -1074,7 +1090,6 @@
 
             inputsHtml = (s) => {
                 const nisn = s.nisn;
-                // Sel Pengetahuan
                 const valuePeng = dataToDisplay[`${nisn}_peng`] || '';
                 const statusPeng = approvalStatus[`${type}_peng_${nisn}`];
                 let isReadOnlyPeng = false;
@@ -1086,7 +1101,6 @@
                 const numericValuePeng = parseFloat(valuePeng);
                 const kkmClassPeng = (!isNaN(numericValuePeng) && numericValuePeng < kkm) ? 'text-red-600 font-bold' : '';
 
-                // Sel Keterampilan
                 const valueKet = dataToDisplay[`${nisn}_ket`] || '';
                 const statusKet = approvalStatus[`${type}_ket_${nisn}`];
                 let isReadOnlyKet = false;
@@ -1108,23 +1122,27 @@
 
         legendHtml += legends.join(' | ') + '</div>';
 
-        let tableHtml = `${legendHtml}
-                        <form id="form-${type}" data-mapel-kode="${mapelKode}" data-type="${type}">
-                            <div class="overflow-x-auto">
-                                <table class="min-w-full border-collapse text-sm" data-kkm="${kkm}">
-                                    <thead class="bg-gray-100"><tr>${headers}</tr></thead>
-                                    <tbody>`;
-        
+        let studentRows = '';
         students.forEach(s => {
-            tableHtml += `<tr class="hover:bg-gray-50">
-                            <td class="px-4 py-2 text-gray-500 border border-gray-200">${s.nisn}</td>
-                            <td class="px-4 py-2 font-medium border border-gray-200">${s.nama}</td>
+            // --- PERUBAHAN 2: Tambahkan kelas sticky pada sel data ---
+            studentRows += `<tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2 text-gray-500 border border-gray-200 sticky-col-left">${s.nisn}</td>
+                            <td class="px-4 py-2 font-medium border border-gray-200 sticky-col-left">${s.nama.toUpperCase()}</td>
                             ${inputsHtml(s)}
                             <td class="px-2 py-1 border border-gray-200 text-center font-bold jumlah-nilai">0</td>
                             <td class="px-2 py-1 border border-gray-200 text-center font-bold rata-rata-nilai">0</td>
                           </tr>`;
         });
-        tableHtml += `</tbody></table></div></form>`;
+
+        let tableHtml = `${legendHtml}
+                        <form id="form-${type}" data-mapel-kode="${mapelKode}" data-type="${type}">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full border-collapse text-sm" data-kkm="${kkm}">
+                                    <thead class="bg-gray-100"><tr>${headers}</tr></thead>
+                                    <tbody>${studentRows}</tbody>
+                                </table>
+                            </div>
+                        </form>`;
         
         setTimeout(() => {
             const tableContainer = document.getElementById(`form-${type}`);
@@ -1740,7 +1758,7 @@
                         tableHtml += `
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${s.nisn}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${s.nama}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${s.nama.toUpperCase()}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${s.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan'}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${s.tempatLahir}, ${tglLahirFormatted}</td>
                             </tr>
@@ -1848,7 +1866,7 @@
             tableHtml += `
                 <tr>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${s.nisn}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${s.nama}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${s.nama.toUpperCase()}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${s.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ttl}</td>
                 </tr>
