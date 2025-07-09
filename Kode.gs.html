@@ -8148,9 +8148,7 @@ function saveGuruDraftNilai(payload) {
  */
 function submitGuruNilai(payload) {
   try {
-    // ===== AWAL PERUBAHAN 1: Ambil 'nama' dari payload =====
     const { spreadsheetId, username, nama, mapelKode, type, nilai } = payload;
-    // =======================================================
 
     const submissionStatus = getNilaiSubmissionStatus(spreadsheetId);
     if (!submissionStatus.isEnabled) {
@@ -8189,16 +8187,14 @@ function submitGuruNilai(payload) {
 
     const students = getStudentsForGuru(spreadsheetId);
     const studentMap = new Map(students.map(s => [s.nisn.toString(), s.nama]));
-    const submissionId = Utilities.getUuid();
+    const submissionId = Utilities.getUuid(); // ID pengajuan dibuat di sini
     const timestamp = new Date();
     const rowsToAppend = [];
 
     for (const [key, value] of Object.entries(nilai)) {
-      // ===== BLOK BARU DIMULAI DI SINI =====
       if (value === null || String(value).trim() === '') {
-        continue; // Lewati entri ini jika nilainya kosong
+        continue;
       }
-      // ===== AKHIR BLOK BARU =====
 
       const parts = key.split('_'); 
       const nisn = parts[0];
@@ -8213,7 +8209,7 @@ function submitGuruNilai(payload) {
 
       rowsToAppend.push([
         submissionId, username, mapelKode, tipeNilaiLengkap,
-        "'" + nisn, // <-- PERUBAHAN: Menambahkan ' untuk memaksa format Teks di sheet
+        "'" + nisn,
         studentMap.get(nisn) || 'Siswa tidak ditemukan',
         value, timestamp, "Menunggu Persetujuan"
       ]);
@@ -8221,7 +8217,6 @@ function submitGuruNilai(payload) {
 
     if (rowsToAppend.length > 0) {
       approvalSheet.getRange(approvalSheet.getLastRow() + 1, 1, rowsToAppend.length, rowsToAppend[0].length).setValues(rowsToAppend);
-      // Format kolom NISN sebagai teks untuk pengajuan di masa mendatang
       approvalSheet.getRange("E:E").setNumberFormat('@'); 
     }
 
@@ -8236,9 +8231,7 @@ function submitGuruNilai(payload) {
             const schoolName = schoolAdminRow[3];
             const mapelInfo = getMapel(spreadsheetId).find(m => m.kode === mapelKode);
             const mapelName = mapelInfo ? mapelInfo.nama : mapelKode;
-
-            // ===== AWAL PERUBAHAN 2: Gunakan 'nama' di Judul dan Isi Email =====
-            const subject = `[Notifikasi Aplikasi Ijazah] Pengajuan Nilai Baru dari ${nama}`; // Menggunakan nama lengkap
+            const subject = `[Notifikasi Aplikasi Ijazah] Pengajuan Nilai Baru dari ${nama}`;
             const body = `
               <p>Halo Admin ${schoolName},</p>
               <p>Anda telah menerima pengajuan nilai baru dengan detail sebagai berikut:</p>
@@ -8253,14 +8246,19 @@ function submitGuruNilai(payload) {
               <br>
               <p>Terima kasih.</p>
             `;
-            // ======================================================================
             MailApp.sendEmail({ to: adminEmail, subject: subject, htmlBody: body });
         }
     } catch (e) {
         Logger.log(`Gagal mengirim email notifikasi pengajuan nilai ke admin: ${e.message}`);
     }
     
-    return { status: 'success', message: 'Nilai berhasil dikirim untuk persetujuan admin.' };
+    // ===== PERUBAHAN UTAMA DI SINI =====
+    return { 
+        status: 'success', 
+        message: 'Nilai berhasil dikirim untuk persetujuan admin.',
+        submissionId: submissionId // Kirim ID pengajuan kembali ke frontend
+    };
+    // ===================================
   } catch(e) {
     Logger.log("submitGuruNilai Error: " + e.message);
     return { status: "error", message: "Gagal mengirim nilai: " + e.message };
@@ -8330,50 +8328,53 @@ function processMultipleSubmissions(spreadsheetId, rowNumbers, status) {
 // =================================================================
 
 /**
- * Helper function untuk mengubah angka menjadi teks terbilang dalam Bahasa Indonesia.
+ * [REVISI FINAL] Helper function untuk mengubah angka menjadi teks terbilang dalam Bahasa Indonesia.
+ * Logika ini telah diperbaiki untuk menangani angka 100, 70, dll. dengan benar.
  * @param {number} angka - Angka yang akan diubah.
  * @returns {string} Teks terbilang dari angka.
  */
 function terbilang(angka) {
-    const bilangan = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
-    // PERBAIKAN: Tambahkan kondisi ini untuk menangani angka nol
+    angka = Number(angka);
+    // Kasus khusus HANYA untuk input angka nol
     if (angka === 0) return "Nol";
-    if (angka < 12) {
-        return bilangan[angka];
-    } else if (angka < 20) {
-        return terbilang(angka - 10) + " Belas";
-    } else if (angka < 100) {
-        return terbilang(Math.floor(angka / 10)) + " Puluh " + terbilang(angka % 10);
-    } else if (angka < 200) {
-        return "Seratus " + terbilang(angka - 100);
-    } else if (angka < 1000) {
-        return terbilang(Math.floor(angka / 100)) + " Ratus " + terbilang(angka % 100);
+
+    const bilangan = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
+    
+    // Fungsi rekursif internal yang tidak akan menghasilkan "Nol"
+    function toWords(n) {
+        if (n < 12) {
+            return bilangan[n];
+        } else if (n < 20) {
+            return toWords(n - 10) + " Belas";
+        } else if (n < 100) {
+            return toWords(Math.floor(n / 10)) + " Puluh " + toWords(n % 10);
+        } else if (n < 200) {
+            return "Seratus " + toWords(n - 100);
+        } else if (n < 1000) {
+            return toWords(Math.floor(n / 100)) + " Ratus " + toWords(n % 100);
+        }
+        return ""; // Untuk angka 0 dalam rekursi, kembalikan string kosong
     }
-    return "";
+
+    // Panggil fungsi internal dan bersihkan spasi ganda atau di akhir
+    let hasil = toWords(angka).replace(/  +/g, ' ').trim();
+    return hasil;
 }
 
 /**
- * [REVISI TAMPILAN PDF FINAL] Membuat file PDF daftar nilai dengan format Times New Roman
- * dan penyesuaian tata letak sesuai permintaan.
- *
- * @param {object} payload - Data yang dikirim dari frontend.
- * @returns {object} Objek berisi data file PDF yang di-encode base64.
+ * [REVISI FINAL] Membuat file PDF daftar nilai dengan validasi yang sudah diperbarui.
  */
 function generateNilaiPdfForGuru(payload) {
   try {
-    // --- PERBAIKAN 1: Ambil submissionId langsung dari payload ---
     const { spreadsheetId, tipe, mapelKode, guruData, submissionId } = payload;
     
-    // --- PERBAIKAN 2: Validasi di Sisi Server ---
-    if (!submissionId) {
-      throw new Error("Gagal mencetak: Tidak dapat menemukan riwayat pengajuan nilai untuk mapel ini.");
+    // --- PERBAIKAN: Gunakan fungsi helper yang baru ---
+    if (!isSubmissionFullyApproved(spreadsheetId, submissionId)) {
+      throw new Error("Cetak nilai gagal. Pastikan semua nilai siswa untuk pengajuan ini telah disetujui oleh admin.");
     }
-    const batchStatus = getSubmissionBatchStatus(spreadsheetId, submissionId);
-    if (!batchStatus.allApproved) {
-        throw new Error("Cetak nilai gagal. Pastikan semua nilai siswa telah disetujui oleh admin.");
-    }
+    // --- AKHIR PERBAIKAN ---
     
-    // --- Pengambilan Data (Tidak berubah) ---
+    // --- Sisa dari fungsi ini tidak ada yang berubah ---
     const ss = SpreadsheetApp.openById(spreadsheetId);
     const schoolData = getSchoolData(spreadsheetId);
     const students = getStudentsForGuru(spreadsheetId);
@@ -8382,7 +8383,6 @@ function generateNilaiPdfForGuru(payload) {
     const approvalSheet = ss.getSheetByName(SHEET_PENGAJUAN_NILAI);
     if (!approvalSheet) throw new Error("Sheet 'Pengajuan Nilai' tidak ditemukan.");
     
-    // --- Logika Pengumpulan Nilai (Tidak berubah) ---
     const approvalData = approvalSheet.getRange(2, 1, approvalSheet.getLastRow() - 1, 9).getValues();
     const nilaiPerSiswa = [];
     students.forEach(s => {
@@ -8406,7 +8406,6 @@ function generateNilaiPdfForGuru(payload) {
     });
     if (nilaiPerSiswa.length === 0) { throw new Error("Tidak ada data nilai yang disetujui untuk dicetak."); }
 
-    // --- Logika Pembuatan PDF (Tidak ada perubahan signifikan, hanya memastikan variabel benar) ---
     const printSettings = getPrintSettings(spreadsheetId).settings || {};
     const tahunSekarang = new Date().getFullYear();
     const tahunAjaran = printSettings.tahunAjaran || `${tahunSekarang - 1}/${tahunSekarang}`;
@@ -8607,40 +8606,6 @@ function getNilaiSubmissionStatus(spreadsheetId) {
     Logger.log(`getNilaiSubmissionStatus Error: ${e.message}`);
     return { isEnabled: true };
   }
-}
-
-/**
- * [FUNGSI BARU] Memeriksa status lengkap dari sebuah batch pengajuan berdasarkan ID-nya.
- * @param {string} spreadsheetId - ID spreadsheet sekolah.
- * @param {string} submissionId - ID unik dari batch pengajuan.
- * @returns {object} Objek berisi status batch { total, approved, rejected, pending, allApproved }.
- */
-function getSubmissionBatchStatus(spreadsheetId, submissionId) {
-    if (!submissionId) {
-        return { total: 0, approved: 0, rejected: 0, pending: 0, allApproved: false };
-    }
-    try {
-        const ss = SpreadsheetApp.openById(spreadsheetId);
-        const approvalSheet = ss.getSheetByName(SHEET_PENGAJUAN_NILAI);
-        if (!approvalSheet || approvalSheet.getLastRow() < 2) {
-            return { total: 0, approved: 0, rejected: 0, pending: 0, allApproved: false };
-        }
-
-        const data = approvalSheet.getRange(2, 1, approvalSheet.getLastRow() - 1, 9).getValues();
-        const batchRows = data.filter(row => row[0].toString() === submissionId.toString());
-
-        const total = batchRows.length;
-        const approved = batchRows.filter(row => row[8] === 'Disetujui').length;
-        const rejected = batchRows.filter(row => row[8] === 'Ditolak').length;
-        const pending = total - approved - rejected;
-        const allApproved = (total > 0 && approved === total);
-
-        return { total, approved, rejected, pending, allApproved };
-
-    } catch (e) {
-        Logger.log(`getSubmissionBatchStatus Error: ${e.message}`);
-        return { total: 0, approved: 0, rejected: 0, pending: 0, allApproved: false, error: e.message };
-    }
 }
 
 /**
@@ -9027,18 +8992,9 @@ function regenerateGuruCredentials(spreadsheetId, rowNum) {
   }
 }
 
-// File: Kode.gs.html
-
 /**
- * [OPTIMASI V2] Mengambil semua data yang diperlukan untuk merender satu halaman/tabel nilai guru,
- * kini dengan filter kelas yang ditambahkan.
- *
- * @param {string} spreadsheetId - ID spreadsheet sekolah.
- * @param {string} username - Username guru yang sedang login.
- * @param {string} mapelKode - Kode mata pelajaran yang sedang dilihat.
- * @param {string} tipeNilai - Tipe nilai yang akan ditampilkan (cth: 'ujian', 'rapor_k7_ganjil').
- * @param {string} [className=null] - Nama kelas untuk memfilter siswa (opsional).
- * @returns {object} Objek komprehensif berisi semua data yang diperlukan oleh frontend.
+ * [OPTIMASI V3 - FINAL] Mengambil semua data yang diperlukan untuk merender satu halaman/tabel nilai guru,
+ * dengan validasi cetak yang sudah diperbarui.
  */
 function getNilaiPageData_Guru(spreadsheetId, username, mapelKode, tipeNilai, className = null) {
   try {
@@ -9047,27 +9003,30 @@ function getNilaiPageData_Guru(spreadsheetId, username, mapelKode, tipeNilai, cl
     const students = getStudentsForGuru(spreadsheetId, className);
     const schoolData = getSchoolData(spreadsheetId);
     const jenjang = schoolData ? schoolData.jenjang : null;
-    // Ambil SEMUA data, termasuk objek submissionIds yang baru
     const { savedValues, submittedValues, approvalStatus, submissionIds } = getGuruNilai(spreadsheetId, username, mapelKode);
     
-    // Pilih ID pengajuan yang spesifik untuk tipe nilai yang diminta
     const specificSubmissionId = submissionIds[tipeNilai] || null;
     
-    // Gunakan ID spesifik itu untuk memeriksa status batch
-    const batchStatus = getSubmissionBatchStatus(spreadsheetId, specificSubmissionId);
+    // --- PERBAIKAN: Gunakan fungsi helper yang baru ---
+    // Sekarang batchStatus akan berisi objek sederhana: { allApproved: true } atau { allApproved: false }
+    const batchStatus = { 
+        allApproved: isSubmissionFullyApproved(spreadsheetId, specificSubmissionId) 
+    };
+    // --- AKHIR PERBAIKAN ---
+
     const submissionSettings = getNilaiSubmissionStatus(spreadsheetId);
-    const kkmData = getKkm(spreadsheetId); // <-- [PERUBAHAN] Ambil data KKM
+    const kkmData = getKkm(spreadsheetId);
 
     return {
       status: "success",
       students: students,
       jenjang: jenjang,
-      kkm: kkmData.kkm, // <-- [PERUBAHAN] Sertakan KKM dalam respons
+      kkm: kkmData.kkm,
       savedValues: savedValues,
       submittedValues: submittedValues,
       approvalStatus: approvalStatus,
       submissionId: specificSubmissionId,
-      batchStatus: batchStatus,
+      batchStatus: batchStatus, // Mengirim status yang sudah benar
       isSubmissionEnabled: submissionSettings.isEnabled
     };
 
@@ -9907,4 +9866,110 @@ function sortAndRewriteStudentSheet(spreadsheetId) {
     } finally {
         lock.releaseLock();
     }
+}
+
+/**
+ * [VERSI FINAL 2.0] Mengambil status pengajuan yang sedang menunggu persetujuan.
+ * Menghitung jumlah total yang menunggu, dan dari jumlah itu, berapa yang sudah disetujui/ditolak.
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @param {string} username - Username guru yang sedang login.
+ * @returns {object} Objek berisi rekapitulasi status pengajuan yang sedang aktif.
+ */
+function getPendingSubmissionStatus(spreadsheetId, username) {
+  const result = {
+    ujian: { pending: 0, approved: 0, rejected: 0 },
+    rapor: { pending: 0, approved: 0, rejected: 0 },
+    hasPending: false
+  };
+
+  try {
+    const ss = SpreadsheetApp.openById(spreadsheetId);
+    const approvalSheet = ss.getSheetByName(SHEET_PENGAJUAN_NILAI);
+    if (!approvalSheet || approvalSheet.getLastRow() < 2) {
+      return result;
+    }
+
+    const data = approvalSheet.getDataRange().getValues();
+    const activeSubmissions = new Map();
+
+    // Langkah 1: Iterasi untuk menemukan semua pengajuan yang masih aktif (memiliki minimal 1 status 'Menunggu')
+    for (let i = data.length - 1; i >= 1; i--) { // Iterasi dari bawah ke atas lebih efisien
+      const row = data[i];
+      const submissionId = row[0];
+      const guruPengirim = row[1];
+      const status = row[8];
+      
+      // Jika sudah diproses, lewati
+      if (activeSubmissions.has(submissionId)) continue;
+      
+      if (guruPengirim === username && status === 'Menunggu Persetujuan') {
+        activeSubmissions.set(submissionId, true);
+        result.hasPending = true;
+      }
+    }
+    
+    // Jika tidak ada pengajuan aktif sama sekali, hentikan
+    if (!result.hasPending) {
+      return result;
+    }
+
+    // Langkah 2: Iterasi lagi untuk menghitung detail dari setiap pengajuan yang aktif
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const submissionId = row[0];
+
+      if (activeSubmissions.has(submissionId)) {
+        const tipeNilaiLengkap = row[3];
+        const status = row[8];
+        const kategori = tipeNilaiLengkap.startsWith('ujian') ? 'ujian' : 'rapor';
+
+        if (status === 'Menunggu Persetujuan') {
+          result[kategori].pending++;
+        } else if (status === 'Disetujui') {
+          result[kategori].approved++;
+        } else if (status === 'Ditolak') {
+          result[kategori].rejected++;
+        }
+      }
+    }
+    
+    return result;
+
+  } catch (e) {
+    Logger.log("getPendingSubmissionStatus Error: " + e.message);
+    return result; // Kembalikan objek kosong jika terjadi error
+  }
+}
+
+/**
+ * [BARU - PENGGANTI] Fungsi helper untuk memeriksa apakah sebuah batch pengajuan
+ * sudah disetujui sepenuhnya oleh admin.
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @param {string} submissionId - ID unik dari batch pengajuan.
+ * @returns {boolean} - True jika semua item disetujui, false jika tidak.
+ */
+function isSubmissionFullyApproved(spreadsheetId, submissionId) {
+  if (!submissionId) return false;
+  try {
+    const ss = SpreadsheetApp.openById(spreadsheetId);
+    const approvalSheet = ss.getSheetByName(SHEET_PENGAJUAN_NILAI);
+    if (!approvalSheet || approvalSheet.getLastRow() < 2) {
+      return false;
+    }
+
+    const data = approvalSheet.getRange(2, 1, approvalSheet.getLastRow() - 1, 9).getValues();
+    const batchRows = data.filter(row => row[0].toString() === submissionId.toString());
+
+    // Jika tidak ada baris yang cocok dengan ID, atau jika ada yang statusnya bukan 'Disetujui'
+    if (batchRows.length === 0 || batchRows.some(row => row[8] !== 'Disetujui')) {
+      return false;
+    }
+    
+    // Jika semua baris ditemukan dan semuanya 'Disetujui'
+    return true;
+
+  } catch (e) {
+    Logger.log(`isSubmissionFullyApproved Error: ${e.message}`);
+    return false; // Anggap tidak disetujui jika terjadi error
+  }
 }
