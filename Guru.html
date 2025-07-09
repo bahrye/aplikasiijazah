@@ -181,19 +181,11 @@
             left: 0;
             z-index: 10;
             background-color: white; /* Warna latar agar tidak transparan */
+            /* [PERUBAHAN] Menambahkan garis tipis di sisi kanan kolom sticky */
+            border-right: 1px solid #e5e7eb; /* Warna sama dengan border tabel (gray-200) */
         }
         .sticky-col-left.header {
             background-color: #f9fafb; /* Warna latar header (bg-gray-50) */
-        }
-        /* Efek bayangan untuk pemisah visual */
-        .sticky-col-left::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: -8px; /* Posisi bayangan */
-            width: 8px;
-            height: 100%;
-            box-shadow: inset -10px 0 8px -8px rgba(0,0,0,0.1);
         }
     </style>
 
@@ -675,6 +667,12 @@
                 showGuruPage(page);
             }
         });
+
+        // ===== AWAL BLOK KODE BARU =====
+
+        // Setelah UI navigasi siap, cek status pengajuan yang mungkin masih aktif
+        startGuruStatusPolling(); 
+        // ===== AKHIR BLOK KODE BARU =====
 
         document.getElementById('logoutButtonGuru').addEventListener('click', handleGuruLogout);
         setupScoreInputValidation();
@@ -1403,7 +1401,6 @@
         }
     }
 
-    // TAMBAHKAN FUNGSI BARU INI
     function handleResendNilai(btn, type, mapelKode) {
         showConfirmationModal({
             title: "Kirim Ulang Nilai Revisi",
@@ -1412,7 +1409,6 @@
             confirmColor: "bg-blue-600 hover:bg-blue-700",
             onConfirm: () => {
                 const form = document.getElementById(`form-${type}`);
-                // Ambil nilai HANYA dari input yang tidak terkunci (yang ditolak)
                 const inputs = form.querySelectorAll('input[type="number"]:not([readonly])');
                 const nilaiRevisi = {};
                 inputs.forEach(input => {
@@ -1445,14 +1441,18 @@
                 google.script.run
                     .withSuccessHandler(res => {
                         showNotification(res.message, res.status === 'success' ? 'success' : 'error');
-                        // Muat ulang tabel untuk melihat status terbaru
                         if (res.status === 'success') {
+                            // ===== PERUBAHAN UTAMA DI SINI =====
+                            // Mulai polling juga setelah mengirim revisi
+                            const activeMapelLink = document.querySelector('.mapel-link.active');
+                            startGuruStatusPolling();
+                            // ===================================
+                            
                             if (type === 'ujian') {
-                                const activeMapelLink = document.querySelector('.mapel-link.active');
-                                buildUjianForm(activeMapelLink.dataset.kode, activeMapelLink.dataset.jenisUjian);
+                                buildUjianForm(activeMapelLink.dataset.kode, activeMapelLink.dataset.jenisUjian, activeMapelLink.dataset.kelas);
                             } else if (type.startsWith('rapor_')) {
                                 const semesterKey = type.split('_').slice(1).join('_');
-                                renderRaporSemesterTable(semesterKey, mapelKode);
+                                renderRaporSemesterTable(semesterKey, mapelKode, activeMapelLink.dataset.kelas);
                             }
                         } else {
                             btn.disabled = false;
@@ -1586,13 +1586,16 @@
                     .withSuccessHandler(res => { 
                         showNotification(res.message, res.status === 'success' ? 'success' : 'error');
                         if (res.status === 'success') {
+                            // ===== PERUBAHAN UTAMA DI SINI =====
+                            // Setelah sukses, panggil fungsi polling dengan submissionId dari server
                             const activeMapelLink = document.querySelector('.mapel-link.active');
+                            startGuruStatusPolling();
+                            // ===================================
+
                             if (type === 'ujian') {
-                                // [PERBAIKAN] Tambahkan 'activeMapelLink.dataset.kelas' sebagai argumen ketiga
                                 buildUjianForm(activeMapelLink.dataset.kode, activeMapelLink.dataset.jenisUjian, activeMapelLink.dataset.kelas);
                             } else if (type.startsWith('rapor_')) {
                                 const semesterKey = type.split('_').slice(1).join('_');
-                                // [PERBAIKAN] Tambahkan 'activeMapelLink.dataset.kelas' sebagai argumen ketiga
                                 renderRaporSemesterTable(semesterKey, mapelKode, activeMapelLink.dataset.kelas);
                             }
                         } else { 
@@ -1960,6 +1963,92 @@
                     .updateGuruCredentials_Guru(guruData.spreadsheetId, guruData.username, credentialData);
             }
         });
+    }
+
+    // ===== AWAL KODE BARU UNTUK REALTIME POLLING =====
+
+    let pollingInterval; // Variabel global untuk menyimpan interval polling
+
+    /**
+     * [VERSI FINAL 2.0] Memulai polling untuk memeriksa status SEMUA pengajuan guru.
+     */
+    function startGuruStatusPolling() {
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+        }
+        const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+        if (!guruData) return;
+
+        const poll = () => {
+            google.script.run
+                .withSuccessHandler(statusData => {
+                    updateGuruPollingStatusBar(statusData);
+                    if (!statusData.hasPending) {
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                    }
+                })
+                .withFailureHandler(err => {
+                    console.error("Gagal melakukan polling status:", err);
+                })
+                // ===== PERUBAHAN UTAMA: Panggil fungsi backend yang baru =====
+                .getPendingSubmissionStatus(guruData.spreadsheetId, guruData.username);
+        };
+
+        poll(); 
+        pollingInterval = setInterval(poll, 15000); 
+    }
+
+    /**
+     * [VERSI FINAL 2.0] Memperbarui tampilan banner status polling sesuai format yang diminta.
+     */
+    function updateGuruPollingStatusBar(statusData) {
+        const statusBar = document.getElementById('submission-status-bar');
+        if (!statusBar) return;
+
+        if (!statusData || !statusData.hasPending) {
+            statusBar.classList.add('hidden');
+            return;
+        }
+
+        let contentHtml = '<div class="w-full">';
+        contentHtml += '<div class="font-semibold text-gray-800 mb-2 flex items-center gap-2"><svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Status Pengajuan:</div>';
+        
+        // ===== AWAL LOGIKA TAMPILAN BARU =====
+        contentHtml += '<div class="space-y-1 pl-2 text-gray-700">';
+
+        let hasContent = false;
+        // Tampilkan baris untuk Nilai Ujian jika ada yang menunggu
+        if (statusData.ujian.pending > 0) {
+            contentHtml += `
+                <div>
+                    Nilai Ujian (${statusData.ujian.pending} menunggu): 
+                    <strong class="text-green-600">${statusData.ujian.approved}</strong> disetujui, 
+                    <strong class="text-red-600">${statusData.ujian.rejected}</strong> ditolak
+                </div>`;
+            hasContent = true;
+        }
+        // Tampilkan baris untuk Nilai Rapor jika ada yang menunggu
+        if (statusData.rapor.pending > 0) {
+            contentHtml += `
+                <div>
+                    Nilai Rapor (${statusData.rapor.pending} menunggu): 
+                    <strong class="text-green-600">${statusData.rapor.approved}</strong> disetujui, 
+                    <strong class="text-red-600">${statusData.rapor.rejected}</strong> ditolak
+                </div>`;
+            hasContent = true;
+        }
+        
+        contentHtml += '</div></div>';
+        // ===== AKHIR LOGIKA TAMPILAN BARU =====
+
+        if (hasContent) {
+            statusBar.innerHTML = contentHtml;
+            statusBar.className = 'mb-4 p-4 rounded-lg text-sm flex items-start gap-3 bg-yellow-50 border-l-4 border-yellow-400';
+            statusBar.classList.remove('hidden');
+        } else {
+            statusBar.classList.add('hidden');
+        }
     }
 </script>
 </body>
