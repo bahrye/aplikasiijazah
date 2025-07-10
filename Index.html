@@ -2368,6 +2368,7 @@
                                     <li>Setelah arsip berhasil dibuat, data siswa yang diluluskan akan **dihapus secara otomatis** dari aplikasi ini.</li>
                                     <li>Data siswa dari kelas yang tidak dipilih akan tetap ada di aplikasi.</li>
                                     <li>Pastikan semua proses input dan rekapitulasi nilai sudah final sebelum melanjutkan.</li>
+                                    <li>Proses ini membutuhkan waktu yang agak lama, jadi silahkan ditunggu sampai benar-benar berhasil. Jika error, reload halaman lalu coba kembali.</li>
                                 </ul>
                             </div>
                             
@@ -3554,7 +3555,6 @@
         let originalSiswaOrder = [];
         let initialSiswaOrder = [];
         let isOrderChanged = false;
-
 
         // [TAMBAHKAN] Inisialisasi Dropzone.js (letakan di scope global)
         let nilaiDropzone;
@@ -5211,7 +5211,6 @@
             // ===== AKHIR KODE TAMBAHAN =====
 
             const addStudentBtn = document.getElementById('addStudentBtn');
-            const siswaModal = document.getElementById('siswa-modal');
             const closeSiswaModalBtn = document.getElementById('closeSiswaModalBtn');
             const cancelSiswaBtn = document.getElementById('cancelSiswaBtn');
             const siswaForm = document.getElementById('siswaForm');
@@ -5365,26 +5364,6 @@
                 };
                 reader.readAsDataURL(file);
             }
-
-            /**
-             * [PERBAIKAN] Mengembalikan fungsi untuk membuka modal siswa,
-             * agar bisa dipanggil oleh tombol Edit.
-             */
-            const openSiswaModal = () => {
-                const siswaModal = document.getElementById('siswa-modal');
-                if (siswaModal) {
-                    siswaModal.classList.remove('hidden');
-                    setTimeout(() => {
-                        siswaModal.querySelector('.modal-content').style.transform = 'scale(1)';
-                    }, 10);
-                }
-            };
-            const closeSiswaModal = () => {
-                if (siswaModal) {
-                    siswaModal.querySelector('.modal-content').style.transform = 'scale(0.95)';
-                    setTimeout(() => siswaModal.classList.add('hidden'), 300);
-                }
-            };
 
             const linkKePengaturan = document.getElementById('link-ke-pengaturan');
             if (linkKePengaturan) {
@@ -15495,6 +15474,24 @@
                 })
                 .saveSiswaOrder(userSpreadsheetId, newOrderNisn);
         }
+
+        const siswaModal = document.getElementById('siswa-modal');
+
+        const openSiswaModal = () => {
+            if (siswaModal) {
+                siswaModal.classList.remove('hidden');
+                setTimeout(() => {
+                    siswaModal.querySelector('.modal-content').style.transform = 'scale(1)';
+                }, 10);
+            }
+        };
+
+        const closeSiswaModal = () => {
+            if (siswaModal) {
+                siswaModal.querySelector('.modal-content').style.transform = 'scale(0.95)';
+                setTimeout(() => siswaModal.classList.add('hidden'), 300);
+            }
+        };
 
         /**
          * [DIPERBARUI] Menyiapkan modal saat tombol 'Edit' diklik,
