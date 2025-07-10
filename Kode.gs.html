@@ -1101,20 +1101,23 @@ function generateSiswaTemplate() {
   }
 }
 
-// [PERUBAHAN] Ganti seluruh fungsi importFromExcel dengan ini
 function importFromExcel(spreadsheetId, fileData, sheetName, userEmail) {
-    let tempFileId = null; // Variabel untuk menyimpan ID file sementara
+    let tempFile; // Pindahkan deklarasi ke sini agar cakupannya lebih luas
     try {
         const decoded = Utilities.base64Decode(fileData.content, Utilities.Charset.UTF_8);
         const blob = Utilities.newBlob(decoded, fileData.mimeType, fileData.fileName);
+        
+        // Buat file sementara
         const tempSpreadsheetFile = Drive.Files.insert({ title: `temp_import_${new Date().getTime()}` }, blob, { convert: true });
-
+        
+        // Periksa apakah file berhasil dibuat
         if (!tempSpreadsheetFile || !tempSpreadsheetFile.id) {
-            throw new Error("Gagal membuat file sementara di Google Drive.");
+            throw new Error("Gagal membuat file sementara di Google Drive. Pastikan Drive API telah diaktifkan.");
         }
         
-        tempFileId = tempSpreadsheetFile.id;
-        const importSheet = SpreadsheetApp.openById(tempFileId).getSheets()[0];
+        // Simpan file object untuk dihapus nanti
+        tempFile = DriveApp.getFileById(tempSpreadsheetFile.id); 
+        const importSheet = SpreadsheetApp.openById(tempSpreadsheetFile.id).getSheets()[0];
         const data = importSheet.getDataRange().getValues();
 
         if (data.length <= 1) throw new Error("File kosong atau hanya berisi header.");
@@ -1242,7 +1245,7 @@ function importFromExcel(spreadsheetId, fileData, sheetName, userEmail) {
         Logger.log(e);
         return { status: "error", message: `Gagal mengimpor data: ${e.toString()}` };
     } finally {
-        if (tempFile) {
+        if (tempFile) { // Hanya hapus jika tempFile berhasil didefinisikan
             tempFile.setTrashed(true);
         }
     }
@@ -9458,10 +9461,14 @@ function bulkUpdateKelasAndRuang(spreadsheetId, rowNumbers, newKelas, newRuang) 
 }
 
 /**
- * [VERSI FINAL] Menerima urutan NISN baru, menulis ulang data, dan mengembalikan daftar siswa
- * yang sudah terurut langsung dari memori untuk menghindari race condition.
+ * [VERSI FINAL 3.0] Mengurutkan siswa dengan mengelompokkan per kelas terlebih dahulu
+ * untuk memastikan integritas urutan kelas secara global, sambil menerapkan
+ * urutan manual baru pada kelas yang relevan.
  */
 function saveSiswaOrder(spreadsheetId, orderedNisnList) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000); // Menunggu hingga 30 detik jika ada proses lain
+
   try {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
@@ -9471,40 +9478,64 @@ function saveSiswaOrder(spreadsheetId, orderedNisnList) {
 
     const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn());
     const allData = dataRange.getValues();
-    
-    // Buat peta dari data mentah untuk akses cepat
-    const studentDataMap = new Map();
+
+    // 1. Buat Peta (Map) dari urutan baru yang dikirim frontend untuk pencarian cepat.
+    const newOrderMap = new Map(orderedNisnList.map((nisn, index) => [String(nisn), index]));
+
+    // 2. Kelompokkan semua siswa berdasarkan kelas mereka.
+    const studentsByClass = {};
     allData.forEach(row => {
-      // Kolom NISN ada di indeks 0
-      studentDataMap.set(String(row[0]), row);
+      const className = row[13] || 'Tanpa Kelas'; // Kolom kelas adalah indeks ke-13
+      if (!studentsByClass[className]) {
+        studentsByClass[className] = [];
+      }
+      studentsByClass[className].push(row);
     });
 
-    // Buat kembali array data berdasarkan urutan dari frontend
-    const reorderedData = orderedNisnList.map(nisn => {
-      return studentDataMap.get(String(nisn));
-    }).filter(Boolean); // Filter untuk menghapus item yang mungkin tidak ditemukan
+    // 3. Urutkan siswa di dalam setiap grup kelas.
+    for (const className in studentsByClass) {
+      studentsByClass[className].sort((a, b) => {
+        const nisnA = String(a[0]);
+        const nisnB = String(b[0]);
+        const aIsInNewOrder = newOrderMap.has(nisnA);
+        const bIsInNewOrder = newOrderMap.has(nisnB);
 
-    // [MODIFIKASI UTAMA] Lakukan penyortiran ulang di backend sebagai pengaman
-    // Ini memastikan urutan kelas selalu benar sebelum disimpan.
-    reorderedData.sort((a, b) => {
-        const keyA = getSortableClassKey(a[13]); // Kolom kelas adalah indeks 13
-        const keyB = getSortableClassKey(b[13]);
-        if (keyA[0] < keyB[0]) return -1;
-        if (keyA[0] > keyB[0]) return 1;
-        if (keyA[1] < keyB[1]) return -1;
-        if (keyA[1] > keyB[1]) return 1;
+        // Jika kedua siswa ada di dalam daftar yang baru diurutkan, gunakan urutan baru tersebut.
+        if (aIsInNewOrder && bIsInNewOrder) {
+          return newOrderMap.get(nisnA) - newOrderMap.get(nisnB);
+        }
+        // Jika tidak, biarkan posisi relatif mereka seperti semula (tidak mengubah urutan siswa di kelas lain).
         return 0;
+      });
+    }
+
+    // 4. Dapatkan nama-nama kelas dan urutkan nama-nama tersebut menggunakan fungsi getSortableClassKey
+    const sortedClassNames = Object.keys(studentsByClass).sort((a, b) => {
+      const keyA = getSortableClassKey(a);
+      const keyB = getSortableClassKey(b);
+      // Logika perbandingan yang sama seperti di frontend
+      if (keyA[0] < keyB[0]) return -1;
+      if (keyA[0] > keyB[0]) return 1;
+      if (keyA[1] < keyB[1]) return -1;
+      if (keyA[1] > keyB[1]) return 1;
+      return 0;
     });
 
-    // Tulis ulang seluruh data siswa dengan urutan yang sudah final
+    // 5. Gabungkan kembali semua grup siswa menjadi satu daftar akhir yang terurut sempurna.
+    const finalSortedData = [];
+    sortedClassNames.forEach(className => {
+      finalSortedData.push(...studentsByClass[className]);
+    });
+
+    // 6. Tulis ulang seluruh data ke sheet.
     dataRange.clearContent();
-    if (reorderedData.length > 0) {
-      sheet.getRange(2, 1, reorderedData.length, reorderedData[0].length).setValues(reorderedData);
+    if (finalSortedData.length > 0) {
+      sheet.getRange(2, 1, finalSortedData.length, finalSortedData[0].length).setValues(finalSortedData);
     }
     
     SpreadsheetApp.flush();
     
-    // Ambil data terbaru yang sudah pasti benar dari sheet
+    // 7. Ambil kembali data yang sudah 100% benar dari sheet untuk dikirim ke frontend.
     const updatedStudentList = getStudents(spreadsheetId);
 
     return { 
@@ -9515,7 +9546,9 @@ function saveSiswaOrder(spreadsheetId, orderedNisnList) {
 
   } catch (e) {
     Logger.log(e);
-    return { status: "error", message: `Gagal menyimpan urutan: ${e.message}` };
+    return { status: "error", message: `Gagal menyimpan urutan: ${e.toString()}` };
+  } finally {
+    lock.releaseLock();
   }
 }
 
