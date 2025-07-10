@@ -420,6 +420,7 @@
 <script>
     const WEB_APP_URL = "<?= webAppUrl ?>";
     let allStudentsForGuruPage = [];
+    let guruPollingTimers = {};
 
     function showNotification(message, type = 'success') {
         const container = document.getElementById('notification-container');
@@ -621,6 +622,8 @@
         mapelContainer.parentNode.replaceChild(newMapelContainer, mapelContainer);
 
         newMapelContainer.addEventListener('click', function(e) {
+            stopAllGuruPolling();
+
             const target = e.target;
             
             // --- Logika untuk membuka/menutup submenu (DIPERBARUI) ---
@@ -792,15 +795,15 @@
         });
     }
 
-    // Ganti keseluruhan fungsi buildUjianForm di Guru.html dengan ini:
+    // GANTI FUNGSI INI DI Guru.html
     async function buildUjianForm(mapelKode, jenisUjian, kelas) {
         const container = document.getElementById('tab-ujian');
         container.innerHTML = `<p class="loading-animation p-4">Memuat data nilai ujian...</p>`;
-        
+
         try {
             const guruData = JSON.parse(sessionStorage.getItem('guruData'));
             const type = 'ujian';
-            
+
             const response = await new Promise((resolve, reject) => {
                 google.script.run
                     .withSuccessHandler(resolve)
@@ -810,7 +813,7 @@
 
             if (response.status !== 'success') throw new Error(response.message);
 
-            const { students, savedValues, submittedValues, approvalStatus, submissionId, batchStatus, isSubmissionEnabled, kkm } = response;
+            const { students, savedValues, submittedValues, approvalStatus, submissionId, batchStatus, kkm, isLockedForGuru } = response;
             if (!students || students.length === 0) {
                 container.innerHTML = `<p class="p-4 text-center text-gray-500">Tidak ada data siswa untuk kelas ${kelas}.</p>`; return;
             }
@@ -820,30 +823,39 @@
 
             const wrapperDiv = document.createElement('div');
             wrapperDiv.className = 'bg-gray-50 p-4 rounded-lg';
-            
+
+            // Perubahan di sini untuk memastikan layout yang benar
             const headerDiv = document.createElement('div');
-            headerDiv.className = 'flex justify-between items-center mb-4 flex-wrap gap-4';
-            
+            headerDiv.className = 'space-y-4'; // Biarkan item di dalamnya tersusun vertikal
+
             const titleDiv = document.createElement('div');
             titleDiv.innerHTML = `<h3 class="text-xl font-bold text-gray-800">${namaMapel} - Kelas ${kelas}</h3>`;
-            
+
             const buttonContainer = document.createElement('div');
-            
+
             headerDiv.appendChild(titleDiv);
             headerDiv.appendChild(buttonContainer);
-            
-            const scoreTableHtml = buildScoreTable(type, 'Nilai Ujian', mapelKode, students, savedValues, submittedValues, approvalStatus, kkm, { jenisUjian });
-            
+
+            const scoreTableHtml = buildScoreTable(type, 'Nilai Ujian', mapelKode, students, savedValues, submittedValues, approvalStatus, kkm, isLockedForGuru, { jenisUjian });
+
             wrapperDiv.appendChild(headerDiv);
             const tableContentDiv = document.createElement('div');
+            tableContentDiv.className = 'mt-4';
             tableContentDiv.innerHTML = scoreTableHtml;
             wrapperDiv.appendChild(tableContentDiv);
-            
+
             container.innerHTML = '';
             container.appendChild(wrapperDiv);
 
-            const buttonsHtml = buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus, kelas);
+            const buttonsHtml = buildActionButtons(type, mapelKode, submittedValues, approvalStatus, null, submissionId, batchStatus, kelas, isLockedForGuru);
             buttonContainer.innerHTML = buttonsHtml;
+
+            // ===== [BARU] MULAI POLLING JIKA PERLU =====
+            const isSubmitted = submittedValues && submittedValues[type] && Object.keys(submittedValues[type]).length > 0;
+            if (isSubmitted && submissionId && !batchStatus.allApproved) {
+                startGuruPolling(submissionId, type);
+            }
+            // ==========================================
 
         } catch (error) {
             container.innerHTML = `<p class="text-red-500 p-4">Gagal memuat data: ${error.message}</p>`;
@@ -875,6 +887,7 @@
             
             container.querySelectorAll('.semester-btn').forEach(btn => {
                 btn.onclick = () => {
+                    stopAllGuruPolling();
                     container.querySelectorAll('.semester-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     // ===== PERUBAHAN DI SINI: Teruskan 'kelas' saat memanggil =====
@@ -891,8 +904,7 @@
         }
     }
 
-    // Ganti keseluruhan fungsi renderRaporSemesterTable di Guru.html dengan ini:
-
+    // GANTI FUNGSI INI DI Guru.html
     async function renderRaporSemesterTable(semesterKey, mapelKode, kelas) {
         const tableContainer = document.getElementById('rapor-table-container');
         tableContainer.innerHTML = `<p class="loading-animation p-4">Memuat data semester...</p>`;
@@ -909,252 +921,193 @@
             });
 
             if (response.status !== 'success') throw new Error(response.message);
-            
-            const { students, savedValues, submittedValues, approvalStatus, submissionId, batchStatus, isSubmissionEnabled, kkm } = response;
+
+            const { students, savedValues, submittedValues, approvalStatus, submissionId, batchStatus, kkm, isLockedForGuru } = response;
             if (!students || students.length === 0) {
                 tableContainer.innerHTML = `<p class="p-4 text-center text-gray-500">Tidak ada data siswa untuk kelas ${kelas}.</p>`; return;
             }
-            
+
             const mapelInfo = guruData.mapel.find(m => m.kode === mapelKode);
             const namaMapel = mapelInfo ? mapelInfo.nama : mapelKode;
 
-            // --- Perubahan Urutan Pemuatan ---
             const wrapperDiv = document.createElement('div');
             wrapperDiv.className = 'bg-gray-50 p-4 rounded-lg';
-            
+
+            // Perubahan di sini untuk memastikan layout yang benar
             const headerDiv = document.createElement('div');
-            headerDiv.className = 'flex justify-between items-center mb-4 flex-wrap gap-4';
-            
+            headerDiv.className = 'space-y-4'; // Biarkan item di dalamnya tersusun vertikal
+
             const titleDiv = document.createElement('div');
             titleDiv.innerHTML = `<h3 class="text-xl font-bold text-gray-800">${namaMapel} - Kelas ${kelas}</h3>`;
-            
+
             const buttonContainer = document.createElement('div');
-            
+
             headerDiv.appendChild(titleDiv);
             headerDiv.appendChild(buttonContainer);
-            
-            const tableHtml = buildScoreTable(type, '', mapelKode, students, savedValues, submittedValues, approvalStatus, kkm, { semesterKey });
-            
+
+            const tableHtml = buildScoreTable(type, '', mapelKode, students, savedValues, submittedValues, approvalStatus, kkm, isLockedForGuru, { semesterKey });
+
             wrapperDiv.appendChild(headerDiv);
             const tableContentDiv = document.createElement('div');
+            tableContentDiv.className = 'mt-4';
             tableContentDiv.innerHTML = tableHtml;
             wrapperDiv.appendChild(tableContentDiv);
 
             tableContainer.innerHTML = '';
             tableContainer.appendChild(wrapperDiv);
-            
-            const buttonsHtml = buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus, kelas);
+
+            const buttonsHtml = buildActionButtons(type, mapelKode, submittedValues, approvalStatus, null, submissionId, batchStatus, kelas, isLockedForGuru);
             buttonContainer.innerHTML = buttonsHtml;
+
+            // ===== [BARU] MULAI POLLING JIKA PERLU =====
+            const isSubmitted = submittedValues && submittedValues[type] && Object.keys(submittedValues[type]).length > 0;
+            if (isSubmitted && submissionId && !batchStatus.allApproved) {
+                startGuruPolling(submissionId, type);
+            }
+            // ==========================================
 
         } catch (error) {
             tableContainer.innerHTML = `<p class="text-red-500 p-4">Gagal memuat tabel: ${error.message}</p>`;
         }
     }
     
-
+    // GANTI FUNGSI INI DI Guru.html
     /**
-     * [PERBAIKAN FINAL] Mengatur ulang kelas CSS pada tombol Impor/Ekspor
-     * agar ukurannya konsisten dan teks tidak terpotong (wrap).
+     * [PERBAIKAN FINAL v7] Membangun tombol aksi dengan perataan kiri dan logika cetak yang disempurnakan.
      */
-    function buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus, kelas) {
-        const isSubmitted = submittedValues && submittedValues[type];
-        let actionButtonsHtml = '';
+    function buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus, kelas, isLockedForGuru) {
+        const isSubmitted = submittedValues && submittedValues[type] && Object.keys(submittedValues[type]).length > 0;
+        let buttonsHtml = '';
 
-        // A. JIKA NILAI SUDAH PERNAH DIKIRIM
-        if (isSubmitted) {
-            // Cek kondisi tabel saat ini secara langsung dari layar
-            const form = document.getElementById(`form-${type}`);
-            const hasRejectedInputs = form ? !!form.querySelector('.score-input.status-ditolak') : false;
-            const hasEmptyInputs = form ? Array.from(form.querySelectorAll('.score-input')).some(input => input.value.trim() === '') : false;
+        // --- Kasus 1: Form DIKUNCI oleh admin ---
+        if (isLockedForGuru) {
+            // Logika baru untuk tombol Cetak pada form terkunci
+            const isFullyApproved = isSubmitted && batchStatus && batchStatus.allApproved;
+            const btnClass = isFullyApproved ? 'bg-cyan-600 hover:bg-cyan-700' : 'bg-gray-400 cursor-not-allowed';
+            const btnDisabled = isFullyApproved ? '' : 'disabled';
+            const btnTitle = isFullyApproved ? 'Cetak Nilai' : 'Tombol Cetak akan aktif setelah semua nilai dikirim dan disetujui oleh admin.';
 
-            // Kondisi 1: Jika ada nilai yang perlu direvisi (ditolak) atau diisi (kosong)
-            if (hasRejectedInputs || hasEmptyInputs) {
-                actionButtonsHtml = `
-                    <button data-action="resubmit" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 text-sm flex items-center gap-2">
-                        Kirim Kembali Revisi
-                    </button>
-                    <button data-action="cancel" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 text-sm flex items-center gap-2">
-                        Batal Kirim
-                    </button>`;
-            
-            // Kondisi 2: Jika semua nilai terisi dan tidak ada yang ditolak
-            } else {
-                const isFullyApproved = batchStatus && batchStatus.allApproved;
-                const printButtonClass = isFullyApproved 
-                    ? "bg-cyan-600 hover:bg-cyan-700" 
-                    : "bg-gray-400 cursor-not-allowed";
-                const printButtonDisabled = isFullyApproved ? "" : "disabled";
-                const printButtonTitle = isFullyApproved 
-                    ? "" 
-                    : 'title="Tombol akan aktif setelah semua nilai disetujui oleh admin."';
+            // Tombol Cetak selalu ditampilkan, namun statusnya (aktif/nonaktif) bergantung pada kondisi di atas
+            const printButtonHtml = `<button data-action="print" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" data-kelas="${kelas}" class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 ${btnClass}" ${btnDisabled} title="${btnTitle}">Cetak Nilai</button>`;
 
-                // PERUBAHAN ADA DI BARIS INI: Tambahkan data-kelas="${kelas}"
-                actionButtonsHtml = `
-                    <button data-action="print" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" data-kelas="${kelas}" class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 ${printButtonClass}" ${printButtonDisabled} ${printButtonTitle}>
-                        Cetak Nilai
-                    </button>
-                    <button data-action="cancel" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 text-sm flex items-center gap-2">
-                        Batal Kirim
-                    </button>`;
-            }
-
-        // B. JIKA NILAI BELUM PERNAH DIKIRIM SAMA SEKALI
-        } else {
-            const kirimBtnDisabled = !isSubmissionEnabled ? 'disabled' : '';
-            const kirimBtnClass = !isSubmissionEnabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700';
-            const kirimBtnTitle = !isSubmissionEnabled ? 'title="Pengiriman nilai saat ini sedang ditutup oleh admin."' : '';
-            actionButtonsHtml = `<button data-action="save" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 text-sm flex items-center gap-2">Simpan Draf</button>
-                              <button data-action="submit" data-type="${type}" data-mapel-kode="${mapelKode}" class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 ${kirimBtnClass}" ${kirimBtnDisabled} ${kirimBtnTitle}>Kirim Nilai</button>`;
-        }
-
-        // Untuk tombol import/export, logikanya tetap sama
-        let importExportButtons = '';
-        if (!isSubmitted) {
-            importExportButtons = `
-                <button data-action="export" data-type="${type}" data-mapel-kode="${mapelKode}" data-kelas="${kelas}" class="bg-teal-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700 text-sm flex items-center whitespace-nowrap">
-                    <div class="btn-content flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V3"></path></svg><span>Download Template</span></div>
-                    <div class="btn-spinner hidden loading-spinner" style="width:20px; height:20px; border-width:3px;"></div>
-                </button>
-                <button data-action="import" data-type="${type}" data-mapel-kode="${mapelKode}" data-kelas="${kelas}" class="bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-700 text-sm flex items-center whitespace-nowrap">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg><span>Import Nilai</span>
-                </button>
-                <div class="h-6 border-l border-gray-300 hidden md:block"></div>
+            return `
+                <div class="flex flex-wrap items-center justify-start gap-4 w-full">
+                    <div class="p-3 bg-yellow-100 text-yellow-800 rounded-lg text-sm font-medium text-center">
+                        Pengeditan nilai untuk kelas ini sedang dikunci oleh admin.
+                    </div>
+                    ${printButtonHtml}
+                </div>
             `;
         }
 
-        return `<div class="mb-4 flex flex-col md:flex-row md:justify-end md:items-center gap-2">${importExportButtons} ${actionButtonsHtml}</div>`;
+        // --- Kasus 2: Form TIDAK DIKUNCI ---
+        if (isSubmitted) {
+            const form = document.getElementById(`form-${type}`);
+            const hasRejectedInputs = form ? !!form.querySelector('.score-input.status-ditolak') : false;
+
+            if (hasRejectedInputs) {
+                buttonsHtml += `<button data-action="resubmit" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 text-sm flex items-center gap-2">Kirim Kembali Revisi</button>`;
+            }
+
+            const isFullyApproved = batchStatus && batchStatus.allApproved;
+            if (isFullyApproved) {
+                buttonsHtml += `<button data-action="print" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" data-kelas="${kelas}" class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700">Cetak Nilai</button>`;
+            }
+
+            buttonsHtml += `<button data-action="cancel" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 text-sm flex items-center gap-2">Batal Kirim</button>`;
+        } else {
+            buttonsHtml = `
+                <button data-action="export" data-type="${type}" data-mapel-kode="${mapelKode}" data-kelas="${kelas}" class="bg-teal-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700 text-sm flex items-center whitespace-nowrap"><div class="btn-content flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V3"></path></svg><span>Download Template</span></div><div class="btn-spinner hidden loading-spinner" style="width:20px; height:20px; border-width:3px;"></div></button>
+                <button data-action="import" data-type="${type}" data-mapel-kode="${mapelKode}" data-kelas="${kelas}" class="bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-700 text-sm flex items-center whitespace-nowrap"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg><span>Import Nilai</span></button>
+                <div class="h-6 border-l border-gray-300 hidden md:block"></div>
+                <button data-action="save" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 text-sm flex items-center gap-2">Simpan Draf</button>
+                <button data-action="submit" data-type="${type}" data-mapel-kode="${mapelKode}" class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 bg-green-600 hover:bg-green-700">Kirim Nilai</button>
+            `;
+        }
+
+        // Mengembalikan semua tombol dalam satu div dengan perataan kiri (justify-start)
+        return `<div class="flex items-center justify-start flex-wrap gap-2">${buttonsHtml}</div>`;
     }
 
+    // GANTI FUNGSI INI DI Guru.html
     /**
-     * [MODIFIKASI] Membangun tabel nilai lengkap dengan kolom Nama & NISN yang sticky di ponsel.
+     * [MODIFIKASI] Membangun tabel nilai dengan mempertimbangkan status kunci (isLockedForGuru).
      */
-    function buildScoreTable(type, title, mapelKode, students, savedValues, submittedValues, approvalStatus, kkm, options = {}) {
+    function buildScoreTable(type, title, mapelKode, students, savedValues, submittedValues, approvalStatus, kkm, isLockedForGuru, options = {}) {
         const isSubmitted = submittedValues && submittedValues[type];
         const dataToDisplay = isSubmitted ? (submittedValues[type] || {}) : (savedValues ? (savedValues[type] || {}) : {});
-        
-        // --- PERUBAHAN 1: Tambahkan kelas sticky dan lebar pada header ---
+
         let headers = `<th class="px-4 py-2 text-left border border-gray-200 sticky-col-left header w-28">NISN</th>
                       <th class="px-4 py-2 text-left border border-gray-200 sticky-col-left header w-48">Nama Siswa</th>`;
-        
+
         let legendHtml = `<div class="text-xs text-gray-500 mb-3 p-2 bg-gray-100 rounded-md"><b>Keterangan:</b> `;
         const legends = [`<b>KKM</b> = ${kkm || 'N/A'}`];
-        
         let inputsHtml;
-        
+
         if (type === 'ujian') {
             const { jenisUjian } = options;
             const hasUM = jenisUjian === 'Ujian Madrasah' || jenisUjian === 'Keduanya';
             const hasUPr = jenisUjian === 'Ujian Praktek' || jenisUjian === 'Keduanya';
-
             if (hasUM) { headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">UM</th>`; legends.push('<b>UM</b> = Ujian Madrasah'); }
             if (hasUPr) { headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">UPr</th>`; legends.push('<b>UPr</b> = Ujian Praktek'); }
-            
+
             inputsHtml = (s) => {
                 let html = '';
                 const nisn = s.nisn;
+                const lockedClass = isLockedForGuru ? 'bg-gray-200 cursor-not-allowed' : '';
+
                 if (hasUM) {
                     const value = dataToDisplay[`${nisn}_um`] || '';
                     const status = approvalStatus[`ujian_um_${nisn}`];
-                    let isReadOnly = false;
-                    let statusClass = '';
-                    if (isSubmitted && value !== '') {
-                        const isRejected = status === 'Ditolak';
-                        isReadOnly = !isRejected;
-                        statusClass = status === 'Disetujui' ? 'status-disetujui' : status === 'Ditolak' ? 'status-ditolak' : 'status-menunggu';
-                    }
-                    const numericValue = parseFloat(value);
-                    const kkmClass = (!isNaN(numericValue) && numericValue < kkm) ? 'text-red-600 font-bold' : '';
-                    html += `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${nisn}_um" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClass} ${kkmClass}" value="${value}" ${isReadOnly ? 'readonly' : ''}></td>`;
+                    let isReadOnlyDynamic = isLockedForGuru || (isSubmitted && value !== '' && status !== 'Ditolak');
+                    let statusClass = (isSubmitted && value !== '') ? (status === 'Disetujui' ? 'status-disetujui' : status === 'Ditolak' ? 'status-ditolak' : 'status-menunggu') : '';
+                    const kkmClass = (!isNaN(parseFloat(value)) && parseFloat(value) < kkm) ? 'text-red-600 font-bold' : '';
+                    html += `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${nisn}_um" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClass} ${kkmClass} ${lockedClass}" value="${value}" ${isReadOnlyDynamic ? 'readonly' : ''}></td>`;
                 }
                 if (hasUPr) {
                     const value = dataToDisplay[`${nisn}_upr`] || '';
                     const status = approvalStatus[`ujian_upr_${nisn}`];
-                    let isReadOnly = false;
-                    let statusClass = '';
-                    if (isSubmitted && value !== '') {
-                        const isRejected = status === 'Ditolak';
-                        isReadOnly = !isRejected;
-                        statusClass = status === 'Disetujui' ? 'status-disetujui' : status === 'Ditolak' ? 'status-ditolak' : 'status-menunggu';
-                    }
-                    const numericValue = parseFloat(value);
-                    const kkmClass = (!isNaN(numericValue) && numericValue < kkm) ? 'text-red-600 font-bold' : '';
-                    html += `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${nisn}_upr" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClass} ${kkmClass}" value="${value}" ${isReadOnly ? 'readonly' : ''}></td>`;
+                    let isReadOnlyDynamic = isLockedForGuru || (isSubmitted && value !== '' && status !== 'Ditolak');
+                    let statusClass = (isSubmitted && value !== '') ? (status === 'Disetujui' ? 'status-disetujui' : status === 'Ditolak' ? 'status-ditolak' : 'status-menunggu') : '';
+                    const kkmClass = (!isNaN(parseFloat(value)) && parseFloat(value) < kkm) ? 'text-red-600 font-bold' : '';
+                    html += `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${nisn}_upr" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClass} ${kkmClass} ${lockedClass}" value="${value}" ${isReadOnlyDynamic ? 'readonly' : ''}></td>`;
                 }
                 return html;
             };
-        } else { // Untuk rapor
-            headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">Peng</th>
-                        <th class="px-2 py-2 text-center w-24 border border-gray-200">Ket</th>`;
+        } else { // Rapor
+            headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">Peng</th><th class="px-2 py-2 text-center w-24 border border-gray-200">Ket</th>`;
             legends.push('<b>Peng</b> = Pengetahuan', '<b>Ket</b> = Keterampilan');
 
             inputsHtml = (s) => {
                 const nisn = s.nisn;
+                const lockedClass = isLockedForGuru ? 'bg-gray-200 cursor-not-allowed':''
+
                 const valuePeng = dataToDisplay[`${nisn}_peng`] || '';
                 const statusPeng = approvalStatus[`${type}_peng_${nisn}`];
-                let isReadOnlyPeng = false;
-                let statusClassPeng = '';
-                if (isSubmitted && valuePeng !== '') {
-                    isReadOnlyPeng = statusPeng !== 'Ditolak';
-                    statusClassPeng = statusPeng === 'Disetujui' ? 'status-disetujui' : statusPeng === 'Ditolak' ? 'status-ditolak' : 'status-menunggu';
-                }
-                const numericValuePeng = parseFloat(valuePeng);
-                const kkmClassPeng = (!isNaN(numericValuePeng) && numericValuePeng < kkm) ? 'text-red-600 font-bold' : '';
+                let isReadOnlyPeng = isLockedForGuru || (isSubmitted && valuePeng !== '' && statusPeng !== 'Ditolak');
+                let statusClassPeng = (isSubmitted && valuePeng !== '') ? (statusPeng === 'Disetujui' ? 'status-disetujui' : statusPeng === 'Ditolak' ? 'status-ditolak' : 'status-menunggu') : '';
+                const kkmClassPeng = (!isNaN(parseFloat(valuePeng)) && parseFloat(valuePeng) < kkm) ? 'text-red-600 font-bold' : '';
 
                 const valueKet = dataToDisplay[`${nisn}_ket`] || '';
                 const statusKet = approvalStatus[`${type}_ket_${nisn}`];
-                let isReadOnlyKet = false;
-                let statusClassKet = '';
-                if (isSubmitted && valueKet !== '') {
-                    isReadOnlyKet = statusKet !== 'Ditolak';
-                    statusClassKet = statusKet === 'Disetujui' ? 'status-disetujui' : statusKet === 'Ditolak' ? 'status-ditolak' : 'status-menunggu';
-                }
-                const numericValueKet = parseFloat(valueKet);
-                const kkmClassKet = (!isNaN(numericValueKet) && numericValueKet < kkm) ? 'text-red-600 font-bold' : '';
+                let isReadOnlyKet = isLockedForGuru || (isSubmitted && valueKet !== '' && statusKet !== 'Ditolak');
+                let statusClassKet = (isSubmitted && valueKet !== '') ? (statusKet === 'Disetujui' ? 'status-disetujui' : statusKet === 'Ditolak' ? 'status-ditolak' : 'status-menunggu') : '';
+                const kkmClassKet = (!isNaN(parseFloat(valueKet)) && parseFloat(valueKet) < kkm) ? 'text-red-600 font-bold' : '';
 
-                return `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${nisn}_peng" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClassPeng} ${kkmClassPeng}" value="${valuePeng}" ${isReadOnlyPeng ? 'readonly' : ''}></td>
-                        <td class="px-2 py-1 border border-gray-200"><input type="number" name="${nisn}_ket" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClassKet} ${kkmClassKet}" value="${valueKet}" ${isReadOnlyKet ? 'readonly' : ''}></td>`;
+                return `<td class="px-2 py-1 border border-gray-200"><input type="number" name="${nisn}_peng" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClassPeng} ${kkmClassPeng} ${lockedClass}" value="${valuePeng}" ${isReadOnlyPeng ? 'readonly' : ''}></td>
+                        <td class="px-2 py-1 border border-gray-200"><input type="number" name="${nisn}_ket" min="0" max="100" class="w-20 p-1 border rounded-md score-input text-center ${statusClassKet} ${kkmClassKet} ${lockedClass}" value="${valueKet}" ${isReadOnlyKet ? 'readonly' : ''}></td>`;
             };
         }
 
         headers += `<th class="px-2 py-2 text-center w-24 border border-gray-200">Jumlah</th>
                     <th class="px-2 py-2 text-center w-24 border border-gray-200">Rata-rata</th>`;
-
         legendHtml += legends.join(' | ') + '</div>';
-
         let studentRows = '';
         students.forEach(s => {
-            // --- PERUBAHAN 2: Tambahkan kelas sticky pada sel data ---
-            studentRows += `<tr class="hover:bg-gray-50">
-                            <td class="px-4 py-2 text-gray-500 border border-gray-200 sticky-col-left">${s.nisn}</td>
-                            <td class="px-4 py-2 font-medium border border-gray-200 sticky-col-left">${s.nama.toUpperCase()}</td>
-                            ${inputsHtml(s)}
-                            <td class="px-2 py-1 border border-gray-200 text-center font-bold jumlah-nilai">0</td>
-                            <td class="px-2 py-1 border border-gray-200 text-center font-bold rata-rata-nilai">0</td>
-                          </tr>`;
+            studentRows += `<tr class="hover:bg-gray-50"><td class="px-4 py-2 text-gray-500 border border-gray-200 sticky-col-left">${s.nisn}</td><td class="px-4 py-2 font-medium border border-gray-200 sticky-col-left">${s.nama.toUpperCase()}</td>${inputsHtml(s)}<td class="px-2 py-1 border border-gray-200 text-center font-bold jumlah-nilai">0</td><td class="px-2 py-1 border border-gray-200 text-center font-bold rata-rata-nilai">0</td></tr>`;
         });
-
-        let tableHtml = `${legendHtml}
-                        <form id="form-${type}" data-mapel-kode="${mapelKode}" data-type="${type}">
-                            <div class="overflow-x-auto">
-                                <table class="min-w-full border-collapse text-sm" data-kkm="${kkm}">
-                                    <thead class="bg-gray-100"><tr>${headers}</tr></thead>
-                                    <tbody>${studentRows}</tbody>
-                                </table>
-                            </div>
-                        </form>`;
-        
-        setTimeout(() => {
-            const tableContainer = document.getElementById(`form-${type}`);
-            if(tableContainer) {
-                tableContainer.querySelectorAll('tbody tr').forEach(row => updateRowStats(row));
-                tableContainer.addEventListener('input', e => {
-                    if (e.target.classList.contains('score-input')) {
-                        updateRowStats(e.target.closest('tr'));
-                    }
-                });
-            }
-        }, 0);
-        
+        let tableHtml = `${legendHtml}<form id="form-${type}" data-mapel-kode="${mapelKode}" data-type="${type}"><div class="overflow-x-auto"><table class="min-w-full border-collapse text-sm" data-kkm="${kkm}"><thead class="bg-gray-100"><tr>${headers}</tr></thead><tbody>${studentRows}</tbody></table></div></form>`;
+        setTimeout(() => { const tableContainer = document.getElementById(`form-${type}`); if(tableContainer) { tableContainer.querySelectorAll('tbody tr').forEach(row => updateRowStats(row)); tableContainer.addEventListener('input', e => { if (e.target.classList.contains('score-input')) { updateRowStats(e.target.closest('tr')); } }); } }, 0);
         return tableHtml;
     }
 
@@ -2040,6 +1993,91 @@
             statusBar.classList.remove('hidden');
         } else {
             statusBar.classList.add('hidden');
+        }
+    }
+
+    // ===== [BARU] FUNGSI UNTUK REAL-TIME UPDATE DI PORTAL GURU =====
+
+    /**
+     * Menghentikan semua proses polling yang sedang berjalan.
+     */
+    function stopAllGuruPolling() {
+        for (const id in guruPollingTimers) {
+            clearInterval(guruPollingTimers[id]);
+        }
+        guruPollingTimers = {};
+    }
+
+    /**
+     * Memulai proses polling untuk sebuah ID pengajuan tertentu.
+     */
+    function startGuruPolling(submissionId, formType) {
+        stopAllGuruPolling(); // Selalu hentikan polling lama sebelum memulai yang baru
+
+        // Mulai polling baru setiap 5 detik
+        guruPollingTimers[submissionId] = setInterval(() => {
+            const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+            google.script.run
+                .withSuccessHandler(response => {
+                    if (response.status === 'success') {
+                        updateUIWithLiveData(response, submissionId, formType);
+                        if (response.allApproved) {
+                            stopAllGuruPolling(); // Hentikan jika semua sudah disetujui
+                        }
+                    } else {
+                        stopAllGuruPolling();
+                    }
+                })
+                .withFailureHandler(err => {
+                    console.error("Polling gagal:", err);
+                    stopAllGuruPolling();
+                })
+                .getLiveApprovalStatus_Guru(guruData.spreadsheetId, submissionId);
+        }, 5000); // Interval 5 detik
+    }
+
+    /**
+     * Memperbarui tampilan (kotak input dan tombol cetak) berdasarkan data live.
+     */
+    function updateUIWithLiveData(data, submissionId, formType) {
+        const { approvalStatus, allApproved } = data;
+        const form = document.getElementById(`form-${formType}`);
+        if (!form) return;
+
+        // Perbarui status setiap kotak input nilai
+        for (const key in approvalStatus) {
+            const parts = key.split('_');
+            const nisn = parts.pop();
+            const scoreTypeParts = parts;
+
+            let inputName = '';
+            if (scoreTypeParts[0] === 'ujian') {
+                inputName = `${nisn}_${scoreTypeParts[1]}`;
+            } else if (scoreTypeParts[0] === 'rapor') {
+                inputName = `${nisn}_${scoreTypeParts[3]}`;
+            }
+
+            if(inputName) {
+                const input = form.querySelector(`input[name="${inputName}"]`);
+                if (input) {
+                    const newStatus = approvalStatus[key];
+                    input.classList.remove('status-menunggu', 'status-ditolak', 'status-disetujui');
+                    if (newStatus === 'Disetujui') input.classList.add('status-disetujui');
+                    else if (newStatus === 'Ditolak') input.classList.add('status-ditolak');
+                    else input.classList.add('status-menunggu');
+                }
+            }
+        }
+
+        // Perbarui tombol Cetak Nilai
+        if (allApproved) {
+            const printButton = document.querySelector(`button[data-action="print"][data-submission-id="${submissionId}"]`);
+            if (printButton) {
+                printButton.disabled = false;
+                printButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                printButton.classList.add('bg-cyan-600', 'hover:bg-cyan-700');
+                printButton.title = 'Cetak Nilai';
+            }
         }
     }
 </script>
