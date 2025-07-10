@@ -7881,9 +7881,10 @@ function getPengajuanNilaiUntukAdmin(spreadsheetId) {
     }
 }
 
+// GANTI FUNGSI INI DI Kode.gs
 /**
- * [PERBAIKAN WAJIB] Memproses persetujuan nilai dengan data siswa yang lengkap.
- * Memastikan NISN selalu diperlakukan sebagai Teks saat menulis ke sheet nilai.
+ * [PERBAIKAN FINAL] Memproses persetujuan nilai dengan penanganan untuk sheet yang belum ada.
+ * Kini fungsi ini akan membuat header yang benar jika sheet tujuan baru dibuat.
  */
 function processNilaiSubmission(spreadsheetId, rowNum, status) {
     const lock = LockService.getScriptLock();
@@ -7892,10 +7893,7 @@ function processNilaiSubmission(spreadsheetId, rowNum, status) {
         const ss = SpreadsheetApp.openById(spreadsheetId);
         const approvalSheet = ss.getSheetByName(SHEET_PENGAJUAN_NILAI);
         
-        // Baca NISN dari sheet pengajuan sebagai Teks
         const dataRowDisplay = approvalSheet.getRange(rowNum, 1, 1, 9).getDisplayValues()[0];
-        const dataRowValues = approvalSheet.getRange(rowNum, 1, 1, 9).getValues()[0];
-
 
         if (dataRowDisplay[8] !== 'Menunggu Persetujuan') {
             return { status: "error", message: "Pengajuan ini sudah pernah diproses." };
@@ -7905,7 +7903,7 @@ function processNilaiSubmission(spreadsheetId, rowNum, status) {
 
         if (status === 'Disetujui') {
             const tipeNilaiLengkap = dataRowDisplay[3];
-            const nisn = dataRowDisplay[4]; // NISN sekarang adalah string, misal "098"
+            const nisn = dataRowDisplay[4];
             const mapelKode = dataRowDisplay[2];
             const nilai = dataRowDisplay[6];
 
@@ -7922,15 +7920,36 @@ function processNilaiSubmission(spreadsheetId, rowNum, status) {
 
             if (targetSheetName) {
                 let targetSheet = ss.getSheetByName(targetSheetName);
+
+                // ===== AWAL BLOK PERBAIKAN UTAMA =====
                 if (!targetSheet) {
                     targetSheet = ss.insertSheet(targetSheetName);
+                    
+                    // Tentukan daftar mapel yang relevan untuk header
+                    let mapelForSheet;
+                    if (targetSheetName === SHEET_NILAI_UJIAN_MADRASAH) {
+                        mapelForSheet = getMapelByJenis(spreadsheetId, 'madrasah');
+                    } else if (targetSheetName === SHEET_NILAI_UJIAN_PRAKTEK) {
+                        mapelForSheet = getMapelByJenis(spreadsheetId, 'praktek');
+                    } else { // Untuk semua jenis sheet rapor
+                        mapelForSheet = getMapel(spreadsheetId);
+                    }
+                    
+                    const newHeaders = ["NISN", "Nama Lengkap", ...mapelForSheet.map(m => m.kode)];
+                    targetSheet.getRange(1, 1, 1, newHeaders.length).setValues([newHeaders]).setFontWeight("bold");
+                    SpreadsheetApp.flush(); // Paksa spreadsheet untuk menerapkan perubahan header
                 }
+                // ===== AKHIR BLOK PERBAIKAN UTAMA =====
                 
-                // Set format kolom NISN di sheet tujuan sebagai Teks
                 targetSheet.getRange("A:A").setNumberFormat('@');
                 
-                const nisnValues = targetSheet.getRange(2, 1, targetSheet.getLastRow()).getDisplayValues().flat();
-                let studentRowIndex = nisnValues.findIndex(n => n === nisn);
+                let studentRowIndex = -1;
+                // Cek apakah sheet punya data sebelum mencoba membaca
+                if (targetSheet.getLastRow() > 1) {
+                    const nisnValues = targetSheet.getRange(2, 1, targetSheet.getLastRow() - 1, 1).getDisplayValues().flat();
+                    studentRowIndex = nisnValues.findIndex(n => n === nisn);
+                }
+                
                 let studentSheetRow;
 
                 if (studentRowIndex !== -1) {
@@ -7938,11 +7957,7 @@ function processNilaiSubmission(spreadsheetId, rowNum, status) {
                 } else {
                     const allStudentsData = getStudents(spreadsheetId);
                     const studentFullData = allStudentsData.find(s => s.nisn === nisn);
-                    
-                    const newRowData = [
-                        "'" + nisn, // Tambahkan ' untuk memaksa format Teks
-                        studentFullData ? studentFullData.nama : dataRowDisplay[5]
-                    ];
+                    const newRowData = ["'" + nisn, studentFullData ? studentFullData.nama : dataRowDisplay[5]];
                     targetSheet.appendRow(newRowData);
                     studentSheetRow = targetSheet.getLastRow();
                 }
@@ -7953,7 +7968,10 @@ function processNilaiSubmission(spreadsheetId, rowNum, status) {
                 if (mapelCol !== -1) {
                     targetSheet.getRange(studentSheetRow, mapelCol + 1).setValue(nilai);
                 } else {
-                     throw new Error(`Kolom Mapel ${mapelKode} tidak ditemukan di sheet ${targetSheetName}.`);
+                    // Jika kolom mapel belum ada, tambahkan di akhir
+                    const newHeaderCol = targetSheet.getLastColumn() + 1;
+                    targetSheet.getRange(1, newHeaderCol).setValue(mapelKode).setFontWeight("bold");
+                    targetSheet.getRange(studentSheetRow, newHeaderCol).setValue(nilai);
                 }
             }
         }
@@ -8261,6 +8279,7 @@ function submitGuruNilai(payload) {
     let approvalSheet = ss.getSheetByName(SHEET_PENGAJUAN_NILAI);
     if (!approvalSheet) {
       approvalSheet = ss.insertSheet(SHEET_PENGAJUAN_NILAI);
+      // [PERUBAHAN] Kembalikan header menjadi 9 kolom, tanpa "Status Baca Admin"
       approvalSheet.appendRow(["ID Pengajuan", "Guru", "Mapel", "Tipe Nilai", "NISN", "Nama Siswa", "Nilai", "Tanggal Ajuan", "Status"]);
       approvalSheet.getRange("A1:I1").setFontWeight("bold");
     }
@@ -8292,11 +8311,13 @@ function submitGuruNilai(payload) {
         "'" + nisn,
         studentMap.get(nisn) || 'Siswa tidak ditemukan',
         value, timestamp, "Menunggu Persetujuan"
+        // Kolom ke-10 untuk "Status Baca Admin" telah dihapus
       ]);
     }
 
     if (rowsToAppend.length > 0) {
-      approvalSheet.getRange(approvalSheet.getLastRow() + 1, 1, rowsToAppend.length, rowsToAppend[0].length).setValues(rowsToAppend);
+      // [PERUBAHAN] Sesuaikan jumlah kolom penulisan menjadi 9
+      approvalSheet.getRange(approvalSheet.getLastRow() + 1, 1, rowsToAppend.length, 9).setValues(rowsToAppend);
       approvalSheet.getRange("E:E").setNumberFormat('@'); 
     }
 
@@ -9074,29 +9095,27 @@ function regenerateGuruCredentials(spreadsheetId, rowNum) {
 }
 
 /**
- * [OPTIMASI V3 - FINAL] Mengambil semua data yang diperlukan untuk merender satu halaman/tabel nilai guru,
- * dengan validasi cetak yang sudah diperbarui.
+ * [MODIFIKASI - v5] Mengambil data lengkap untuk halaman nilai guru, termasuk status kunci pengiriman.
  */
 function getNilaiPageData_Guru(spreadsheetId, username, mapelKode, tipeNilai, className = null) {
   try {
     const ss = SpreadsheetApp.openById(spreadsheetId);
     
+    // Panggil data-data yang sudah ada
     const students = getStudentsForGuru(spreadsheetId, className);
     const schoolData = getSchoolData(spreadsheetId);
     const jenjang = schoolData ? schoolData.jenjang : null;
     const { savedValues, submittedValues, approvalStatus, submissionIds } = getGuruNilai(spreadsheetId, username, mapelKode);
-    
-    const specificSubmissionId = submissionIds[tipeNilai] || null;
-    
-    // --- PERBAIKAN: Gunakan fungsi helper yang baru ---
-    // Sekarang batchStatus akan berisi objek sederhana: { allApproved: true } atau { allApproved: false }
-    const batchStatus = { 
-        allApproved: isSubmissionFullyApproved(spreadsheetId, specificSubmissionId) 
-    };
-    // --- AKHIR PERBAIKAN ---
-
-    const submissionSettings = getNilaiSubmissionStatus(spreadsheetId);
     const kkmData = getKkm(spreadsheetId);
+
+    // Dapatkan ID pengajuan spesifik untuk tipe nilai ini
+    const specificSubmissionId = submissionIds[tipeNilai] || null;
+    const batchStatus = { allApproved: isSubmissionFullyApproved(spreadsheetId, specificSubmissionId) };
+    
+    // ===== PERUBAHAN UTAMA ADA DI SINI =====
+    // Periksa status kunci berdasarkan kelas dan tipe nilai
+    const isLockedForGuru = isSubmissionLockedFor(spreadsheetId, className, tipeNilai);
+    // =======================================
 
     return {
       status: "success",
@@ -9107,8 +9126,8 @@ function getNilaiPageData_Guru(spreadsheetId, username, mapelKode, tipeNilai, cl
       submittedValues: submittedValues,
       approvalStatus: approvalStatus,
       submissionId: specificSubmissionId,
-      batchStatus: batchStatus, // Mengirim status yang sudah benar
-      isSubmissionEnabled: submissionSettings.isEnabled
+      batchStatus: batchStatus,
+      isLockedForGuru: isLockedForGuru // <-- Properti baru dikirim ke frontend
     };
 
   } catch(e) {
@@ -10246,5 +10265,200 @@ function getUniqueKelasList(spreadsheetId) {
   } catch (e) {
     Logger.log(`getUniqueKelasList Error: ${e.message}`);
     return []; // Kembalikan array kosong jika terjadi error
+  }
+}
+
+// ===== [BARU] FUNGSI UNTUK MANAJEMEN KUNCI PENGIRIMAN NILAI PER KELAS =====
+
+/**
+ * [ADMIN] Mengatur status kunci (Aktif/Terkunci) untuk jenis penilaian tertentu di kelas tertentu.
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @param {string} kelas - Nama kelas yang akan diatur.
+ * @param {string} tipe - Tipe penilaian (e.g., 'ujian', 'rapor_k7_ganjil').
+ * @param {boolean} isAktif - true jika diaktifkan, false jika dikunci.
+ * @returns {object} Hasil dari operasi.
+ */
+function setSubmissionLockStatus(spreadsheetId, kelas, tipe, isAktif) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    let sheet = ss.getSheetByName('PengaturanPersetujuan');
+    if (!sheet) {
+      sheet = ss.insertSheet('PengaturanPersetujuan');
+      sheet.appendRow(['Kelas', 'TipePenilaian', 'Status']);
+      sheet.getRange("A1:C1").setFontWeight('bold');
+    }
+
+    const data = sheet.getDataRange().getValues();
+    let rowIndex = -1;
+    // Cari baris yang cocok dengan kelas dan tipe
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === kelas && data[i][1] === tipe) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+
+    const status = isAktif ? 'AKTIF' : 'TERKUNCI';
+    if (rowIndex !== -1) {
+      // Jika sudah ada, update statusnya
+      sheet.getRange(rowIndex, 3).setValue(status);
+    } else {
+      // Jika belum ada, tambahkan baris baru
+      sheet.appendRow([kelas, tipe, status]);
+    }
+
+    return { status: 'success', message: `Pengaturan untuk ${kelas} - ${tipe} berhasil diperbarui.` };
+  } catch (e) {
+    Logger.log(`setSubmissionLockStatus Error: ${e.message}`);
+    return { status: 'error', message: 'Gagal menyimpan pengaturan.' };
+  }
+}
+
+/**
+ * [ADMIN] Mengambil semua pengaturan kunci pengiriman nilai yang ada.
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @returns {object} Objek berisi semua pengaturan yang tersimpan.
+ */
+function getSubmissionLockSettings(spreadsheetId) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheet = ss.getSheetByName('PengaturanPersetujuan');
+    if (!sheet || sheet.getLastRow() < 2) {
+      return {}; // Kembalikan objek kosong jika sheet tidak ada atau kosong
+    }
+
+    const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).getValues();
+    const settings = {};
+
+    data.forEach(row => {
+      const kelas = row[0];
+      const tipe = row[1];
+      const status = row[2];
+      if (!settings[kelas]) {
+        settings[kelas] = {};
+      }
+      settings[kelas][tipe] = status;
+    });
+
+    return settings;
+  } catch (e) {
+    Logger.log(`getSubmissionLockSettings Error: ${e.message}`);
+    return {};
+  }
+}
+
+/**
+ * [GURU] Memeriksa apakah suatu jenis penilaian untuk kelas tertentu sedang dikunci.
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @param {string} kelas - Nama kelas yang akan diperiksa.
+ * @param {string} tipeNilai - Tipe nilai (e.g., 'ujian', 'rapor_k7_ganjil').
+ * @returns {boolean} True jika terkunci, false jika aktif.
+ */
+function isSubmissionLockedFor(spreadsheetId, kelas, tipeNilai) {
+    const allSettings = getSubmissionLockSettings(spreadsheetId);
+    const classSettings = allSettings[kelas];
+
+    if (!classSettings) {
+        // Jika tidak ada pengaturan spesifik untuk kelas ini, defaultnya adalah 'AKTIF' (tidak terkunci).
+        return false;
+    }
+
+    // Tentukan tipe utama ('ujian' atau 'rapor_kX_semester')
+    let mainType;
+    if (tipeNilai.startsWith('rapor')) {
+        const parts = tipeNilai.split('_');
+        mainType = `rapor_${parts[1]}_${parts[2]}`; // e.g., 'rapor_k7_ganjil'
+    } else {
+        mainType = 'ujian'; // Untuk 'ujian_um' atau 'ujian_upr'
+    }
+
+    // Jika ada pengaturan spesifik untuk tipe ini, periksa nilainya.
+    // Jika tidak ada pengaturan spesifik, defaultnya adalah 'AKTIF' (tidak terkunci).
+    return classSettings[mainType] === 'TERKUNCI';
+}
+
+/**
+ * [BARU] Mengambil status persetujuan secara real-time untuk submission tertentu yang akan digunakan oleh portal guru.
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @param {string} submissionId - ID unik dari pengajuan nilai.
+ * @returns {object} Objek berisi status setiap item nilai dan status persetujuan keseluruhan.
+ */
+function getLiveApprovalStatus_Guru(spreadsheetId, submissionId) {
+  if (!submissionId) {
+    return { status: "error", message: "Submission ID tidak valid." };
+  }
+  try {
+    const ss = SpreadsheetApp.openById(spreadsheetId);
+    const approvalSheet = ss.getSheetByName(SHEET_PENGAJUAN_NILAI);
+    if (!approvalSheet || approvalSheet.getLastRow() < 2) {
+      // Jika sheet tidak ada atau kosong, tidak ada yang perlu diperbarui.
+      return { status: "success", approvalStatus: {}, allApproved: false, message: "No data" };
+    }
+
+    const data = approvalSheet.getDataRange().getValues();
+    const headers = data[0];
+    const submissionIdCol = headers.indexOf('ID Pengajuan');
+    const tipeNilaiCol = headers.indexOf('Tipe Nilai');
+    const nisnCol = headers.indexOf('NISN');
+    const statusCol = headers.indexOf('Status');
+
+    let totalInSubmission = 0;
+    let approvedCount = 0;
+    const approvalStatus = {};
+
+    // Loop dari baris terakhir ke atas untuk efisiensi jika data banyak
+    for (let i = data.length - 1; i > 0; i--) {
+      // Pastikan semua kolom yang diperlukan ada
+      if (submissionIdCol === -1 || tipeNilaiCol === -1 || nisnCol === -1 || statusCol === -1) {
+          throw new Error("Satu atau lebih kolom penting tidak ditemukan di sheet Pengajuan Nilai.");
+      }
+        
+      if (data[i][submissionIdCol] === submissionId) {
+        totalInSubmission++;
+        const key = `${data[i][tipeNilaiCol]}_${data[i][nisnCol]}`;
+        const currentStatus = data[i][statusCol];
+        approvalStatus[key] = currentStatus;
+        if (currentStatus === 'Disetujui') {
+          approvedCount++;
+        }
+      }
+    }
+
+    const allApproved = (totalInSubmission > 0 && totalInSubmission === approvedCount);
+
+    return {
+      status: "success",
+      approvalStatus: approvalStatus,
+      allApproved: allApproved
+    };
+
+  } catch (e) {
+    Logger.log(`getLiveApprovalStatus_Guru Error: ${e.message}`);
+    return { status: "error", message: "Gagal mengambil status live." };
+  }
+}
+
+// ===== [BARU] FUNGSI-FUNGSI UNTUK REAL-TIME BADGE ADMIN =====
+
+/**
+ * [BARU - PENGGANTI] Menghitung jumlah pengajuan nilai yang masih menunggu persetujuan.
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @returns {object} Hasil operasi berisi jumlah pengajuan yang pending.
+ */
+function getPendingApprovalCount(spreadsheetId) {
+  try {
+    const ss = SpreadsheetApp.openById(spreadsheetId);
+    const sheet = ss.getSheetByName(SHEET_PENGAJUAN_NILAI);
+    if (!sheet || sheet.getLastRow() < 2) {
+      return { status: "success", count: 0 };
+    }
+    // Kolom I (indeks 9) adalah 'Status'
+    const statusColumn = sheet.getRange(2, 9, sheet.getLastRow() - 1, 1).getValues();
+    const pendingCount = statusColumn.filter(row => row[0] === 'Menunggu Persetujuan').length;
+    return { status: "success", count: pendingCount };
+  } catch (e) {
+    Logger.log(`getPendingApprovalCount Error: ${e.message}`);
+    // Jika error, lebih baik kembalikan 0 agar tidak menampilkan badge yang salah
+    return { status: "success", count: 0 };
   }
 }
