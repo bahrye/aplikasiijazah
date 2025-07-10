@@ -824,6 +824,14 @@
                     
                     <a href="#" id="nav-manajemen-akun" class="nav-link flex items-center space-x-3 p-2 rounded-md hidden" data-page="manajemen-akun"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197m0 0A4 4 0 019 9.754a4 4 0 014.541-3.333a4 4 0 014.541 3.333M15 21a6 6 0 00-9-5.197" /></svg><span>Manajemen Akun</span></a>
                     <a href="#" id="nav-daftar-pengajuan" class="nav-link flex justify-between items-center space-x-3 p-2 rounded-md hidden" data-page="daftar-pengajuan"><span class="flex items-center space-x-3"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg><span>Daftar Pengajuan</span></span><span id="pengajuan-badge" class="hidden bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full"></span></a>
+
+                    <a href="#" id="nav-manajemen-konten" class="nav-link flex items-center space-x-3 p-2 rounded-md hidden" data-page="manajemen-konten">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                        </svg>
+                        <span>Manajemen Konten</span>
+                    </a>
+
                     <a href="#" id="admin-tools-link" class="nav-link flex items-center space-x-3 p-2 rounded-md hidden" data-page="admin-tools"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg><span>Alat Admin</span></a>
                     <a href="#" id="nav-kelola-update" class="nav-link flex items-center space-x-3 p-2 rounded-md hidden" data-page="kelola-update"><svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg><span>Kelola Update</span></a>
 
@@ -2088,6 +2096,35 @@
                             </div>
                     </div>
 
+                    <div id="page-manajemen-konten" class="content-page hidden">
+                        <h1 class="text-3xl font-bold text-gray-800">Manajemen Konten Dinamis</h1>
+                        <p class="mt-2 text-gray-600 mb-8">Kelola isi dari halaman "Bantuan & Panduan" dan "Fitur Premium" langsung dari sini.</p>
+
+                        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-gray-800">Konten Bantuan & Panduan</h2>
+                                <button id="add-help-item-btn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">+ Tambah Item</button>
+                            </div>
+                            <div id="help-content-editor" class="space-y-4">
+                                </div>
+                            <div class="mt-6 border-t pt-4">
+                                <button id="save-help-content-btn" class="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700">Simpan Semua Perubahan Bantuan</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-gray-800">Konten Fitur Premium</h2>
+                                <button id="add-feature-item-btn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">+ Tambah Fitur</button>
+                            </div>
+                            <div id="features-content-editor" class="space-y-4">
+                                </div>
+                            <div class="mt-6 border-t pt-4">
+                                <button id="save-features-content-btn" class="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700">Simpan Semua Perubahan Fitur</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="page-admin-tools" class="content-page hidden p-4 sm:p-6 lg:p-8">
                         <div class="max-w-4xl mx-auto">
                             <div class="bg-white p-6 rounded-lg shadow-md border border-blue-200 mb-8">
@@ -2153,216 +2190,7 @@
                         <p class="mt-2 text-gray-600 mb-8">Temukan jawaban atas pertanyaan umum dan pelajari cara menggunakan fitur-fitur aplikasi secara maksimal.</p>
 
                         <div id="help-accordion-container" class="space-y-4">
-
-                            <div class="help-item bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-                                <div class="help-header flex justify-between items-center p-5 cursor-pointer hover:bg-gray-50 transition-colors">
-                                    <div class="flex items-center">
-                                        <span class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-bold text-lg mr-4">1</span>
-                                        <div>
-                                            <h2 class="font-bold text-lg text-gray-800">Lengkapi Data Sekolah & Pengaturan Awal</h2>
-                                            <p class="text-sm text-gray-500">Langkah pertama yang paling penting.</p>
-                                        </div>
-                                    </div>
-                                    <svg class="w-6 h-6 text-gray-500 transform transition-transform chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                </div>
-                                <div class="help-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
-                                    <div class="p-5 border-t">
-                                        <p class="mb-4">Pastikan semua data identitas sekolah Anda sudah benar sebelum melanjutkan ke tahap lain. Ini akan digunakan untuk kop surat pada saat ekspor data.</p>
-                                        <ol class="list-decimal list-inside space-y-2 mb-4">
-                                            <li>Buka menu <code class="help-code">Data Sekolah</code>.</li>
-                                            <li>Pastikan field <code class="help-code">Jenjang Sekolah</code> dan <code class="help-code">Nama Sekolah</code> sudah sesuai. Jika tidak, Anda dapat mengajukan perubahan melalui menu <code class="help-code">Pengajuan</code>.</li>
-                                            <li>Isi semua field lainnya seperti <strong>NPSN, NSM, Alamat,</strong> dan <strong>data Kepala Sekolah</strong>.</li>
-                                            <li>Klik tombol <strong>"Simpan Data Sekolah"</strong> jika ada perubahan.</li>
-                                        </ol>
-                                        <div class="p-4 bg-gray-100 rounded-lg text-center">
-                                            <img src="https://i.imgur.com/yfUXZJE.gif" alt="Tutorial mengisi data sekolah" class="w-full rounded-md shadow-md">
-                                            <p class="text-xs text-gray-500 mt-2">Contoh: Tampilan Halaman Data Sekolah</p>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
-
-                            <div class="help-item bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-                                <div class="help-header flex justify-between items-center p-5 cursor-pointer hover:bg-gray-50 transition-colors">
-                                    <div class="flex items-center">
-                                        <span class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-bold text-lg mr-4">2</span>
-                                        <div>
-                                            <h2 class="font-bold text-lg text-gray-800">Atur Mata Pelajaran & Bobot Nilai</h2>
-                                            <p class="text-sm text-gray-500">Impor mapel standar dan tentukan persentase nilai akhir.</p>
-                                        </div>
-                                    </div>
-                                    <svg class="w-6 h-6 text-gray-500 transform transition-transform chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                </div>
-                                <div class="help-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
-                                    <div class="p-5 border-t">
-                                        <p class="mb-4">Di halaman <code class="help-code">Mapel & Bobot</code>, Anda bisa mengatur semua mata pelajaran dan menentukan perhitungan nilai ijazah.</p>
-                                        <ol class="list-decimal list-inside space-y-3 mb-4">
-                                            <li>
-                                                <strong>Impor Mapel:</strong> Cara termudah adalah klik tombol <code class="help-code">Import Mapel by System</code>. Ini akan membuka jendela baru dimana Anda bisa memilih mapel standar sesuai jenjang.
-                                            </li>
-                                            <li>
-                                                <strong>Atur Bobot:</strong> Tentukan persentase <code class="help-code">Bobot Nilai Ujian</code> dan <code class="help-code">Bobot Nilai Rapor</code>. Total dari keduanya <strong>harus 100%</strong>. Contoh: 40% Ujian dan 60% Rapor.
-                                            </li>
-                                            <li>
-                                                <strong>Simpan Bobot:</strong> Jangan lupa klik <strong>"Simpan Bobot"</strong>.
-                                            </li>
-                                            <li>
-                                                <strong>Urutan Mapel:</strong> Anda dapat mengubah urutan mapel di tabel dengan menekan tombol panah ▲ atau ▼. Urutan ini akan memengaruhi urutan kolom di halaman input nilai dan rekapitulasi.
-                                            </li>
-                                        </ol>
-                                        <div class="p-4 bg-gray-100 rounded-lg text-center">
-                                            <img src="https://i.imgur.com/RRzzkYP.gif" alt="Tutorial impor mapel" class="w-full rounded-md shadow-md">
-                                            <p class="text-xs text-gray-500 mt-2">Contoh: Halaman Pengaturan Mapel & Bobot</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="help-item bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-                                <div class="help-header flex justify-between items-center p-5 cursor-pointer hover:bg-gray-50 transition-colors">
-                                    <div class="flex items-center">
-                                        <span class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-bold text-lg mr-4">3</span>
-                                        <div>
-                                            <h2 class="font-bold text-lg text-gray-800">Input Data Siswa</h2>
-                                            <p class="text-sm text-gray-500">Menambahkan siswa secara manual atau massal.</p>
-                                        </div>
-                                    </div>
-                                    <svg class="w-6 h-6 text-gray-500 transform transition-transform chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                </div>
-                                <div class="help-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
-                                    <div class="p-5 border-t">
-                                        <p class="mb-4">Buka halaman <code class="help-code">Data Siswa</code>. Ada dua cara untuk menambahkan siswa:</p>
-                                        <ul class="list-disc list-inside space-y-3 mb-4">
-                                            <li><strong>Manual:</strong> Klik tombol <code class="help-code">+ Tambah Siswa</code> untuk membuka form dan mengisi data satu per satu.</li>
-                                            <li><strong>Massal (Direkomendasikan):</strong>
-                                                <ol class="list-decimal list-inside ml-5 mt-2 space-y-1">
-                                                    <li>Klik <code class="help-code">Upload Data Siswa</code>, lalu unduh template Excel yang disediakan.</li>
-                                                    <li>Isi data siswa Anda pada file template. Pastikan kolom <strong>NISN, NAMA,</strong> dan <strong>TANGGAL LAHIR</strong> terisi.</li>
-                                                    <li>Kembali ke aplikasi, klik lagi <code class="help-code">Upload Data Siswa</code> dan unggah file Excel yang sudah Anda isi.</li>
-                                                </ol>
-                                            </li>
-                                        </ul>
-                                        <div class="p-4 bg-gray-100 rounded-lg text-center">
-                                            <img src="https://i.imgur.com/6UWEX2O.gif" alt="Tutorial upload data siswa" class="w-full rounded-md shadow-md">
-                                            <p class="text-xs text-gray-500 mt-2">Contoh: Jendela untuk Upload Data Siswa Massal</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="help-item bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-                                <div class="help-header flex justify-between items-center p-5 cursor-pointer hover:bg-gray-50 transition-colors">
-                                    <div class="flex items-center">
-                                        <span class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-bold text-lg mr-4">4</span>
-                                        <div>
-                                            <h2 class="font-bold text-lg text-gray-800">Isi Semua Nilai</h2>
-                                            <p class="text-sm text-gray-500">Input nilai ujian dan nilai rapor per semester.</p>
-                                        </div>
-                                    </div>
-                                    <svg class="w-6 h-6 text-gray-500 transform transition-transform chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                </div>
-                                <div class="help-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
-                                    <div class="p-5 border-t">
-                                        <p class="mb-4">Anda dapat mengisi nilai secara manual di dalam aplikasi atau menggunakan fitur upload massal via Excel untuk mempercepat proses.</p>
-                                        <ul class="list-disc list-inside space-y-3 mb-4">
-                                            <li><strong>Nilai Ujian:</strong> Buka menu <code class="help-code">Input Nilai Ujian</code>. Pilih jenis ujian (Madrasah/Praktek), klik "Ubah Nilai", lalu isi semua kolom. Klik "Simpan Nilai" jika sudah selesai.</li>
-                                            <li><strong>Nilai Rapor:</strong> Buka menu <code class="help-code">Input Nilai Rapor</code>. Untuk setiap semester, klik "Input Nilai Pengetahuan" dan "Input Nilai Keterampilan" untuk mengisi nilai.</li>
-                                            <li><strong>Upload Massal:</strong> Untuk cara yang lebih cepat, gunakan menu <code class="help-code">Upload Nilai</code>. Unduh template untuk Ujian atau Rapor per semester, isi, lalu unggah kembali.</li>
-                                        </ul>
-                                        <div class="p-4 bg-gray-100 rounded-lg text-center">
-                                            <img src="https://i.imgur.com/xsBmAOc.gif" alt="Tutorial mengisi nilai" class="w-full rounded-md shadow-md">
-                                            <p class="text-xs text-gray-500 mt-2">Contoh: Tampilan Input Nilai</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="help-item bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-                                <div class="help-header flex justify-between items-center p-5 cursor-pointer hover:bg-gray-50 transition-colors">
-                                    <div class="flex items-center">
-                                        <span class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-bold text-lg mr-4">5</span>
-                                        <div>
-                                            <h2 class="font-bold text-lg text-gray-800">Validasi & Rekapitulasi</h2>
-                                            <p class="text-sm text-gray-500">Langkah final untuk memproses dan melihat hasil akhir.</p>
-                                        </div>
-                                    </div>
-                                    <svg class="w-6 h-6 text-gray-500 transform transition-transform chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                </div>
-                                <div class="help-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
-                                    <div class="p-5 border-t">
-                                        <p class="mb-4">Setelah semua nilai terisi, lakukan langkah terakhir ini.</p>
-                                        <ol class="list-decimal list-inside space-y-3 mb-4">
-                                            <li><strong>Validasi (Opsional tapi direkomendasikan):</strong> Buka menu <code class="help-code">Validasi Nilai</code> untuk memeriksa apakah ada nilai siswa yang terlewat. Ini membantu memastikan semua data lengkap.</li>
-                                            <li><strong>Rekapitulasi:</strong> Buka menu <code class="help-code">Rekapitulasi</code>.</li>
-                                            <li>Klik tombol hijau <code class="help-code bg-green-100 text-green-800">Perbarui & Muat Ulang Data</code>. Tombol ini akan memerintahkan aplikasi untuk menghitung semua nilai (rata-rata rapor, rata-rata ujian, dan nilai akhir ijazah).</li>
-                                            <li>Setelah proses selesai, Anda dapat melihat tabel <strong>Rekap Nilai Ujian, Rekap Nilai Rapor,</strong> dan <strong>Rekap Nilai Ijazah</strong>.</li>
-                                        </ol>
-                                        <div class="p-4 bg-gray-100 rounded-lg text-center">
-                                            <img src="https://i.imgur.com/8yg7YL7.gif" alt="Tutorial rekapitulasi" class="w-full rounded-md shadow-md">
-                                            <p class="text-xs text-gray-500 mt-2">Tombol Kunci pada Halaman Rekapitulasi</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="help-item bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-                                <div class="help-header flex justify-between items-center p-5 cursor-pointer hover:bg-gray-50 transition-colors">
-                                    <div class="flex items-center">
-                                        <span class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-bold text-lg mr-4">6</span>
-                                        <div>
-                                            <h2 class="font-bold text-lg text-gray-800">Pengaturan dan Transkrip Nilai</h2>
-                                            <p class="text-sm text-gray-500">Untuk mencetak transkrip nilai siswa.</p>
-                                        </div>
-                                    </div>
-                                    <svg class="w-6 h-6 text-gray-500 transform transition-transform chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                </div>
-                                <div class="help-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
-                                    <div class="p-5 border-t">
-                                        <p class="mb-4">Untuk mencetak transkrip nilai siswa, silahkan lakukan hal diawah ini.</p>
-                                        <ol class="list-decimal list-inside space-y-3 mb-4">
-                                            <li><strong>Pengaturan:</strong> Buka menu <code class="help-code">Pengaturan</code>, lalu silahkan upload semua gambar kop, logo dll pada <strong>Pengaturan Logo & Dokumen</strong>.</li>
-                                            <li><strong>Transkrip:</strong> Buka menu <code class="help-code">Transkrip</code>.</li>
-                                            <li>Klik tombol <code class="help-code">Cetak</code>. Tombol ini akan menampilkan preview Transkrip Nilai Siswa.</li>
-                                            <li>Silahkan klik tombol <code class="help-code">Unduh PDF</code> atau <code class="help-code">Cetak</code>.</li>
-                                        </ol>
-                                        <div class="p-4 bg-gray-100 rounded-lg text-center">
-                                            <img src="https://i.imgur.com/w8xW7hI.gif" alt="Tutorial transkrip" class="w-full rounded-md shadow-md">
-                                            <p class="text-xs text-gray-500 mt-2">Pengaturan dan Transkrip Nilai</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="help-item bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-                                <div class="help-header flex justify-between items-center p-5 cursor-pointer hover:bg-gray-50 transition-colors">
-                                    <div class="flex items-center">
-                                        <span class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-bold text-lg mr-4">7</span>
-                                        <div>
-                                            <h2 class="font-bold text-lg text-gray-800">Login Portal Siswa</h2>
-                                            <p class="text-sm text-gray-500">Siswa dapat mengecek pengumuman kelulusan dan cetak transkrip nilainya sendiri.</p>
-                                        </div>
-                                    </div>
-                                    <svg class="w-6 h-6 text-gray-500 transform transition-transform chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                </div>
-                                <div class="help-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
-                                    <div class="p-5 border-t">
-                                        <p class="mb-4">Setting Tanggal Kelulusan dan cara tampilkan Transkrip Nilai untuk seluruh siswa atau hanya sebagaian siswa yang terpilih. Silahkan ikuti cara dibawah.</p>
-                                        <ol class="list-decimal list-inside space-y-3 mb-4">
-                                            <li><strong>Pengaturan:</strong> Buka menu <code class="help-code">Pengaturan</code> lalu atur tanggal dan waktu kelulusan siswa pada <strong>Pengaturan Pengumuman Kelulusan</strong>. Pada <strong>Tampilkan Transkrip Nilai untuk Semua Siswa?</strong>, jika memilih Ya, berarti transkrip diperlihatkan untuk semua siswa, jika memilih Tidak, maka transkrip hanya diperlihatkan kepada siswa yang terpilih di halaman <strong>Transkrip Nilai</strong>.</li>
-                                            <li><strong>Jika memilih Tidak di Pengaturan:</strong> Buka menu <code class="help-code">Transkrip</code>. Pilih/Tandai beberapa siswa, sebuah floating akan tampil, pilih Tampilkan/Sembunyikan di Portal Siswa.</li>
-                                            <li><strong>Dashboard:</strong> Pada <code class="help-code">Dashboard</code> silahkan berikan <strong>Kode Login</strong> kepada siswa untuk digunakan login ke <strong>Portal Siswa</strong>.</li>
-                                            <li><strong>Login Portal Siswa:</strong> Pada halaman Login, siswa dapat mengklik <code class="help-code">Login sebagai Siswa</code>. Setelah itu siswa memerlukan Kode Login yang sudah diberikan untuk dimasukkan ke kotak <code class="help-code">Kode Unik Sekolah</code>.</li>
-                                            <li>Jika berhasil, siswa perlu memasukkan <code class="help-code">NISN</code> dan <code class="help-code">Tanggal Lahir</code> untuk masuk ke halaman Cek Kelulusan dan Transkrip Nilai.</li>
-                                        </ol>
-                                        <div class="p-4 bg-gray-100 rounded-lg text-center">
-                                            <img src="https://i.imgur.com/wT4hqpS.gif" alt="Tutorial portal siswa2" class="w-full rounded-md shadow-md">
-                                            <p class="text-xs text-gray-500 mt-2">Pengaturan & Portal Siswa</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
                     </div>
 
                     <div id="page-broadcast" class="content-page hidden">
@@ -2454,50 +2282,11 @@
 
                                 <div class="my-8">
                                     <h3 class="text-lg font-semibold text-center text-gray-700">Fitur Premium yang Akan Terbuka</h3>
-                                    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                                        <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row items-start gap-4">
-                                            <img src="https://i.imgur.com/TJ5KOvd.gif" alt="Fitur Transkrip" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
-                                            <div>
-                                                <h4 class="font-bold text-gray-800">Pengumuman & Manajemen Transkrip</h4>
-                                                <p class="mt-1 text-sm text-gray-600">Atur jadwal kelulusan, tampilkan hitung mundur di portal siswa, dan kelola visibilitas transkrip nilai akhir untuk setiap siswa secara individual.</p>
-                                            </div>
+                                    <div id="premium-features-container" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                                         </div>
-
-                                        <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row items-start gap-4">
-                                            <img src="https://i.imgur.com/PrBxDjH.gif" alt="Fitur Kop Surat" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
-                                            <div>
-                                                <h4 class="font-bold text-gray-800">Kustomisasi Kop Surat & TTD</h4>
-                                                <p class="mt-1 text-sm text-gray-600">Personalisasi semua dokumen ekspor (seperti transkrip) dengan mengunggah kop surat, logo aplikasi, logo sekolah, stempel, dan tanda tangan digital kepala sekolah Anda.</p>
-                                            </div>
-                                        </div>
-
-                                        <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row items-start gap-4">
-                                            <img src="https://i.imgur.com/vN4pYH0.gif" alt="Fitur Backup" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
-                                            <div>
-                                                <h4 class="font-bold text-gray-800">Backup & Restore Data</h4>
-                                                <p class="mt-1 text-sm text-gray-600">Amankan seluruh data Anda dengan mudah. Buat file cadangan dan pulihkan data kapan saja untuk menghindari kehilangan data penting.</p>
-                                            </div>
-                                        </div>
-
-                                        <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row items-start gap-4">
-                                            <img src="https://i.imgur.com/wT4hqpS.gif" alt="Fitur Portal Siswa" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
-                                            <div>
-                                                <h4 class="font-bold text-gray-800">Akses Penuh Portal Siswa</h4>
-                                                <p class="mt-1 text-sm text-gray-600">Berikan akses kepada siswa untuk login, melihat status kelulusan, dan mengunduh transkrip nilai resmi mereka melalui portal khusus. Limit siswa pun ditambah menjadi 500 siswa.</p>
-                                            </div>
-                                        </div>
-
-                                        <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row items-start gap-4">
-                                            <img src="https://i.imgur.com/9NjOQOR.gif" alt="Fitur Arsip Tahunan" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
-                                            <div>
-                                                <h4 class="font-bold text-gray-800">Arsip Tahunan & Reset Data</h4>
-                                                <p class="mt-1 text-sm text-gray-600">Arsipkan seluruh data akademik di akhir tahun ajaran ke file terpisah. Setelah itu, bersihkan data di aplikasi untuk memulai tahun ajaran baru dengan rapi.</p>
-                                            </div>
-                                        </div>
-
-                                    </div>
                                 </div>
+
                             </div>
                             <div class="mt-8 pt-8 border-t">
                                 <h2 class="text-xl font-semibold text-gray-700">Buka Fitur dengan Donasi</h2>
@@ -5225,7 +5014,7 @@
                 if (targetPageId === 'pengajuan') loadPengajuanPage();
                 if (targetPageId === 'upload-nilai') initUploadNilaiPage(); 
                 if (targetPageId === 'bantuan') {
-                    console.log("Halaman Bantuan dimuat.");
+                    loadHelpContent(); // Panggil fungsi baru kita
                 }
                 if (targetPageId === 'persetujuan-nilai') {
                     loadPersetujuanNilai();
@@ -8716,7 +8505,7 @@
             checkForImpersonation();
 
             const allowedAdminPages = [
-                'superadmin-dashboard', 'manajemen-akun', 'daftar-pengajuan', 
+                'superadmin-dashboard', 'manajemen-akun', 'daftar-pengajuan', 'manajemen-konten',
                 'admin-tools', 'kelola-update', 'ubah-password', 'broadcast', 'manajemen-saran', 'manajemen-donasi'
             ];
 
@@ -8756,6 +8545,9 @@
 
                 if (targetPageId === 'superadmin-dashboard') loadSuperadminDashboardData();
                 if (targetPageId === 'manajemen-akun') loadUserManagementPage();
+                if (targetPageId === 'manajemen-konten') { // <-- Tambahkan kondisi ini
+                    loadContentManagementPage();
+                }
                 if (targetPageId === 'daftar-pengajuan') loadPengajuanListPage_Superadmin();
                 if (targetPageId === 'kelola-update') loadVersionManagementPage();
                 if (targetPageId === 'broadcast') loadBroadcastPage(); // <-- Tambahkan pemicu fungsi
@@ -8788,6 +8580,7 @@
             updateSaranBadge_Superadmin();
             setupGlobalGraduationSettings();
             updateDonasiBadge();
+            setupContentManagementListeners();
 
             const dashboardLink = document.querySelector('.nav-link[data-page="dashboard"]');
             if (dashboardLink) dashboardLink.click();
@@ -13926,23 +13719,38 @@
             const thanksContainer = document.getElementById('donasi-thanks-container');
             formContainer.classList.add('hidden');
             thanksContainer.classList.add('hidden');
-            pageContainer.innerHTML = '<div id="donasi-loader" class="text-center p-8 loading-animation">Memeriksa status akun...</div>';
             
+            // Periksa apakah loader sudah ada, jika belum, buat.
+            let loader = document.getElementById('donasi-loader');
+            if (!loader) {
+                loader = document.createElement('div');
+                loader.id = 'donasi-loader';
+                loader.className = 'text-center p-8 loading-animation';
+                pageContainer.prepend(loader); // Taruh di atas
+            }
+            loader.textContent = 'Memeriksa status akun...';
+            loader.classList.remove('hidden');
+
             // 3. Panggil server untuk mendapatkan status terbaru
             google.script.run
                 .withSuccessHandler(response => {
                     // Hapus loader dan kembalikan kontainer asli yang tadinya disembunyikan
-                    pageContainer.innerHTML = ''; 
+                    loader.classList.add('hidden');
                     pageContainer.appendChild(formContainer);
                     pageContainer.appendChild(thanksContainer);
 
+                    // Tampilkan view yang sesuai berdasarkan status donasi
                     if (response && response.status === "Menunggu Verifikasi") {
-                        // Jika SUDAH ada konfirmasi, tampilkan tampilan "Terima Kasih"
                         renderDonasiThanksView(response);
                     } else {
-                        // Jika BELUM ada, tampilkan FORM konfirmasi
                         renderDonasiFormView();
                     }
+
+                    // === PERUBAHAN UTAMA ADA DI SINI ===
+                    // 4. Panggil fungsi untuk memuat fitur premium SETELAH
+                    //    kerangka halaman donasi selesai dibangun.
+                    loadPremiumFeatures(); 
+                    // ===================================
                 })
                 .withFailureHandler(err => {
                     pageContainer.innerHTML = `<p class="text-red-500 text-center p-6">Gagal memeriksa status: ${err.message}</p>`;
@@ -15413,6 +15221,225 @@
 
             poll(); // Jalankan sekali saat pertama kali
             adminPollingInterval = setInterval(poll, 20000); // Ulangi setiap 20 detik
+        }
+
+        /**
+         * [BARU] Memuat dan merender konten bantuan dari spreadsheet.
+         */
+        function loadHelpContent() {
+            const container = document.getElementById('help-accordion-container');
+            // Tampilkan pesan loading saat data diambil
+            container.innerHTML = `<p class="text-center text-gray-500 loading-animation">Memuat panduan</p>`;
+
+            google.script.run
+                .withSuccessHandler(helpItems => {
+                    // Bersihkan kontainer dari pesan loading
+                    container.innerHTML = ''; 
+
+                    if (!helpItems || helpItems.length === 0) {
+                        container.innerHTML = `<p class="text-center text-red-500">Konten bantuan tidak dapat dimuat atau belum diisi di spreadsheet.</p>`;
+                        return;
+                    }
+
+                    // Buat elemen HTML untuk setiap item bantuan
+                    helpItems.forEach(item => {
+                        const helpItemDiv = document.createElement('div');
+                        helpItemDiv.className = 'help-item bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200';
+
+                        // Gunakan backtick (`) untuk membuat multi-line string HTML
+                        helpItemDiv.innerHTML = `
+                            <div class="help-header flex justify-between items-center p-5 cursor-pointer hover:bg-gray-50 transition-colors">
+                                <div class="flex items-center">
+                                    <span class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-bold text-lg mr-4">${item.id}</span>
+                                    <div>
+                                        <h2 class="font-bold text-lg text-gray-800">${item.judul}</h2>
+                                        <p class="text-sm text-gray-500">${item.deskripsi}</p>
+                                    </div>
+                                </div>
+                                <svg class="w-6 h-6 text-gray-500 transform transition-transform chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                            <div class="help-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
+                                <div class="p-5 border-t prose max-w-none">
+                                    <p>${item.konten.replace(/\n/g, '<br>')}</p>
+                                    ${item.gambarUrl ? `
+                                    <div class="mt-4 p-4 bg-gray-100 rounded-lg text-center">
+                                        <img src="${item.gambarUrl}" alt="Tutorial untuk ${item.judul}" class="w-full rounded-md shadow-md">
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `;
+                        container.appendChild(helpItemDiv);
+                    });
+                })
+                .withFailureHandler(err => {
+                    container.innerHTML = `<p class="text-center text-red-500">Error: ${err.message}</p>`;
+                })
+                .getHelpContent(); // Panggil fungsi di Kode.gs yang kita buat tadi
+        }
+
+        /**
+         * [BARU] Memuat dan merender daftar Fitur Premium dari spreadsheet.
+         */
+        function loadPremiumFeatures() {
+            const container = document.getElementById('premium-features-container');
+            if (!container) return;
+
+            // Tampilkan pesan loading
+            container.innerHTML = `<p class="text-center text-gray-500 loading-animation col-span-1 md:col-span-2">Memuat daftar fitur</p>`;
+
+            google.script.run
+                .withSuccessHandler(features => {
+                    container.innerHTML = ''; // Bersihkan pesan loading
+
+                    if (!features || features.length === 0) {
+                        container.innerHTML = `<p class="text-center text-red-500 col-span-1 md:col-span-2">Konten fitur premium tidak dapat dimuat.</p>`;
+                        return;
+                    }
+
+                    // Buat elemen HTML untuk setiap fitur
+                    features.forEach(item => {
+                        const featureDiv = document.createElement('div');
+                        featureDiv.className = 'bg-white border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row items-start gap-4';
+
+                        featureDiv.innerHTML = `
+                            <img src="${item.gambarUrl}" alt="Fitur ${item.judul}" class="w-full sm:w-32 h-auto rounded-md shadow-md object-cover feature-image-clickable cursor-pointer">
+                            <div>
+                                <h4 class="font-bold text-gray-800">${item.judul}</h4>
+                                <p class="mt-1 text-sm text-gray-600">${item.deskripsi}</p>
+                            </div>
+                        `;
+                        container.appendChild(featureDiv);
+                    });
+                })
+                .withFailureHandler(err => {
+                    container.innerHTML = `<p class="text-center text-red-500 col-span-1 md:col-span-2">Error: ${err.message}</p>`;
+                })
+                .getPremiumFeaturesContent(); // Memanggil fungsi di Kode.gs
+        }
+
+        // ===== [BARU] FUNGSI-FUNGSI UNTUK MANAJEMEN KONTEN =====
+
+        /**
+         * Helper untuk membuat satu baris form editor untuk item bantuan.
+         */
+        function createHelpItemEditor(item = {}) {
+            const id = item.id || '';
+            const judul = item.judul || '';
+            const deskripsi = item.deskripsi || '';
+            const konten = item.konten || '';
+            const gambarUrl = item.gambarUrl || '';
+
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'help-item-editor border p-4 rounded-md bg-gray-50 space-y-3';
+            itemDiv.innerHTML = `
+                <div class="flex items-center gap-4">
+                    <input type="number" value="${id}" class="w-16 p-2 border rounded-md" placeholder="ID Urutan">
+                    <input type="text" value="${judul}" class="flex-grow p-2 border rounded-md" placeholder="Judul Bantuan">
+                    <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 font-bold text-2xl">&times;</button>
+                </div>
+                <input type="text" value="${deskripsi}" class="w-full p-2 border rounded-md" placeholder="Deskripsi Singkat">
+                <textarea class="w-full p-2 border rounded-md h-24" placeholder="Isi Konten Lengkap (gunakan baris baru untuk paragraf)...">${konten}</textarea>
+                <input type="text" value="${gambarUrl}" class="w-full p-2 border rounded-md" placeholder="URL Gambar/GIF">
+            `;
+            itemDiv.querySelector('.remove-item-btn').onclick = () => itemDiv.remove();
+            return itemDiv;
+        }
+
+        /**
+         * Helper untuk membuat satu baris form editor untuk fitur premium.
+         */
+        function createFeatureItemEditor(item = {}) {
+            const id = item.id || '';
+            const judul = item.judul || '';
+            const deskripsi = item.deskripsi || '';
+            const gambarUrl = item.gambarUrl || '';
+
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'feature-item-editor border p-4 rounded-md bg-gray-50 space-y-3';
+            itemDiv.innerHTML = `
+                <div class="flex items-center gap-4">
+                    <input type="number" value="${id}" class="w-16 p-2 border rounded-md" placeholder="ID Urutan">
+                    <input type="text" value="${judul}" class="flex-grow p-2 border rounded-md" placeholder="Judul Fitur">
+                    <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 font-bold text-2xl">&times;</button>
+                </div>
+                <textarea class="w-full p-2 border rounded-md h-20" placeholder="Deskripsi Fitur...">${deskripsi}</textarea>
+                <input type="text" value="${gambarUrl}" class="w-full p-2 border rounded-md" placeholder="URL Gambar/GIF">
+            `;
+            itemDiv.querySelector('.remove-item-btn').onclick = () => itemDiv.remove();
+            return itemDiv;
+        }
+
+        /**
+         * Memuat dan menampilkan editor untuk kedua jenis konten.
+         */
+        function loadContentManagementPage() {
+            const helpEditor = document.getElementById('help-content-editor');
+            const featuresEditor = document.getElementById('features-content-editor');
+            helpEditor.innerHTML = '<p class="loading-animation">Memuat konten bantuan...</p>';
+            featuresEditor.innerHTML = '<p class="loading-animation">Memuat konten fitur...</p>';
+
+            // Muat Konten Bantuan
+            google.script.run.withSuccessHandler(items => {
+                helpEditor.innerHTML = '';
+                items.forEach(item => helpEditor.appendChild(createHelpItemEditor(item)));
+            }).getHelpContent();
+
+            // Muat Konten Fitur Premium
+            google.script.run.withSuccessHandler(items => {
+                featuresEditor.innerHTML = '';
+                items.forEach(item => featuresEditor.appendChild(createFeatureItemEditor(item)));
+            }).getPremiumFeaturesContent();
+        }
+
+        /**
+         * Memasang semua event listener untuk halaman manajemen konten.
+         */
+        function setupContentManagementListeners() {
+            document.getElementById('add-help-item-btn').addEventListener('click', () => {
+                document.getElementById('help-content-editor').appendChild(createHelpItemEditor());
+            });
+
+            document.getElementById('add-feature-item-btn').addEventListener('click', () => {
+                document.getElementById('features-content-editor').appendChild(createFeatureItemEditor());
+            });
+
+            document.getElementById('save-help-content-btn').addEventListener('click', function() {
+                const allData = Array.from(document.querySelectorAll('.help-item-editor')).map(div => ({
+                    id: div.querySelector('input[type="number"]').value,
+                    judul: div.querySelector('input[type="text"]').value,
+                    deskripsi: div.querySelectorAll('input[type="text"]')[1].value,
+                    konten: div.querySelector('textarea').value,
+                    gambarUrl: div.querySelectorAll('input[type="text"]')[2].value,
+                }));
+
+                this.textContent = 'Menyimpan...';
+                this.disabled = true;
+
+                google.script.run.withSuccessHandler(response => {
+                    showGlobalStatus(response.message, response.status === 'success');
+                    this.textContent = 'Simpan Semua Perubahan Bantuan';
+                    this.disabled = false;
+                }).saveHelpContent(sessionStorage.getItem('userEmail'), allData);
+            });
+
+            document.getElementById('save-features-content-btn').addEventListener('click', function() {
+                const allData = Array.from(document.querySelectorAll('.feature-item-editor')).map(div => ({
+                    id: div.querySelector('input[type="number"]').value,
+                    judul: div.querySelector('input[type="text"]').value,
+                    deskripsi: div.querySelector('textarea').value,
+                    gambarUrl: div.querySelectorAll('input[type="text"]')[1].value,
+                }));
+
+                this.textContent = 'Menyimpan...';
+                this.disabled = true;
+
+                google.script.run.withSuccessHandler(response => {
+                    showGlobalStatus(response.message, response.status === 'success');
+                    this.textContent = 'Simpan Semua Perubahan Fitur';
+                    this.disabled = false;
+                }).savePremiumFeaturesContent(sessionStorage.getItem('userEmail'), allData);
+            });
         }
     </script>
 </body>
