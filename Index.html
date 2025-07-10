@@ -904,7 +904,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                         </svg>
-                        <span>Arsip Tahunan</span>
+                        <span>Kelulusan</span>
                     </a>
 
                     <a href="#" id="nav-update" class="nav-link flex justify-between items-center space-x-3 p-2 rounded-md" data-page="update-info"><span class="flex items-center space-x-3"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span>Info & Update</span></span></a>
@@ -2356,26 +2356,35 @@
                     </div>
 
                     <div id="page-arsip-tahunan" class="content-page hidden">
-                        <h1 class="text-3xl font-bold text-gray-800">Arsip Tahunan</h1>
-                        <p class="mt-2 text-gray-600 mb-8">Gunakan fitur ini untuk mengarsipkan seluruh data akademik tahun ajaran yang telah selesai.</p>
+                        <h1 class="text-3xl font-bold text-gray-800">Kelulusan & Arsip Data Siswa</h1>
+                        <p class="mt-2 text-gray-600 mb-8">Pilih satu atau beberapa kelas yang telah menyelesaikan masa studinya untuk meluluskan dan mengarsipkan data mereka.</p>
 
-                        <div class="bg-white p-8 rounded-lg shadow-md max-w-2xl">
-                            <div class="p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-r-lg mb-6">
-                                <h4 class="font-bold">Penting Sebelum Melanjutkan:</h4>
-                                <ul class="list-disc list-inside mt-2 text-sm">
-                                    <li>Proses ini akan **menyalin semua data siswa dan nilai** ke dalam satu file Spreadsheet baru di Google Drive Anda.</li>
-                                    <li>Setelah arsip berhasil dibuat, data di aplikasi akan **dibersihkan** untuk tahun ajaran baru.</li>
-                                    <li>Data yang sudah diarsipkan **tidak dapat diedit lagi** melalui aplikasi ini.</li>
-                                    <li>Pastikan semua proses input nilai dan rekapitulasi sudah final sebelum melakukan pengarsipan.</li>
+                        <div class="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto">
+                            
+                            <div class="p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-800 rounded-r-lg mb-6">
+                                <h4 class="font-bold">Informasi Proses Kelulusan:</h4>
+                                <ul class="list-disc list-inside mt-2 text-sm space-y-1">
+                                    <li>Sistem akan membuat file Spreadsheet baru di Google Drive Anda sebagai **arsip permanen** untuk siswa di kelas yang Anda pilih.</li>
+                                    <li>Setelah arsip berhasil dibuat, data siswa yang diluluskan akan **dihapus secara otomatis** dari aplikasi ini.</li>
+                                    <li>Data siswa dari kelas yang tidak dipilih akan tetap ada di aplikasi.</li>
+                                    <li>Pastikan semua proses input dan rekapitulasi nilai sudah final sebelum melanjutkan.</li>
                                 </ul>
                             </div>
+                            
+                            <div id="kelas-lulus-container" class="mb-6">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-3">Pilih Kelas yang akan Diluluskan:</h3>
+                                <div id="kelas-list-checkboxes" class="space-y-2">
+                                    <p class="text-center text-gray-500 loading-animation">Memuat daftar kelas</p>
+                                </div>
+                            </div>
 
-                            <button id="startArchiveBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center disabled:bg-gray-400">
-                                <span id="archiveBtnText">Mulai Proses Arsip Tahunan</span>
-                                <span id="archiveSpinner" class="hidden loading-animation">Mengarsipkan Data</span>
-                            </button>
+                            <div class="mt-8 pt-6 border-t">
+                                <button id="startKelulusanBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed">
+                                    <span id="kelulusanBtnText">Luluskan & Arsipkan Data Terpilih</span>
+                                    <span id="kelulusanSpinner" class="hidden loading-animation">Memproses</span>
+                                </button>
+                            </div>
 
-                            <div id="archiveResultContainer" class="mt-6"></div>
                         </div>
                     </div>
 
@@ -2573,37 +2582,37 @@
                 <button id="closeMapelModalBtn" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             </div>
             
-            <div class="flex-grow overflow-y-auto p-6">
-                <p class="text-sm text-gray-600 mb-4">Masukkan data untuk satu atau beberapa mata pelajaran di bawah. Klik "+ Tambah Baris" untuk menambahkan lebih banyak.</p>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full">
-                        <thead class="bg-gray-100 text-sm">
-                            <tr>
-                                <th class="p-2 text-left w-1/5">Kode Mapel</th>
-                                <th class="p-2 text-left w-2/5">Nama Mata Pelajaran</th>
-                                <th class="p-2 text-left w-1/5">Kelompok</th>
-                                <th class="p-2 text-left w-1/5">Jenis Ujian</th>
-                                <th class="p-2 w-12">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="mapel-input-tbody">
-                            </tbody>
-                    </table>
+            <form id="mapelForm" class="flex flex-col flex-grow min-h-0">
+                <div class="flex-grow overflow-y-auto p-6">
+                    <p class="text-sm text-gray-600 mb-4">Masukkan data untuk satu atau beberapa mata pelajaran di bawah. Klik "+ Tambah Baris" untuk menambahkan lebih banyak.</p>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead class="bg-gray-100 text-sm">
+                                <tr>
+                                    <th class="p-2 text-left w-1/5">Kode Mapel</th>
+                                    <th class="p-2 text-left w-2/5">Nama Mata Pelajaran</th>
+                                    <th class="p-2 text-left w-1/5">Kelompok</th>
+                                    <th class="p-2 text-left w-1/5">Jenis Ujian</th>
+                                    <th class="p-2 w-12">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mapel-input-tbody">
+                                </tbody>
+                        </table>
+                    </div>
+                    <button type="button" id="addMapelRowBtn" class="mt-4 bg-gray-200 text-gray-700 hover:bg-gray-300 font-bold py-2 px-4 rounded-lg text-sm">
+                        + Tambah Baris
+                    </button>
                 </div>
-                <button type="button" id="addMapelRowBtn" class="mt-4 bg-gray-200 text-gray-700 hover:bg-gray-300 font-bold py-2 px-4 rounded-lg text-sm">
-                    + Tambah Baris
-                </button>
-            </div>
 
-            <div class="flex-shrink-0 mt-auto p-6 border-t flex justify-end">
-                <button type="button" id="cancelMapelBtn" class="bg-gray-300 text-gray-700 py-2 px-4 rounded-md mr-3 hover:bg-gray-400">Batal</button>
-                <button type="button" id="saveAllMapelBtn" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">
-                    <span id="saveAllMapelBtnText">Simpan Semua</span>
-                    <span id="saveAllMapelSpinner" class="hidden loading-animation">Menyimpan</span>
-                </button>
-            </div>
-
-        </div>
+                <div class="flex-shrink-0 mt-auto p-6 border-t flex justify-end">
+                    <button type="button" id="cancelMapelBtn" class="bg-gray-300 text-gray-700 py-2 px-4 rounded-md mr-3 hover:bg-gray-400">Batal</button>
+                    <button type="button" id="saveAllMapelBtn" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">
+                        <span id="saveAllMapelBtnText">Simpan Semua</span>
+                        <span id="saveAllMapelSpinner" class="hidden loading-animation">Menyimpan</span>
+                    </button>
+                </div>
+            </form> </div>
     </div>
 
     <div id="export-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
@@ -4400,6 +4409,54 @@
                     .generateGuruTemplate(userSpreadsheetId);
             });
 
+            // Tambahkan event listener untuk tombol "Luluskan & Arsipkan Data"
+            // Letakkan ini di dalam event listener DOMContentLoaded
+            document.getElementById('startKelulusanBtn')?.addEventListener('click', function() {
+                const selectedCheckboxes = document.querySelectorAll('input[name="selectedKelas"]:checked');
+                if (selectedCheckboxes.length === 0) {
+                    showGlobalStatus("Harap pilih minimal satu kelas untuk diluluskan.", false);
+                    return;
+                }
+
+                const selectedKelasList = Array.from(selectedCheckboxes).map(cb => cb.value);
+                
+                showConfirmationModal({
+                    title: "Konfirmasi Kelulusan & Arsip",
+                    body: `Anda akan meluluskan dan mengarsipkan semua siswa dari kelas: <strong>${selectedKelasList.join(', ')}</strong>. <br><br>Data mereka akan dihapus dari aplikasi setelah diarsipkan. Proses ini tidak dapat dibatalkan. Lanjutkan?`,
+                    confirmText: "Ya, Lanjutkan Proses",
+                    confirmColor: "bg-green-600 hover:bg-green-700",
+                    onConfirm: () => {
+                        const btn = this;
+                        const btnText = document.getElementById('kelulusanBtnText');
+                        const spinner = document.getElementById('kelulusanSpinner');
+                        
+                        btn.disabled = true;
+                        btnText.classList.add('hidden');
+                        spinner.classList.remove('hidden');
+
+                        const userEmail = sessionStorage.getItem('userEmail');
+                        google.script.run
+                            .withSuccessHandler(response => {
+                                btn.disabled = false;
+                                btnText.classList.remove('hidden');
+                                spinner.classList.add('hidden');
+                                showGlobalStatus(response.message, response.status === 'success');
+                                if (response.status === 'success') {
+                                    // Muat ulang halaman kelulusan untuk menampilkan daftar kelas terbaru
+                                    loadKelulusanPage();
+                                }
+                            })
+                            .withFailureHandler(err => {
+                                btn.disabled = false;
+                                btnText.classList.remove('hidden');
+                                spinner.classList.add('hidden');
+                                showGlobalStatus(`Terjadi error: ${err.message}`, false);
+                            })
+                            .prosesKelulusan(userSpreadsheetId, userEmail, selectedKelasList);
+                    }
+                });
+            });
+
             setupSortActionListeners();
         });
 
@@ -5035,6 +5092,9 @@
                     loadPersetujuanNilai();
                 }
                 if (targetPageId === 'data-guru') loadGuruData();
+                if (targetPageId === 'arsip-tahunan') { // tetap gunakan id lama
+                    loadKelulusanPage();
+                }
 
                 closeSidebar();
             });
@@ -5306,15 +5366,24 @@
                 reader.readAsDataURL(file);
             }
 
+            /**
+             * [PERBAIKAN] Mengembalikan fungsi untuk membuka modal siswa,
+             * agar bisa dipanggil oleh tombol Edit.
+             */
             const openSiswaModal = () => {
-                siswaModal.classList.remove('hidden');
-                setTimeout(() => {
-                    siswaModal.querySelector('.modal-content').style.transform = 'scale(1)';
-                }, 10);
+                const siswaModal = document.getElementById('siswa-modal');
+                if (siswaModal) {
+                    siswaModal.classList.remove('hidden');
+                    setTimeout(() => {
+                        siswaModal.querySelector('.modal-content').style.transform = 'scale(1)';
+                    }, 10);
+                }
             };
             const closeSiswaModal = () => {
-                siswaModal.querySelector('.modal-content').style.transform = 'scale(0.95)';
-                setTimeout(() => siswaModal.classList.add('hidden'), 300);
+                if (siswaModal) {
+                    siswaModal.querySelector('.modal-content').style.transform = 'scale(0.95)';
+                    setTimeout(() => siswaModal.classList.add('hidden'), 300);
+                }
             };
 
             const linkKePengaturan = document.getElementById('link-ke-pengaturan');
@@ -5700,22 +5769,44 @@
             const deleteAllMapelBtn = document.getElementById('deleteAllMapelBtn');
 
             const openMapelModal = () => {
-                mapelModal.classList.remove('hidden');
-                setTimeout(() => mapelModal.style.opacity = '1', 10);
+                if (mapelModal) {
+                    mapelModal.classList.remove('hidden');
+                    setTimeout(() => {
+                        mapelModal.querySelector('.modal-content').style.transform = 'scale(1)';
+                    }, 10);
+                }
             };
             const closeMapelModal = () => {
-                mapelModal.style.opacity = '0';
-                setTimeout(() => mapelModal.classList.add('hidden'), 300);
+                if (mapelModal) {
+                    // Menggunakan animasi yang sama dengan modal lain untuk konsistensi
+                    mapelModal.querySelector('.modal-content').style.transform = 'scale(0.95)';
+                    setTimeout(() => mapelModal.classList.add('hidden'), 300);
+                }
             };
+
+            // [PERBAIKAN] Pasang event listener untuk tombol tutup secara langsung
+            if (closeMapelModalBtn) {
+                closeMapelModalBtn.addEventListener('click', closeMapelModal);
+            }
+            if (cancelMapelBtn) {
+                cancelMapelBtn.addEventListener('click', closeMapelModal);
+            }
+
+            // [PERBAIKAN] Event listener untuk tombol utama "Tambah Mapel"
             if (addMapelBtn) {
                 addMapelBtn.addEventListener('click', () => {
-                    mapelForm.reset();
-                    mapelRowInput.value = '';
-                    mapelModalTitle.textContent = "Tambah Mata Pelajaran";
+                    // Logika ini sudah benar dari perbaikan sebelumnya
+                    if (mapelInputTbody) {
+                        mapelInputTbody.innerHTML = '';
+                        mapelInputTbody.appendChild(createMapelInputRow()); // Pastikan fungsi createMapelInputRow() sudah ada
+                    }
+                    
+                    if (mapelModalTitle) {
+                        mapelModalTitle.textContent = "Tambah Mata Pelajaran Massal";
+                    }
+                    
                     openMapelModal();
                 });
-                closeMapelModalBtn.addEventListener('click', closeMapelModal);
-                cancelMapelBtn.addEventListener('click', closeMapelModal);
             }
             if (deleteAllMapelBtn) {
                 deleteAllMapelBtn.addEventListener('click', function() {
@@ -5804,18 +5895,6 @@
                     tr.remove();
                 });
                 return tr;
-            }
-
-            // Event listener untuk membuka modal dan menyiapkan baris pertama
-            if (addMapelBtn) {
-                addMapelBtn.addEventListener('click', () => {
-                    // Kosongkan tabel dan tambahkan satu baris baru setiap kali modal dibuka
-                    mapelInputTbody.innerHTML = '';
-                    mapelInputTbody.appendChild(createMapelInputRow());
-                    
-                    mapelModalTitle.textContent = "Tambah Mata Pelajaran Massal";
-                    openMapelModal();
-                });
             }
 
             // Event listener untuk tombol "+ Tambah Baris"
@@ -13020,19 +13099,43 @@
             .getDocumentSettings(userSpreadsheetId);
         }
 
-        // Fungsi helper untuk membaca file gambar yang dipilih pengguna
+        /**
+         * [DIPERBARUI] Helper untuk membaca file gambar yang dipilih pengguna,
+         * kini dengan validasi ukuran (maks 2MB) dan tipe file (JPG, PNG, JPEG).
+         */
         function setupImageInput(inputId, previewId, settingKey) {
           const input = document.getElementById(inputId);
           const preview = document.getElementById(previewId);
+          const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB dalam bytes
+          const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/jpg'];
+
+          if (!input) return; // Pastikan elemen input ada
 
           input.addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (!file) return;
 
+            // 1. Validasi Tipe File
+            if (!ALLOWED_TYPES.includes(file.type)) {
+                showGlobalStatus('Error: Format file tidak valid. Harap unggah file JPG, JPEG, atau PNG.', false);
+                input.value = ''; // Reset input file
+                return; // Hentikan proses
+            }
+
+            // 2. Validasi Ukuran File
+            if (file.size > MAX_FILE_SIZE) {
+                showGlobalStatus('Error: Ukuran file tidak boleh melebihi 2 MB.', false);
+                input.value = ''; // Reset input file
+                return; // Hentikan proses
+            }
+
+            // 3. Jika valid, lanjutkan proses
             const reader = new FileReader();
             reader.onload = function(e) {
               const base64String = e.target.result;
-              preview.src = base64String;
+              if(preview) {
+                preview.src = base64String;
+              }
               newDocumentSettings[settingKey] = base64String;
             };
             reader.readAsDataURL(file);
@@ -13040,7 +13143,8 @@
         }
 
         /**
-         * [BARU] Menangani klik pada tombol hapus aset.
+         * [DIPERBARUI] Menangani klik pada tombol hapus aset.
+         * Kini mengembalikan pratinjau ke gambar placeholder asli setelah berhasil dihapus.
          */
         function handleDeleteAsset(event) {
             const button = event.target;
@@ -13048,8 +13152,16 @@
             const previewId = button.dataset.previewId;
 
             if (!settingKey) return;
+            
+            // Definisikan URL placeholder asli di sini
+            const placeholderUrls = {
+                'customHeaderPreview': 'https://placehold.co/800x150/e2e8f0/64748b?text=Header+Kustom+(Kosong)',
+                'portalLogoPreview': 'https://placehold.co/128x128/e2e8f0/64748b?text=Logo+Portal',
+                'logoPreview': 'https://placehold.co/128x128/e2e8f0/64748b?text=Logo+Dokumen',
+                'signaturePreview': 'https://placehold.co/192x128/e2e8f0/64748b?text=Tanda+Tangan',
+                'stampPreview': 'https://placehold.co/128x128/e2e8f0/64748b?text=Stempel'
+            };
 
-            // Gunakan modal konfirmasi yang sudah ada
             showConfirmationModal({
                 title: "Konfirmasi Hapus",
                 body: `Anda yakin ingin menghapus gambar ${settingKey.replace('ID ', '')}? Tindakan ini tidak dapat dibatalkan.`,
@@ -13061,9 +13173,19 @@
                         .withSuccessHandler(response => {
                             showGlobalStatus(response.message, response.status === 'success');
                             if(response.status === 'success') {
-                                // Reset pratinjau ke gambar placeholder
+                                // === PERUBAHAN UTAMA ADA DI SINI ===
+                                // Ambil elemen gambar pratinjau
                                 const previewImage = document.getElementById(previewId);
-                                previewImage.src = previewImage.src.split('?')[0] + `?text=${settingKey.replace('ID ','')}&t=` + new Date().getTime();
+                                if (previewImage && placeholderUrls[previewId]) {
+                                    // Atur SRC-nya kembali ke URL placeholder yang sesuai
+                                    previewImage.src = placeholderUrls[previewId];
+                                }
+                                // Hapus juga data dari objek sementara jika ada
+                                for (const key in newDocumentSettings) {
+                                    if (key.toLowerCase().includes(settingKey.toLowerCase().split(' ')[1])) {
+                                        newDocumentSettings[key] = null;
+                                    }
+                                }
                             }
                         })
                         .withFailureHandler(err => {
@@ -15510,6 +15632,45 @@
 
             // 4. Render tabel dengan data yang sudah siap
             renderSiswaTable(filteredStudents);
+        }
+        
+        /**
+         * [BARU] Memuat dan menampilkan daftar kelas untuk halaman Kelulusan.
+         */
+        function loadKelulusanPage() {
+            const container = document.getElementById('kelas-list-checkboxes');
+            container.innerHTML = `<p class="text-center text-gray-500 loading-animation">Memuat daftar kelas</p>`;
+
+            google.script.run
+                .withSuccessHandler(kelasList => {
+                    if (!kelasList || kelasList.length === 0) {
+                        container.innerHTML = `<p class="text-center text-red-500 font-medium">Tidak ditemukan data kelas di dalam Data Siswa Anda. Harap isi data siswa dan kelasnya terlebih dahulu.</p>`;
+                        document.getElementById('startKelulusanBtn').disabled = true;
+                        return;
+                    }
+                    
+                    let checkboxesHtml = '<div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">';
+                    kelasList.forEach(kelas => {
+                        checkboxesHtml += `
+                            <div class="relative flex items-start">
+                                <div class="flex h-5 items-center">
+                                    <input id="kelas-${kelas}" name="selectedKelas" type="checkbox" value="${kelas}" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                </div>
+                                <div class="ml-3 text-sm">
+                                    <label for="kelas-${kelas}" class="font-medium text-gray-700">${kelas}</label>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    checkboxesHtml += '</div>';
+                    container.innerHTML = checkboxesHtml;
+                    document.getElementById('startKelulusanBtn').disabled = false;
+                })
+                .withFailureHandler(err => {
+                    container.innerHTML = `<p class="text-center text-red-500">Gagal memuat daftar kelas: ${err.message}</p>`;
+                    document.getElementById('startKelulusanBtn').disabled = true;
+                })
+                .getUniqueKelasList(userSpreadsheetId);
         }
     </script>
 </body>
