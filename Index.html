@@ -2408,72 +2408,63 @@
                     <!-- ===== [DIPERBARUI] HALAMAN PERSETUJUAN NILAI DENGAN FITUR LENGKAP ===== -->
                     <div id="page-persetujuan-nilai" class="content-page hidden">
                         <h1 class="text-3xl font-bold text-gray-800">Persetujuan Nilai dari Guru</h1>
-                        <p class="mt-2 text-gray-600 mb-6">Tinjau dan setujui nilai yang telah diinput oleh guru.</p>
+                        <p class="mt-2 text-gray-600 mb-6">Tinjau nilai yang dikirim guru dan kelola izin pengiriman nilai untuk setiap kelas.</p>
 
                         <div id="admin-polling-status-bar" class="hidden mb-6 p-3 rounded-lg text-sm font-medium flex items-center justify-center gap-3">
                             </div>
 
-                        <!-- [BARU] Panel Pengaturan Izin Pengiriman -->
-                        <div class="bg-white p-4 rounded-lg shadow-md mb-6 border-l-4 border-indigo-500">
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <h3 class="font-bold text-lg text-gray-800">Izinkan Pengiriman Nilai</h3>
-                                    <p id="submission-toggle-status-text" class="text-sm text-gray-500">Saat aktif, guru dapat menekan tombol "Kirim Nilai".</p>
-                                </div>
-                                <label for="submission-toggle" class="flex items-center cursor-pointer">
-                                    <div class="relative">
-                                        <!-- [PERBAIKAN] Menambahkan class 'peer' dan 'peer-checked' -->
-                                        <input type="checkbox" id="submission-toggle" class="sr-only peer">
-                                        <div class="block bg-gray-300 w-14 h-8 rounded-full peer-checked:bg-indigo-600 transition"></div>
-                                        <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform transform peer-checked:translate-x-full"></div>
-                                    </div>
-                                </label>
+                        <div id="submission-settings-container" class="bg-white p-6 rounded-lg shadow-md mb-6 border-l-4 border-indigo-500">
+                            <h3 class="font-bold text-xl text-gray-800 mb-4">Pengaturan Izin Pengiriman Nilai per Kelas</h3>
+                            <div id="submission-settings-loader" class="text-center p-4 loading-animation">
+                                Memuat pengaturan...
                             </div>
+                            <div id="submission-settings-content" class="hidden space-y-4">
+                                </div>
                         </div>
                         
-                        <!-- [BARU] Panel Filter dan Sortir -->
-                        <div class="bg-white p-4 rounded-lg shadow-md mb-4">
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                                <div>
-                                    <label for="filter-mapel" class="block text-sm font-medium text-gray-700">Filter Mapel</label>
-                                    <select id="filter-mapel" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                                        <option value="semua">Semua Mapel</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label for="filter-jenis" class="block text-sm font-medium text-gray-700">Filter Jenis Nilai</label>
-                                    <select id="filter-jenis" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                                        <option value="semua">Semua Jenis</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label for="sort-persetujuan" class="block text-sm font-medium text-gray-700">Urutkan Berdasarkan</label>
-                                    <select id="sort-persetujuan" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                                        <option value="tanggal_terbaru">Tanggal Terbaru</option>
-                                        <option value="tanggal_terlama">Tanggal Terlama</option>
-                                        <option value="nama_az">Nama Siswa (A-Z)</option>
-                                        <option value="nama_za">Nama Siswa (Z-A)</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <button id="reset-filter-persetujuan" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md">Reset</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- [BARU] Panel Aksi Massal (awalnya disembunyikan) -->
-                        <div id="approval-bulk-action-bar" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-auto bg-gray-800 text-white rounded-full shadow-2xl p-2 z-40 transition-all duration-300 ease-out transform">
-                            <div class="flex items-center justify-between gap-4 px-4">
-                                <span id="selected-approval-count" class="font-semibold whitespace-nowrap">0 item dipilih</span>
-                                <div class="flex items-center gap-2">
-                                    <button onclick="handleBulkApproval('Disetujui')" class="bg-green-600 hover:bg-green-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Setujui Terpilih</button>
-                                    <button onclick="handleBulkApproval('Ditolak')" class="bg-red-600 hover:bg-red-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Tolak Terpilih</button>
+                        <div class="mt-8 pt-6 border-t">
+                            <h2 class="text-2xl font-bold text-gray-800">Daftar Nilai yang Menunggu Persetujuan</h2>
+                            <div class="bg-white p-4 rounded-lg shadow-md my-4">
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                    <div>
+                                        <label for="filter-mapel" class="block text-sm font-medium text-gray-700">Filter Mapel</label>
+                                        <select id="filter-mapel" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                            <option value="semua">Semua Mapel</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="filter-jenis" class="block text-sm font-medium text-gray-700">Filter Jenis Nilai</label>
+                                        <select id="filter-jenis" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                            <option value="semua">Semua Jenis</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="sort-persetujuan" class="block text-sm font-medium text-gray-700">Urutkan Berdasarkan</label>
+                                        <select id="sort-persetujuan" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                            <option value="tanggal_terbaru">Tanggal Terbaru</option>
+                                            <option value="tanggal_terlama">Tanggal Terlama</option>
+                                            <option value="nama_az">Nama Siswa (A-Z)</option>
+                                            <option value="nama_za">Nama Siswa (Z-A)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <button id="reset-filter-persetujuan" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md">Reset</button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div id="persetujuan-table-container" class="bg-white p-4 rounded-lg shadow-md mt-4">
-                            <!-- Tabel persetujuan akan dimuat di sini -->
+                            <div id="approval-bulk-action-bar" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-auto bg-gray-800 text-white rounded-full shadow-2xl p-2 z-40 transition-all duration-300 ease-out transform">
+                                <div class="flex items-center justify-between gap-4 px-4">
+                                    <span id="selected-approval-count" class="font-semibold whitespace-nowrap">0 item dipilih</span>
+                                    <div class="flex items-center gap-2">
+                                        <button onclick="handleBulkApproval('Disetujui')" class="bg-green-600 hover:bg-green-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Setujui Terpilih</button>
+                                        <button onclick="handleBulkApproval('Ditolak')" class="bg-red-600 hover:bg-red-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Tolak Terpilih</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="persetujuan-table-container" class="bg-white p-4 rounded-lg shadow-md mt-4">
+                                </div>
                         </div>
                     </div>
 
@@ -3573,6 +3564,7 @@
         let initialSiswaOrder = [];
         let isOrderChanged = false;
         let isUploadCancelled = false;
+        let approvalPollingInterval;
 
         // [TAMBAHKAN] Inisialisasi Dropzone.js (letakan di scope global)
         let nilaiDropzone;
@@ -5041,7 +5033,7 @@
             updateSaranBadge_User();
             setupDataSekolahClickHandlers(); 
             setupStudentFilterListeners();
-            startAdminPolling();
+            startApprovalPolling();
 
             const navContainer = document.getElementById('main-nav');
             const contentPages = document.querySelectorAll('.content-page');
@@ -13915,12 +13907,17 @@
                 .getPrintSettings(userSpreadsheetId); // <-- Memanggil fungsi backend baru
         }
 
-        // [MODIFIKASI] Panggil fungsi baru saat halaman persetujuan dimuat
+        // GANTI FUNGSI loadPersetujuanNilai() YANG LAMA DENGAN VERSI BARU INI
+        /**
+         * Memuat semua data untuk halaman Persetujuan Nilai, termasuk pengaturan kunci per kelas.
+         */
         function loadPersetujuanNilai() {
             const container = document.getElementById('persetujuan-table-container');
             container.innerHTML = `<p class="text-center p-8 loading-animation">Memuat data pengajuan nilai</p>`;
             
-            loadAndSetupSubmissionToggle(); // [BARU] Panggil fungsi untuk setup toggle
+            // Panggilan ke markSubmissionsAsRead_Admin dihapus dari sini
+
+            loadAndRenderSubmissionSettings(); 
 
             google.script.run
                 .withSuccessHandler(data => {
@@ -13933,47 +13930,6 @@
                     container.innerHTML = `<p class="text-red-500 text-center">${err.message}</p>`;
                 })
                 .getPengajuanNilaiUntukAdmin(userSpreadsheetId);
-        }
-
-        // [FUNGSI BARU] Untuk memuat dan mengatur toggle izin pengiriman
-        function loadAndSetupSubmissionToggle() {
-            const toggle = document.getElementById('submission-toggle');
-            const statusText = document.getElementById('submission-toggle-status-text');
-            
-            toggle.disabled = true; // Nonaktifkan saat memuat
-            
-            google.script.run
-                .withSuccessHandler(response => {
-                    toggle.checked = response.isEnabled;
-                    statusText.textContent = response.isEnabled 
-                        ? 'Saat ini guru BISA mengirim nilai.' 
-                        : 'Saat ini guru HANYA bisa menyimpan draf.';
-                    toggle.disabled = false;
-                })
-                .withFailureHandler(err => {
-                    showGlobalStatus("Gagal memuat status izin pengiriman.", false);
-                })
-                .getNilaiSubmissionStatus(userSpreadsheetId);
-
-            toggle.addEventListener('change', (e) => {
-                const isEnabled = e.target.checked;
-                toggle.disabled = true; // Nonaktifkan selama proses penyimpanan
-                
-                google.script.run
-                    .withSuccessHandler(response => {
-                        showGlobalStatus(response.message, true);
-                        statusText.textContent = isEnabled 
-                            ? 'Saat ini guru BISA mengirim nilai.' 
-                            : 'Saat ini guru HANYA bisa menyimpan draf.';
-                        toggle.disabled = false;
-                    })
-                    .withFailureHandler(err => {
-                        showGlobalStatus(err.message, false);
-                        e.target.checked = !isEnabled; // Kembalikan ke state semula jika gagal
-                        toggle.disabled = false;
-                    })
-                    .setNilaiSubmissionStatus(userSpreadsheetId, isEnabled);
-            });
         }
 
         // Fungsi untuk mengisi dropdown filter secara dinamis
@@ -15727,6 +15683,218 @@
                     document.getElementById('startKelulusanBtn').disabled = true;
                 })
                 .getUniqueKelasList(userSpreadsheetId);
+        }
+
+        // ===== [BARU] FUNGSI UNTUK MERENDER PENGATURAN KUNCI PER KELAS =====
+        // GANTI FUNGSI INI DI Index.html
+        /**
+         * Memuat data kelas dan jenjang dari server, lalu memanggil fungsi untuk merender tabel pengaturan.
+         */
+        function loadAndRenderSubmissionSettings() {
+            const contentDiv = document.getElementById('submission-settings-content');
+            const loader = document.getElementById('submission-settings-loader');
+
+            loader.classList.remove('hidden');
+            contentDiv.classList.add('hidden');
+
+            Promise.all([
+                new Promise(res => google.script.run.withSuccessHandler(res).getKelas(userSpreadsheetId)),
+                new Promise(res => google.script.run.withSuccessHandler(res).getSchoolData(userSpreadsheetId)),
+                new Promise(res => google.script.run.withSuccessHandler(res).getSubmissionLockSettings(userSpreadsheetId))
+            ]).then(([kelasResponse, schoolDataResponse, settingsResponse]) => {
+                const kelasList = (kelasResponse && kelasResponse.status === 'success') ? kelasResponse.kelasList : [];
+                const jenjang = (schoolDataResponse) ? schoolDataResponse.jenjang : null;
+                const currentSettings = settingsResponse || {};
+
+                if (kelasList.length === 0 || !jenjang) {
+                    contentDiv.innerHTML = '<p class="text-sm text-gray-500 text-center">Data kelas atau jenjang sekolah belum diatur. Harap lengkapi di menu Pengaturan dan Data Sekolah.</p>';
+                } else {
+                    // Panggil fungsi BARU untuk merender tabel
+                    renderSubmissionSettingsTable(kelasList, jenjang, currentSettings);
+                }
+
+                loader.classList.add('hidden');
+                contentDiv.classList.remove('hidden');
+
+            }).catch(error => {
+                console.error("Gagal memuat pengaturan: ", error);
+                loader.classList.add('hidden');
+                contentDiv.innerHTML = '<p class="text-red-500 text-center">Gagal memuat pengaturan.</p>';
+                contentDiv.classList.remove('hidden');
+            });
+        }
+
+        // TAMBAHKAN FUNGSI BARU INI DI Index.html
+        /**
+         * Merender pengaturan izin pengiriman dalam format tabel.
+         * @param {Array<string>} kelasList - Daftar semua nama kelas.
+         * @param {string} jenjang - Jenjang sekolah (MI/MTS/MA).
+         * @param {object} currentSettings - Pengaturan kunci yang tersimpan saat ini.
+         */
+        function renderSubmissionSettingsTable(kelasList, jenjang, currentSettings) {
+            const contentDiv = document.getElementById('submission-settings-content');
+            contentDiv.innerHTML = '';
+
+            // Definisikan pemetaan semester dan header kolom berdasarkan jenjang
+            const semesterHeaders = {
+                MI: [
+                    { key: 'rapor_k4_ganjil', label: 'K.4.1' }, { key: 'rapor_k4_genap', label: 'K.4.2' },
+                    { key: 'rapor_k5_ganjil', label: 'K.5.1' }, { key: 'rapor_k5_genap', label: 'K.5.2' },
+                    { key: 'rapor_k6_ganjil', label: 'K.6.1' }
+                ],
+                MTS: [
+                    { key: 'rapor_k7_ganjil', label: 'K.7.1' }, { key: 'rapor_k7_genap', label: 'K.7.2' },
+                    { key: 'rapor_k8_ganjil', label: 'K.8.1' }, { key: 'rapor_k8_genap', label: 'K.8.2' },
+                    { key: 'rapor_k9_ganjil', label: 'K.9.1' }
+                ],
+                MA: [
+                    { key: 'rapor_k10_ganjil', label: 'K.10.1' }, { key: 'rapor_k10_genap', label: 'K.10.2' },
+                    { key: 'rapor_k11_ganjil', label: 'K.11.1' }, { key: 'rapor_k11_genap', label: 'K.11.2' },
+                    { key: 'rapor_k12_ganjil', label: 'K.12.1' }
+                ]
+            };
+
+            const assessmentTypes = [
+                { key: 'ujian', label: 'UM' },
+                ...(semesterHeaders[jenjang] || [])
+            ];
+
+            // Buat Keterangan / Legenda
+            const legendHtml = `
+                <div class="mb-4 p-3 bg-gray-50 rounded-md text-xs text-gray-600 border">
+                    <strong>Keterangan:</strong> 
+                    <span class="font-mono bg-gray-200 px-1 rounded">UM</span> = Ujian, 
+                    <span class="font-mono bg-gray-200 px-1 rounded">K.7.1</span> = Rapor Kelas 7 Semester Ganjil, 
+                    <span class="font-mono bg-gray-200 px-1 rounded">K.7.2</span> = Rapor Kelas 7 Semester Genap, dan seterusnya.
+                </div>
+            `;
+
+            // Buat header tabel
+            const tableHeaderHtml = `
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase sticky left-0 bg-gray-100 z-10">Kelas</th>
+                    ${assessmentTypes.map(type => `<th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">${type.label}</th>`).join('')}
+                </tr>
+            `;
+
+            // Buat baris-baris tabel
+            const tableRowsHtml = kelasList.map(kelas => {
+                const classSettings = currentSettings[kelas] || {};
+                const cellsHtml = assessmentTypes.map(type => {
+                    const isChecked = classSettings[type.key] !== 'TERKUNCI'; // Defaultnya aktif (tidak terkunci)
+                    return `
+                        <td class="px-4 py-2 text-center">
+                            <label class="flex items-center justify-center cursor-pointer">
+                                <div class="relative">
+                                    <input type="checkbox" class="sr-only peer submission-toggle" data-kelas="${kelas}" data-tipe="${type.key}" ${isChecked ? 'checked' : ''}>
+                                    <div class="block bg-gray-300 w-12 h-6 rounded-full peer-checked:bg-green-500 transition"></div>
+                                    <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform transform peer-checked:translate-x-6"></div>
+                                </div>
+                            </label>
+                        </td>
+                    `;
+                }).join('');
+
+                return `
+                    <tr class="border-b">
+                        <td class="px-4 py-2 font-semibold text-gray-800 whitespace-nowrap sticky left-0 bg-white">${kelas}</td>
+                        ${cellsHtml}
+                    </tr>
+                `;
+            }).join('');
+
+            // Gabungkan semua menjadi satu tabel utuh
+            contentDiv.innerHTML = `
+                ${legendHtml}
+                <div class="overflow-x-auto border rounded-lg">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-gray-100">
+                            ${tableHeaderHtml}
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${tableRowsHtml}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            // Pasang kembali event listener pada semua saklar yang baru dibuat
+            document.querySelectorAll('.submission-toggle').forEach(toggle => {
+                toggle.addEventListener('change', handleToggleChange);
+            });
+        }
+
+        /**
+         * Menangani perubahan status pada saklar dan mengirimnya ke server.
+         */
+        function handleToggleChange(event) {
+            const toggle = event.target;
+            const kelas = toggle.dataset.kelas;
+            const tipe = toggle.dataset.tipe;
+            const isAktif = toggle.checked;
+            
+            toggle.disabled = true; // Nonaktifkan sementara
+
+            google.script.run
+                .withSuccessHandler(response => {
+                    showGlobalStatus(response.message, response.status === 'success');
+                    toggle.disabled = false;
+                })
+                .withFailureHandler(err => {
+                    showGlobalStatus(err.message, false);
+                    toggle.checked = !isAktif; // Kembalikan ke state semula jika gagal
+                    toggle.disabled = false;
+                })
+                .setSubmissionLockStatus(userSpreadsheetId, kelas, tipe, isAktif);
+        }
+
+        // ===== [BARU] FUNGSI POLLING BARU UNTUK PERSETUJUAN ADMIN =====
+
+        function stopApprovalPolling() {
+            if (approvalPollingInterval) {
+                clearInterval(approvalPollingInterval);
+                approvalPollingInterval = null;
+            }
+        }
+
+        function startApprovalPolling() {
+            stopApprovalPolling(); // Pastikan hanya ada satu interval yang berjalan
+
+            const poll = () => {
+                if (document.getElementById('app-container').classList.contains('hidden')) {
+                    stopApprovalPolling();
+                    return;
+                }
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        if (response.status === 'success') {
+                            const badge = document.getElementById('approval-badge');
+                            const newCount = response.count;
+
+                            if (badge) {
+                                if (newCount > 0) {
+                                    const currentCountOnBadge = parseInt(badge.textContent) || 0;
+                                    badge.textContent = newCount;
+                                    badge.classList.remove('hidden');
+                                    // Jika jumlahnya berubah DAN kita sedang di halaman persetujuan, muat ulang tabelnya.
+                                    if (newCount !== currentCountOnBadge && !document.getElementById('page-persetujuan-nilai').classList.contains('hidden')) {
+                                        loadPersetujuanNilai();
+                                    }
+                                } else {
+                                    badge.classList.add('hidden');
+                                }
+                            }
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        console.error("Gagal melakukan polling persetujuan:", err);
+                    })
+                    .getPendingApprovalCount(userSpreadsheetId); // Panggil fungsi backend yang baru
+            };
+
+            poll(); // Jalankan sekali saat pertama kali
+            approvalPollingInterval = setInterval(poll, 15000); // Polling setiap 15 detik
         }
     </script>
 </body>
