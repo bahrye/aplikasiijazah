@@ -1652,6 +1652,16 @@
                             </div>
                         </div>
 
+                        <div id="sort-action-bar" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-auto bg-gray-800 text-white rounded-full shadow-2xl p-2 z-40 transition-all duration-300 ease-out transform opacity-0 -translate-y-full">
+                            <div class="flex items-center justify-between gap-4 px-4">
+                                <span class="font-semibold whitespace-nowrap">Urutan siswa telah diubah.</span>
+                                <div class="flex items-center gap-2">
+                                    <button id="cancel-sort-btn" class="bg-gray-500 hover:bg-gray-600 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Batal</button>
+                                    <button id="save-order-btn" class="bg-purple-600 hover:bg-purple-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Simpan Urutan</button>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="bg-white p-4 rounded-lg shadow-md mt-4">
                             <div id="siswaTableContainer" class="overflow-x-auto"></div>
                         </div>
@@ -3532,6 +3542,9 @@
         // Di dekat variabel global lainnya
         let validationFullData = null;
         let currentValidationMode = null;
+        let originalSiswaOrder = [];
+        let initialSiswaOrder = [];
+        let isOrderChanged = false;
 
 
         // [TAMBAHKAN] Inisialisasi Dropzone.js (letakan di scope global)
@@ -4386,6 +4399,8 @@
                     })
                     .generateGuruTemplate(userSpreadsheetId);
             });
+
+            setupSortActionListeners();
         });
 
         function setupPasswordToggles() {
@@ -5592,62 +5607,6 @@
                 ruangFilter.value = selectedRuang;
             }
 
-            // [BARU] Fungsi utama untuk memfilter, menyortir, dan merender
-            function renderFilteredStudents() {
-                let filteredStudents = [...allStudentsData];
-                
-                // Ambil nilai dari semua kontrol
-                const searchTerm = document.getElementById('searchSiswaInput').value.toLowerCase().trim();
-                const kelasFilter = document.getElementById('filter-kelas').value;
-                const ruangFilter = document.getElementById('filter-ruang').value;
-                const genderFilter = document.getElementById('filter-jenis-kelamin').value;
-                const sortValue = document.getElementById('sort-siswa').value;
-
-                // 1. Terapkan Pencarian
-                if (searchTerm) {
-                    filteredStudents = filteredStudents.filter(s => 
-                        s.nama.toLowerCase().includes(searchTerm) || 
-                        s.nisn.includes(searchTerm)
-                    );
-                }
-
-                // 2. Terapkan Filter
-                if (kelasFilter !== 'semua') {
-                    filteredStudents = filteredStudents.filter(s => s.kelas === kelasFilter);
-                }
-                if (ruangFilter !== 'semua') {
-                    filteredStudents = filteredStudents.filter(s => s.ruangUjian === ruangFilter);
-                }
-                if (genderFilter !== 'semua') {
-                    filteredStudents = filteredStudents.filter(s => s.jenisKelamin === genderFilter);
-                }
-
-                // 3. Terapkan Pengurutan
-                switch (sortValue) {
-                    case 'time_asc':
-                        filteredStudents.sort((a, b) => a.row - b.row);
-                        break;
-                    case 'time_desc':
-                        filteredStudents.sort((a, b) => b.row - a.row);
-                        break;
-                    case 'nama_az':
-                        filteredStudents.sort((a, b) => a.nama.localeCompare(b.nama));
-                        break;
-                    case 'nama_za':
-                        filteredStudents.sort((a, b) => b.nama.localeCompare(a.nama));
-                        break;
-                    case 'kelas_az':
-                        filteredStudents.sort((a, b) => (a.kelas || '').localeCompare(b.kelas || ''));
-                        break;
-                    case 'kelas_za':
-                        filteredStudents.sort((a, b) => (b.kelas || '').localeCompare(a.kelas || ''));
-                        break;
-                }
-
-                // 4. Render tabel dengan data yang sudah siap
-                renderSiswaTable(filteredStudents);
-            }
-
             // [BARU] Fungsi untuk memasang event listener pada kontrol filter
             function setupStudentFilterListeners() {
                 document.getElementById('searchSiswaInput').addEventListener('input', renderFilteredStudents);
@@ -5664,200 +5623,6 @@
                     document.getElementById('sort-siswa').value = 'time_asc'; // <-- Perubahan di sini
                     renderFilteredStudents();
                 });
-            }
-
-            /**
-             * [MODIFIKASI] Merender tabel siswa. Kolom "Aksi" sekarang tidak lagi sticky.
-             */
-            function renderSiswaTable(studentsToRender) {
-                const container = document.getElementById('siswaTableContainer');
-                container.innerHTML = ''; 
-
-                if (!studentsToRender || studentsToRender.length === 0) {
-                    container.innerHTML = `<p class="text-center text-gray-500 py-4">Belum ada data siswa atau data tidak ditemukan.</p>`;
-                    return;
-                }
-
-                const table = document.createElement('table');
-                table.className = 'min-w-full divide-y divide-gray-200';
-                
-                table.innerHTML = `
-                    <thead class="bg-gray-50 sticky-header">
-                        <tr>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-12">URUTAN</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase"><input type="checkbox" id="select-all-students-checkbox" class="h-4 w-4 rounded border-gray-300"></th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NAMA & NISN</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KELAS & NOMOR UJIAN</th>
-                            <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">JK</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TEMPAT, TANGGAL LAHIR</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="siswa-tbody" class="bg-white divide-y divide-gray-200"></tbody>`;
-                
-                const tbody = table.querySelector('tbody');
-
-                studentsToRender.forEach((s) => {
-                    const tr = document.createElement('tr');
-                    tr.dataset.nisn = s.nisn;
-                    tr.dataset.kelas = s.kelas || 'tanpa-kelas'; 
-                    
-                    const tglLahirFormatted = s.tanggalLahir ? formatIndonesianDate(s.tanggalLahir) : '-';
-                    const tempatLahirFormatted = s.tempatLahir ? toProperCase(s.tempatLahir) : '';
-                    const ttl = s.tempatLahir ? `${tempatLahirFormatted}, ${tglLahirFormatted}` : tglLahirFormatted;
-                    
-                    // --- PERUBAHAN 2: Hapus kelas 'sticky-col' dari sel (<td>) Aksi ---
-                    tr.innerHTML = `
-                        <td class="px-4 py-4 whitespace-nowrap text-center text-gray-400 drag-handle">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block cursor-grab" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zM4 10a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1z" clip-rule="evenodd" />
-                            </svg>
-                        </td>
-                        <td class="px-4 py-4 whitespace-nowrap"><input type="checkbox" class="student-checkbox h-4 w-4 rounded border-gray-300" data-row="${s.row}" data-nisn="${s.nisn}"></td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm"><div class="font-medium text-gray-900">${s.nama.toUpperCase()}</div><div class="text-gray-500">${s.nisn}</div></td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><div>Kelas: <span class="font-medium text-gray-800">${s.kelas || '-'}</span></div><div>No. Ujian: <span class="font-mono text-gray-800">${s.nomorUjian || '-'}</span></div></td>
-                        <td class="px-3 py-4 whitespace-nowrap text-sm text-center text-gray-500">${s.jenisKelamin || '-'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ttl}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button class="text-indigo-600 hover:text-indigo-900" data-action="edit">Edit</button>
-                            <button class="text-red-600 hover:text-red-900 ml-4" data-action="delete">Hapus</button>
-                        </td>`;
-                    
-                    tr.querySelector('[data-action="edit"]').addEventListener('click', () => handleEditStudent(s));
-                    tr.querySelector('[data-action="delete"]').addEventListener('click', (e) => handleDeleteStudent(s, e.target));
-                    
-                    tbody.appendChild(tr);
-                });
-                
-                container.appendChild(table);
-                attachTableCheckboxListeners();
-                updateBulkActionBar();
-
-                new Sortable(tbody, {
-                    animation: 150,
-                    handle: '.drag-handle',
-                    ghostClass: 'ghost-row',
-                    chosenClass: 'chosen-row',
-                    onMove: function (evt) {
-                        const draggedClass = evt.dragged.dataset.kelas;
-                        const relatedClass = evt.related.dataset.kelas;
-                        return draggedClass === relatedClass;
-                    },
-                    onEnd: function() {
-                        const newOrderNisn = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.nisn);
-                        saveNewSiswaOrder(newOrderNisn);
-                    },
-                });
-            }
-
-            /**
-             * [BARU] Fungsi terpusat untuk menangani penyimpanan otomatis urutan siswa.
-             * @param {Array<string>} newOrderNisn - Daftar NISN yang sudah terurut.
-             */
-            function saveNewSiswaOrder(newOrderNisn) {
-                showGlobalStatus("Menyimpan urutan...", 'info');
-
-                google.script.run
-                    .withSuccessHandler(response => {
-                        showGlobalStatus(response.message, response.status === 'success');
-                        if (response.status === 'success' && response.updatedStudentList) {
-                            // Perbarui data global dan render ulang untuk memastikan konsistensi
-                            allStudentsData = response.updatedStudentList;
-                            renderSiswaTable(allStudentsData);
-                        } else {
-                            // Jika gagal, muat ulang dari server untuk mendapatkan state terakhir yang valid
-                            loadStudentsData();
-                        }
-                    })
-                    .withFailureHandler(err => {
-                        showGlobalStatus(`Gagal menyimpan urutan: ${err.message}`, false);
-                        // Jika gagal, muat ulang untuk mengembalikan ke state aman terakhir
-                        loadStudentsData();
-                    })
-                    .saveSiswaOrder(userSpreadsheetId, newOrderNisn);
-            }
-
-            /**
-             * [DIPERBARUI] Menyiapkan modal saat tombol 'Edit' diklik,
-             * termasuk mengisi field-field baru dan meneruskan kelas yang sudah dipilih.
-             */
-            function handleEditStudent(student) {
-                const siswaModalTitle = document.getElementById('siswa-modal-title');
-                const studentRowInput = document.getElementById('studentRow');
-                const siswaForm = document.getElementById('siswaForm');
-
-                siswaForm.reset(); 
-                document.getElementById('nisn-error-msg').textContent = '';
-
-                siswaModalTitle.textContent = "Edit Data Siswa";
-                studentRowInput.value = student.row;
-                
-                // Isi semua field dengan data siswa yang akan diedit
-                document.getElementById('nama').value = student.nama;
-                document.getElementById('nisn').value = student.nisn;
-                document.getElementById('nis').value = student.nis;
-                document.getElementById('nomorUjian').value = student.nomorUjian || '';
-                document.getElementById('jenisKelamin').value = student.jenisKelamin;
-                document.getElementById('ruangUjian').value = student.ruangUjian || '';
-                document.getElementById('tempatLahir').value = toProperCase(student.tempatLahir);
-                document.getElementById('tanggalLahir').value = student.tanggalLahir;
-                document.getElementById('alamatSiswa').value = student.alamat || '';
-                document.getElementById('teleponSiswa').value = student.telepon || '';
-                document.getElementById('emailSiswa').value = student.emailSiswa || '';
-                document.getElementById('tahunMasuk').value = student.tahunMasuk || '';
-                document.getElementById('tahunLulus').value = student.tahunLulus || '';
-
-                // [PERBAIKAN] Panggil fungsi untuk mengisi dropdown dengan menyertakan kelas siswa saat ini
-                populateKelasDropdown(student.kelas);
-
-                openSiswaModal();
-            }
-
-            /**
-             * [UX UPGRADE] Menangani aksi hapus siswa dengan konfirmasi 2 langkah
-             * dan menampilkan overlay loading dinamis.
-             */
-            function handleDeleteStudent(student, targetButton) {
-                if (targetButton.dataset.confirming) {
-                    // Tampilkan loading overlay dengan nama siswa
-                    const overlay = document.getElementById('loading-overlay');
-                    const overlayTitle = document.getElementById('overlay-title');
-                    const overlaySubtitle = document.getElementById('overlay-subtitle');
-                    overlayTitle.innerHTML = `Menghapus Data Siswa <br class="sm:hidden"> <strong class="text-red-600">"${student.nama}"</strong>`;
-                    overlaySubtitle.textContent = "Proses sedang berjalan, mohon tunggu...";
-                    overlay.classList.remove('hidden');
-                    
-                    google.script.run
-                        .withSuccessHandler(response => {
-                            overlay.classList.add('hidden');
-                            showGlobalStatus(response.message, response.status === 'success');
-                            if (response.status === 'success' && response.updatedStudentList) {
-                                syncRekapIndicator();  
-                                allStudentsData = response.updatedStudentList;
-                                renderSiswaTable(response.updatedStudentList);
-                            }
-                        })
-                        .withFailureHandler(err => {
-                            overlay.classList.add('hidden');
-                            showGlobalStatus(err.message, false);
-                        })
-                        .deleteStudent(userSpreadsheetId, student.row);
-                } else {
-                    // Logika untuk klik pertama (konfirmasi)
-                    targetButton.textContent = 'Yakin?';
-                    targetButton.dataset.confirming = true;
-                    targetButton.classList.add('text-yellow-500', 'font-bold');
-                    targetButton.classList.remove('text-red-600');
-
-                    setTimeout(() => {
-                        if (targetButton.dataset.confirming) {
-                            targetButton.textContent = 'Hapus';
-                            delete targetButton.dataset.confirming;
-                            targetButton.classList.remove('text-yellow-500', 'font-bold');
-                            targetButton.classList.add('text-red-600');
-                        }
-                    }, 3000);
-                }
             }
 
             // --- MAPEL & BOBOT FUNCTIONS ---
@@ -15440,6 +15205,311 @@
                     this.disabled = false;
                 }).savePremiumFeaturesContent(sessionStorage.getItem('userEmail'), allData);
             });
+        }
+
+        /**
+         * Menampilkan atau menyembunyikan panel tombol Simpan/Batal Urutan.
+         * @param {boolean} show - True untuk menampilkan, false untuk menyembunyikan.
+         */
+        function showSortActionBar(show) {
+            const actionBar = document.getElementById('sort-action-bar');
+            if (show) {
+                actionBar.classList.remove('hidden');
+                setTimeout(() => {
+                    actionBar.style.opacity = '1';
+                    actionBar.style.transform = 'translate(-50%, 0)';
+                }, 10);
+            } else {
+                actionBar.style.opacity = '0';
+                actionBar.style.transform = 'translate(-50%, 150%)';
+                setTimeout(() => {
+                    actionBar.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        /**
+         * Mengatur semua event listener untuk tombol Simpan dan Batal urutan.
+         */
+        function setupSortActionListeners() {
+            const saveBtn = document.getElementById('save-order-btn');
+            const cancelBtn = document.getElementById('cancel-sort-btn');
+
+            saveBtn.addEventListener('click', () => {
+                const newOrderNisn = Array.from(document.querySelector('#siswa-tbody').querySelectorAll('tr')).map(tr => tr.dataset.nisn);
+                saveNewSiswaOrder(newOrderNisn);
+                isOrderChanged = false; // Reset status perubahan
+                showSortActionBar(false); // Sembunyikan tombol setelah disimpan
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                showGlobalStatus("Perubahan urutan dibatalkan.", 'info');
+                // Urutkan kembali data siswa di memori sesuai urutan awal
+                const sortedStudents = [...allStudentsData].sort((a, b) => {
+                    return initialSiswaOrder.indexOf(a.nisn) - initialSiswaOrder.indexOf(b.nisn);
+                });
+                // Render ulang tabel dengan data yang sudah dikembalikan urutannya
+                renderSiswaTable(sortedStudents);
+                isOrderChanged = false; // Reset status perubahan
+                showSortActionBar(false); // Sembunyikan tombol
+            });
+        }
+
+        // GANTI KESELURUHAN FUNGSI renderSiswaTable DI FILE Index.html DENGAN KODE INI
+
+        function renderSiswaTable(studentsToRender) {
+            const container = document.getElementById('siswaTableContainer');
+            container.innerHTML = ''; 
+
+            if (!studentsToRender || studentsToRender.length === 0) {
+                container.innerHTML = `<p class="text-center text-gray-500 py-4">Belum ada data siswa atau data tidak ditemukan.</p>`;
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.className = 'min-w-full divide-y divide-gray-200';
+            
+            table.innerHTML = `
+                <thead class="bg-gray-50 sticky-header">
+                    <tr>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-12">URUTAN</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase"><input type="checkbox" id="select-all-students-checkbox" class="h-4 w-4 rounded border-gray-300"></th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NAMA & NISN</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KELAS & NOMOR UJIAN</th>
+                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">JK</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TEMPAT, TANGGAL LAHIR</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="siswa-tbody" class="bg-white divide-y divide-gray-200"></tbody>`;
+            
+            const tbody = table.querySelector('tbody');
+
+            studentsToRender.forEach((s) => {
+                const tr = document.createElement('tr');
+                tr.dataset.nisn = s.nisn;
+                tr.dataset.kelas = s.kelas || 'tanpa-kelas'; 
+                
+                const tglLahirFormatted = s.tanggalLahir ? formatIndonesianDate(s.tanggalLahir) : '-';
+                const tempatLahirFormatted = s.tempatLahir ? toProperCase(s.tempatLahir) : '';
+                const ttl = s.tempatLahir ? `${tempatLahirFormatted}, ${tglLahirFormatted}` : tglLahirFormatted;
+                
+                // [PERBAIKAN] Kode SVG diganti dengan karakter '+' yang lebih simpel dan andal
+                tr.innerHTML = `
+                    <td class="px-4 py-4 whitespace-nowrap text-center text-gray-500 drag-handle cursor-grab text-2xl font-light">+</td>
+                    <td class="px-4 py-4 whitespace-nowrap"><input type="checkbox" class="student-checkbox h-4 w-4 rounded border-gray-300" data-row="${s.row}" data-nisn="${s.nisn}"></td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm"><div class="font-medium text-gray-900">${s.nama.toUpperCase()}</div><div class="text-gray-500">${s.nisn}</div></td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><div>Kelas: <span class="font-medium text-gray-800">${s.kelas || '-'}</span></div><div>No. Ujian: <span class="font-mono text-gray-800">${s.nomorUjian || '-'}</span></div></td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-center text-gray-500">${s.jenisKelamin || '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ttl}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button class="text-indigo-600 hover:text-indigo-900" data-action="edit">Edit</button>
+                        <button class="text-red-600 hover:text-red-900 ml-4" data-action="delete">Hapus</button>
+                    </td>`;
+                
+                tr.querySelector('[data-action="edit"]').addEventListener('click', () => handleEditStudent(s));
+                tr.querySelector('[data-action="delete"]').addEventListener('click', (e) => handleDeleteStudent(s, e.target));
+                
+                tbody.appendChild(tr);
+            });
+            
+            container.appendChild(table);
+            attachTableCheckboxListeners();
+            updateBulkActionBar();
+
+            let originalSiswaOrder = [];
+            new Sortable(tbody, {
+                animation: 150,
+                handle: '.drag-handle',
+                ghostClass: 'ghost-row',
+                chosenClass: 'chosen-row',
+                onMove: function (evt) {
+                    const draggedClass = evt.dragged.dataset.kelas;
+                    const relatedClass = evt.related.dataset.kelas;
+                    return draggedClass === relatedClass;
+                },
+                onStart: function (evt) {
+                    if (!isOrderChanged) {
+                        originalSiswaOrder = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.nisn);
+                    }
+                },
+                onEnd: function(evt) {
+                    const currentOrder = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.nisn);
+                    if (JSON.stringify(currentOrder) !== JSON.stringify(originalSiswaOrder)) {
+                        isOrderChanged = true;
+                        showSortActionBar(true);
+                    } else {
+                        isOrderChanged = false;
+                        showSortActionBar(false);
+                    }
+                },
+            });
+        }
+
+        /**
+         * Mengirim urutan NISN yang baru ke backend untuk disimpan.
+         * Fungsi ini dipanggil oleh tombol "Simpan Urutan".
+         */
+        function saveNewSiswaOrder(newOrderNisn) {
+            showGlobalStatus("Menyimpan urutan...", 'info');
+            google.script.run
+                .withSuccessHandler(response => {
+                    showGlobalStatus(response.message, response.status === 'success');
+                    if (response.status === 'success' && response.updatedStudentList) {
+                        // Perbarui data utama dengan data terbaru dari server
+                        allStudentsData = response.updatedStudentList;
+                        // Reset status perubahan
+                        isOrderChanged = false;
+                        // Render ulang tabel sesuai filter yang sedang aktif
+                        renderFilteredStudents();
+                    } else {
+                        // Jika gagal, muat ulang semua data untuk memastikan konsistensi
+                        loadStudentsData();
+                    }
+                })
+                .withFailureHandler(err => {
+                    showGlobalStatus(`Gagal menyimpan urutan: ${err.message}`, false);
+                    loadStudentsData(); // Muat ulang semua jika terjadi error
+                })
+                .saveSiswaOrder(userSpreadsheetId, newOrderNisn);
+        }
+
+        /**
+         * [DIPERBARUI] Menyiapkan modal saat tombol 'Edit' diklik,
+         * termasuk mengisi field-field baru dan meneruskan kelas yang sudah dipilih.
+         */
+        function handleEditStudent(student) {
+            const siswaModalTitle = document.getElementById('siswa-modal-title');
+            const studentRowInput = document.getElementById('studentRow');
+            const siswaForm = document.getElementById('siswaForm');
+
+            siswaForm.reset(); 
+            document.getElementById('nisn-error-msg').textContent = '';
+
+            siswaModalTitle.textContent = "Edit Data Siswa";
+            studentRowInput.value = student.row;
+            
+            // Isi semua field dengan data siswa yang akan diedit
+            document.getElementById('nama').value = student.nama;
+            document.getElementById('nisn').value = student.nisn;
+            document.getElementById('nis').value = student.nis;
+            document.getElementById('nomorUjian').value = student.nomorUjian || '';
+            document.getElementById('jenisKelamin').value = student.jenisKelamin;
+            document.getElementById('ruangUjian').value = student.ruangUjian || '';
+            document.getElementById('tempatLahir').value = toProperCase(student.tempatLahir);
+            document.getElementById('tanggalLahir').value = student.tanggalLahir;
+            document.getElementById('alamatSiswa').value = student.alamat || '';
+            document.getElementById('teleponSiswa').value = student.telepon || '';
+            document.getElementById('emailSiswa').value = student.emailSiswa || '';
+            document.getElementById('tahunMasuk').value = student.tahunMasuk || '';
+            document.getElementById('tahunLulus').value = student.tahunLulus || '';
+
+            // [PERBAIKAN] Panggil fungsi untuk mengisi dropdown dengan menyertakan kelas siswa saat ini
+            populateKelasDropdown(student.kelas);
+
+            openSiswaModal();
+        }
+
+        /**
+         * [UX UPGRADE] Menangani aksi hapus siswa dengan konfirmasi 2 langkah
+         * dan menampilkan overlay loading dinamis.
+         */
+        function handleDeleteStudent(student, targetButton) {
+            if (targetButton.dataset.confirming) {
+                // Tampilkan loading overlay dengan nama siswa
+                const overlay = document.getElementById('loading-overlay');
+                const overlayTitle = document.getElementById('overlay-title');
+                const overlaySubtitle = document.getElementById('overlay-subtitle');
+                overlayTitle.innerHTML = `Menghapus Data Siswa <br class="sm:hidden"> <strong class="text-red-600">"${student.nama}"</strong>`;
+                overlaySubtitle.textContent = "Proses sedang berjalan, mohon tunggu...";
+                overlay.classList.remove('hidden');
+                
+                google.script.run
+                    .withSuccessHandler(response => {
+                        overlay.classList.add('hidden');
+                        showGlobalStatus(response.message, response.status === 'success');
+                        if (response.status === 'success' && response.updatedStudentList) {
+                            syncRekapIndicator();  
+                            allStudentsData = response.updatedStudentList;
+                            renderSiswaTable(response.updatedStudentList);
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        overlay.classList.add('hidden');
+                        showGlobalStatus(err.message, false);
+                    })
+                    .deleteStudent(userSpreadsheetId, student.row);
+            } else {
+                // Logika untuk klik pertama (konfirmasi)
+                targetButton.textContent = 'Yakin?';
+                targetButton.dataset.confirming = true;
+                targetButton.classList.add('text-yellow-500', 'font-bold');
+                targetButton.classList.remove('text-red-600');
+
+                setTimeout(() => {
+                    if (targetButton.dataset.confirming) {
+                        targetButton.textContent = 'Hapus';
+                        delete targetButton.dataset.confirming;
+                        targetButton.classList.remove('text-yellow-500', 'font-bold');
+                        targetButton.classList.add('text-red-600');
+                    }
+                }, 3000);
+            }
+        }
+
+        function renderFilteredStudents() {
+            let filteredStudents = [...allStudentsData];
+            
+            // Ambil nilai dari semua kontrol
+            const searchTerm = document.getElementById('searchSiswaInput').value.toLowerCase().trim();
+            const kelasFilter = document.getElementById('filter-kelas').value;
+            const ruangFilter = document.getElementById('filter-ruang').value;
+            const genderFilter = document.getElementById('filter-jenis-kelamin').value;
+            const sortValue = document.getElementById('sort-siswa').value;
+
+            // 1. Terapkan Pencarian
+            if (searchTerm) {
+                filteredStudents = filteredStudents.filter(s => 
+                    s.nama.toLowerCase().includes(searchTerm) || 
+                    s.nisn.includes(searchTerm)
+                );
+            }
+
+            // 2. Terapkan Filter
+            if (kelasFilter !== 'semua') {
+                filteredStudents = filteredStudents.filter(s => s.kelas === kelasFilter);
+            }
+            if (ruangFilter !== 'semua') {
+                filteredStudents = filteredStudents.filter(s => s.ruangUjian === ruangFilter);
+            }
+            if (genderFilter !== 'semua') {
+                filteredStudents = filteredStudents.filter(s => s.jenisKelamin === genderFilter);
+            }
+
+            // 3. Terapkan Pengurutan
+            switch (sortValue) {
+                case 'time_asc':
+                    filteredStudents.sort((a, b) => a.row - b.row);
+                    break;
+                case 'time_desc':
+                    filteredStudents.sort((a, b) => b.row - a.row);
+                    break;
+                case 'nama_az':
+                    filteredStudents.sort((a, b) => a.nama.localeCompare(b.nama));
+                    break;
+                case 'nama_za':
+                    filteredStudents.sort((a, b) => b.nama.localeCompare(a.nama));
+                    break;
+                case 'kelas_az':
+                    filteredStudents.sort((a, b) => (a.kelas || '').localeCompare(b.kelas || ''));
+                    break;
+                case 'kelas_za':
+                    filteredStudents.sort((a, b) => (b.kelas || '').localeCompare(a.kelas || ''));
+                    break;
+            }
+
+            // 4. Render tabel dengan data yang sudah siap
+            renderSiswaTable(filteredStudents);
         }
     </script>
 </body>
