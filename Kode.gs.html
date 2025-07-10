@@ -286,8 +286,11 @@ function sendVerificationEmail(email) {
 }
 
 
+// File: Kode.gs.html
+
 /**
- * [MODIFIKASI FINAL v3] Mendaftarkan pengguna baru dengan KODE SEKOLAH unik.
+ * [MODIFIKASI FINAL v3 + NOTIFIKASI EMAIL] Mendaftarkan pengguna baru dengan KODE SEKOLAH unik
+ * dan mengirimkan email konfirmasi pendaftaran.
  * @param {{email: string, password: string, namaSekolah: string, jenjang: string}} userData Objek berisi data pengguna baru.
  * @param {string} otp Kode OTP yang dimasukkan pengguna.
  * @returns {{status: string, message: string}} Objek status pendaftaran.
@@ -307,7 +310,6 @@ function registerUser(userData, otp) {
     let userSheet = ss.getSheetByName(SHEET_PENGGUNA);
     if (!userSheet) throw new Error(`Sheet '${SHEET_PENGGUNA}' tidak ditemukan.`);
     
-    // --- AWAL LOGIKA BARU: Generate Kode Sekolah Unik ---
     let schoolCode;
     let isCodeUnique = false;
     const existingCodes = userSheet.getLastRow() > 1 ? userSheet.getRange(2, 13, userSheet.getLastRow() - 1, 1).getValues().flat() : [];
@@ -318,7 +320,6 @@ function registerUser(userData, otp) {
         isCodeUnique = true;
       }
     }
-    // --- AKHIR LOGIKA BARU ---
     
     const latestVersionInfo = getAppVersionInfo();
     const latestVersion = latestVersionInfo ? latestVersionInfo.version : '';
@@ -346,12 +347,42 @@ function registerUser(userData, otp) {
     const hashedPassword = hashPassword(password, salt);
     const storedPasswordString = `${salt}:${hashedPassword}`;
 
-    // ===== PERUBAHAN UTAMA DI SINI (13 KOLOM) =====
     userSheet.appendRow([
         userId, email, storedPasswordString, namaSekolah, jenjang, newSpreadsheetId,
         'Pengguna', 'Aktif', defaultLimit, latestVersion, '', '', schoolCode, '', 'YA'
     ]);
     
+    // ===== AWAL BLOK KODE BARU UNTUK NOTIFIKASI EMAIL =====
+    try {
+      const subject = "Pendaftaran Akun Aplikasi Ijazah Berhasil!";
+      const body = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+          <h2>Selamat Datang di Aplikasi Pengolahan Nilai Ijazah!</h2>
+          <p>Halo <strong>${namaSekolah}</strong>,</p>
+          <p>Akun Anda telah berhasil dibuat. Berikut adalah detail informasi login Anda. Harap simpan informasi ini di tempat yang aman:</p>
+          <div style="background-color: #f9f9f9; border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+            <p style="margin: 5px 0;"><strong>Password:</strong> ${password}</p>
+          </div>
+          <p>Anda dapat mulai menggunakan aplikasi dengan mengunjungi link di bawah ini.</p>
+          <p><a href="${ScriptApp.getService().getUrl()}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 5px;">Buka Aplikasi</a></p>
+          <br>
+          <p>Terima kasih,</p>
+          <p>Tim Aplikasi</p>
+        </div>
+      `;
+      MailApp.sendEmail({
+        to: email,
+        subject: subject,
+        htmlBody: body
+      });
+      Logger.log("Email konfirmasi pendaftaran berhasil dikirim ke: " + email);
+    } catch (e) {
+      // Mencatat log jika email gagal terkirim, namun tidak menghentikan proses pendaftaran utama.
+      Logger.log("Gagal mengirim email konfirmasi pendaftaran ke " + email + ". Error: " + e.message);
+    }
+    // ===== AKHIR BLOK KODE BARU =====
+
     CacheService.getScriptCache().remove(email.toLowerCase());
     lock.releaseLock();
     return { status: "success", message: "Pendaftaran berhasil! Akun dan database sekolah Anda telah dibuat." };
