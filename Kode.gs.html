@@ -9972,3 +9972,149 @@ function isSubmissionFullyApproved(spreadsheetId, submissionId) {
     return false; // Anggap tidak disetujui jika terjadi error
   }
 }
+
+/**
+ * [BARU] Mengambil konten untuk halaman Bantuan & Panduan dari sheet.
+ * @returns {Array<object>} Array objek berisi data bantuan, diurutkan berdasarkan ID.
+ */
+function getHelpContent() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("KontenBantuan"); // Nama sheet yang baru dibuat
+    if (!sheet || sheet.getLastRow() < 2) {
+      return []; // Kembalikan array kosong jika sheet tidak ada atau kosong
+    }
+
+    // Ambil semua data dari baris ke-2 hingga baris terakhir
+    const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 5).getValues();
+
+    const helpItems = data
+      .map(row => ({
+        id: row[0],
+        judul: row[1],
+        deskripsi: row[2],
+        konten: row[3],
+        gambarUrl: row[4]
+      }))
+      .filter(item => item.id && item.judul); // Hanya ambil baris yang memiliki ID dan Judul
+
+    // Urutkan berdasarkan kolom ID (kolom pertama)
+    helpItems.sort((a, b) => a.id - b.id);
+
+    return helpItems;
+  } catch (e) {
+    Logger.log("getHelpContent Error: " + e.message);
+    return []; // Kembalikan array kosong jika terjadi error
+  }
+}
+
+/**
+ * [BARU] Mengambil konten untuk daftar Fitur Premium dari sheet.
+ * @returns {Array<object>} Array objek berisi data fitur, diurutkan berdasarkan ID.
+ */
+function getPremiumFeaturesContent() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    // Pastikan nama sheet ini sama persis dengan yang Anda buat
+    const sheet = ss.getSheetByName("KontenFiturPremium"); 
+    if (!sheet || sheet.getLastRow() < 2) {
+      return [];
+    }
+
+    // Ambil semua data dari baris ke-2 hingga baris terakhir, dari kolom A hingga D
+    const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 4).getValues();
+
+    const featureItems = data
+      .map(row => ({
+        id: row[0],
+        judul: row[1],
+        deskripsi: row[2],
+        gambarUrl: row[3]
+      }))
+      .filter(item => item.id && item.judul); // Hanya ambil baris yang valid
+
+    // Urutkan berdasarkan kolom ID
+    featureItems.sort((a, b) => a.id - b.id);
+
+    return featureItems;
+  } catch (e) {
+    Logger.log("getPremiumFeaturesContent Error: " + e.message);
+    // Jika error, kembalikan array kosong agar aplikasi tidak rusak
+    return []; 
+  }
+}
+
+/**
+ * [SUPERADMIN] Menyimpan atau memperbarui seluruh konten Bantuan & Panduan.
+ * @param {string} adminEmail - Email Superadmin untuk verifikasi.
+ * @param {Array<object>} allHelpData - Array berisi seluruh objek data bantuan dari frontend.
+ * @returns {object} Status penyimpanan.
+ */
+function saveHelpContent(adminEmail, allHelpData) {
+  if (!isSuperadmin(adminEmail)) {
+    return { status: "error", message: "Akses ditolak." };
+  }
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("KontenBantuan");
+
+    // Hapus semua data lama (dari baris 2 ke bawah)
+    if (sheet.getLastRow() > 1) {
+      sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
+    }
+
+    if (allHelpData && allHelpData.length > 0) {
+      const rowsToWrite = allHelpData.map(item => [
+        item.id,
+        item.judul,
+        item.deskripsi,
+        item.konten,
+        item.gambarUrl
+      ]);
+      // Tulis semua data baru dalam satu operasi
+      sheet.getRange(2, 1, rowsToWrite.length, rowsToWrite[0].length).setValues(rowsToWrite);
+    }
+
+    return { status: "success", message: "Konten Bantuan & Panduan berhasil diperbarui." };
+  } catch (e) {
+    Logger.log("saveHelpContent Error: " + e.message);
+    return { status: "error", message: "Gagal menyimpan konten bantuan: " + e.message };
+  }
+}
+
+/**
+ * [SUPERADMIN] Menyimpan atau memperbarui seluruh konten Fitur Premium.
+ * @param {string} adminEmail - Email Superadmin untuk verifikasi.
+ * @param {Array<object>} allFeaturesData - Array berisi seluruh objek data fitur dari frontend.
+ * @returns {object} Status penyimpanan.
+ */
+function savePremiumFeaturesContent(adminEmail, allFeaturesData) {
+  if (!isSuperadmin(adminEmail)) {
+    return { status: "error", message: "Akses ditolak." };
+  }
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("KontenFiturPremium");
+
+    // Hapus data lama
+    if (sheet.getLastRow() > 1) {
+      sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
+    }
+
+    if (allFeaturesData && allFeaturesData.length > 0) {
+      const rowsToWrite = allFeaturesData.map(item => [
+        item.id,
+        item.judul,
+        item.deskripsi,
+        item.gambarUrl
+      ]);
+      // Tulis data baru
+      sheet.getRange(2, 1, rowsToWrite.length, rowsToWrite[0].length).setValues(rowsToWrite);
+    }
+
+    return { status: "success", message: "Konten Fitur Premium berhasil diperbarui." };
+  } catch (e) {
+    Logger.log("savePremiumFeaturesContent Error: " + e.message);
+    return { status: "error", message: "Gagal menyimpan konten fitur: " + e.message };
+  }
+}
