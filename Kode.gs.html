@@ -7327,85 +7327,131 @@ function cancelDonation_User(donationId, userEmail) {
 // ===== AKHIR KODE FITUR LOCK & DONASI =====
 
 /**
- * [BARU] Memulai proses pengarsipan tahunan.
+ * [MODIFIKASI FINAL v2.3] Memproses kelulusan dan pengarsipan untuk kelas yang dipilih.
+ * Memperbaiki metode penyalinan data antar-spreadsheet untuk mengatasi error 'copyTo'.
  * @param {string} spreadsheetId ID spreadsheet pengguna.
  * @param {string} userEmail Email pengguna untuk pengiriman notifikasi.
+ * @param {Array<string>} selectedKelasList Daftar kelas yang akan diluluskan.
  * @returns {object} Hasil dari proses pengarsipan.
  */
-function prosesArsipTahunan(spreadsheetId, userEmail) {
+function prosesKelulusan(spreadsheetId, userEmail, selectedKelasList) {
+  if (!selectedKelasList || selectedKelasList.length === 0) {
+    return { status: 'error', message: 'Tidak ada kelas yang dipilih untuk diluluskan.' };
+  }
+
   const FOLDER_ARSIP_NAME = "Arsip Aplikasi Ijazah";
   const now = new Date();
   const timestamp = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM-dd");
+  let archiveFile = null;
 
   try {
     const ss = SpreadsheetApp.openById(spreadsheetId);
     const schoolName = ss.getSheetByName(SHEET_DATA_SEKOLAH).getRange("B2").getValue() || "Data Sekolah";
-    const archiveFileName = `[ARSIP ${timestamp}] - ${schoolName}`;
+    const archiveFileName = `[ARSIP KELAS ${selectedKelasList.join(', ')} ${timestamp}] - ${schoolName}`;
 
-    // 1. Dapatkan folder induk dari spreadsheet pengguna
+    const archiveSs = SpreadsheetApp.create(archiveFileName);
+    archiveFile = DriveApp.getFileById(archiveSs.getId());
+    const defaultSheet = archiveSs.getSheets()[0];
+
     const fileInduk = DriveApp.getFileById(spreadsheetId);
     const folderInduk = fileInduk.getParents().next();
-
-    // 2. Cari atau buat folder "Arsip Aplikasi Ijazah"
     let folderArsip = folderInduk.getFoldersByName(FOLDER_ARSIP_NAME);
-    if (folderArsip.hasNext()) {
-      folderArsip = folderArsip.next();
-    } else {
-      folderArsip = folderInduk.createFolder(FOLDER_ARSIP_NAME);
-    }
+    folderArsip = folderArsip.hasNext() ? folderArsip.next() : folderInduk.createFolder(FOLDER_ARSIP_NAME);
+    archiveFile.moveTo(folderArsip);
 
-    // 3. Salin spreadsheet saat ini sebagai file arsip
-    const fileArsip = fileInduk.makeCopy(archiveFileName, folderArsip);
-    const urlArsip = fileArsip.getUrl();
+    const allStudents = getStudents(spreadsheetId);
+    const graduatingStudentsNisns = new Set(
+      allStudents.filter(s => selectedKelasList.includes(s.kelas)).map(s => s.nisn)
+    );
 
-    // ==========================================================
-    // === PERUBAHAN UTAMA ADA DI SINI ===
-    // Menambahkan pengguna sebagai editor pada file arsip yang baru dibuat.
-    fileArsip.addEditor(userEmail);
-    // ==========================================================
+    const liveSheets = ss.getSheets();
+    liveSheets.forEach(liveSheet => {
+      const sheetName = liveSheet.getName();
+      const newSheet = archiveSs.insertSheet(sheetName);
+      const lastRow = liveSheet.getLastRow();
+      if (lastRow === 0) return;
 
-    // 4. Kirim email notifikasi ke pengguna dengan link file arsip
-    const subject = `Arsip Tahunan Aplikasi Ijazah Telah Selesai`;
-    const body = `
-      <p>Halo,</p>
-      <p>Proses pengarsipan data untuk sekolah <b>${schoolName}</b> telah berhasil diselesaikan pada ${now.toLocaleString('id-ID')}.</p>
-      <p>File arsip Anda dapat diakses melalui link berikut:</p>
-      <p><a href="${urlArsip}" style="font-size: 16px; font-weight: bold;">Buka File Arsip</a></p>
-      <p>Data pada aplikasi utama Anda telah dibersihkan untuk tahun ajaran berikutnya. Harap simpan email ini dengan baik.</p>
-      <br>
-      <p>Terima kasih.</p>
-    `;
-    MailApp.sendEmail(userEmail, subject, "", { htmlBody: body });
+      // === AWAL PERBAIKAN UTAMA ===
+      // Baca header dari sheet lama
+      const headerRange = liveSheet.getRange(1, 1, 1, liveSheet.getLastColumn());
+      const headerValues = headerRange.getValues();
+      // Tulis header ke sheet baru
+      newSheet.getRange(1, 1, 1, headerValues[0].length).setValues(headerValues).setFontWeight('bold');
+      // === AKHIR PERBAIKAN UTAMA ===
 
-    // 5. Bersihkan data di spreadsheet utama (LIVE)
-    const sheetsToClear = [
-      SHEET_DATA_SISWA, SHEET_NILAI_UJIAN_MADRASAH, SHEET_NILAI_UJIAN_PRAKTEK,
-      SHEET_REKAP_UJIAN, SHEET_REKAP_RAPOR, SHEET_REKAP_IJAZAH
-      // Tambahkan sheet nilai rapor per semester jika perlu
-    ];
-    
-    // Logika untuk membersihkan sheet rapor per semester
-    const jenjang = ss.getSheetByName(SHEET_DATA_SEKOLAH).getRange("A2").getValue();
-    const semesterKeys = { MI: ['k4_ganjil', 'k4_genap', 'k5_ganjil', 'k5_genap', 'k6_ganjil'], MTS: ['k7_ganjil', 'k7_genap', 'k8_ganjil', 'k8_genap', 'k9_ganjil'], MA: ['k10_ganjil', 'k10_genap', 'k11_ganjil', 'k11_genap', 'k12_ganjil'] };
-    if (semesterKeys[jenjang]) {
-        semesterKeys[jenjang].forEach(key => {
-            sheetsToClear.push(`Rapor_Pengetahuan_${key}`);
-            sheetsToClear.push(`Rapor_Keterampilan_${key}`);
-        });
-    }
+      if (lastRow > 1) {
+        const dataRange = liveSheet.getRange(2, 1, lastRow - 1, liveSheet.getLastColumn());
+        const values = dataRange.getDisplayValues();
+        let filteredValues;
 
-    sheetsToClear.forEach(sheetName => {
-      const sheet = ss.getSheetByName(sheetName);
-      if (sheet && sheet.getLastRow() > 1) {
-        sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
+        if (sheetName === SHEET_DATA_GURU) {
+          filteredValues = values.map(row => {
+            let newRow = [...row];
+            newRow[1] = '******';
+            newRow[2] = '******';
+            return newRow;
+          });
+        } else {
+          const isStudentDataSheet = sheetName.startsWith('Rapor_') || 
+                                     [SHEET_DATA_SISWA, SHEET_NILAI_UJIAN_MADRASAH, SHEET_NILAI_UJIAN_PRAKTEK, 
+                                      SHEET_REKAP_UJIAN, SHEET_REKAP_RAPOR, SHEET_REKAP_IJAZAH].includes(sheetName);
+          
+          if (isStudentDataSheet) {
+            filteredValues = values.filter(row => graduatingStudentsNisns.has(row[0]));
+          } else {
+            filteredValues = values;
+          }
+        }
+
+        if (filteredValues && filteredValues.length > 0) {
+          newSheet.getRange(2, 1, filteredValues.length, filteredValues[0].length).setValues(filteredValues);
+        }
       }
     });
 
-    return { status: 'success', message: 'Proses arsip berhasil! File telah disimpan di Google Drive dan link dikirim ke email Anda. Data di aplikasi telah dibersihkan.', fileUrl: urlArsip };
+    archiveSs.deleteSheet(defaultSheet);
+
+    const allSheetsLive = ss.getSheets();
+    allSheetsLive.forEach(sheet => {
+      const sheetName = sheet.getName();
+      const isStudentDataSheet = sheetName.startsWith('Rapor_') || 
+                                 [SHEET_DATA_SISWA, SHEET_NILAI_UJIAN_MADRASAH, SHEET_NILAI_UJIAN_PRAKTEK, 
+                                  SHEET_REKAP_UJIAN, SHEET_REKAP_RAPOR, SHEET_REKAP_IJAZAH].includes(sheetName);
+
+      if (isStudentDataSheet && sheet.getLastRow() > 1) {
+        const values = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getDisplayValues();
+        const rowsToDelete = [];
+        values.forEach((row, index) => {
+          if (graduatingStudentsNisns.has(row[0])) {
+            rowsToDelete.push(index + 2);
+          }
+        });
+        for (let i = rowsToDelete.length - 1; i >= 0; i--) {
+          sheet.deleteRow(rowsToDelete[i]);
+        }
+      }
+    });
+
+    const urlArsip = archiveSs.getUrl();
+    archiveFile.addEditor(userEmail);
+
+    const subject = `Proses Kelulusan Aplikasi Ijazah Telah Selesai`;
+    const body = `<p>Halo,</p>
+      <p>Proses kelulusan dan pengarsipan data untuk kelas <b>${selectedKelasList.join(', ')}</b> dari sekolah <b>${schoolName}</b> telah berhasil.</p>
+      <p>File arsip Anda dapat diakses melalui link berikut:</p>
+      <p><a href="${urlArsip}" style="font-size: 16px; font-weight: bold;">Buka File Arsip</a></p>
+      <p>Data siswa dari kelas tersebut telah dihapus dari aplikasi utama Anda. Harap simpan email ini dengan baik.</p>
+      <br><p>Terima kasih.</p>`;
+    MailApp.sendEmail(userEmail, subject, "", { htmlBody: body });
+
+    return { status: 'success', message: 'Proses kelulusan & arsip berhasil! File telah disimpan dan link dikirim ke email Anda.', fileUrl: urlArsip };
 
   } catch (e) {
-    Logger.log(`Proses Arsip Gagal: ${e.toString()}`);
-    return { status: 'error', message: `Terjadi kesalahan saat proses pengarsipan: ${e.message}` };
+    Logger.log(`Proses Kelulusan Gagal: ${e.toString()}`);
+    if (archiveFile) {
+        try { DriveApp.getFileById(archiveFile.getId()).setTrashed(true); } catch (delErr) {}
+    }
+    return { status: 'error', message: `Terjadi kesalahan saat proses kelulusan: ${e.message}` };
   }
 }
 
@@ -10149,5 +10195,25 @@ function savePremiumFeaturesContent(adminEmail, allFeaturesData) {
   } catch (e) {
     Logger.log("savePremiumFeaturesContent Error: " + e.message);
     return { status: "error", message: "Gagal menyimpan konten fitur: " + e.message };
+  }
+}
+
+/**
+ * [BARU] Mengambil daftar unik nama kelas dari sheet Data Siswa.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {Array<string>} Array berisi nama-nama kelas yang unik dan sudah diurutkan.
+ */
+function getUniqueKelasList(spreadsheetId) {
+  try {
+    const students = getStudents(spreadsheetId);
+    if (!students || students.length === 0) {
+      return [];
+    }
+    // Gunakan Set untuk mendapatkan nilai unik, filter string kosong, lalu urutkan
+    const uniqueKelas = [...new Set(students.map(s => s.kelas).filter(Boolean))].sort();
+    return uniqueKelas;
+  } catch (e) {
+    Logger.log(`getUniqueKelasList Error: ${e.message}`);
+    return []; // Kembalikan array kosong jika terjadi error
   }
 }
