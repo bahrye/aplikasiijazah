@@ -651,6 +651,22 @@
         .drag-handle:active {
             cursor: grabbing;
         }
+
+        /* ===== AWAL KODE BARU (Animasi Spinner Overlay) ===== */
+        .loading-spinner-overlay {
+            border: 6px solid #e5e7eb; /* Warna abu-abu muda (track) */
+            border-top: 6px solid #3b82f6; /* Warna biru (bagian yang berputar) */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* ===== AKHIR KODE BARU ===== */
     </style>
 </head>
 <body class="bg-gray-100">
@@ -3496,10 +3512,11 @@
     <div id="globalStatusMessage"></div>
 
     <div id="loading-overlay" class="hidden fixed inset-0 bg-white bg-opacity-90 flex flex-col items-center justify-center text-center z-[9999] p-4">
-      <h2 id="overlay-title" class="text-2xl font-bold text-gray-800">Memproses Permintaan Anda</h2>
-      <p id="overlay-subtitle" class="mt-2 text-gray-600">Mohon tunggu dan jangan menutup jendela ini...</p>
-      
-      <div id="overlay-button-container" class="mt-6"></div>
+        <div class="loading-spinner-overlay mb-4"></div>
+        
+        <h2 id="overlay-title" class="text-2xl font-bold text-gray-800">Memproses Permintaan Anda</h2>
+        <p id="overlay-subtitle" class="mt-2 text-gray-600">Mohon tunggu dan jangan menutup jendela ini...</p>
+        <div id="overlay-button-container" class="mt-6"></div>
     </div>
 
     <!-- Tambahkan library Chart.js di dalam <head> -->
@@ -3555,6 +3572,7 @@
         let originalSiswaOrder = [];
         let initialSiswaOrder = [];
         let isOrderChanged = false;
+        let isUploadCancelled = false;
 
         // [TAMBAHKAN] Inisialisasi Dropzone.js (letakan di scope global)
         let nilaiDropzone;
@@ -11878,7 +11896,7 @@
                 url: "#", autoProcessQueue: false, maxFiles: 1, acceptedFiles: '.xlsx, .xls',
                 init: function() {
                     this.on("addedfile", function(file) {
-                        // [MODIFIKASI] Panggil handleFileUpload TANPA mengirim filter kelas
+                        // Panggil fungsi handleFileUpload yang sudah diperbarui
                         handleFileUpload(file, this, form.dataset.uploadType);
                     });
                 }
@@ -11898,39 +11916,80 @@
         }
 
         /**
-         * [DIPERBAIKI] Menangani upload file TANPA filter kelas dari frontend.
+         * [DIPERBARUI DENGAN TOMBOL BATAL] Menangani upload file, menampilkan overlay,
+         * dan memberikan opsi untuk membatalkan proses.
          */
         function handleFileUpload(file, dropzoneInstance, uploadType) {
+            // 1. Reset status pembatalan setiap kali upload baru dimulai
+            isUploadCancelled = false; 
+
             const reader = new FileReader();
             const overlay = document.getElementById('loading-overlay');
+            const overlayTitle = overlay.querySelector('#overlay-title');
+            const overlaySubtitle = overlay.querySelector('#overlay-subtitle');
+            const buttonContainer = overlay.querySelector('#overlay-button-container');
+
+            // 2. Siapkan dan tampilkan overlay
+            overlayTitle.textContent = 'Mengimpor Nilai dari Excel...';
+            overlaySubtitle.textContent = 'Proses sedang berjalan. Jika salah file, Anda dapat membatalkannya.';
+
+            // 3. Buat dan tambahkan tombol "Batal"
+            buttonContainer.innerHTML = `
+                <button id="cancel-upload-btn" class="mt-4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                    Batal
+                </button>
+            `;
+
             overlay.classList.remove('hidden');
 
+            // 4. Tambahkan event listener untuk tombol "Batal"
+            document.getElementById('cancel-upload-btn').onclick = () => {
+                isUploadCancelled = true; // Set flag pembatalan
+                overlay.classList.add('hidden'); // Sembunyikan overlay
+                dropzoneInstance.removeAllFiles(true); // Hapus file dari antrian dropzone
+                showGlobalStatus('Proses impor dibatalkan oleh pengguna.', 'info'); // Beri notifikasi
+            };
+
             reader.onload = (e) => {
+                // Jika pengguna sudah membatalkan sebelum file selesai dibaca, hentikan proses
+                if (isUploadCancelled) return;
+
                 const fileData = {
                     fileName: file.name,
                     mimeType: file.type,
                     content: e.target.result.split(',')[1]
                 };
+
                 dropzoneInstance.emit("processing", file);
+
                 google.script.run
                     .withSuccessHandler(response => {
+                        // 5. Cek apakah proses dibatalkan sebelum menampilkan hasil
+                        if (isUploadCancelled) {
+                            console.log("Upload berhasil di server, tetapi dibatalkan di frontend.");
+                            return; // Jangan lakukan apa-apa
+                        }
+
                         overlay.classList.add('hidden');
                         if (response.status === 'success') {
                             dropzoneInstance.emit("success", file);
                             showGlobalStatus(response.message, true);
                             syncRekapIndicator();
-                            setTimeout(closeUploadModal, 1500); 
+                            setTimeout(closeUploadModal, 1500);
                         } else {
                             dropzoneInstance.emit("error", file, response.message);
                             showGlobalStatus(`Gagal: ${response.message}`, false);
                         }
                     })
                     .withFailureHandler(error => {
+                        if (isUploadCancelled) {
+                            console.log("Terjadi error di server, tetapi proses sudah dibatalkan di frontend.");
+                            return;
+                        }
                         overlay.classList.add('hidden');
                         dropzoneInstance.emit("error", file, error.message);
                         showGlobalStatus(`Error: ${error.message}`, false);
                     })
-                    // [MODIFIKASI] Panggil backend TANPA menyertakan 'selectedKelas'
                     .uploadNilaiFromExcel(userSpreadsheetId, fileData, uploadType);
             };
             reader.readAsDataURL(file);
