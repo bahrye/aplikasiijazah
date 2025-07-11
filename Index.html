@@ -3418,6 +3418,35 @@
         </div>
     </div>
 
+    <div id="nilai-conflict-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-[60]">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-4xl transform scale-95 flex flex-col max-h-[90vh]">
+            <div class="flex-shrink-0 flex justify-between items-center border-b p-6">
+                <h2 class="text-2xl font-bold text-gray-800">Tinjau Konflik Data Nilai</h2>
+                <button id="closeNilaiConflictModalBtn" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div id="nilai-conflict-summary" class="p-6 text-sm"></div>
+            <div class="flex-grow overflow-y-auto px-6 custom-scrollbar">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-100 sticky top-0">
+                        <tr>
+                            <th class="p-2 w-10"><input type="checkbox" id="selectAllNilaiConflicts"></th>
+                            <th class="p-2 text-left">Siswa</th>
+                            <th class="p-2 text-left">Mapel</th>
+                            <th class="p-2 text-center">Nilai Lama</th>
+                            <th class="p-2 text-center">Nilai Baru</th>
+                        </tr>
+                    </thead>
+                    <tbody id="nilai-conflict-tbody" class="divide-y">
+                        </tbody>
+                </table>
+            </div>
+            <div class="flex-shrink-0 mt-auto p-6 border-t flex justify-end gap-3">
+                <button id="cancelNilaiUpdateBtn" class="bg-gray-300 text-gray-700 py-2 px-6 rounded-md hover:bg-gray-400">Batal</button>
+                <button id="updateSelectedNilaiBtn" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700">Update yang Dipilih</button>
+            </div>
+        </div>
+    </div>
+
     <div id="image-viewer-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[100] p-4 cursor-pointer">
         <button id="close-image-viewer" class="absolute top-4 right-5 text-white text-5xl font-bold hover:text-gray-300">&times;</button>
         <img id="fullscreen-image" src="" alt="Tampilan Fitur Penuh" class="max-w-full max-h-full object-contain rounded-lg">
@@ -11963,42 +11992,29 @@
         }
 
         /**
-         * [DIPERBARUI DENGAN TOMBOL BATAL] Menangani upload file, menampilkan overlay,
-         * dan memberikan opsi untuk membatalkan proses.
+         * [MODIFIKASI] Menangani upload file nilai, kini dengan deteksi dan penanganan konflik.
          */
         function handleFileUpload(file, dropzoneInstance, uploadType) {
-            // 1. Reset status pembatalan setiap kali upload baru dimulai
-            isUploadCancelled = false; 
-
+            isUploadCancelled = false;
             const reader = new FileReader();
             const overlay = document.getElementById('loading-overlay');
             const overlayTitle = overlay.querySelector('#overlay-title');
             const overlaySubtitle = overlay.querySelector('#overlay-subtitle');
             const buttonContainer = overlay.querySelector('#overlay-button-container');
 
-            // 2. Siapkan dan tampilkan overlay
             overlayTitle.textContent = 'Mengimpor Nilai dari Excel...';
             overlaySubtitle.textContent = 'Proses sedang berjalan. Jika salah file, Anda dapat membatalkannya.';
-
-            // 3. Buat dan tambahkan tombol "Batal"
-            buttonContainer.innerHTML = `
-                <button id="cancel-upload-btn" class="mt-4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">
-                    Batal
-                </button>
-            `;
-
+            buttonContainer.innerHTML = `<button id="cancel-upload-btn" class="mt-4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Batal</button>`;
             overlay.classList.remove('hidden');
 
-            // 4. Tambahkan event listener untuk tombol "Batal"
             document.getElementById('cancel-upload-btn').onclick = () => {
-                isUploadCancelled = true; // Set flag pembatalan
-                overlay.classList.add('hidden'); // Sembunyikan overlay
-                dropzoneInstance.removeAllFiles(true); // Hapus file dari antrian dropzone
-                showGlobalStatus('Proses impor dibatalkan oleh pengguna.', 'info'); // Beri notifikasi
+                isUploadCancelled = true;
+                overlay.classList.add('hidden');
+                dropzoneInstance.removeAllFiles(true);
+                showGlobalStatus('Proses impor dibatalkan oleh pengguna.', 'info');
             };
 
             reader.onload = (e) => {
-                // Jika pengguna sudah membatalkan sebelum file selesai dibaca, hentikan proses
                 if (isUploadCancelled) return;
 
                 const fileData = {
@@ -12007,37 +12023,40 @@
                     content: e.target.result.split(',')[1]
                 };
 
+                const selectedKelas = document.getElementById('upload-kelas-filter').value;
                 dropzoneInstance.emit("processing", file);
 
                 google.script.run
                     .withSuccessHandler(response => {
-                        // 5. Cek apakah proses dibatalkan sebelum menampilkan hasil
-                        if (isUploadCancelled) {
-                            console.log("Upload berhasil di server, tetapi dibatalkan di frontend.");
-                            return; // Jangan lakukan apa-apa
-                        }
-
+                        if (isUploadCancelled) return;
                         overlay.classList.add('hidden');
-                        if (response.status === 'success') {
-                            dropzoneInstance.emit("success", file);
-                            showGlobalStatus(response.message, true);
-                            syncRekapIndicator();
-                            setTimeout(closeUploadModal, 1500);
-                        } else {
+
+                        if (response.status === 'error') {
                             dropzoneInstance.emit("error", file, response.message);
                             showGlobalStatus(`Gagal: ${response.message}`, false);
-                        }
-                    })
-                    .withFailureHandler(error => {
-                        if (isUploadCancelled) {
-                            console.log("Terjadi error di server, tetapi proses sudah dibatalkan di frontend.");
                             return;
                         }
-                        overlay.classList.add('hidden');
-                        dropzoneInstance.emit("error", file, error.message);
-                        showGlobalStatus(`Error: ${error.message}`, false);
+
+                        // === LOGIKA BARU UNTUK KONFLIK ===
+                        if (response.conflicts && response.conflicts.length > 0) {
+                            showGlobalStatus(`Ditemukan ${response.conflicts.length} konflik nilai. Harap tinjau.`, 'info');
+                            displayNilaiConflictModal(response.conflicts);
+                            closeUploadModal();
+                        } else {
+                            const message = `Impor Selesai. ${response.newValuesCount || 0} nilai baru ditambahkan, ${response.skippedCount || 0} dilewati (identik/invalid).`;
+                            showGlobalStatus(message, true);
+                            syncRekapIndicator();
+                            setTimeout(closeUploadModal, 1500);
+                        }
+                        dropzoneInstance.emit("success", file);
                     })
-                    .uploadNilaiFromExcel(userSpreadsheetId, fileData, uploadType);
+                    .withFailureHandler(err => {
+                        if (isUploadCancelled) return;
+                        overlay.classList.add('hidden');
+                        dropzoneInstance.emit("error", file, err.message);
+                        showGlobalStatus(`Error: ${err.message}`, false);
+                    })
+                    .uploadNilaiFromExcel(userSpreadsheetId, fileData, uploadType, selectedKelas);
             };
             reader.readAsDataURL(file);
         }
@@ -15955,6 +15974,119 @@
 
             poll(); // Jalankan sekali saat pertama kali
             approvalPollingInterval = setInterval(poll, 15000); // Polling setiap 15 detik
+        }
+
+        /**
+         * [MODIFIKASI] Menampilkan modal resolusi konflik nilai dengan format mapel yang lebih deskriptif.
+         * @param {Array<object>} conflicts - Array objek konflik dari server.
+         */
+        function displayNilaiConflictModal(conflicts) {
+            const modal = document.getElementById('nilai-conflict-modal');
+            const tbody = document.getElementById('nilai-conflict-tbody');
+            const summaryDiv = document.getElementById('nilai-conflict-summary');
+            tbody.innerHTML = ''; // Kosongkan tabel sebelum diisi
+
+            summaryDiv.innerHTML = `Ditemukan <strong>${conflicts.length}</strong> nilai yang berbeda antara file Excel dan data yang ada di sistem. Silakan pilih nilai yang ingin Anda perbarui ke versi baru.`;
+
+            conflicts.forEach((conflict, index) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50';
+                
+                // ===== PERUBAHAN UTAMA ADA DI SINI =====
+                // Memanggil fungsi helper baru untuk mendapatkan label yang deskriptif
+                const assessmentTypeLabel = formatConflictType(conflict.sheetName);
+                const fullMapelDescription = `${conflict.mapelKode} - ${assessmentTypeLabel}`;
+                // =======================================
+
+                tr.innerHTML = `
+                    <td class="p-2 text-center"><input type="checkbox" class="nilai-conflict-checkbox h-4 w-4" data-index="${index}"></td>
+                    <td class="p-2">
+                        <div class="font-medium">${conflict.namaSiswa}</div>
+                        <div class="text-xs text-gray-500">${conflict.nisn}</div>
+                    </td>
+                    <td class="p-2 font-mono">${fullMapelDescription}</td> <td class="p-2 text-center text-red-600">${conflict.oldValue}</td>
+                    <td class="p-2 text-center text-green-600 font-bold">${conflict.newValue}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.querySelector('.modal-content').style.transform = 'scale(1)', 10);
+
+            // --- Pasang Event Listener untuk Tombol Modal (tidak ada perubahan di bagian ini) ---
+            const closeModal = () => {
+                modal.querySelector('.modal-content').style.transform = 'scale(0.95)';
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            };
+
+            document.getElementById('closeNilaiConflictModalBtn').onclick = closeModal;
+            document.getElementById('cancelNilaiUpdateBtn').onclick = closeModal;
+
+            document.getElementById('selectAllNilaiConflicts').onchange = (e) => {
+                tbody.querySelectorAll('.nilai-conflict-checkbox').forEach(cb => cb.checked = e.target.checked);
+            };
+
+            document.getElementById('updateSelectedNilaiBtn').onclick = () => {
+                const selectedUpdates = [];
+                tbody.querySelectorAll('.nilai-conflict-checkbox:checked').forEach(cb => {
+                    selectedUpdates.push(conflicts[cb.dataset.index]);
+                });
+
+                if (selectedUpdates.length === 0) {
+                    showGlobalStatus("Tidak ada nilai yang dipilih untuk diupdate.", false);
+                    return;
+                }
+
+                handleBatchNilaiUpdate(selectedUpdates, closeModal);
+            };
+        }
+
+        /**
+         * [BARU] Mengirim data nilai yang dipilih untuk diupdate ke backend.
+         * @param {Array<object>} updatesToPerform - Array objek nilai yang akan diupdate.
+         * @param {function} closeModalCallback - Fungsi untuk menutup modal setelah selesai.
+         */
+        function handleBatchNilaiUpdate(updatesToPerform, closeModalCallback) {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.querySelector('#overlay-title').textContent = `Mengupdate ${updatesToPerform.length} nilai...`;
+            overlay.classList.remove('hidden');
+
+            google.script.run
+                .withSuccessHandler(response => {
+                    overlay.classList.add('hidden');
+                    showGlobalStatus(response.message, response.status === 'success');
+                    if (response.status === 'success') {
+                        syncRekapIndicator();
+                        closeModalCallback();
+                    }
+                })
+                .withFailureHandler(err => {
+                    overlay.classList.add('hidden');
+                    showGlobalStatus(`Gagal update: ${err.message}`, false);
+                })
+                .batchUpdateNilai(userSpreadsheetId, updatesToPerform);
+        }
+
+        /**
+         * [BARU] Memformat nama sheet teknis menjadi label yang mudah dibaca untuk modal konflik.
+         * @param {string} sheetName - Nama sheet teknis dari backend.
+         * @returns {string} Label yang sudah diformat.
+         */
+        function formatConflictType(sheetName) {
+            if (sheetName.includes('Ujian Madrasah')) {
+                return 'UM';
+            }
+            if (sheetName.includes('Ujian Praktek')) {
+                return 'UPr';
+            }
+            if (sheetName.startsWith('Rapor_')) {
+                const parts = sheetName.split('_'); // Contoh: ["Rapor", "Pengetahuan", "k9", "ganjil"]
+                const jenis = parts[1].slice(0, 4); // "Peng" atau "Kete"
+                const kelas = parts[2].replace('k', 'K.'); // "K.9"
+                const semester = parts[3] === 'ganjil' ? '.1' : '.2';
+                return `${kelas}${semester} ${jenis}`; // Contoh: "K.9.1 Peng"
+            }
+            return sheetName; // Fallback jika format tidak dikenali
         }
     </script>
 </body>
