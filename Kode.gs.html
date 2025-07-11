@@ -6757,45 +6757,78 @@ function getDocumentSettings(spreadsheetId) {
 //=================================================================
 
 /**
- * [HELPER] Membuat token validasi yang aman dan berbatas waktu.
- * Token ini mengenkripsi NISN dan ID Spreadsheet.
+ * [HELPER - VERSI AMAN] Membuat token validasi yang aman menggunakan HMAC-SHA256.
  * @param {string} nisn - NISN siswa.
  * @param {string} spreadsheetId - ID spreadsheet sekolah.
- * @returns {string} Token yang sudah dienkripsi dan di-encode.
+ * @returns {string} Token yang sudah dienkripsi dan ditandatangani dengan format "payload.signature".
  */
 function generateValidationToken(nisn, spreadsheetId) {
+    // 1. Ambil kunci rahasia dari PropertiesService
+    const SECRET_KEY = PropertiesService.getScriptProperties().getProperty('QR_TOKEN_SECRET');
+    if (!SECRET_KEY) {
+        throw new Error("Kunci rahasia untuk token QR tidak diatur di Properti Skrip.");
+    }
+
+    // 2. Buat payload (data inti) dengan masa berlaku 1 tahun
     const payload = JSON.stringify({
         nisn: nisn,
         ssId: spreadsheetId,
-        exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 365) // Token berlaku 1 tahun
+        exp: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60)
     });
-    // Menggunakan TextCipher untuk enkripsi sederhana (bukan JWT sejati, tapi cukup untuk tujuan ini)
-    const encrypted = Utilities.base64Encode(Utilities.newBlob(payload).getBytes());
-    return encrypted;
+    const base64Payload = Utilities.base64Encode(payload, Utilities.Charset.UTF_8);
+
+    // 3. Buat signature HMAC menggunakan SHA256
+    const signature = Utilities.computeHmacSignature(
+        Utilities.MacAlgorithm.HMAC_SHA_256,
+        base64Payload,
+        SECRET_KEY,
+        Utilities.Charset.UTF_8
+    );
+    const base64Signature = Utilities.base64Encode(signature);
+
+    // 4. Gabungkan payload dan signature dengan pemisah titik (.)
+    return `${base64Payload}.${base64Signature}`;
 }
 
 /**
- * [PUBLIC - MODIFIKASI] Mengambil data validasi, sekarang termasuk Nama Sekolah.
- * @param {string} token - Token yang di-scan dari QR code.
+ * [PUBLIC - VERSI AMAN] Mengambil data validasi setelah memverifikasi keaslian token HMAC.
+ * @param {string} token - Token yang di-scan dari QR code dengan format "payload.signature".
  * @returns {object} Objek berisi data siswa dan sekolah jika valid.
  */
 function getValidationData(token) {
     try {
-        const decodedPayload = Utilities.newBlob(Utilities.base64Decode(token)).getDataAsString();
-        const payload = JSON.parse(decodedPayload);
+        const SECRET_KEY = PropertiesService.getScriptProperties().getProperty('QR_TOKEN_SECRET');
+        if (!SECRET_KEY) {
+            throw new Error("Kunci rahasia server tidak dikonfigurasi.");
+        }
 
-        // Validasi kadaluwarsa token
+        const parts = token.split('.');
+        if (parts.length !== 2) {
+            return { status: 'error', message: 'Format token tidak valid.' };
+        }
+        const base64Payload = parts[0];
+        const base64SignatureFromToken = parts[1];
+
+        const expectedSignature = Utilities.computeHmacSignature(
+            Utilities.MacAlgorithm.HMAC_SHA_256, base64Payload, SECRET_KEY, Utilities.Charset.UTF_8
+        );
+        const base64ExpectedSignature = Utilities.base64Encode(expectedSignature);
+
+        if (base64ExpectedSignature !== base64SignatureFromToken) {
+            return { status: 'error', message: 'Token tidak asli atau telah dimodifikasi.' };
+        }
+
+        const decodedPayload = Utilities.base64Decode(base64Payload, Utilities.Charset.UTF_8);
+        const payload = JSON.parse(Utilities.newBlob(decodedPayload).getDataAsString());
+
         if (payload.exp < Math.floor(Date.now() / 1000)) {
             return { status: 'error', message: 'Token validasi telah kedaluwarsa.' };
         }
 
-        // --- AWAL PERUBAHAN ---
-        // 1. Ambil data sekolah menggunakan ID dari token
         const schoolData = getSchoolData(payload.ssId);
         if (!schoolData || !schoolData.namaSekolah) {
             return { status: 'error', message: 'Data sekolah tidak dapat ditemukan.' };
         }
-        // --- AKHIR PERUBAHAN ---
 
         const student = getStudents(payload.ssId).find(s => s.nisn === payload.nisn);
         if (!student) {
@@ -6809,12 +6842,13 @@ function getValidationData(token) {
         return {
             status: 'success',
             data: {
-                namaSekolah: schoolData.namaSekolah.toUpperCase(), // Tambahkan nama sekolah ke data
+                namaSekolah: schoolData.namaSekolah.toUpperCase(),
                 nisn: student.nisn,
                 namaLengkap: student.nama.toUpperCase(),
                 rataRataIjazah: rataRata
             }
         };
+
     } catch (e) {
         Logger.log("getValidationData Error: " + e.message);
         return { status: 'error', message: 'Token tidak valid atau rusak.' };
@@ -7670,90 +7704,101 @@ function buildValidationPage(token) {
 
 // [PERUBAHAN] Ganti fungsi loginGuru() dengan versi ini
 function loginGuru(schoolCode, username, password) {
-  try {
-    if (!schoolCode || !username || !password) { return { status: "error", message: "Kode Sekolah, Username, dan Password wajib diisi." }; }
+    try {
+        if (!schoolCode || !username || !password) { return { status: "error", message: "Kode Sekolah, Username, dan Password wajib diisi." }; }
     
-    const masterSs = SpreadsheetApp.getActiveSpreadsheet();
-    const userSheet = masterSs.getSheetByName(SHEET_PENGGUNA);
-    if (!userSheet) throw new Error("Sheet 'Data Pengguna' tidak ditemukan.");
-    
-    const users = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 13).getValues();
-    const schoolRow = users.find(row => row[12] && row[12].toUpperCase() === schoolCode.toUpperCase());
-    
-    if (!schoolRow) { return { status: "error", message: "Kode Sekolah tidak valid." }; }
-    
-    // [PERUBAHAN] Cek apakah fitur untuk sekolah ini terkunci
-    const lockStatus = checkFiturLock(schoolRow[1]); // Cek berdasarkan email admin sekolah (indeks ke-1)
-    if (lockStatus.isLocked) {
-      return { 
-        status: "locked", // Menggunakan status "locked" agar frontend bisa menanganinya
-        message: "Akses untuk guru dari sekolah ini ditangguhkan. Silakan hubungi administrator sekolah Anda." 
-      };
-    }
-    
-    const schoolSpreadsheetId = schoolRow[5];
-    if (!schoolSpreadsheetId) { return { status: "error", message: "Konfigurasi sekolah ini tidak lengkap. Hubungi Admin." }; }
-    
-    const ss = SpreadsheetApp.openById(schoolSpreadsheetId);
-    const guruSheet = ss.getSheetByName(SHEET_DATA_GURU);
-    if (!guruSheet || guruSheet.getLastRow() < 2) { return { status: "error", message: "Data guru tidak ditemukan di sekolah ini." }; }
-    
-    const data = guruSheet.getRange(2, 1, guruSheet.getLastRow() - 1, 7).getValues();
-    const guruUserRow = data.find(row => row[1] === username && row[2].toString() === password.toString());
-
-    if (guruUserRow) {
-      const mapelSheet = ss.getSheetByName(SHEET_MAPEL);
-      const allMapel = mapelSheet.getLastRow() > 1 ? mapelSheet.getRange(2, 1, mapelSheet.getLastRow() - 1, 4).getValues() : [];
-      const kodeMapelGuru = guruUserRow[3].split(',').map(k => k.trim());
-      
-      const kelasDiajarString = guruUserRow[6] || '';
-      const kelasMap = new Map();
-
-      if (kelasDiajarString) {
-        const assignments = kelasDiajarString.split(',').map(a => a.trim()).filter(Boolean);
-        assignments.forEach(assignment => {
-          const parts = assignment.split(':');
-          if (parts.length === 2) {
-              const mapelCode = parts[0].trim().toUpperCase();
-              const kelas = parts[1].trim();
-              if (!kelasMap.has(mapelCode)) {
-                  kelasMap.set(mapelCode, []);
-              }
-              kelasMap.get(mapelCode).push(kelas);
-          }
-        });
-      }
-
-      const mapelGuru = allMapel
-        .filter(m => kodeMapelGuru.includes(m[0]))
-        .map(m => ({ 
-            kode: m[0], 
-            nama: m[1], 
-            jenisUjian: m[3],
-            kelas: kelasMap.get(m[0]) || [] 
-        }));
-      
-      const submissionStatus = getNilaiSubmissionStatus(schoolSpreadsheetId);
-
-      return {
-        status: "success",
-        data: {
-          spreadsheetId: schoolSpreadsheetId,
-          nama: guruUserRow[0],
-          username: guruUserRow[1],
-          // PERBAIKAN: Tambahkan NIP (dari kolom ke-5, yaitu indeks 4) ke data guru
-          nip: guruUserRow[4], 
-          mapel: mapelGuru,
-          isSubmissionEnabled: submissionStatus.isEnabled
+        const masterSs = SpreadsheetApp.getActiveSpreadsheet();
+        const userSheet = masterSs.getSheetByName(SHEET_PENGGUNA);
+        if (!userSheet) throw new Error("Sheet 'Data Pengguna' tidak ditemukan.");
+        
+        const users = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 13).getValues();
+        const schoolRow = users.find(row => row[12] && row[12].toUpperCase() === schoolCode.toUpperCase());
+        
+        if (!schoolRow) { return { status: "error", message: "Kode Sekolah tidak valid." }; }
+        
+        const lockStatus = checkFiturLock(schoolRow[1]);
+        if (lockStatus.isLocked) {
+          return { 
+            status: "locked", 
+            message: "Akses untuk guru dari sekolah ini ditangguhkan. Silakan hubungi administrator sekolah Anda." 
+          };
         }
-      };
-    } else {
-      return { status: "error", message: "Username atau password salah." };
+        
+        const schoolSpreadsheetId = schoolRow[5];
+        if (!schoolSpreadsheetId) { return { status: "error", message: "Konfigurasi sekolah ini tidak lengkap. Hubungi Admin." }; }
+        
+        const ss = SpreadsheetApp.openById(schoolSpreadsheetId);
+        const guruSheet = ss.getSheetByName(SHEET_DATA_GURU);
+        if (!guruSheet || guruSheet.getLastRow() < 2) { return { status: "error", message: "Data guru tidak ditemukan di sekolah ini." }; }
+        
+        const data = guruSheet.getRange(2, 1, guruSheet.getLastRow() - 1, 7).getValues();
+
+        // --- AWAL PERUBAHAN LOGIKA VERIFIKASI ---
+        let guruUserRow = null;
+        for (const row of data) {
+            if (row[1] === username) { // Temukan username yang cocok dulu
+                const storedPasswordString = row[2].toString();
+                // Gunakan fungsi verifyPassword yang sudah ada
+                if (verifyPassword(password, storedPasswordString)) {
+                    guruUserRow = row; // Jika password cocok, simpan data barisnya
+                    break; // Hentikan loop karena guru sudah ditemukan
+                }
+            }
+        }
+        // --- AKHIR PERUBAHAN LOGIKA VERIFIKASI ---
+
+        if (guruUserRow) {
+            const mapelSheet = ss.getSheetByName(SHEET_MAPEL);
+            const allMapel = mapelSheet.getLastRow() > 1 ? mapelSheet.getRange(2, 1, mapelSheet.getLastRow() - 1, 4).getValues() : [];
+            const kodeMapelGuru = guruUserRow[3].split(',').map(k => k.trim());
+            
+            const kelasDiajarString = guruUserRow[6] || '';
+            const kelasMap = new Map();
+
+            if (kelasDiajarString) {
+                const assignments = kelasDiajarString.split(',').map(a => a.trim()).filter(Boolean);
+                assignments.forEach(assignment => {
+                    const parts = assignment.split(':');
+                    if (parts.length === 2) {
+                        const mapelCode = parts[0].trim().toUpperCase();
+                        const kelas = parts[1].trim();
+                        if (!kelasMap.has(mapelCode)) {
+                            kelasMap.set(mapelCode, []);
+                        }
+                        kelasMap.get(mapelCode).push(kelas);
+                    }
+                });
+            }
+
+            const mapelGuru = allMapel
+                .filter(m => kodeMapelGuru.includes(m[0]))
+                .map(m => ({ 
+                    kode: m[0], 
+                    nama: m[1], 
+                    jenisUjian: m[3],
+                    kelas: kelasMap.get(m[0]) || [] 
+                }));
+            
+            const submissionStatus = getNilaiSubmissionStatus(schoolSpreadsheetId);
+
+            return {
+                status: "success",
+                data: {
+                    spreadsheetId: schoolSpreadsheetId,
+                    nama: guruUserRow[0],
+                    username: guruUserRow[1],
+                    nip: guruUserRow[4], 
+                    mapel: mapelGuru,
+                    isSubmissionEnabled: submissionStatus.isEnabled
+                }
+            };
+        } else {
+            return { status: "error", message: "Username atau password salah." };
+        }
+    } catch (e) {
+        Logger.log("loginGuru Error: " + e.message + " Stack: " + e.stack);
+        return { status: "error", message: "Terjadi kesalahan server saat login." };
     }
-  } catch (e) {
-    Logger.log("loginGuru Error: " + e.message + " Stack: " + e.stack);
-    return { status: "error", message: "Terjadi kesalahan server saat login." };
-  }
 }
 
 /**
@@ -8022,7 +8067,7 @@ function getGuru(spreadsheetId) {
         row: index + 2,
         nama: row[0],
         username: row[1],
-        password: row[2],
+        password: '******',
         mapel: row[3],
         nip: row[4],
         isModifiedByGuru: row[5],
@@ -8034,9 +8079,6 @@ function getGuru(spreadsheetId) {
   }
 }
 
-/**
- * [PENGGUNA - DIPERBARUI] Menyimpan data guru baru, menambahkan kolom NIP dan Kelas.
- */
 function saveGuru(spreadsheetId, guruData) {
     try {
         const ss = getSpreadsheet(spreadsheetId);
@@ -8049,14 +8091,25 @@ function saveGuru(spreadsheetId, guruData) {
             }
         }
         
+        // --- AWAL PERUBAHAN KEAMANAN ---
+        // 1. Buat "garam" (salt) yang unik untuk setiap password
+        const salt = generateSalt();
+
+        // 2. Lakukan hashing pada password dengan salt yang sudah dibuat
+        const hashedPassword = hashPassword(guruData.password_guru, salt);
+
+        // 3. Gabungkan salt dan hash untuk disimpan. Format: "salt:hash"
+        const storedPasswordString = `${salt}:${hashedPassword}`;
+        // --- AKHIR PERUBAHAN KEAMANAN ---
+
         sheet.appendRow([
             guruData.nama_guru,
             guruData.username_guru,
-            guruData.password_guru,
+            storedPasswordString, // <-- AMAN: Simpan string hasil hash
             guruData.mapel_kode_guru,
             guruData.nip_guru ? "'" + guruData.nip_guru : '',
-            'TIDAK', // Status awal "Diubah Guru"
-            guruData.kelas_diajar || '' // Data kelas baru
+            'TIDAK',
+            guruData.kelas_diajar || ''
         ]);
 
         return { status: "success", message: "Data guru berhasil disimpan." };
@@ -8067,7 +8120,8 @@ function saveGuru(spreadsheetId, guruData) {
 }
 
 /**
- * [PENGGUNA - DIPERBARUI] Memperbarui data guru dengan logika kondisional untuk username/password.
+ * [PENGGUNA - DIPERBARUI & DIPERBAIKI KEAMANANNYA] Memperbarui data guru dengan logika kondisional untuk username/password
+ * dan memastikan password SELALU di-hash.
  */
 function updateGuru(spreadsheetId, guruData) {
     try {
@@ -8075,31 +8129,39 @@ function updateGuru(spreadsheetId, guruData) {
         const sheet = ss.getSheetByName(SHEET_DATA_GURU);
         const rowToUpdate = parseInt(guruData.guruRow);
 
-        // 1. Ambil data baris saat ini, terutama status 'Diubah Guru'
-        const currentRowData = sheet.getRange(rowToUpdate, 1, 1, 6).getValues()[0];
+        const currentRowData = sheet.getRange(rowToUpdate, 1, 1, 7).getValues()[0];
         const isModifiedByGuru = currentRowData[5] === 'YA';
 
-        // 2. Logika untuk data yang akan diupdate
-        let dataToUpdate;
-
         if (isModifiedByGuru) {
-            // Jika guru sudah pernah mengubah, admin HANYA bisa mengubah data non-kredensial
+            // Admin hanya bisa mengubah data non-kredensial jika guru sudah pernah mengubahnya.
             sheet.getRange(rowToUpdate, 1).setValue(guruData.nama_guru);      // Nama
             sheet.getRange(rowToUpdate, 4).setValue(guruData.mapel_kode_guru); // Mapel
             sheet.getRange(rowToUpdate, 5).setValue(guruData.nip_guru ? "'" + guruData.nip_guru : ''); // NIP
             sheet.getRange(rowToUpdate, 7).setValue(guruData.kelas_diajar || ''); // Kelas
         } else {
-            // Jika guru belum mengubah, admin bisa mengubah SEMUA data
-            dataToUpdate = [[
+            // Admin dapat mengubah semua data jika guru belum pernah mengubahnya.
+            
+            // --- AWAL PERBAIKAN KEAMANAN ---
+            
+            // 1. Buat salt dan hash untuk password baru.
+            const salt = generateSalt();
+            const hashedPassword = hashPassword(guruData.password_guru, salt);
+            const newStoredPasswordString = `${salt}:${hashedPassword}`;
+            
+            // 2. Siapkan data baris lengkap dengan password yang sudah di-hash.
+            const dataToUpdate = [[
                 guruData.nama_guru,
                 guruData.username_guru,
-                guruData.password_guru,
+                newStoredPasswordString, // <-- GUNAKAN PASSWORD YANG SUDAH AMAN
                 guruData.mapel_kode_guru,
                 guruData.nip_guru ? "'" + guruData.nip_guru : '',
                 'TIDAK', // Status tetap TIDAK karena diubah oleh admin
                 guruData.kelas_diajar || ''
             ]];
+
+            // 3. Tulis semua data baru ke sheet.
             sheet.getRange(rowToUpdate, 1, 1, 7).setValues(dataToUpdate);
+            // --- AKHIR PERBAIKAN KEAMANAN ---
         }
         
         return { status: "success", message: "Data guru berhasil diperbarui." };
@@ -9015,21 +9077,18 @@ function updateGuruProfile(spreadsheetId, oldUsername, newData) {
   }
 }
 
-// GANTI FUNGSI LAMA DENGAN VERSI BARU INI
 /**
- * [DIPERBARUI & PERBAIKAN] Admin membuat ulang username dan password untuk guru,
- * lalu mengirimkan notifikasi email ke admin sekolah.
+ * [FINAL & AMAN] Admin membuat ulang username dan password untuk guru.
+ * Fungsi ini mengirimkan password baru (teks biasa) ke email admin,
+ * LALU menyimpan versi hash yang aman ke spreadsheet.
  */
 function regenerateGuruCredentials(spreadsheetId, rowNum) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_GURU);
     
-    // ===== AWAL KODE BARU: Ambil data untuk email =====
-    // 1. Dapatkan nama guru dari baris yang dipilih
+    // Mengambil data untuk email (tidak ada perubahan di sini)
     const guruName = sheet.getRange(rowNum, 1).getValue();
-
-    // 2. Dapatkan email admin dan nama sekolah dari sheet utama
     const masterSs = SpreadsheetApp.getActiveSpreadsheet();
     const userSheet = masterSs.getSheetByName(SHEET_PENGGUNA);
     const usersData = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 6).getValues();
@@ -9039,38 +9098,29 @@ function regenerateGuruCredentials(spreadsheetId, rowNum) {
     let schoolName = 'Sekolah Anda';
 
     if (schoolAdminRow) {
-      adminEmail = schoolAdminRow[1]; // Kolom B adalah email
-      schoolName = schoolAdminRow[3]; // Kolom D adalah nama sekolah
+      adminEmail = schoolAdminRow[1];
+      schoolName = schoolAdminRow[3];
     } else {
       throw new Error("Data admin sekolah tidak ditemukan untuk mengirim email.");
     }
-    // ===== AKHIR KODE BARU =====
 
-    // Buat username & password acak (logika tidak berubah)
+    // 1. Buat username & password acak dalam bentuk TEKS BIASA
     const newUsername = 'guru' + Math.floor(1000 + Math.random() * 9000);
-    const newPassword = Math.random().toString(36).slice(-8);
+    const newPasswordPlainText = Math.random().toString(36).slice(-8); // Ini password aslinya
     
-    // Update sheet (logika tidak berubah)
-    sheet.getRange(rowNum, 2).setValue(newUsername);
-    sheet.getRange(rowNum, 3).setValue(newPassword);
-    sheet.getRange(rowNum, 6).setValue('TIDAK');
-    
-    // ===== AWAL KODE BARU: Kirim Email Notifikasi =====
+    // 2. Kirim email berisi password TEKS BIASA ke admin
     const subject = `[Info Kredensial Baru] Akun Guru untuk ${guruName}`;
     const body = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6;">
         <h2>Informasi Pembaruan Kredensial Guru</h2>
         <p>Halo Admin ${schoolName},</p>
-        <p>Anda telah berhasil membuat ulang kredensial login untuk salah satu guru Anda. Berikut adalah detailnya:</p>
+        <p>Anda telah berhasil membuat ulang kredensial login untuk guru Anda. Berikut adalah detailnya:</p>
         <ul style="list-style-type: none; padding: 0;">
           <li><strong>Nama Guru:</strong> ${guruName}</li>
           <li style="margin-top: 10px;"><strong>Username Baru:</strong> <span style="font-family: monospace; background-color: #f0f0f0; padding: 2px 5px; border-radius: 3px;">${newUsername}</span></li>
-          <li><strong>Password Baru:</strong> <span style="font-family: monospace; background-color: #f0f0f0; padding: 2px 5px; border-radius: 3px;">${newPassword}</span></li>
+          <li><strong>Password Baru:</strong> <span style="font-family: monospace; background-color: #f0f0f0; padding: 2px 5px; border-radius: 3px;">${newPasswordPlainText}</span></li>
         </ul>
         <p>Harap catat informasi ini dan berikan kepada guru yang bersangkutan. Email ini dikirim sebagai catatan untuk Anda.</p>
-        <br>
-        <p>Terima kasih,</p>
-        <p>Sistem Aplikasi Ijazah</p>
       </div>
     `;
     MailApp.sendEmail({
@@ -9078,18 +9128,29 @@ function regenerateGuruCredentials(spreadsheetId, rowNum) {
       subject: subject,
       htmlBody: body
     });
-    // ===== AKHIR KODE BARU =====
-    
-    // ===== TAMBAHKAN BARIS INI UNTUK MEMASTIKAN PERUBAHAN TERSIMPAN =====
-    SpreadsheetApp.flush(); //
-    // =====================================================================
 
-    // Pesan sukses tidak lagi menyertakan kredensial
+    // --- AWAL PERBAIKAN UTAMA ---
+    
+    // 3. Lakukan HASHING pada password teks biasa tadi
+    const salt = generateSalt();
+    const hashedPassword = hashPassword(newPasswordPlainText, salt);
+    const newStoredPasswordString = `${salt}:${hashedPassword}`; // Ini adalah versi hash yang aman
+
+    // 4. Update sheet dengan username baru dan password yang SUDAH DI-HASH
+    sheet.getRange(rowNum, 2).setValue(newUsername);
+    sheet.getRange(rowNum, 3).setValue(newStoredPasswordString); // Simpan versi hash!
+    sheet.getRange(rowNum, 6).setValue('TIDAK'); // Kembalikan status 'Diubah Guru' menjadi TIDAK
+
+    // --- AKHIR PERBAIKAN UTAMA ---
+    
+    SpreadsheetApp.flush();
+
     return {
       status: 'success',
       message: 'Kredensial baru telah dibuat dan dikirim ke email Anda.'
     };
   } catch (e) {
+    Logger.log("regenerateGuruCredentials Error: " + e.message + " Stack: " + e.stack);
     return { status: 'error', message: e.message };
   }
 }
@@ -9470,8 +9531,8 @@ function updateGuruData_Guru(spreadsheetId, username, data) {
 }
 
 /**
- * [BARU] Guru memperbarui kredensial loginnya (Username & Password).
- * Aksi ini akan mengubah status 'Diubah Guru' menjadi YA.
+ * [BARU & DIPERBAIKI KEAMANANNYA] Guru memperbarui kredensial loginnya sendiri,
+ * memastikan password baru selalu di-hash.
  */
 function updateGuruCredentials_Guru(spreadsheetId, oldUsername, newData) {
   try {
@@ -9493,10 +9554,19 @@ function updateGuruCredentials_Guru(spreadsheetId, oldUsername, newData) {
         }
     }
 
-    // Update Username (B), Password (C), dan set 'Diubah Guru' (F) menjadi 'YA'
+    // --- AWAL PERBAIKAN KEAMANAN ---
+
+    // 1. Buat salt dan hash untuk password baru.
+    const salt = generateSalt();
+    const hashedPassword = hashPassword(newData.password, salt);
+    const newStoredPasswordString = `${salt}:${hashedPassword}`;
+    
+    // 2. Update Username (B), Password (C) dengan HASH BARU, dan set 'Diubah Guru' (F) menjadi 'YA'
     sheet.getRange(rowToUpdate, 2).setValue(newData.username);
-    sheet.getRange(rowToUpdate, 3).setValue(newData.password);
+    sheet.getRange(rowToUpdate, 3).setValue(newStoredPasswordString); // <-- SIMPAN HASH
     sheet.getRange(rowToUpdate, 6).setValue('YA');
+
+    // --- AKHIR PERBAIKAN KEAMANAN ---
 
     return { status: 'success', message: 'Kredensial login berhasil diperbarui.' };
   } catch(e) {
