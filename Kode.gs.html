@@ -47,19 +47,28 @@ const SHEET_QR_REDIRECTS = "QR_Redirects";
 function doGet(e) {
   const webAppUrl = ScriptApp.getService().getUrl();
 
-  // --- BLOK UNTUK VALIDASI QR CODE ---
   if (e.parameter.v) {
     try {
       const shortCode = e.parameter.v;
-      // 1. Ambil token dari PropertiesService
-      const scriptProperties = PropertiesService.getScriptProperties();
-      const fullToken = scriptProperties.getProperty(shortCode);
+      
+      // 1. Cari token di sheet "QR_Redirects"
+      const masterSs = SpreadsheetApp.getActiveSpreadsheet();
+      const qrSheet = masterSs.getSheetByName(SHEET_QR_REDIRECTS);
+      let fullToken = null;
+
+      if (qrSheet && qrSheet.getLastRow() > 1) {
+        const data = qrSheet.getRange(2, 1, qrSheet.getLastRow() - 1, 2).getValues();
+        const foundRow = data.find(row => row[0] === shortCode);
+        if (foundRow) {
+          fullToken = foundRow[1]; // Ambil token dari kolom kedua
+        }
+      }
 
       if (fullToken) {
-        // Jika token ditemukan, bangun halaman validasi
+        // 2. Jika token ditemukan, bangun halaman validasi
         return buildValidationPage(fullToken);
       } else {
-        // Jika kode tidak ditemukan, tampilkan halaman error
+        // 3. Jika kode tidak ditemukan, tampilkan halaman error
         return createErrorPage(
           "Kode Tidak Valid", 
           "Kode validasi yang Anda tuju tidak ditemukan atau sudah tidak berlaku. Pastikan Anda memindai QR Code yang benar dan valid."
@@ -69,7 +78,6 @@ function doGet(e) {
       return createErrorPage("Terjadi Kesalahan", `Gagal memproses permintaan Anda. Error: ${err.message}`);
     }
   }
-  // --- AKHIR BLOK VALIDASI QR CODE ---
 
   const page = e.parameter.page;
 
@@ -1661,32 +1669,32 @@ function getExistingNilai(spreadsheetId, sheetName) {
   } catch(e) { Logger.log(e); return {}; }
 }
 
-// File: Kode.gs.html
-
 /**
- * [FINAL v2 & DENGAN VALIDASI] Memproses dan menyimpan nilai dari file Excel.
- * Logika ini membangun kembali seluruh sheet nilai, namun HANYA menimpa nilai
- * jika sel di file Excel yang diunggah berisi data (tidak kosong).
+ * [FINAL v2 & DENGAN RESOLUSI KONFLIK] Memproses, memvalidasi, dan mengimpor nilai dari sheet Excel.
+ * Fungsi ini sekarang dapat secara bersamaan menambahkan nilai baru yang valid (mengisi sel kosong)
+ * DAN mengidentifikasi konflik nilai tanpa menghentikan proses penambahan.
+ *
  * @param {SpreadsheetApp.Spreadsheet} targetSs - Objek spreadsheet tujuan.
- * @param {string} targetSheetName - Nama sheet yang akan diisi (mis. 'Nilai Ujian Madrasah').
+ * @param {string} targetSheetName - Nama sheet yang akan diproses (mis. 'Nilai Ujian Madrasah').
  * @param {SpreadsheetApp.Sheet} importSheet - Objek sheet dari file Excel yang diimpor.
  * @param {Array<object>} mapelForSheet - Daftar mata pelajaran yang relevan untuk sheet ini.
- * @returns {number} Jumlah nilai yang berhasil diupdate atau ditambahkan.
+ * @returns {object} Objek hasil yang berisi jumlah nilai baru, nilai yang di-skip, dan daftar konflik.
  */
 function processSheetImport(targetSs, targetSheetName, importSheet, mapelForSheet) {
-    if (importSheet.getLastRow() <= 1) return 0;
+    // 1. Ambil data utama
+    if (importSheet.getLastRow() <= 1) return { newValuesCount: 0, conflicts: [], skippedCount: 0 };
 
     const students = getStudents(targetSs.getId());
     if (!students || students.length === 0) {
         throw new Error("Tidak ada data siswa di sheet 'Data Siswa'.");
     }
-    
-    // 2. Baca data dari file Excel dan simpan ke dalam Map untuk pencarian cepat
-    const dataFromExcel = importSheet.getDataRange().getValues();
+
+    // 2. Baca data dari file Excel dan buat Map untuk akses cepat
+    const dataFromExcel = importSheet.getDataRange().getDisplayValues();
     const headersFromExcel = dataFromExcel.shift();
     const nisnIndexExcel = headersFromExcel.indexOf("NISN");
-    if (nisnIndexExcel === -1) throw new Error(`Kolom 'NISN' tidak ditemukan di sheet "${importSheet.getName()}".`);
-
+    if (nisnIndexExcel === -1) throw new Error(`Kolom 'NISN' tidak ditemukan di sheet import.`);
+    
     const uploadedDataMap = new Map();
     dataFromExcel.forEach(row => {
         const nisn = row[nisnIndexExcel].toString().trim();
@@ -1699,71 +1707,92 @@ function processSheetImport(targetSs, targetSheetName, importSheet, mapelForShee
         }
     });
 
-    // 3. Siapkan sheet tujuan
-    let targetSheet = targetSs.getSheetByName(targetSheetName);
-    if (!targetSheet) {
-        targetSheet = targetSs.insertSheet(targetSheetName);
-    }
-    
-    // 4. [BARU] Baca data yang sudah ada di sheet tujuan untuk perbandingan
+    // 3. Ambil data nilai yang sudah ada di sistem
     const existingScoresMap = getSheetDataAsObject(targetSs.getId(), targetSheetName);
 
-    // 5. Bangun kembali seluruh data yang akan ditulis
-    let updatedCount = 0;
-    const finalDataToWrite = [];
+    // 4. Proses perbandingan, deteksi konflik, dan penambahan data baru
+    const conflicts = [];
+    let newValuesCount = 0;
+    let skippedCount = 0;
+    const finalDataGrid = []; // Grid data akhir yang akan ditulis ke sheet
 
     students.forEach(student => {
-        const nisn = student.nisn;
-        const newRow = [nisn, student.nama.toUpperCase()];
+        const nisn = student.nisn.toString().trim();
         const uploadedScores = uploadedDataMap.get(nisn);
-        const existingScores = existingScoresMap[nisn] || {};
+        const existingStudentScores = existingScoresMap[nisn] || {};
+        
+        const newRow = ["'" + nisn, student.nama.toUpperCase()];
 
         mapelForSheet.forEach(mapel => {
             const mapelKode = mapel.kode;
-            let finalScore = existingScores[mapelKode] !== undefined ? existingScores[mapelKode] : ''; // Default ke nilai lama
+            let scoreToWrite = existingStudentScores[mapelKode] !== undefined ? existingStudentScores[mapelKode] : '';
 
-            // =====================================================================
-            // ▼▼▼ AWAL DARI LOGIKA VALIDASI INTI YANG BARU ▼▼▼
-            // =====================================================================
             if (uploadedScores && uploadedScores.has(mapelKode)) {
-                const uploadedScore = uploadedScores.get(mapelKode);
+                const uploadedScoreValue = uploadedScores.get(mapelKode);
 
-                // Periksa apakah nilai yang diupload TIDAK kosong.
-                // Ini akan melewatkan sel yang kosong (null, undefined, atau string spasi).
-                if (uploadedScore !== undefined && uploadedScore !== null && String(uploadedScore).trim() !== '') {
-                    // Hanya jika ada nilai baru, timpa nilai lama.
-                    finalScore = uploadedScore;
+                if (uploadedScoreValue !== undefined && uploadedScoreValue !== null && String(uploadedScoreValue).trim() !== '') {
+                    const numericUploaded = parseFloat(uploadedScoreValue);
 
-                    // Hitung sebagai "update" hanya jika nilai baru berbeda dari nilai lama.
-                    if (String(existingScores[mapelKode] || '') != String(finalScore)) {
-                        updatedCount++;
+                    if (!isNaN(numericUploaded) && numericUploaded >= 0 && numericUploaded <= 100) {
+                        const existingScore = existingStudentScores[mapelKode];
+
+                        if (existingScore !== undefined && String(existingScore).trim() !== '') {
+                            // Ada nilai lama, cek apakah berbeda
+                            if (String(existingScore) !== String(numericUploaded)) {
+                                // KONFLIK DITEMUKAN
+                                conflicts.push({
+                                    sheetName: targetSheetName,
+                                    nisn: nisn,
+                                    namaSiswa: student.nama,
+                                    mapelKode: mapelKode,
+                                    oldValue: existingScore,
+                                    newValue: numericUploaded
+                                });
+                                // Biarkan scoreToWrite tetap nilai lama untuk saat ini
+                            } else {
+                                // Nilai sama, diabaikan
+                                skippedCount++;
+                            }
+                        } else {
+                            // NILAI BARU DITEMUKAN (sel sebelumnya kosong)
+                            scoreToWrite = numericUploaded;
+                            newValuesCount++;
+                        }
+                    } else {
+                        // Nilai tidak valid (bukan angka atau di luar rentang), diabaikan
+                        skippedCount++;
                     }
                 }
-                // Jika nilai yang diupload kosong, `finalScore` akan tetap berisi `existingScores`,
-                // sehingga data lama tidak akan terhapus.
             }
-            // =====================================================================
-            // ▲▲▲ AKHIR DARI LOGIKA VALIDASI INTI ▲▲▲
-            // =====================================================================
-            
-            newRow.push(finalScore);
+            newRow.push(scoreToWrite);
         });
-        finalDataToWrite.push(newRow);
+        finalDataGrid.push(newRow);
     });
     
-    // 6. Tulis ulang seluruh sheet dengan data yang sudah bersih dan lengkap
-    targetSheet.clear(); 
-    
-    const newHeaders = ["NISN", "Nama Lengkap", ...mapelForSheet.map(m => m.kode)];
-    targetSheet.getRange(1, 1, 1, newHeaders.length).setValues([newHeaders]).setFontWeight("bold");
-    targetSheet.getRange("A:A").setNumberFormat('@');
-    
-    if (finalDataToWrite.length > 0) {
-        targetSheet.getRange(2, 1, finalDataToWrite.length, newHeaders.length).setValues(finalDataToWrite);
+    // 5. Jika ada nilai baru yang valid, tulis grid data yang sudah diperbarui ke sheet.
+    // Ini berjalan terlepas dari apakah ada konflik atau tidak.
+    if (newValuesCount > 0) {
+        let targetSheet = targetSs.getSheetByName(targetSheetName);
+        if (!targetSheet) {
+            targetSheet = targetSs.insertSheet(targetSheetName);
+        }
+        targetSheet.clear();
+        const newHeaders = ["NISN", "Nama Lengkap", ...mapelForSheet.map(m => m.kode)];
+        targetSheet.getRange(1, 1, 1, newHeaders.length).setValues([newHeaders]).setFontWeight("bold");
+        targetSheet.getRange("A:A").setNumberFormat('@');
+        
+        if (finalDataGrid.length > 0) {
+            targetSheet.getRange(2, 1, finalDataGrid.length, newHeaders.length).setValues(finalDataGrid);
+        }
+        SpreadsheetApp.flush();
     }
-    
-    SpreadsheetApp.flush();
-    return updatedCount;
+
+    // 6. Kembalikan laporan lengkap ke frontend
+    return {
+        newValuesCount: newValuesCount,
+        skippedCount: skippedCount,
+        conflicts: conflicts
+    };
 }
 
 // =================================================================
@@ -4998,60 +5027,77 @@ function generateNilaiTemplate(spreadsheetId, templateName, selectedKelas) {
 }
 
 /**
- * [FINAL v3 - DENGAN FILTER KELAS & PERBAIKAN UPLOAD] Menerima file Excel dan mengimpor nilai ke sheet yang sesuai.
+ * [FINAL v3 - DENGAN RESOLUSI KONFLIK] Menerima file Excel dan mengimpor nilai ke sheet yang sesuai.
+ * Fungsi ini sekarang mengumpulkan konflik dari semua sheet terkait dan mengembalikannya ke frontend.
  */
 function uploadNilaiFromExcel(spreadsheetId, fileData, uploadType, selectedKelas) {
-  let tempFileId = null; // Variabel untuk menyimpan ID file sementara
-  try {
-    const decoded = Utilities.base64Decode(fileData.content, Utilities.Charset.UTF_8);
-    const blob = Utilities.newBlob(decoded, fileData.mimeType, fileData.fileName);
-    const tempSpreadsheetFile = Drive.Files.insert({ title: `temp_upload_${uploadType}` }, blob, { convert: true });
-    
-    // Periksa apakah file berhasil dibuat dan memiliki ID
-    if (!tempSpreadsheetFile || !tempSpreadsheetFile.id) {
-        throw new Error("Gagal membuat file sementara di Google Drive. Pastikan Drive API telah diaktifkan.");
-    }
+    let tempFileId = null;
+    try {
+        const decoded = Utilities.base64Decode(fileData.content, Utilities.Charset.UTF_8);
+        const blob = Utilities.newBlob(decoded, fileData.mimeType, fileData.fileName);
+        const tempSpreadsheetFile = Drive.Files.insert({ title: `temp_upload_${uploadType}` }, blob, { convert: true });
 
-    tempFileId = tempSpreadsheetFile.id; // Simpan ID untuk proses selanjutnya dan penghapusan
-    const importSs = SpreadsheetApp.openById(tempFileId);
+        if (!tempSpreadsheetFile || !tempSpreadsheetFile.id) {
+            throw new Error("Gagal membuat file sementara di Google Drive. Pastikan Drive API telah diaktifkan.");
+        }
 
-    const validationSheet = importSs.getSheetByName('_validation_');
-    if (!validationSheet) {
-      throw new Error("File tidak valid. Harap gunakan template yang diunduh langsung dari aplikasi.");
-    }
-    const fileIdentifier = validationSheet.getRange("A1").getValue().toString().trim();
-    if (fileIdentifier !== uploadType) {
-      const formatTypeName = (typeStr) => typeStr.replace(/_/g, ' ').replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase());
-      throw new Error(`Kesalahan Upload: Anda mencoba mengunggah template untuk "${formatTypeName(fileIdentifier)}" ke slot "${formatTypeName(uploadType)}".`);
-    }
+        tempFileId = tempSpreadsheetFile.id;
+        const importSs = SpreadsheetApp.openById(tempFileId);
 
-    const targetSs = getSpreadsheet(spreadsheetId);
-    
-    if (uploadType.startsWith('rapor_')) {
-      const semesterKey = uploadType.split('_').slice(1).join('_');
-      const allMapel = getMapel(spreadsheetId);
-      const countP = processSheetImport(targetSs, `Rapor_Pengetahuan_${semesterKey}`, importSs.getSheetByName('Pengetahuan'), allMapel, selectedKelas);
-      const countK = processSheetImport(targetSs, `Rapor_Keterampilan_${semesterKey}`, importSs.getSheetByName('Keterampilan'), allMapel, selectedKelas);
-      return { status: "success", message: `Impor Rapor Selesai. Pengetahuan: ${countP} nilai diupdate. Keterampilan: ${countK} nilai diupdate.` };
-    
-    } else if (uploadType === 'ujian_gabungan') {
-      const mapelUM = getMapelByJenis(spreadsheetId, 'madrasah');
-      const mapelUP = getMapelByJenis(spreadsheetId, 'praktek');
-      const countUM = processSheetImport(targetSs, SHEET_NILAI_UJIAN_MADRASAH, importSs.getSheetByName('Ujian Madrasah'), mapelUM, selectedKelas);
-      const countUP = processSheetImport(targetSs, SHEET_NILAI_UJIAN_PRAKTEK, importSs.getSheetByName('Ujian Praktek'), mapelUP, selectedKelas);
-      return { status: "success", message: `Impor Ujian Selesai. U. Madrasah: ${countUM} nilai diupdate. U. Praktek: ${countUP} nilai diupdate.` };
-    } else {
-      throw new Error("Tipe upload tidak dikenali.");
-    }
+        const validationSheet = importSs.getSheetByName('_validation_');
+        if (!validationSheet) {
+            throw new Error("File tidak valid. Harap gunakan template yang diunduh langsung dari aplikasi.");
+        }
+        const fileIdentifier = validationSheet.getRange("A1").getValue().toString().trim();
+        if (fileIdentifier !== uploadType) {
+            const formatTypeName = (typeStr) => typeStr.replace(/_/g, ' ').replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase());
+            throw new Error(`Kesalahan Upload: Anda mencoba mengunggah template untuk "${formatTypeName(fileIdentifier)}" ke slot "${formatTypeName(uploadType)}".`);
+        }
 
-  } catch (e) {
-    Logger.log(`uploadNilaiFromExcel Error: ${e.stack}`);
-    return { status: "error", message: e.toString() };
-  } finally {
-    if (tempFileId) {
-      DriveApp.getFileById(tempFileId).setTrashed(true);
+        const targetSs = getSpreadsheet(spreadsheetId);
+        
+        // Objek untuk mengumpulkan hasil dari semua sheet
+        const finalResult = {
+            newValuesCount: 0,
+            skippedCount: 0,
+            conflicts: []
+        };
+
+        const processAndCombine = (sheetName, importSheet, mapelList) => {
+            const result = processSheetImport(targetSs, sheetName, importSheet, mapelList, selectedKelas);
+            finalResult.newValuesCount += result.newValuesCount;
+            finalResult.skippedCount += result.skippedCount;
+            finalResult.conflicts.push(...result.conflicts);
+        };
+
+        if (uploadType.startsWith('rapor_')) {
+            const semesterKey = uploadType.split('_').slice(1).join('_');
+            const allMapel = getMapel(spreadsheetId);
+            processAndCombine(`Rapor_Pengetahuan_${semesterKey}`, importSs.getSheetByName('Pengetahuan'), allMapel);
+            processAndCombine(`Rapor_Keterampilan_${semesterKey}`, importSs.getSheetByName('Keterampilan'), allMapel);
+        } else if (uploadType === 'ujian_gabungan') {
+            const mapelUM = getMapelByJenis(spreadsheetId, 'madrasah');
+            const mapelUP = getMapelByJenis(spreadsheetId, 'praktek');
+            processAndCombine(SHEET_NILAI_UJIAN_MADRASAH, importSs.getSheetByName('Ujian Madrasah'), mapelUM);
+            processAndCombine(SHEET_NILAI_UJIAN_PRAKTEK, importSs.getSheetByName('Ujian Praktek'), mapelUP);
+        } else {
+            throw new Error("Tipe upload tidak dikenali.");
+        }
+
+        // Kembalikan objek finalResult yang sudah digabungkan
+        return { 
+            status: "success", 
+            ...finalResult 
+        };
+
+    } catch (e) {
+        Logger.log(`uploadNilaiFromExcel Error: ${e.stack}`);
+        return { status: "error", message: e.toString() };
+    } finally {
+        if (tempFileId) {
+            DriveApp.getFileById(tempFileId).setTrashed(true);
+        }
     }
-  }
 }
 
 // ===== AWAL KODE TAMBAHAN UNTUK FITUR BROADCAST =====
@@ -6896,11 +6942,9 @@ function getValidationData(token) {
     }
 }
 
-// GANTI FUNGSI LAMA DENGAN VERSI BARU INI DI Kode.gs.html
-
 /**
- * [VERSI FINAL - PropertiesService] Membuat QR code minimalis dengan shortCode 
- * yang disimpan di PropertiesService, bukan di sheet.
+ * [VERSI FINAL - MENGGUNAKAN SHEET] Membuat QR code dengan kode pendek
+ * yang disimpan di sheet "QR_Redirects" untuk skalabilitas.
  */
 function getQrCodeAsBase64(nisn, spreadsheetId) {
   try {
@@ -6913,28 +6957,34 @@ function getQrCodeAsBase64(nisn, spreadsheetId) {
     }
     const schoolCode = schoolRow[12];
 
-    // 1. Buat token JWT yang aman (fungsi ini tidak perlu diubah)
+    // 1. Buat token JWT yang aman (tidak berubah)
     const fullToken = generateValidationToken(nisn, schoolCode);
     
-    // 2. Buat shortCode yang unik
-    const scriptProperties = PropertiesService.getScriptProperties();
+    // 2. Siapkan sheet untuk menyimpan kode
+    let qrSheet = masterSs.getSheetByName(SHEET_QR_REDIRECTS);
+    if (!qrSheet) {
+      qrSheet = masterSs.insertSheet(SHEET_QR_REDIRECTS);
+      qrSheet.appendRow(['ShortCode', 'FullToken']);
+    }
+
+    // 3. Buat shortCode yang unik
+    const existingCodes = qrSheet.getLastRow() > 1 ? qrSheet.getRange(2, 1, qrSheet.getLastRow() - 1, 1).getValues().flat() : [];
     let shortCode;
     let isUnique = false;
     while (!isUnique) {
       shortCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      // Cek apakah shortCode sudah ada di Properties
-      if (scriptProperties.getProperty(shortCode) === null) {
+      if (!existingCodes.includes(shortCode)) {
         isUnique = true;
       }
     }
 
-    // 3. Simpan pasangan kode ke PropertiesService, bukan ke sheet
-    scriptProperties.setProperty(shortCode, fullToken);
+    // 4. Simpan pasangan kode ke dalam sheet, bukan Properti Skrip
+    qrSheet.appendRow([shortCode, fullToken]);
 
-    // 4. Buat URL pendek untuk QR Code
+    // 5. Buat URL pendek untuk QR Code
     const shortUrl = `${ScriptApp.getService().getUrl()}?v=${shortCode}`;
     
-    // 5. Generate QR Code dari URL pendek tersebut
+    // 6. Generate QR Code dari URL pendek tersebut
     const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shortUrl)}&ecc=H`;
     const qrCodeBlob = UrlFetchApp.fetch(qrCodeApiUrl).getBlob();
     
@@ -10670,5 +10720,46 @@ function getPendingApprovalCount(spreadsheetId) {
     Logger.log(`getPendingApprovalCount Error: ${e.message}`);
     // Jika error, lebih baik kembalikan 0 agar tidak menampilkan badge yang salah
     return { status: "success", count: 0 };
+  }
+}
+
+// Fungsi baru di Kode.gs.html
+
+/**
+ * [BARU] Memperbarui nilai secara massal berdasarkan pilihan resolusi konflik dari admin.
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @param {Array<object>} updatesToPerform - Array objek berisi detail nilai yang akan diupdate.
+ * @returns {object} Hasil dari operasi pembaruan.
+ */
+function batchUpdateNilai(spreadsheetId, updatesToPerform) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    let updatedCount = 0;
+
+    updatesToPerform.forEach(update => {
+      let targetSheet = ss.getSheetByName(update.sheetName);
+      if (targetSheet) {
+        // Logika untuk menemukan baris dan kolom yang benar dan memperbarui nilainya
+        const data = targetSheet.getDataRange().getDisplayValues();
+        const headers = data[0];
+        const nisnColIndex = headers.indexOf("NISN");
+        const mapelColIndex = headers.indexOf(update.mapelKode);
+        
+        if (nisnColIndex !== -1 && mapelColIndex !== -1) {
+          for (let i = 1; i < data.length; i++) {
+            if (data[i][nisnColIndex] === update.nisn) {
+              targetSheet.getRange(i + 1, mapelColIndex + 1).setValue(update.newValue);
+              updatedCount++;
+              break;
+            }
+          }
+        }
+      }
+    });
+
+    return { status: "success", message: `${updatedCount} data nilai berhasil diperbarui.` };
+  } catch (e) {
+    Logger.log("batchUpdateNilai Error: " + e.message);
+    return { status: "error", message: "Gagal memperbarui nilai: " + e.message };
   }
 }
