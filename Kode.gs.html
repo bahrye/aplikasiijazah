@@ -329,7 +329,7 @@ function registerUser(userData, otp) {
       return { status: "error", message: "Kode OTP salah atau telah kedaluwarsa." };
     }
     const lock = LockService.getScriptLock();
-    lock.waitLock(30000);
+    lock.waitLock(300000);
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const configSheet = ss.getSheetByName('Konfigurasi Sistem');
@@ -8207,7 +8207,7 @@ function getGuru(spreadsheetId) {
         row: index + 2,
         nama: row[0],
         username: row[1],
-        password: '******',
+        password: '',
         mapel: row[3],
         nip: row[4],
         isModifiedByGuru: row[5],
@@ -8280,28 +8280,28 @@ function updateGuru(spreadsheetId, guruData) {
             sheet.getRange(rowToUpdate, 7).setValue(guruData.kelas_diajar || ''); // Kelas
         } else {
             // Admin dapat mengubah semua data jika guru belum pernah mengubahnya.
-            
-            // --- AWAL PERBAIKAN KEAMANAN ---
-            
-            // 1. Buat salt dan hash untuk password baru.
-            const salt = generateSalt();
-            const hashedPassword = hashPassword(guruData.password_guru, salt);
-            const newStoredPasswordString = `${salt}:${hashedPassword}`;
-            
-            // 2. Siapkan data baris lengkap dengan password yang sudah di-hash.
-            const dataToUpdate = [[
-                guruData.nama_guru,
-                guruData.username_guru,
-                newStoredPasswordString, // <-- GUNAKAN PASSWORD YANG SUDAH AMAN
-                guruData.mapel_kode_guru,
-                guruData.nip_guru ? "'" + guruData.nip_guru : '',
-                'TIDAK', // Status tetap TIDAK karena diubah oleh admin
-                guruData.kelas_diajar || ''
-            ]];
 
-            // 3. Tulis semua data baru ke sheet.
-            sheet.getRange(rowToUpdate, 1, 1, 7).setValues(dataToUpdate);
-            // --- AKHIR PERBAIKAN KEAMANAN ---
+            // PERUBAHAN DI SINI:
+            // Ambil nilai yang ada saat ini dari spreadsheet
+            const dataToUpdate = sheet.getRange(rowToUpdate, 1, 1, 7).getValues()[0];
+
+            // Perbarui data non-kredensial
+            dataToUpdate[0] = guruData.nama_guru;
+            dataToUpdate[1] = guruData.username_guru;
+            dataToUpdate[3] = guruData.mapel_kode_guru;
+            dataToUpdate[4] = guruData.nip_guru ? "'" + guruData.nip_guru : '';
+            dataToUpdate[6] = guruData.kelas_diajar || '';
+
+            // HANYA perbarui password jika ada nilai baru yang diinput
+            if (guruData.password_guru && guruData.password_guru.trim() !== '') {
+                const salt = generateSalt();
+                const hashedPassword = hashPassword(guruData.password_guru, salt);
+                dataToUpdate[2] = `${salt}:${hashedPassword}`; // Timpa password lama dengan hash baru
+            }
+            // Jika guruData.password_guru kosong, dataToUpdate[2] (password lama) tidak akan diubah.
+
+            // Tulis kembali seluruh baris dengan data yang sudah diperbarui
+            sheet.getRange(rowToUpdate, 1, 1, 7).setValues([dataToUpdate]);
         }
         
         return { status: "success", message: "Data guru berhasil diperbarui." };
