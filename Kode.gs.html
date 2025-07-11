@@ -47,37 +47,38 @@ const SHEET_QR_REDIRECTS = "QR_Redirects";
 function doGet(e) {
   const webAppUrl = ScriptApp.getService().getUrl();
 
+  // --- BLOK UNTUK VALIDASI QR CODE ---
   if (e.parameter.v) {
     try {
       const shortCode = e.parameter.v;
-      const masterSs = SpreadsheetApp.getActiveSpreadsheet();
-      const redirectSheet = masterSs.getSheetByName(SHEET_QR_REDIRECTS);
+      // 1. Ambil token dari PropertiesService
+      const scriptProperties = PropertiesService.getScriptProperties();
+      const fullToken = scriptProperties.getProperty(shortCode);
 
-      // Cek jika sheet ada dan tidak kosong
-      if (!redirectSheet || redirectSheet.getLastRow() < 2) {
-        return createErrorPage("Sistem Error", "Database redirect QR tidak ditemukan. Hubungi admin.");
-      }
-
-      const data = redirectSheet.getRange(2, 1, redirectSheet.getLastRow() - 1, 2).getValues();
-      const match = data.find(row => row[0] === shortCode);
-
-      if (match) {
-        const fullToken = match[1];
+      if (fullToken) {
+        // Jika token ditemukan, bangun halaman validasi
         return buildValidationPage(fullToken);
       } else {
-        // [PERUBAHAN 1] Panggil fungsi error page di sini
+        // Jika kode tidak ditemukan, tampilkan halaman error
         return createErrorPage(
           "Kode Tidak Valid", 
           "Kode validasi yang Anda tuju tidak ditemukan atau sudah tidak berlaku. Pastikan Anda memindai QR Code yang benar dan valid."
         );
       }
     } catch (err) {
-      // [PERUBAHAN 2] Panggil juga fungsi error page jika terjadi kesalahan teknis
-      return createErrorPage("Terjadi Kesalahan", `Gagal memproses permintaan Anda. Silakan coba lagi atau hubungi admin. Pesan error: ${err.message}`);
+      return createErrorPage("Terjadi Kesalahan", `Gagal memproses permintaan Anda. Error: ${err.message}`);
     }
   }
+  // --- AKHIR BLOK VALIDASI QR CODE ---
 
   const page = e.parameter.page;
+
+  // Cek jika halaman yang diminta adalah 'validasi' dan ada parameter 'token'
+  if (page === 'validasi' && e.parameter.token) {
+    const token = e.parameter.token;
+    // Panggil fungsi yang membangun halaman validasi HTML
+    return buildValidationPage(token); // Fungsi ini sudah Anda miliki
+  }
   if (page === 'siswa') {
     const template = HtmlService.createTemplateFromFile('Siswa.html');
     template.webAppUrl = webAppUrl;
@@ -97,11 +98,6 @@ function doGet(e) {
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   }
-  // ==========================================
-  else if (page === 'validasi') {
-    const token = e.parameter.token;
-    return buildValidationPage(token);
-  } 
   else {
     // Halaman default (Index.html) untuk admin/pengguna
     const template = HtmlService.createTemplateFromFile('Index');
@@ -6787,87 +6783,102 @@ function getDocumentSettings(spreadsheetId) {
 // [BARU] FUNGSI UNTUK VALIDASI QR CODE
 //=================================================================
 
-/**
- * [HELPER - VERSI AMAN] Membuat token validasi yang aman menggunakan HMAC-SHA256.
- * @param {string} nisn - NISN siswa.
- * @param {string} spreadsheetId - ID spreadsheet sekolah.
- * @returns {string} Token yang sudah dienkripsi dan ditandatangani dengan format "payload.signature".
- */
-function generateValidationToken(nisn, schoolCode) { // <-- Parameter diubah
-    const SECRET_KEY = PropertiesService.getScriptProperties().getProperty('QR_TOKEN_SECRET');
-    if (!SECRET_KEY) {
-        throw new Error("Kunci rahasia untuk token QR tidak diatur di Properti Skrip.");
-    }
-    // Payload sekarang berisi 'code' yang lebih pendek, bukan 'ssId' yang panjang
-    const payload = JSON.stringify({
-        nisn: nisn,
-        code: schoolCode, // <-- Perubahan utama di sini
-        exp: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60) // Expired dalam 1 tahun
-    });
-    const base64Payload = Utilities.base64Encode(payload, Utilities.Charset.UTF_8);
-    const signature = Utilities.computeHmacSignature(
-        Utilities.MacAlgorithm.HMAC_SHA_256,
-        base64Payload,
-        SECRET_KEY,
-        Utilities.Charset.UTF_8
-    );
-    const base64Signature = Utilities.base64Encode(signature);
-    return `${base64Payload}.${base64Signature}`;
-}
+// GANTI FUNGSI LAMA DENGAN INI DI Kode.gs.html
 
 /**
- * [PUBLIC - VERSI AMAN] Mengambil data validasi setelah memverifikasi keaslian token HMAC.
- * @param {string} token - Token yang di-scan dari QR code dengan format "payload.signature".
- * @returns {object} Objek berisi data siswa dan sekolah jika valid.
+ * [VERSI BARU - SUPER CEPAT] Membuat token validasi yang aman menggunakan schoolCode.
+ * @param {string} nisn - NISN siswa.
+ * @param {string} schoolCode - Kode unik sekolah yang lebih pendek.
+ * @returns {string} Token JWT yang self-contained dan lebih pendek.
+ */
+function generateValidationToken(nisn, schoolCode) {
+    const SECRET_KEY = PropertiesService.getScriptProperties().getProperty('JWT_SECRET');
+    if (!SECRET_KEY) {
+        throw new Error("Kunci rahasia JWT tidak diatur di Properti Skrip.");
+    }
+
+    const header = { "alg": "HS256", "typ": "JWT" };
+    
+    // PAYLOAD SEKARANG MENGGUNAKAN 'code' YANG PENDEK, BUKAN 'ssId' YANG PANJANG
+    const payload = {
+      "nisn": nisn,
+      "code": schoolCode, // <-- Perubahan utama di sini
+      "exp": Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60) // Expired dalam 1 tahun
+    };
+
+    const base64UrlEncode = (data) => {
+      const jsonString = JSON.stringify(data);
+      return Utilities.base64EncodeWebSafe(jsonString).replace(/=/g, '');
+    };
+    
+    const encodedHeader = base64UrlEncode(header);
+    const encodedPayload = base64UrlEncode(payload);
+
+    const signatureInput = `${encodedHeader}.${encodedPayload}`;
+    const signatureBytes = Utilities.computeHmacSignature(
+        Utilities.MacAlgorithm.HMAC_SHA_256, signatureInput, SECRET_KEY, Utilities.Charset.UTF_8
+    );
+    const encodedSignature = Utilities.base64EncodeWebSafe(signatureBytes).replace(/=/g, '');
+
+    return `${encodedHeader}.${encodedPayload}.${encodedSignature}`;
+}
+
+// GANTI FUNGSI LAMA DENGAN INI DI Kode.gs.html
+
+/**
+ * [VERSI BARU - SUPER CEPAT] Mengambil data validasi dengan mencari ssId berdasarkan schoolCode dari token.
  */
 function getValidationData(token) {
     try {
-        const SECRET_KEY = PropertiesService.getScriptProperties().getProperty('QR_TOKEN_SECRET');
+        const SECRET_KEY = PropertiesService.getScriptProperties().getProperty('JWT_SECRET');
         if (!SECRET_KEY) {
             throw new Error("Kunci rahasia server tidak dikonfigurasi.");
         }
 
         const parts = token.split('.');
-        if (parts.length !== 2) return { status: 'error', message: 'Format token tidak valid.' };
+        if (parts.length !== 3) return { status: 'error', message: 'Format token tidak valid.' };
         
-        const base64Payload = parts[0];
-        const base64SignatureFromToken = parts[1];
-        const expectedSignature = Utilities.computeHmacSignature(Utilities.MacAlgorithm.HMAC_SHA_256, base64Payload, SECRET_KEY, Utilities.Charset.UTF_8);
-        const base64ExpectedSignature = Utilities.base64Encode(expectedSignature);
-
-        if (base64ExpectedSignature !== base64SignatureFromToken) {
+        // Verifikasi signature (tidak ada perubahan di sini)
+        const signatureInput = `${parts[0]}.${parts[1]}`;
+        const expectedSignatureBytes = Utilities.computeHmacSignature(Utilities.MacAlgorithm.HMAC_SHA_256, signatureInput, SECRET_KEY, Utilities.Charset.UTF_8);
+        const expectedSignature = Utilities.base64EncodeWebSafe(expectedSignatureBytes).replace(/=/g, '');
+        if (expectedSignature !== parts[2]) {
             return { status: 'error', message: 'Token tidak asli atau telah dimodifikasi.' };
         }
 
-        const decodedPayload = Utilities.base64Decode(base64Payload, Utilities.Charset.UTF_8);
-        const payload = JSON.parse(Utilities.newBlob(decodedPayload).getDataAsString());
+        const decodedPayload = Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[1])).getDataAsString();
+        const payload = JSON.parse(decodedPayload);
 
         if (payload.exp < Math.floor(Date.now() / 1000)) {
             return { status: 'error', message: 'Token validasi telah kedaluwarsa.' };
         }
         
-        // [PERUBAHAN UTAMA] Cari Spreadsheet ID berdasarkan 'code' dari payload
+        // === PERUBAHAN UTAMA DIMULAI DI SINI ===
+        // 1. Ambil 'code' (Kode Sekolah) dari payload
+        const schoolCode = payload.code;
+        const nisn = payload.nisn;
+
+        // 2. Cari baris pengguna di sheet 'Data Pengguna' berdasarkan 'code'
         const masterSs = SpreadsheetApp.getActiveSpreadsheet();
         const userSheet = masterSs.getSheetByName(SHEET_PENGGUNA);
         const data = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 13).getValues();
-        const schoolRow = data.find(row => row[12] && row[12].toUpperCase() === payload.code.toUpperCase());
+        const schoolRow = data.find(row => row[12] && row[12].toUpperCase() === schoolCode.toUpperCase());
 
         if (!schoolRow) {
-          return { status: 'error', message: 'Kode sekolah di dalam token tidak ditemukan.' };
+          return { status: 'error', message: 'Kode sekolah di dalam token tidak ditemukan atau tidak valid.' };
         }
+        
+        // 3. Ambil 'spreadsheetId' dari baris yang ditemukan
         const spreadsheetId = schoolRow[5];
-        // Akhir dari perubahan utama
+        // === PERUBAHAN UTAMA SELESAI ===
 
+        // Lanjutkan proses seperti biasa menggunakan spreadsheetId yang sudah ditemukan
         const schoolData = getSchoolData(spreadsheetId);
-        if (!schoolData || !schoolData.namaSekolah) {
-            return { status: 'error', message: 'Data sekolah tidak dapat ditemukan.' };
-        }
+        if (!schoolData) return { status: 'error', message: 'Data sekolah tidak dapat ditemukan.' };
 
-        const student = getStudents(spreadsheetId).find(s => s.nisn === payload.nisn);
-        if (!student) {
-            return { status: 'error', message: 'Data siswa tidak ditemukan.' };
-        }
-
+        const student = getStudents(spreadsheetId).find(s => s.nisn === nisn);
+        if (!student) return { status: 'error', message: 'Data siswa tidak ditemukan.' };
+        
         const rekapIjazah = getSheetDataAsObject(spreadsheetId, SHEET_REKAP_IJAZAH);
         const studentRekap = rekapIjazah[student.nisn] || {};
         const rataRata = studentRekap['Rata-rata'] !== undefined ? parseFloat(studentRekap['Rata-rata']).toFixed(2) : 'N/A';
@@ -6875,21 +6886,21 @@ function getValidationData(token) {
         return {
             status: 'success',
             data: {
-                namaSekolah: schoolData.namaSekolah.toUpperCase(),
-                nisn: student.nisn,
-                namaLengkap: student.nama.toUpperCase(),
-                rataRataIjazah: rataRata
+                namaSekolah: schoolData.namaSekolah, nisn: student.nisn, namaLengkap: student.nama, rataRataIjazah: rataRata
             }
         };
 
     } catch (e) {
-        Logger.log("getValidationData Error: " + e.message);
+        Logger.log("getValidationData (JWT) Error: " + e.message);
         return { status: 'error', message: 'Token tidak valid atau rusak.' };
     }
 }
 
+// GANTI FUNGSI LAMA DENGAN VERSI BARU INI DI Kode.gs.html
+
 /**
- * [MODIFIKASI] Mengubah fungsi QR Code untuk menyematkan URL validasi dengan token.
+ * [VERSI FINAL - PropertiesService] Membuat QR code minimalis dengan shortCode 
+ * yang disimpan di PropertiesService, bukan di sheet.
  */
 function getQrCodeAsBase64(nisn, spreadsheetId) {
   try {
@@ -6902,24 +6913,33 @@ function getQrCodeAsBase64(nisn, spreadsheetId) {
     }
     const schoolCode = schoolRow[12];
 
-    // 1. Buat token panjang yang aman seperti biasa
+    // 1. Buat token JWT yang aman (fungsi ini tidak perlu diubah)
     const fullToken = generateValidationToken(nisn, schoolCode);
     
-    // 2. Buat kode pendek unik (6 karakter acak)
-    const shortCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    // 2. Buat shortCode yang unik
+    const scriptProperties = PropertiesService.getScriptProperties();
+    let shortCode;
+    let isUnique = false;
+    while (!isUnique) {
+      shortCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      // Cek apakah shortCode sudah ada di Properties
+      if (scriptProperties.getProperty(shortCode) === null) {
+        isUnique = true;
+      }
+    }
 
-    // 3. Simpan pasangan kode pendek dan token panjang ke sheet QR_Redirects
-    const redirectSheet = masterSs.getSheetByName(SHEET_QR_REDIRECTS);
-    redirectSheet.appendRow([shortCode, fullToken]);
+    // 3. Simpan pasangan kode ke PropertiesService, bukan ke sheet
+    scriptProperties.setProperty(shortCode, fullToken);
 
     // 4. Buat URL pendek untuk QR Code
     const shortUrl = `${ScriptApp.getService().getUrl()}?v=${shortCode}`;
     
-    // 5. Generate QR Code dari URL yang JAUH LEBIH PENDEK
-    const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shortUrl)}&ecc=H&margin=4`;
-
+    // 5. Generate QR Code dari URL pendek tersebut
+    const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shortUrl)}&ecc=H`;
     const qrCodeBlob = UrlFetchApp.fetch(qrCodeApiUrl).getBlob();
+    
     return Utilities.base64Encode(qrCodeBlob.getBytes());
+
   } catch (e) {
     Logger.log("Gagal membuat QR Code Base64: " + e.message);
     return null;
@@ -7666,7 +7686,7 @@ function buildValidationPage(token) {
         <p class="text-center text-gray-600 font-semibold mt-1 mb-6">${data.namaSekolah}</p>
         <div class="overflow-x-auto border rounded-lg">
           <table class="min-w-full text-left text-sm md:text-base">
-             <thead class="bg-gray-50"><tr><th class="px-4 py-3 font-medium text-gray-600">Data</th><th class="px-4 py-3 font-medium text-gray-800">Informasi Siswa</th></tr></thead><tbody class="divide-y divide-gray-200"><tr class="border-b"><td class="px-4 py-3 text-gray-500">NISN</td><td class="px-4 py-3 font-bold text-gray-900">${data.nisn}</td></tr><tr class="border-b"><td class="px-4 py-3 text-gray-500">Nama Lengkap Siswa</td><td class="px-4 py-3 font-bold text-gray-900">${data.namaLengkap}</td></tr><tr><td class="px-4 py-3 text-gray-500">Nilai Rata-Rata Ijazah</td><td class="px-4 py-3 font-bold text-blue-600 text-lg">${data.rataRataIjazah}</td></tr></tbody>
+             <thead class="bg-gray-50"><tr><th class="px-4 py-3 font-medium text-gray-600">Data</th><th class="px-4 py-3 font-medium text-gray-800">Informasi Siswa</th></tr></thead><tbody class="divide-y divide-gray-200"><tr class="border-b"><td class="px-4 py-3 text-gray-500">NISN</td><td class="px-4 py-3 font-bold text-gray-900">${data.nisn}</td></tr><tr class="border-b"><td class="px-4 py-3 text-gray-500">Nama Lengkap Siswa</td><td class="px-4 py-3 font-bold text-gray-900">${data.namaLengkap.toUpperCase()}</td></tr><tr><td class="px-4 py-3 text-gray-500">Nilai Rata-Rata Ijazah</td><td class="px-4 py-3 font-bold text-blue-600 text-lg">${data.rataRataIjazah}</td></tr></tbody>
           </table>
         </div>
         <div class="mt-6 p-3 bg-green-100 text-green-800 rounded-lg flex items-center justify-center gap-3">
