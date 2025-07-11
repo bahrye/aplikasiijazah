@@ -711,35 +711,34 @@
         }
     }
 
-    // File: Guru.html (di dalam tag <script>)
-    // GANTI FUNGSI loadProfilePage() YANG LAMA DENGAN INI
-
     function loadProfilePage() {
+        // Ambil data guru dari session
         const guruData = JSON.parse(sessionStorage.getItem('guruData'));
         
-        // [PERBAIKAN] Langsung targetkan setiap input field, bukan form
+        // Deklarasikan semua elemen HANYA SATU KALI di awal fungsi
         const namaInput = document.getElementById('profile_nama_guru');
         const nipInput = document.getElementById('profile_nip_guru');
         const usernameInput = document.getElementById('profile_username_guru');
         const passwordInput = document.getElementById('profile_password_guru');
 
-        // Kosongkan nilai saat memuat
-        namaInput.value = '';
-        nipInput.value = '';
-        usernameInput.value = '';
-        passwordInput.value = '';
-        
+        // Tampilkan notifikasi loading
         showNotification('Memuat data profil...', 'info');
 
+        // Panggil data terbaru dari server
         google.script.run
             .withSuccessHandler(response => {
                 if (response.status === 'success') {
                     const profile = response.profile;
-                    // [PERBAIKAN] Isi nilai ke setiap input secara langsung
+                    
+                    // Isi nilai ke input yang sudah dideklarasikan
                     namaInput.value = profile.nama;
-                    nipInput.value = profile.nip || ''; // Gunakan string kosong jika NIP null/undefined
+                    nipInput.value = profile.nip || '';
                     usernameInput.value = profile.username;
-                    passwordInput.value = profile.password;
+                    
+                    // Atur kolom password agar kosong dan memberikan instruksi
+                    passwordInput.value = '';
+                    passwordInput.placeholder = "Isi HANYA jika ingin mengubah password";
+                    
                 } else {
                     showNotification(response.message, 'error');
                 }
