@@ -4643,12 +4643,14 @@
             if (passwordErrors.length > 0) {
                 let errorHtml = '<strong class="block text-center">Password belum memenuhi syarat:</strong><ul class="list-disc list-inside text-left mt-1 text-sm">';
                 passwordErrors.forEach(error => {
+                    // [PERBAIKAN] Menggunakan `<li>` untuk setiap item error
                     errorHtml += `<li>${error}</li>`;
                 });
                 errorHtml += '</ul>';
+                // [SOLUSI] Ganti .textContent menjadi .innerHTML
                 messageDiv.innerHTML = errorHtml;
                 messageDiv.classList.add('text-red-600');
-                return; // Hentikan proses jika password tidak valid
+                return;
             }
 
             // Tampilkan loading
@@ -14299,6 +14301,11 @@
             const credentialsInfo = document.getElementById('guru-credentials-info');
             const regenerateContainer = document.getElementById('regenerate-credentials-container');
             const regenerateBtn = document.getElementById('regenerate-credentials-btn');
+            
+            // Set placeholder dinamis
+            passwordInput.placeholder = "Isi untuk mengubah password";
+            // Kosongkan nilainya agar admin tidak perlu menghapus '******'
+            passwordInput.value = '';
             
             // ===== AWAL PERUBAHAN BARU: Ambil tombol ikon mata =====
             const passwordToggleButton = document.querySelector('[data-toggle-password="password_guru_form"]');
