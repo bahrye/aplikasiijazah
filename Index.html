@@ -667,6 +667,36 @@
             100% { transform: rotate(360deg); }
         }
         /* ===== AKHIR KODE BARU ===== */
+
+        /* ===== AWAL KODE BARU UNTUK FEEDBACK LOGIN GAGAL ===== */
+
+        /* Kelas untuk mengubah border input menjadi merah */
+        .input-error {
+          border-color: #ef4444 !important; /* Warna merah (Tailwind's red-500) */
+          box-shadow: 0 0 0 2px #fecaca;   /* Tambahkan glow merah tipis (Tailwind's red-200) */
+        }
+
+        /* Kelas untuk menerapkan animasi getar */
+        .form-shake {
+          animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        /* Definisi animasi getar (keyframes) */
+        @keyframes shake {
+          10%, 90% {
+            transform: translate3d(-1px, 0, 0);
+          }
+          20%, 80% {
+            transform: translate3d(2px, 0, 0);
+          }
+          30%, 50%, 70% {
+            transform: translate3d(-4px, 0, 0);
+          }
+          40%, 60% {
+            transform: translate3d(4px, 0, 0);
+          }
+        }
+        /* ===== AKHIR KODE BARU ===== */
     </style>
 </head>
 <body class="bg-gray-100">
@@ -4521,69 +4551,92 @@
             inactivityTimer = setTimeout(logoutUser, 30 * 60 * 1000); // 30 menit
         }
 
+        // GANTI LAGI FUNGSI handleLogin DI INDEX.HTML DENGAN KODE LENGKAP INI
+
         function handleLogin(event) {
             event.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
             const loginButton = document.getElementById('loginButton');
             const loginButtonText = document.getElementById('loginButtonText');
             const loginSpinner = document.getElementById('loginSpinner');
             const errorMessageDiv = document.getElementById('login-error-message');
+            const formContainer = document.querySelector('#login-container > div');
 
+            // Reset visual
             errorMessageDiv.textContent = '';
+            emailInput.classList.remove('input-error');
+            passwordInput.classList.remove('input-error');
+            formContainer.classList.remove('form-shake');
+            emailInput.addEventListener('input', () => emailInput.classList.remove('input-error'));
+            passwordInput.addEventListener('input', () => passwordInput.classList.remove('input-error'));
+
+            // Set tombol ke status "loading"
             loginButton.disabled = true;
             loginButtonText.classList.add('hidden');
             loginSpinner.classList.remove('hidden');
 
             google.script.run
                 .withSuccessHandler(response => {
+                    // Selalu reset tombol tidak peduli hasilnya
                     loginButton.disabled = false;
                     loginButtonText.classList.remove('hidden');
                     loginSpinner.classList.add('hidden');
 
                     if (response && response.status === 'success') {
-                        sessionStorage.setItem('userEmail', response.email);
-                        sessionStorage.setItem('userRole', response.role);
-                        sessionStorage.setItem('webAppUrl', response.webAppUrl);
+                        // [PERBAIKAN UTAMA] Gunakan try...catch untuk menangkap error setelah login
+                        try {
+                            console.log("Login berhasil, mencoba menampilkan dashboard...");
+                            sessionStorage.setItem('userEmail', response.email);
+                            sessionStorage.setItem('userRole', response.role);
+                            sessionStorage.setItem('webAppUrl', response.webAppUrl);
+                            sessionStorage.setItem('isLocked', response.isLocked ? 'true' : 'false');
 
-                        sessionStorage.setItem('isLocked', response.isLocked ? 'true' : 'false');
+                            document.getElementById('auth-wrapper').classList.add('hidden');
+                            document.getElementById('app-container').classList.remove('hidden');
+                            document.getElementById('hamburger-btn').classList.add('is-active');
 
-                        document.getElementById('auth-wrapper').classList.add('hidden');
-                        document.getElementById('app-container').classList.remove('hidden');
-                        document.getElementById('hamburger-btn').classList.add('is-active');
+                            if (response.role === 'Superadmin') {
+                                initializeSuperadminApp();
+                            } else {
+                                userSpreadsheetId = response.spreadsheetId;
+                                sessionStorage.setItem('userSpreadsheetId', userSpreadsheetId);
+                                initializeApp('dashboard');
+                            }
+                            
+                            // Tampilkan notifikasi jika ada
+                            setTimeout(() => {
+                                if (response.newChangelog) showNewChangelogPopup(response.newChangelog);
+                                if (response.newBroadcast) showBroadcastModal(response.newBroadcast);
+                            }, 500);
 
-                        if (response.role === 'Superadmin') {
-                            initializeSuperadminApp();
-                        } else {
-                            userSpreadsheetId = response.spreadsheetId;
-                            sessionStorage.setItem('userSpreadsheetId', userSpreadsheetId);
-                            initializeApp('dashboard');
+                        } catch (e) {
+                            // Jika terjadi error saat mencoba menampilkan dashboard, tampilkan di UI dan console
+                            console.error("Error setelah login berhasil:", e);
+                            errorMessageDiv.textContent = "Terjadi error saat memuat dashboard: " + e.message;
                         }
-                        
-                        // Jeda sedikit agar transisi halaman selesai
-                        setTimeout(() => {
-                            // Cek changelog baru
-                            if (response.newChangelog) {
-                                showNewChangelogPopup(response.newChangelog);
-                            }
-                            // ===== TAMBAHAN BARU: Cek broadcast baru =====
-                            if (response.newBroadcast) {
-                                showBroadcastModal(response.newBroadcast);
-                            }
-                            // ==========================================
-                        }, 500);
 
                     } else {
+                        // Logika jika login GAGAL (kredensial salah)
                         errorMessageDiv.textContent = response ? response.message : 'Login gagal.';
+                        emailInput.classList.add('input-error');
+                        passwordInput.classList.add('input-error');
+                        formContainer.classList.add('form-shake');
+                        setTimeout(() => formContainer.classList.remove('form-shake'), 500);
                     }
                 })
                 .withFailureHandler(error => {
-                    errorMessageDiv.textContent = 'Terjadi kesalahan: ' + error.message;
+                    // Logika jika terjadi ERROR KONEKSI
                     loginButton.disabled = false;
                     loginButtonText.classList.remove('hidden');
                     loginSpinner.classList.add('hidden');
+                    errorMessageDiv.textContent = 'Terjadi kesalahan koneksi: ' + error.message;
+                    emailInput.classList.add('input-error');
+                    passwordInput.classList.add('input-error');
+                    formContainer.classList.add('form-shake');
+                    setTimeout(() => formContainer.classList.remove('form-shake'), 500);
                 })
-                .checkLogin(email, password);
+                .checkLogin(emailInput.value, passwordInput.value);
         }
 
         function validatePassword(password) {
