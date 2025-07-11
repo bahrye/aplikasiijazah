@@ -37,6 +37,7 @@ const SHEET_DATA_GURU = "Data Guru";
 const SHEET_NILAI_GURU_DRAFT = "Draf Nilai Guru";
 const SHEET_NILAI_GURU_SUBMITTED = "Nilai Terkirim Guru";
 const SHEET_PENGAJUAN_NILAI = "Pengajuan Nilai"; // [BARU]
+const SHEET_QR_REDIRECTS = "QR_Redirects"; 
 
 
 /**
@@ -44,9 +45,39 @@ const SHEET_PENGAJUAN_NILAI = "Pengajuan Nilai"; // [BARU]
  * Sekarang mengenali halaman Portal Guru, Siswa, dan Validasi.
  */
 function doGet(e) {
-  const page = e.parameter.page;
   const webAppUrl = ScriptApp.getService().getUrl();
 
+  if (e.parameter.v) {
+    try {
+      const shortCode = e.parameter.v;
+      const masterSs = SpreadsheetApp.getActiveSpreadsheet();
+      const redirectSheet = masterSs.getSheetByName(SHEET_QR_REDIRECTS);
+
+      // Cek jika sheet ada dan tidak kosong
+      if (!redirectSheet || redirectSheet.getLastRow() < 2) {
+        return createErrorPage("Sistem Error", "Database redirect QR tidak ditemukan. Hubungi admin.");
+      }
+
+      const data = redirectSheet.getRange(2, 1, redirectSheet.getLastRow() - 1, 2).getValues();
+      const match = data.find(row => row[0] === shortCode);
+
+      if (match) {
+        const fullToken = match[1];
+        return buildValidationPage(fullToken);
+      } else {
+        // [PERUBAHAN 1] Panggil fungsi error page di sini
+        return createErrorPage(
+          "Kode Tidak Valid", 
+          "Kode validasi yang Anda tuju tidak ditemukan atau sudah tidak berlaku. Pastikan Anda memindai QR Code yang benar dan valid."
+        );
+      }
+    } catch (err) {
+      // [PERUBAHAN 2] Panggil juga fungsi error page jika terjadi kesalahan teknis
+      return createErrorPage("Terjadi Kesalahan", `Gagal memproses permintaan Anda. Silakan coba lagi atau hubungi admin. Pesan error: ${err.message}`);
+    }
+  }
+
+  const page = e.parameter.page;
   if (page === 'siswa') {
     const template = HtmlService.createTemplateFromFile('Siswa.html');
     template.webAppUrl = webAppUrl;
@@ -6762,22 +6793,18 @@ function getDocumentSettings(spreadsheetId) {
  * @param {string} spreadsheetId - ID spreadsheet sekolah.
  * @returns {string} Token yang sudah dienkripsi dan ditandatangani dengan format "payload.signature".
  */
-function generateValidationToken(nisn, spreadsheetId) {
-    // 1. Ambil kunci rahasia dari PropertiesService
+function generateValidationToken(nisn, schoolCode) { // <-- Parameter diubah
     const SECRET_KEY = PropertiesService.getScriptProperties().getProperty('QR_TOKEN_SECRET');
     if (!SECRET_KEY) {
         throw new Error("Kunci rahasia untuk token QR tidak diatur di Properti Skrip.");
     }
-
-    // 2. Buat payload (data inti) dengan masa berlaku 1 tahun
+    // Payload sekarang berisi 'code' yang lebih pendek, bukan 'ssId' yang panjang
     const payload = JSON.stringify({
         nisn: nisn,
-        ssId: spreadsheetId,
-        exp: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60)
+        code: schoolCode, // <-- Perubahan utama di sini
+        exp: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60) // Expired dalam 1 tahun
     });
     const base64Payload = Utilities.base64Encode(payload, Utilities.Charset.UTF_8);
-
-    // 3. Buat signature HMAC menggunakan SHA256
     const signature = Utilities.computeHmacSignature(
         Utilities.MacAlgorithm.HMAC_SHA_256,
         base64Payload,
@@ -6785,8 +6812,6 @@ function generateValidationToken(nisn, spreadsheetId) {
         Utilities.Charset.UTF_8
     );
     const base64Signature = Utilities.base64Encode(signature);
-
-    // 4. Gabungkan payload dan signature dengan pemisah titik (.)
     return `${base64Payload}.${base64Signature}`;
 }
 
@@ -6803,15 +6828,11 @@ function getValidationData(token) {
         }
 
         const parts = token.split('.');
-        if (parts.length !== 2) {
-            return { status: 'error', message: 'Format token tidak valid.' };
-        }
+        if (parts.length !== 2) return { status: 'error', message: 'Format token tidak valid.' };
+        
         const base64Payload = parts[0];
         const base64SignatureFromToken = parts[1];
-
-        const expectedSignature = Utilities.computeHmacSignature(
-            Utilities.MacAlgorithm.HMAC_SHA_256, base64Payload, SECRET_KEY, Utilities.Charset.UTF_8
-        );
+        const expectedSignature = Utilities.computeHmacSignature(Utilities.MacAlgorithm.HMAC_SHA_256, base64Payload, SECRET_KEY, Utilities.Charset.UTF_8);
         const base64ExpectedSignature = Utilities.base64Encode(expectedSignature);
 
         if (base64ExpectedSignature !== base64SignatureFromToken) {
@@ -6824,18 +6845,30 @@ function getValidationData(token) {
         if (payload.exp < Math.floor(Date.now() / 1000)) {
             return { status: 'error', message: 'Token validasi telah kedaluwarsa.' };
         }
+        
+        // [PERUBAHAN UTAMA] Cari Spreadsheet ID berdasarkan 'code' dari payload
+        const masterSs = SpreadsheetApp.getActiveSpreadsheet();
+        const userSheet = masterSs.getSheetByName(SHEET_PENGGUNA);
+        const data = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 13).getValues();
+        const schoolRow = data.find(row => row[12] && row[12].toUpperCase() === payload.code.toUpperCase());
 
-        const schoolData = getSchoolData(payload.ssId);
+        if (!schoolRow) {
+          return { status: 'error', message: 'Kode sekolah di dalam token tidak ditemukan.' };
+        }
+        const spreadsheetId = schoolRow[5];
+        // Akhir dari perubahan utama
+
+        const schoolData = getSchoolData(spreadsheetId);
         if (!schoolData || !schoolData.namaSekolah) {
             return { status: 'error', message: 'Data sekolah tidak dapat ditemukan.' };
         }
 
-        const student = getStudents(payload.ssId).find(s => s.nisn === payload.nisn);
+        const student = getStudents(spreadsheetId).find(s => s.nisn === payload.nisn);
         if (!student) {
             return { status: 'error', message: 'Data siswa tidak ditemukan.' };
         }
 
-        const rekapIjazah = getSheetDataAsObject(payload.ssId, SHEET_REKAP_IJAZAH);
+        const rekapIjazah = getSheetDataAsObject(spreadsheetId, SHEET_REKAP_IJAZAH);
         const studentRekap = rekapIjazah[student.nisn] || {};
         const rataRata = studentRekap['Rata-rata'] !== undefined ? parseFloat(studentRekap['Rata-rata']).toFixed(2) : 'N/A';
         
@@ -6860,12 +6893,30 @@ function getValidationData(token) {
  */
 function getQrCodeAsBase64(nisn, spreadsheetId) {
   try {
-    const token = generateValidationToken(nisn, spreadsheetId);
-    // URL ini harus memiliki ?page=validasi dan &token=...
-    const validationUrl = `${ScriptApp.getService().getUrl()}?page=validasi&token=${token}`;
+    const masterSs = SpreadsheetApp.getActiveSpreadsheet();
+    const userSheet = masterSs.getSheetByName(SHEET_PENGGUNA);
+    const data = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 13).getValues();
+    const schoolRow = data.find(row => row[5] === spreadsheetId);
+    if (!schoolRow || !schoolRow[12]) {
+      throw new Error("Kode Sekolah untuk QR Code tidak ditemukan.");
+    }
+    const schoolCode = schoolRow[12];
+
+    // 1. Buat token panjang yang aman seperti biasa
+    const fullToken = generateValidationToken(nisn, schoolCode);
     
-    // Menggunakan resolusi yang lebih baik dan tingkat koreksi error Medium
-    const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(validationUrl)}&ecc=M&margin=1`;
+    // 2. Buat kode pendek unik (6 karakter acak)
+    const shortCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+    // 3. Simpan pasangan kode pendek dan token panjang ke sheet QR_Redirects
+    const redirectSheet = masterSs.getSheetByName(SHEET_QR_REDIRECTS);
+    redirectSheet.appendRow([shortCode, fullToken]);
+
+    // 4. Buat URL pendek untuk QR Code
+    const shortUrl = `${ScriptApp.getService().getUrl()}?v=${shortCode}`;
+    
+    // 5. Generate QR Code dari URL yang JAUH LEBIH PENDEK
+    const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shortUrl)}&ecc=H&margin=4`;
 
     const qrCodeBlob = UrlFetchApp.fetch(qrCodeApiUrl).getBlob();
     return Utilities.base64Encode(qrCodeBlob.getBytes());
@@ -7591,108 +7642,177 @@ function getPrintSettings(spreadsheetId) {
   }
 }
 
+// GANTI FUNGSI buildValidationPage LAMA ANDA DENGAN VERSI FINAL INI
+
 /**
- * [FUNGSI BARU] Membangun halaman validasi HTML lengkap secara dinamis.
- * Ini menggantikan kebutuhan akan file Validasi.html.
+ * [FUNGSI BARU - SUPER CEPAT] Membangun halaman validasi HTML lengkap secara dinamis.
+ * Fungsi ini melakukan validasi di server SEBELUM mengirim HTML, menghilangkan
+ * satu round-trip dan membuat proses terasa instan bagi pengguna.
  * @param {string} token - Token validasi yang diambil dari URL.
  * @returns {HtmlService.HtmlOutput} Halaman HTML yang siap ditampilkan.
  */
 function buildValidationPage(token) {
-  // Menggunakan template literal untuk membuat string HTML
+  let validationResultHtml = '';
+  let schoolName = 'Validasi Dokumen';
+  const webAppUrl = ScriptApp.getService().getUrl();
+
+  try {
+    const validationResponse = getValidationData(token);
+    if (validationResponse && validationResponse.status === 'success') {
+      const data = validationResponse.data;
+      schoolName = data.namaSekolah;
+      
+      validationResultHtml = `
+        <p class="text-center text-gray-600 font-semibold mt-1 mb-6">${data.namaSekolah}</p>
+        <div class="overflow-x-auto border rounded-lg">
+          <table class="min-w-full text-left text-sm md:text-base">
+             <thead class="bg-gray-50"><tr><th class="px-4 py-3 font-medium text-gray-600">Data</th><th class="px-4 py-3 font-medium text-gray-800">Informasi Siswa</th></tr></thead><tbody class="divide-y divide-gray-200"><tr class="border-b"><td class="px-4 py-3 text-gray-500">NISN</td><td class="px-4 py-3 font-bold text-gray-900">${data.nisn}</td></tr><tr class="border-b"><td class="px-4 py-3 text-gray-500">Nama Lengkap Siswa</td><td class="px-4 py-3 font-bold text-gray-900">${data.namaLengkap}</td></tr><tr><td class="px-4 py-3 text-gray-500">Nilai Rata-Rata Ijazah</td><td class="px-4 py-3 font-bold text-blue-600 text-lg">${data.rataRataIjazah}</td></tr></tbody>
+          </table>
+        </div>
+        <div class="mt-6 p-3 bg-green-100 text-green-800 rounded-lg flex items-center justify-center gap-3">
+          <svg class="w-6 h-6 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+          <span class="font-semibold text-center">DATA TERVERIFIKASI DAN VALID</span>
+        </div>
+        <div class="mt-8">
+            <button id="backToLoginBtn" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors shadow-md w-64 h-12">
+                <span id="backBtnText">Kembali ke Halaman Login</span>
+                <span id="backBtnSpinner" class="hidden loading-animation">Mengarahkan</span>
+            </button>
+        </div>
+      `;
+    } else {
+      const message = validationResponse ? validationResponse.message : "Token tidak valid.";
+      validationResultHtml = `
+        <div class="mt-6 p-3 bg-red-100 text-red-800 rounded-lg flex items-center justify-center gap-3">
+          <svg class="w-6 h-6 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+          <span class="font-semibold text-center">VALIDASI GAGAL: ${message}</span>
+        </div>
+      `;
+    }
+  } catch (e) {
+    validationResultHtml = `<div class="mt-6 p-3 bg-red-100 text-red-800 rounded-lg">Terjadi error internal: ${e.message}</div>`;
+  }
+
   const html = `
     <!DOCTYPE html>
     <html lang="id">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Validasi Transkrip Nilai</title>
+        <title>Validasi Dokumen - ${schoolName}</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <style>
-            body { background-color: #f3f4f6; }
-            .loading-animation::after {
-                display: inline-block;
-                animation: loading-dots 1.4s infinite;
-                content: '.';
-                width: 1em;
-                text-align: left;
-            }
-            @keyframes loading-dots {
-                0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; }
-            }
+            .loading-animation::after { display: inline-block; animation: loading-dots 1.4s infinite; content: '.'; width: 1em; text-align: left; }
+            @keyframes loading-dots { 0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; } }
         </style>
     </head>
-    <body class="flex items-center justify-center min-h-screen p-4">
-        <div id="app" class="w-full max-w-2xl mx-auto">
+    <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+        <div class="w-full max-w-2xl mx-auto">
             <div class="bg-white rounded-lg shadow-xl p-6 md:p-8">
                 <h1 class="text-xl md:text-2xl font-bold text-center text-gray-800">
-                    Data Valid di Aplikasi Pengolahan Nilai Ijazah
+                    Hasil Validasi Keaslian Dokumen
                 </h1>
-                <p class="text-sm text-center text-gray-500 mt-1 mb-8">by Syamsul Bahri</p>
-                <div id="validation-result" class="text-center">
-                    <p class="text-gray-600 loading-animation">Memvalidasi data, mohon tunggu</p>
-                </div>
+                <div id="validation-result" class="text-center mt-4">${validationResultHtml}</div>
+                <p class="text-xs text-center text-gray-400 mt-8">
+                    Aplikasi Pengolahan Nilai Ijazah by Syamsul Bahri
+                </p>
             </div>
         </div>
-
         <script>
+            // [PERUBAHAN] Menambahkan Javascript untuk menangani klik tombol
             window.addEventListener('load', () => {
-                const resultDiv = document.getElementById('validation-result');
-                // Token sekarang disisipkan langsung dari server, ini lebih aman
-                const token = "${token || ''}";
-
-                if (!token) {
-                    resultDiv.innerHTML = '<p class="text-red-600 font-bold">Error: Token validasi tidak ditemukan.</p>';
-                    return;
+                const backButton = document.getElementById('backToLoginBtn');
+                if (backButton) {
+                    backButton.addEventListener('click', function() {
+                        this.disabled = true;
+                        document.getElementById('backBtnText').classList.add('hidden');
+                        document.getElementById('backBtnSpinner').classList.remove('hidden');
+                        window.top.location.href = "${webAppUrl}";
+                    });
                 }
-
-                google.script.run
-                    .withSuccessHandler(response => {
-                        if (response && response.status === 'success') {
-                            const data = response.data;
-                            resultDiv.innerHTML = \`
-                                <div class="overflow-x-auto border rounded-lg">
-                                    <table class="min-w-full text-left text-sm md:text-base">
-                                        <thead class="bg-gray-50">
-                                            <tr>
-                                                <th class="px-4 py-3 font-medium text-gray-600">Data</th>
-                                                <th class="px-4 py-3 font-medium text-gray-800">Informasi</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y divide-gray-200">
-                                            <tr class="border-b"><td class="px-4 py-3 text-gray-500">Nama Sekolah</td><td class="px-4 py-3 font-bold text-gray-900">\${data.namaSekolah}</td></tr>
-                                            
-                                            <tr class="border-b"><td class="px-4 py-3 text-gray-500">NISN</td><td class="px-4 py-3 font-bold text-gray-900">\${data.nisn}</td></tr>
-                                            <tr class="border-b"><td class="px-4 py-3 text-gray-500">Nama Lengkap Siswa</td><td class="px-4 py-3 font-bold text-gray-900">\${data.namaLengkap}</td></tr>
-                                            <tr><td class="px-4 py-3 text-gray-500">Nilai Rata-Rata Ijazah</td><td class="px-4 py-3 font-bold text-blue-600 text-lg">\${data.rataRataIjazah}</td></tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div class="mt-6 p-3 bg-green-100 text-green-800 rounded-lg flex items-center justify-center gap-3">
-                                    <svg class="w-6 h-6 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
-                                    <span class="font-semibold text-center">DATA TERVERIFIKASI DAN VALID</span>
-                                </div>
-                            \`;
-                        } else {
-                            resultDiv.innerHTML = \`
-                                <div class="mt-6 p-3 bg-red-100 text-red-800 rounded-lg flex items-center justify-center gap-3">
-                                    <svg class="w-6 h-6 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
-                                    <span class="font-semibold text-center">VALIDASI GAGAL: \${response.message}</span>
-                                </div>
-                            \`;
-                        }
-                    })
-                    .withFailureHandler(err => {
-                        resultDiv.innerHTML = '<p class="text-red-600 font-bold">Terjadi kesalahan saat menghubungi server. Coba lagi nanti.</p>';
-                    })
-                    .getValidationData(token);
             });
         </script>
     </body>
     </html>
   `;
-  // Membuat dan mengembalikan output HTML
+  
   return HtmlService.createHtmlOutput(html)
-      .setTitle('Validasi Transkrip')
+      .setTitle(`Validasi Dokumen - ${schoolName}`)
+      .setFaviconUrl("https://i.imgur.com/CmVVVxB.png")
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+
+// GANTI FUNGSI createErrorPage LAMA DENGAN VERSI BARU INI
+
+/**
+ * [BARU] Membuat halaman HTML error yang profesional dan informatif.
+ * @param {string} title Judul besar yang akan ditampilkan.
+ * @param {string} message Pesan penjelasan yang lebih detail.
+ * @returns {HtmlService.HtmlOutput} Halaman HTML yang siap ditampilkan.
+ */
+function createErrorPage(title, message) {
+  const webAppUrl = ScriptApp.getService().getUrl();
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Error: ${title}</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+            .loading-animation::after { display: inline-block; animation: loading-dots 1.4s infinite; content: '.'; width: 1em; text-align: left; }
+            @keyframes loading-dots { 0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; } }
+        </style>
+    </head>
+    <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+        <div class="w-full max-w-lg mx-auto bg-white rounded-2xl shadow-xl p-8 text-center">
+            
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-6">
+                <svg class="h-10 w-10 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" />
+                </svg>
+            </div>
+
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">${title}</h1>
+            <p class="mt-3 text-gray-600">${message}</p>
+            
+            <div class="mt-8">
+                <button id="backToLoginBtn" class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                    </svg>
+                    <span id="backBtnText">Kembali ke Halaman Utama</span>
+                    <span id="backBtnSpinner" class="hidden loading-animation">Mengarahkan</span>
+                </button>
+            </div>
+
+        </div>
+        <script>
+            window.addEventListener('load', () => {
+                const backButton = document.getElementById('backToLoginBtn');
+                if (backButton) {
+                    backButton.addEventListener('click', function() {
+                        this.disabled = true;
+                        // Sembunyikan ikon dan teks normal
+                        this.querySelector('svg').classList.add('hidden');
+                        document.getElementById('backBtnText').classList.add('hidden');
+                        // Tampilkan spinner
+                        document.getElementById('backBtnSpinner').classList.remove('hidden');
+                        window.top.location.href = "${webAppUrl}";
+                    });
+                }
+            });
+        </script>
+    </body>
+    </html>
+  `;
+
+  return HtmlService.createHtmlOutput(html)
+      .setTitle(`Error: ${title}`)
       .setFaviconUrl("https://i.imgur.com/CmVVVxB.png")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
