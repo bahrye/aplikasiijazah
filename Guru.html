@@ -187,6 +187,36 @@
         .sticky-col-left.header {
             background-color: #f9fafb; /* Warna latar header (bg-gray-50) */
         }
+
+        /* ===== AWAL KODE BARU UNTUK FEEDBACK LOGIN GAGAL ===== */
+
+        /* Kelas untuk mengubah border input menjadi merah */
+        .input-error {
+          border-color: #ef4444 !important; /* Warna merah (Tailwind's red-500) */
+          box-shadow: 0 0 0 2px #fecaca;   /* Tambahkan glow merah tipis (Tailwind's red-200) */
+        }
+
+        /* Kelas untuk menerapkan animasi getar */
+        .form-shake {
+          animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        /* Definisi animasi getar (keyframes) */
+        @keyframes shake {
+          10%, 90% {
+            transform: translate3d(-1px, 0, 0);
+          }
+          20%, 80% {
+            transform: translate3d(2px, 0, 0);
+          }
+          30%, 50%, 70% {
+            transform: translate3d(-4px, 0, 0);
+          }
+          40%, 60% {
+            transform: translate3d(4px, 0, 0);
+          }
+        }
+        /* ===== AKHIR KODE BARU ===== */
     </style>
 
     <!-- [PERBAIKAN] Tambahkan dua baris ini di dalam <head> pada Guru.html -->
@@ -468,30 +498,71 @@
         }
     }
     
-    // [PERUBAHAN] Ganti fungsi handleGuruLogin dengan versi ini
+    // Ganti fungsi handleGuruLogin di Guru.html dengan ini:
     function handleGuruLogin(e) {
         e.preventDefault();
-        const schoolCode = document.getElementById('kode_sekolah_guru').value.trim();
-        const username = document.getElementById('username_guru').value.trim();
-        const password = document.getElementById('password_guru').value;
-        const btn = document.getElementById('loginButtonGuru'), btnText = document.getElementById('loginBtnText'), spinner = document.getElementById('loginSpinner'), errorDiv = document.getElementById('login-error-message');
-        btn.disabled = true; btnText.classList.add('hidden'); spinner.classList.remove('hidden'); errorDiv.textContent = '';
+        const schoolCodeInput = document.getElementById('kode_sekolah_guru');
+        const usernameInput = document.getElementById('username_guru');
+        const passwordInput = document.getElementById('password_guru');
+        const btn = document.getElementById('loginButtonGuru'), 
+              btnText = document.getElementById('loginBtnText'), 
+              spinner = document.getElementById('loginSpinner'), 
+              errorDiv = document.getElementById('login-error-message');
+
+        // [PERUBAHAN 1] Dapatkan elemen form untuk animasi getar
+        const formContainer = document.querySelector('#login-container > div > div'); // div pembungkus form di portal guru
+
+        btn.disabled = true; 
+        btnText.classList.add('hidden'); 
+        spinner.classList.remove('hidden'); 
+        errorDiv.textContent = '';
+        
+        // [PERUBAHAN 2] Hapus kelas error sebelumnya
+        schoolCodeInput.classList.remove('input-error');
+        usernameInput.classList.remove('input-error');
+        passwordInput.classList.remove('input-error');
+        formContainer.classList.remove('form-shake');
+
+        // [PERUBAHAN 3] Tambahkan listener untuk menghapus error saat mengetik
+        schoolCodeInput.addEventListener('input', () => schoolCodeInput.classList.remove('input-error'));
+        usernameInput.addEventListener('input', () => usernameInput.classList.remove('input-error'));
+        passwordInput.addEventListener('input', () => passwordInput.classList.remove('input-error'));
         
         google.script.run.withSuccessHandler(r => {
-            btn.disabled = false; btnText.classList.remove('hidden'); spinner.classList.add('hidden');
+            btn.disabled = false; 
+            btnText.classList.remove('hidden'); 
+            spinner.classList.add('hidden');
+
             if (r.status === 'success') { 
                 sessionStorage.setItem('guruData', JSON.stringify(r.data));
                 document.getElementById('login-container').classList.add('hidden');
                 document.getElementById('main-app-container').classList.remove('hidden');
                 initializeAppGuru(r.data); 
-            } else if (r.status === 'locked') { // <-- [PERUBAHAN] Menangani respons 'locked'
-                errorDiv.textContent = r.message;
             } else { 
                 errorDiv.textContent = r.message; 
+                // [PERUBAHAN 4] Terapkan efek visual saat gagal
+                schoolCodeInput.classList.add('input-error');
+                usernameInput.classList.add('input-error');
+                passwordInput.classList.add('input-error');
+                formContainer.classList.add('form-shake');
+                setTimeout(() => {
+                    formContainer.classList.remove('form-shake');
+                }, 500); // Durasi animasi
             }
         }).withFailureHandler(err => {
-            btn.disabled = false; btnText.classList.remove('hidden'); spinner.classList.add('hidden'); errorDiv.textContent = 'Terjadi kesalahan: ' + err.message;
-        }).loginGuru(schoolCode, username, password);
+            btn.disabled = false; 
+            btnText.classList.remove('hidden'); 
+            spinner.classList.add('hidden'); 
+            errorDiv.textContent = 'Terjadi kesalahan: ' + err.message;
+            // [PERUBAHAN 5] Terapkan juga efek visual saat ada kegagalan koneksi
+            schoolCodeInput.classList.add('input-error');
+            usernameInput.classList.add('input-error');
+            passwordInput.classList.add('input-error');
+            formContainer.classList.add('form-shake');
+            setTimeout(() => {
+                formContainer.classList.remove('form-shake');
+            }, 500);
+        }).loginGuru(schoolCodeInput.value.trim(), usernameInput.value.trim(), passwordInput.value);
     }
 
     // File: Guru.html (di dalam tag <script>)
