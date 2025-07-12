@@ -1033,7 +1033,7 @@ function addStudent(spreadsheetId, studentData, userEmail) {
 }
 
 /**
- * [DIPERBARUI] Memperbarui data siswa dengan kolom-kolom baru.
+ * [DIPERBARUI v2] Memperbarui data siswa dan mempertahankan status visibilitas transkrip.
  */
 function updateStudent(spreadsheetId, studentData) {
   try {
@@ -1048,19 +1048,27 @@ function updateStudent(spreadsheetId, studentData) {
 
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
+
+    // --- AWAL PERBAIKAN ---
+    // 1. Baca nilai "Tampilkan Transkrip" yang sudah ada dari baris yang akan diupdate.
+    // Kolom "Tampilkan Transkrip" adalah kolom ke-13.
+    const existingVisibility = sheet.getRange(studentData.studentRow, 13).getValue();
+    // --- AKHIR PERBAIKAN ---
     
+    // Sesuaikan array `rowToUpdate` untuk menggunakan nilai yang sudah ada
     const rowToUpdate = [
       studentData.nisn, studentData.nis, studentData.nomorUjian, studentData.nama,
       studentData.jenisKelamin, toProperCase(studentData.tempatLahir),
       studentData.tanggalLahir ? new Date(studentData.tanggalLahir.replace(/-/g, '/')) : '',
       studentData.alamat, studentData.telepon, studentData.emailSiswa,
-      studentData.tahunMasuk, studentData.tahunLulus, studentData.tampilkanTranskrip,
+      studentData.tahunMasuk, studentData.tahunLulus, 
+      // 2. Gunakan nilai yang ada jika tidak ada nilai baru dari `studentData`
+      studentData.tampilkanTranskrip || existingVisibility || 'TIDAK', 
       studentData.kelas, studentData.ruangUjian
     ];
 
     sheet.getRange(studentData.studentRow, 1, 1, rowToUpdate.length).setValues([rowToUpdate]);
 
-    // [MODIFIKASI] Panggil fungsi penyortiran setelah mengubah data siswa
     sortAndRewriteStudentSheet(spreadsheetId);
 
     SpreadsheetApp.flush();
@@ -5341,7 +5349,8 @@ function deleteBroadcast_Superadmin(adminEmail, broadcastId) {
 // ===== AWAL KODE TAMBAHAN (Fitur Portal Siswa) =====
 
 /**
- * [MODIFIKASI PENTING] Mencari siswa dan mengambil semua data untuk portal siswa.
+ * [PERBAIKAN FINAL] Mencari siswa dan mengambil semua data, termasuk standardisasi
+ * nilai visibilitas transkrip sebelum dikirim ke frontend.
  * @param {string} kodeSekolah - Kode unik sekolah.
  * @param {string} nisn - NISN yang diinput siswa.
  * @param {string} tanggalLahir - Tanggal lahir dalam format yyyy-MM-dd.
@@ -5361,23 +5370,19 @@ function loginSiswa(kodeSekolah, nisn, tanggalLahir) {
         const data = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 13).getValues();
         const schoolRow = data.find(row => row[12] && row[12].toUpperCase() === kodeSekolah.toUpperCase());
 
-        // Ganti bagian ini di dalam fungsi loginSiswa
         if (!schoolRow) {
             return { status: "error", message: "Kode Sekolah tidak valid atau tidak ditemukan." };
         }
 
-        // --- AWAL MODIFIKASI ---
-        // Cek apakah fitur untuk sekolah ini terkunci
-        const lockStatus = checkFiturLock(schoolRow[1]); // Cek berdasarkan email pengguna
+        const lockStatus = checkFiturLock(schoolRow[1]);
         if (lockStatus.isLocked) {
           return { 
             status: "locked", 
             message: "Akses untuk siswa dari sekolah ini sementara ditangguhkan. Silakan hubungi administrator sekolah Anda untuk informasi lebih lanjut." 
           };
         }
-        // --- AKHIR MODIFIKASI ---
         
-        const spreadsheetId = schoolRow[5]; // Kolom F adalah Spreadsheet ID
+        const spreadsheetId = schoolRow[5];
         if (!spreadsheetId) {
             return { status: "error", message: "Konfigurasi untuk sekolah ini tidak lengkap." };
         }
@@ -5385,38 +5390,34 @@ function loginSiswa(kodeSekolah, nisn, tanggalLahir) {
         const studentInfo = findStudentInSheet(spreadsheetId, nisn, tanggalLahir);
 
         if (studentInfo) {
-            // == AWAL PERUBAHAN ==
-            // Ambil data sekolah untuk mendapatkan nama sekolah
             const schoolData = getSchoolData(spreadsheetId);
-            // == AKHIR PERUBAHAN ==
-
-            // 1. Ambil pengaturan kelulusan
             const gradSettingsResponse = getGraduationSettings(spreadsheetId);
             const gradSettings = gradSettingsResponse.settings || { announcementDate: null, showTranscriptGlobal: 'TIDAK' };
-            
-            // 2. Ambil status kelulusan siswa dari rekap ijazah
             const rekapIjazah = getSheetDataAsObject(spreadsheetId, SHEET_REKAP_IJAZAH);
             const studentRekap = rekapIjazah[nisn] || {};
             const statusLulus = studentRekap['Status'] || 'Belum Ditentukan';
             
-            // 3. Ambil status visibilitas transkrip per-siswa
+            // --- AWAL PERBAIKAN ---
+            // Baca nilai mentah dari spreadsheet.
             const studentDataSheet = getSpreadsheet(spreadsheetId).getSheetByName(SHEET_DATA_SISWA);
             const nisnColumnValues = studentDataSheet.getRange(2, 1, studentDataSheet.getLastRow() - 1, 1).getValues().flat();
             const studentRowIndex = nisnColumnValues.findIndex(val => val.toString() === nisn.toString());
-            // Kolom ke-12 adalah kolom L
-            const perStudentVisibility = (studentRowIndex !== -1) ? studentDataSheet.getRange(studentRowIndex + 2, 12).getValue() : 'TIDAK';
+            const rawVisibility = (studentRowIndex !== -1) ? studentDataSheet.getRange(studentRowIndex + 2, 13).getValue() : 'TIDAK';
 
-            // 4. Gabungkan semua data dalam respons
+            // Lakukan standardisasi: ubah ke string, hapus spasi, dan jadikan huruf besar.
+            const perStudentVisibility = String(rawVisibility || 'TIDAK').trim().toUpperCase();
+            // --- AKHIR PERBAIKAN ---
+
             return {
                 status: "success",
                 webAppUrl: ScriptApp.getService().getUrl(),
                 nisn: nisn,
                 spreadsheetId: spreadsheetId,
                 studentData: studentInfo,
-                schoolData: schoolData, // <-- DATA BARU YANG DIKIRIM
+                schoolData: schoolData,
                 announcementDate: gradSettings.announcementDate,
                 showTranscriptGlobal: gradSettings.showTranscriptGlobal,
-                showTranscriptPerStudent: perStudentVisibility,
+                showTranscriptPerStudent: perStudentVisibility, // Kirim data yang sudah bersih
                 statusLulus: statusLulus
             };
         } else {
@@ -5430,40 +5431,45 @@ function loginSiswa(kodeSekolah, nisn, tanggalLahir) {
 }
 
 /**
- * [PERBAIKAN] Fungsi pembantu untuk mencari siswa dan mengembalikan SEMUA datanya.
- * @param {string} spreadsheetId - ID spreadsheet sekolah.
- * @param {string} nisn - NISN yang dicari.
- * @param {string} tanggalLahir - Tanggal lahir yang dicari.
- * @returns {object|null} Objek berisi semua data siswa jika cocok, atau null jika tidak.
+ * [DIPERBARUI v3] Mencari siswa dan menstandardisasi output visibilitas transkrip.
  */
 function findStudentInSheet(spreadsheetId, nisn, tanggalLahir) {
   const ss = SpreadsheetApp.openById(spreadsheetId);
   const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
   if (!sheet || sheet.getLastRow() < 2) return null;
 
-  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 11).getValues();
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 15).getValues();
 
   for (const row of data) {
     const sheetNisn = String(row[0]).trim();
 
     if (sheetNisn === nisn) {
-      const sheetTglLahir = row[5]; // Kolom F adalah Tanggal Lahir
+      const sheetTglLahir = row[6];
+      
       if (sheetTglLahir instanceof Date) {
         const formattedSheetTglLahir = Utilities.formatDate(sheetTglLahir, Session.getScriptTimeZone(), "yyyy-MM-dd");
+        
         if (formattedSheetTglLahir === tanggalLahir) {
-          // Jika cocok, kembalikan semua data siswa dalam bentuk objek
           return {
             nisn: String(row[0] || ''),
             nis: String(row[1] || ''),
-            nama: String(row[2] || ''),
-            jenisKelamin: String(row[3] || ''),
-            tempatLahir: String(row[4] || ''),
+            nomorUjian: String(row[2] || ''),
+            nama: String(row[3] || ''),
+            jenisKelamin: String(row[4] || ''),
+            tempatLahir: String(row[5] || ''),
             tanggalLahir: formattedSheetTglLahir,
-            alamat: String(row[6] || ''),
-            telepon: String(row[7] || ''),
-            emailSiswa: String(row[8] || ''),
-            tahunMasuk: String(row[9] || ''),
-            tahunLulus: String(row[10] || '')
+            alamat: String(row[7] || ''),
+            telepon: String(row[8] || ''),
+            emailSiswa: String(row[9] || ''),
+            tahunMasuk: String(row[10] || ''),
+            tahunLulus: String(row[11] || ''),
+            
+            // --- PERBAIKAN DI SINI ---
+            // Standardisasi output untuk memastikan konsistensi data.
+            tampilkanTranskrip: String(row[12] || 'TIDAK').trim().toUpperCase(),
+            
+            kelas: String(row[13] || ''),
+            ruangUjian: String(row[14] || '')
           };
         }
       }
@@ -6524,7 +6530,9 @@ function setPerStudentTranscriptVisibility(spreadsheetId, nisnList, isVisible) {
     try {
         const sheet = getSpreadsheet(spreadsheetId).getSheetByName(SHEET_DATA_SISWA);
         const nisnColumnValues = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues().flat();
-        const visibilityColumnIndex = 12; // Kolom L
+        
+        // PERBAIKAN DI SINI: Ubah dari 12 menjadi 13
+        const visibilityColumnIndex = 13; // Kolom M
 
         nisnList.forEach(nisn => {
             const rowIndex = nisnColumnValues.indexOf(nisn.toString());
@@ -10762,4 +10770,98 @@ function batchUpdateNilai(spreadsheetId, updatesToPerform) {
     Logger.log("batchUpdateNilai Error: " + e.message);
     return { status: "error", message: "Gagal memperbarui nilai: " + e.message };
   }
+}
+
+/**
+ * [SUPERADMIN TOOL] Memperbarui header pada sheet "Data Siswa" di semua spreadsheet pengguna
+ * agar sesuai dengan format 15 kolom yang baru.
+ * Fungsi ini hanya boleh dijalankan oleh Superadmin dari editor script atau menu kustom.
+ */
+function updateAllStudentSheetHeaders_Superadmin() {
+  // Verifikasi keamanan bahwa yang menjalankan adalah Superadmin
+  const adminEmail = Session.getActiveUser().getEmail();
+  if (!isSuperadmin(adminEmail)) {
+    Browser.msgBox("Akses Ditolak", "Hanya Superadmin yang dapat menjalankan fungsi ini.", Browser.Buttons.OK);
+    return;
+  }
+  
+  // Tampilkan konfirmasi sebelum menjalankan proses yang berisiko
+  const ui = SpreadsheetApp.getUi();
+  const response = ui.alert(
+    'Konfirmasi Aksi',
+    'Anda akan memperbarui header "Data Siswa" di SEMUA spreadsheet pengguna. Proses ini tidak dapat dibatalkan. Lanjutkan?',
+    ui.ButtonSet.YES_NO
+  );
+
+  if (response != ui.Button.YES) {
+    ui.alert('Proses dibatalkan.');
+    return;
+  }
+
+  // Header yang benar (15 kolom)
+  const correctHeader = [
+    "NISN", "NIS", "Nomor Ujian", "Nama Lengkap", "Jenis Kelamin (L/P)", 
+    "Tempat Lahir", "Tanggal Lahir", "Alamat Lengkap Siswa", "Nomor Telepon", 
+    "Email", "Tahun Masuk", "Tahun Lulus", "Tampilkan Transkrip", "Kelas", "Ruang Ujian"
+  ];
+
+  const masterSs = SpreadsheetApp.getActiveSpreadsheet();
+  const userSheet = masterSs.getSheetByName(SHEET_PENGGUNA);
+  if (!userSheet || userSheet.getLastRow() < 2) {
+    ui.alert('Error', 'Sheet "Data Pengguna" tidak ditemukan atau kosong.', ui.ButtonSet.OK);
+    return;
+  }
+
+  const usersData = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 6).getValues();
+  let successCount = 0;
+  let errorCount = 0;
+  let errorLogs = [];
+
+  usersData.forEach((userRow, index) => {
+    const spreadsheetId = userRow[5];
+    const userRole = userRow[4];
+    const schoolName = userRow[3];
+
+    // Lewati Superadmin atau pengguna tanpa Spreadsheet ID
+    if (userRole === 'Superadmin' || !spreadsheetId) {
+      return;
+    }
+
+    try {
+      const ss = SpreadsheetApp.openById(spreadsheetId);
+      const studentSheet = ss.getSheetByName(SHEET_DATA_SISWA);
+      
+      if (studentSheet) {
+        // Hapus header lama dan tulis yang baru
+        studentSheet.getRange("A1:O1").clearContent(); // Hapus 15 kolom pertama di baris 1
+        studentSheet.getRange(1, 1, 1, correctHeader.length).setValues([correctHeader]).setFontWeight("bold");
+        successCount++;
+        Logger.log(`Sukses: Header diperbarui untuk ${schoolName} (ID: ${spreadsheetId})`);
+      } else {
+        throw new Error(`Sheet "Data Siswa" tidak ditemukan.`);
+      }
+    } catch (e) {
+      errorCount++;
+      const errorMessage = `Gagal memproses ${schoolName} (ID: ${spreadsheetId}): ${e.message}`;
+      Logger.log(errorMessage);
+      errorLogs.push(errorMessage);
+    }
+  });
+  
+  // Tampilkan laporan hasil
+  let summaryMessage = `Proses selesai.\n\nBerhasil memperbarui: ${successCount} spreadsheet.\nGagal: ${errorCount} spreadsheet.`;
+  if (errorCount > 0) {
+    summaryMessage += '\n\nDetail kegagalan (lihat Log Eksekusi untuk info lengkap):\n' + errorLogs.slice(0, 5).join('\n');
+  }
+  ui.alert('Laporan Pembaruan Header', summaryMessage, ui.ButtonSet.OK);
+}
+
+/**
+ * Membuat menu kustom di Spreadsheet saat file dibuka.
+ */
+function onOpen() {
+  SpreadsheetApp.getUi()
+      .createMenu('🛠️ Alat Superadmin')
+      .addItem('Perbarui Semua Header Siswa', 'updateAllStudentSheetHeaders_Superadmin')
+      .addToUi();
 }
