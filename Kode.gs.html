@@ -806,53 +806,38 @@ function toProperCase(str) {
 // FUNGSI MANAJEMEN DATA SEKOLAH, SISWA, MAPEL, DLL.
 // =================================================================
 
-/**
- * [MODIFIKASI] Menyimpan data sekolah ke dalam sheet 'Data Sekolah', termasuk NSM, tipe kabupaten, dan tipe kelurahan.
- * @param {string} spreadsheetId ID spreadsheet target.
- * @param {object} dataObj Objek berisi data sekolah.
- * @returns {{status: string, message: string}} Status penyimpanan.
- */
+// GANTI FUNGSI INI DI Kode.gs.html
+
 function saveSchoolData(spreadsheetId, dataObj) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
     let sheet = ss.getSheetByName(SHEET_DATA_SEKOLAH);
     
+    // ===== PERBAIKAN UTAMA =====
+    // Cek jika jenjang yang dikirim dari form kosong atau hanya berisi spasi.
+    if (!dataObj.jenjang || dataObj.jenjang.trim() === '') {
+      // Jika kosong, baca nilai jenjang yang sudah ada langsung dari spreadsheet.
+      const existingJenjang = sheet.getRange("A2").getValue();
+      // Hanya gunakan nilai lama jika memang ada isinya.
+      if (existingJenjang && existingJenjang.trim() !== '') {
+        dataObj.jenjang = existingJenjang;
+      }
+    }
+    // ===== AKHIR PERBAIKAN =====
+
     sheet.getRange("C:D").setNumberFormat('@');
     sheet.getRange("J:K").setNumberFormat('@');
     sheet.getRange("O:O").setNumberFormat('@');
     
-    // [MODIFIKASI] Tambahkan tipeKabupaten dan tipeKelurahan ke dalam array data
-    const schoolDataRow = [
-        dataObj.jenjang || "", dataObj.namaSekolah || "", dataObj.npsn || "", dataObj.nsm || "",
-        dataObj.alamat || "", 
-        dataObj.provinsi || "", 
-        // Tambahkan field baru di sini
-        dataObj.tipeKabupaten || "Kabupaten", // Default ke "Kabupaten" jika kosong
-        dataObj.kabupaten || "", 
-        dataObj.kecamatan || "", 
-        // Tambahkan field baru di sini
-        dataObj.tipeKelurahan || "Kelurahan", // Default ke "Kelurahan" jika kosong
-        dataObj.kelurahan || "", 
-        dataObj.kodePos || "", dataObj.telepon || "", dataObj.email || "", 
-        dataObj.website || "", dataObj.namaKepsek || "", dataObj.nipKepsek || ""
-    ];
-
-    // [MODIFIKASI] Ubah jangkauan penulisan data untuk mencakup kolom baru
-    // Asumsi kita menyisipkan kolom baru setelah Provinsi (I) dan Kecamatan (K)
-    // Jika header belum ada, buat header baru
     if (sheet.getRange("G1").getValue() !== "Tipe Kabupaten/Kota") {
-      sheet.insertColumnAfter(9); // Sisipkan setelah kolom I (Provinsi)
+      sheet.insertColumnAfter(9);
       sheet.getRange("J1").setValue("Tipe Kabupaten/Kota").setFontWeight("bold");
     }
     if (sheet.getRange("L1").getValue() !== "Tipe Kelurahan/Desa") {
-      sheet.insertColumnAfter(11); // Sisipkan setelah kolom K (Kecamatan)
+      sheet.insertColumnAfter(11);
       sheet.getRange("M1").setValue("Tipe Kelurahan/Desa").setFontWeight("bold");
     }
     
-    // Menulis data ke baris ke-2 dengan jangkauan yang sudah disesuaikan
-    // Logika penulisan data di sini mungkin perlu penyesuaian tergantung struktur akhir sheet
-    // Untuk penyederhanaan, kita akan menulis ulang seluruh baris data berdasarkan array yang baru.
-    // Asumsi total kolom sekarang adalah 17 (O + 2)
     const valuesToWrite = [
         dataObj.jenjang||"", dataObj.namaSekolah||"", dataObj.npsn||"", dataObj.nsm||"",
         dataObj.alamat||"", dataObj.provinsi||"", dataObj.tipeKabupaten||"Kabupaten", dataObj.kabupaten||"",
@@ -862,12 +847,9 @@ function saveSchoolData(spreadsheetId, dataObj) {
     ];
     sheet.getRange(2, 1, 1, valuesToWrite.length).setValues([valuesToWrite]);
 
-
     return { status: "success", message: "Data sekolah berhasil diperbarui." };
   } catch (error) {
     Logger.log(error);
-    // Untuk sementara, kita akan mengembalikan error yang lebih sederhana.
-    // Penyesuaian kolom yang kompleks memerlukan penanganan error yang lebih baik.
     return { status: "error", message: "Gagal menyimpan data sekolah (mungkin karena perubahan struktur): " + error.message };
   }
 }
@@ -916,28 +898,36 @@ function getSchoolData(spreadsheetId) {
   }
 }
 
-/**
- * [DIPERBARUI] Mengambil daftar siswa dari sheet 'Data Siswa'.
- * Membaca 15 kolom untuk menyertakan Kelas, Ruang Ujian, dan Nomor Ujian.
- */
+// GANTI FUNGSI INI DI Kode.gs.html
+
 function getStudents(spreadsheetId) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
     if (!sheet || sheet.getLastRow() < 2) return [];
 
-    sheet.getRange("A:C").setNumberFormat('@'); // NISN, NIS, Nomor Ujian
-    sheet.getRange("F:F").setNumberFormat('@'); // Tempat Lahir
-    sheet.getRange("I:I").setNumberFormat('@'); // Telepon
+    // ===== AWAL PERBAIKAN =====
+    // Paksa kolom NISN, NIS, No. Ujian, dan Kelas menjadi format Teks Biasa
+    // untuk mencegah konversi otomatis menjadi tanggal atau angka.
+    sheet.getRange("A:C").setNumberFormat('@'); 
+    sheet.getRange("F:F").setNumberFormat('@'); 
+    sheet.getRange("I:I").setNumberFormat('@');
+    sheet.getRange("N:N").setNumberFormat('@'); // Ini adalah baris KUNCI untuk memperbaiki masalah Kelas
+    // ===== AKHIR PERBAIKAN =====
 
-    // Baca hingga kolom O (15 kolom)
-    const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, 15); 
-    const values = dataRange.getValues();
+    const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, 15);
+    // [PERBAIKAN TAMBAHAN] Gunakan .getDisplayValues() untuk memastikan kita mendapatkan
+    // nilai persis seperti yang ditampilkan di sheet.
+    const values = dataRange.getDisplayValues();
 
     return values.map((row, index) => {
       let tanggalLahirStr = '';
-      if (row[6] && row[6] instanceof Date && !isNaN(row[6])) { // Indeks 6 untuk tanggal lahir
-        tanggalLahirStr = Utilities.formatDate(row[6], Session.getScriptTimeZone(), "yyyy-MM-dd");
+      // Logika untuk tanggal lahir tidak perlu diubah karena kita ingin formatnya tetap benar
+      const tglLahirCell = sheet.getRange(index + 2, 7).getValue();
+      if (tglLahirCell && tglLahirCell instanceof Date && !isNaN(tglLahirCell)) {
+        tanggalLahirStr = Utilities.formatDate(tglLahirCell, Session.getScriptTimeZone(), "yyyy-MM-dd");
+      } else if (tglLahirCell) {
+        tanggalLahirStr = tglLahirCell.toString();
       }
 
       return {
@@ -1139,7 +1129,7 @@ function generateSiswaTemplate() {
     
     const sheet = ss.getSheets()[0];
     const headers = [
-      "NISN", "NIS", "Nomor Ujian", "Nama Lengkap", "Jenis Kelamin (L/P)", 
+      "NISN", "NIS (2 digit tahun lulus 4 digit nomor urut)", "Nomor Ujian", "Nama Lengkap", "Jenis Kelamin (L/P)", 
       "Tempat Lahir", "Tanggal Lahir (Format: YYYY-MM-DD)",
       "Alamat Lengkap Siswa", "Nomor Telepon", "Email", 
       "Tahun Masuk", "Tahun Lulus", "Kelas", "Ruang Ujian"
@@ -8865,7 +8855,7 @@ function exportSiswaToExcel(spreadsheetId) {
     
     const sheet = tempSpreadsheet.getSheets()[0];
     const headers = [
-      "NISN", "NIS", "Nomor Ujian", "Nama Lengkap", "Jenis Kelamin (L/P)", 
+      "NISN", "NIS (2 digit tahun lulus 4 digit nomor urut)", "Nomor Ujian", "Nama Lengkap", "Jenis Kelamin (L/P)", 
       "Tempat Lahir", "Tanggal Lahir (Format: yyyy-MM-dd)",
       "Alamat Lengkap Siswa", "Nomor Telepon", "Email", 
       "Tahun Masuk", "Tahun Lulus", "Kelas", "Ruang Ujian"
