@@ -1166,7 +1166,7 @@
                             <form id="schoolDataForm">
                                 <div id="jenjang-wrapper" class="mb-6 pb-6 border-b">
                                     <label for="jenjang" class="block text-sm font-medium text-gray-700">Jenjang Sekolah</label>
-                                    <select id="jenjang" name="jenjang" class="pointer-events-none mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" disabled>
+                                    <select id="jenjang" name="jenjang" class="pointer-events-none mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                                         <option value="">-- Pilih Jenjang --</option>
                                         <option value="MI">MI (Madrasah Ibtidaiyah)</option>
                                         <option value="MTS">MTS (Madrasah Tsanawiyah)</option>
@@ -1276,9 +1276,13 @@
 
                                 <div class="mt-8 border-t pt-6">
                                     <h2 class="text-xl font-bold text-gray-700">Pengaturan Kelas</h2>
-                                    <label for="daftarKelas" class="block text-sm font-medium text-gray-700 mt-4">Daftar Nama Kelas</label>
-                                    <p class="text-xs text-gray-500 mt-1 mb-2">Masukkan semua nama kelas akhir yang ada di sekolah Anda, pisahkan dengan koma. Contoh: VI, IX, XII, IX A, XII IPA 1, dll.</p>
-                                    <textarea id="daftarKelas" name="daftarKelas" rows="4" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" placeholder="VII A, VII B, VII C, VIII A, VIII B, IX A"></textarea>
+                                    <p class="text-xs text-gray-500 mt-1 mb-2">
+                                        Masukkan semua nama kelas akhir yang ada di sekolah Anda. Baris baru akan ditambahkan secara otomatis.
+                                        <br>
+                                        <strong>Kelas Dasar</strong> wajib dipilih. <strong>Kelas Peminatan</strong> bersifat opsional.
+                                    </p>
+                                    <div id="dynamic-kelas-container" class="mt-2 space-y-2">
+                                        </div>
                                 </div>
 
                                 <div class="mt-8 pt-5 border-t">
@@ -3754,44 +3758,81 @@
             setupAdminInfoModal();
             setupPrintSettingsSaver();
 
-            // Di dalam DOMContentLoaded
-            const pengaturanForm = document.getElementById('pengaturanForm');
-            if (pengaturanForm) {
-                pengaturanForm.addEventListener('submit', function(event) {
-                    event.preventDefault();
-                    const btn = document.getElementById('pengaturanSubmitBtn');
-                    const btnText = document.getElementById('pengaturanSubmitBtnText');
-                    const spinner = document.getElementById('pengaturanLoadingSpinner');
+            // GANTI BLOK EVENT LISTENER INI DI Index.html
 
-                    const kkmValue = document.getElementById('kkmSekolah').value;
-                    const kelasString = document.getElementById('daftarKelas').value; // Ambil daftar kelas dari textarea
+            document.getElementById('pengaturanForm')?.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const btn = document.getElementById('pengaturanSubmitBtn');
+                const btnText = document.getElementById('pengaturanSubmitBtnText');
+                const spinner = document.getElementById('pengaturanLoadingSpinner');
 
-                    if (kkmValue === '' || isNaN(kkmValue) || kkmValue < 0 || kkmValue > 100) {
-                        showGlobalStatus("Nilai KKM harus berupa angka antara 0 dan 100.", false);
-                        return;
+                const kkmValue = document.getElementById('kkmSekolah').value;
+                if (kkmValue === '' || isNaN(kkmValue) || kkmValue < 0 || kkmValue > 100) {
+                    showGlobalStatus("Nilai KKM harus berupa angka antara 0 dan 100.", false);
+                    return;
+                }
+
+                // ===== AWAL LOGIKA BARU: Mengumpulkan data kelas dinamis =====
+                const kelasRows = document.querySelectorAll('#dynamic-kelas-container .kelas-input-row');
+                const combinedKelasList = [];
+                let hasError = false;
+
+                kelasRows.forEach(row => {
+                    const kelasDasar = row.querySelector('.kelas-dasar-select').value;
+                    const peminatan = row.querySelector('.peminatan-input').value.trim();
+
+                    if (kelasDasar) { // Hanya proses baris yang memiliki kelas dasar
+                        let finalKelas = kelasDasar;
+                        if (peminatan) {
+                            // Kasus spesial: kelas dasar angka & peminatan diawali angka
+                            if (!isNaN(parseInt(kelasDasar)) && !isNaN(parseInt(peminatan.charAt(0)))) {
+                                finalKelas = `${kelasDasar}.${peminatan}`;
+                            } 
+                            // Kasus dengan tanda baca
+                            else if (/[.\-_]/.test(peminatan.charAt(0))) {
+                                finalKelas = `${kelasDasar}${peminatan}`;
+                            } 
+                            // Kasus normal
+                            else {
+                                finalKelas = `${kelasDasar} ${peminatan}`;
+                            }
+                        }
+                        combinedKelasList.push(finalKelas.trim());
+                    } else if (peminatan) {
+                        // Error jika peminatan diisi tapi kelas dasar tidak
+                        row.querySelector('.kelas-dasar-select').classList.add('border-red-500');
+                        hasError = true;
                     }
-
-                    btn.disabled = true;
-                    btnText.classList.add('hidden');
-                    spinner.classList.remove('hidden');
-                    
-                    // Panggil kedua fungsi penyimpanan secara bersamaan
-                    Promise.all([
-                        new Promise(res => google.script.run.withSuccessHandler(res).saveKkm(userSpreadsheetId, Number(kkmValue))),
-                        new Promise(res => google.script.run.withSuccessHandler(res).saveKelas(userSpreadsheetId, kelasString))
-                    ]).then(([kkmResponse, kelasResponse]) => {
-                        showGlobalStatus("Pengaturan KKM dan Daftar Kelas berhasil disimpan.", true);
-                        btn.disabled = false;
-                        btnText.classList.remove('hidden');
-                        spinner.classList.add('hidden');
-                    }).catch(err => {
-                        showGlobalStatus("Terjadi kesalahan saat menyimpan pengaturan.", false);
-                        btn.disabled = false;
-                        btnText.classList.remove('hidden');
-                        spinner.classList.add('hidden');
-                    });
                 });
-            }
+
+                if (hasError) {
+                    showGlobalStatus("Kelas Dasar wajib dipilih jika Kelas Peminatan diisi.", false);
+                    return;
+                }
+
+                const kelasString = combinedKelasList.join(',');
+                // ===== AKHIR LOGIKA BARU =====
+
+                btn.disabled = true;
+                btnText.classList.add('hidden');
+                spinner.classList.remove('hidden');
+                
+                Promise.all([
+                    new Promise(res => google.script.run.withSuccessHandler(res).saveKkm(userSpreadsheetId, Number(kkmValue))),
+                    new Promise(res => google.script.run.withSuccessHandler(res).saveKelas(userSpreadsheetId, kelasString))
+                ]).then(([kkmResponse, kelasResponse]) => {
+                    showGlobalStatus("Pengaturan KKM dan Daftar Kelas berhasil disimpan.", true);
+                    btn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    spinner.classList.add('hidden');
+                    loadPengaturanPage(); // Muat ulang untuk memastikan data konsisten
+                }).catch(err => {
+                    showGlobalStatus("Terjadi kesalahan saat menyimpan pengaturan.", false);
+                    btn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    spinner.classList.add('hidden');
+                });
+            });
 
             // ===== GANTI BLOK LISTENER INI DENGAN VERSI BARU =====
             // "Penjaga" untuk overlay. Dia akan menangani semua klik di dalam overlay.
@@ -11410,20 +11451,15 @@
             });
         }
 
-        /**
-         * [VERSI FINAL - DIPERBAIKI] Memuat semua data untuk halaman Pengaturan.
-         * Memastikan gambar pratinjau selalu dimuat, terlepas dari status kunci fitur.
-         */
+        // GANTI FUNGSI INI DI Index.html
+
         function loadPengaturanPage() {
             const isLocked = sessionStorage.getItem('isLocked') === 'true';
-
-            // Targetkan semua kontainer yang termasuk fitur premium
             const premiumContainers = [
                 document.getElementById('pengumuman-kelulusan-container'),
                 document.getElementById('kop-surat-container')
             ];
 
-            // Terapkan atau hapus kelas pengunci pada setiap kontainer
             premiumContainers.forEach(container => {
                 if (container) {
                     if (isLocked) {
@@ -11436,7 +11472,6 @@
                 }
             });
 
-            // Memuat KKM (bukan fitur premium, selalu jalan)
             const kkmInput = document.getElementById('kkmSekolah');
             if (kkmInput) {
                 kkmInput.disabled = true;
@@ -11449,66 +11484,38 @@
                     })
                     .getKkm(userSpreadsheetId);
             }
-
-            // ===== AWAL KODE TAMBAHAN: Memuat Daftar Kelas =====
-            const kelasTextarea = document.getElementById('daftarKelas');
-            if (kelasTextarea) {
-                kelasTextarea.disabled = true;
-                google.script.run
-                    .withSuccessHandler(response => {
-                        if (response.status === 'success') {
-                            // Tampilkan sebagai string yang dipisahkan koma dan spasi
-                            kelasTextarea.value = response.kelasList.join(', ');
-                        }
-                        kelasTextarea.disabled = false;
-                    })
-                    .getKelas(userSpreadsheetId);
-            }
-            // ===== AKHIR KODE TAMBAHAN =====
-
-            // Memuat form pengaturan kelulusan (UI akan dikunci oleh CSS jika `isLocked`)
-            const announcementDateInput = document.getElementById('announcementDate');
-            const radioButtons = document.querySelectorAll('input[name="showTranscriptGlobal"]');
-
-            if (announcementDateInput) {
-                // Nonaktifkan sementara saat memuat
-                announcementDateInput.disabled = true;
-                radioButtons.forEach(radio => radio.disabled = true);
-
-                google.script.run
-                    .withSuccessHandler(response => {
-                        if (response && response.status === 'success' && response.settings) {
-                            const settings = response.settings;
-                            if (settings.announcementDate) {
-                                const date = new Date(settings.announcementDate);
-                                date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-                                announcementDateInput.value = date.toISOString().slice(0, 16);
-                            } else {
-                                announcementDateInput.value = '';
-                            }
-                            const valueToShow = settings.showTranscriptGlobal || 'TIDAK';
-                            const radioBtn = document.querySelector(`input[name="showTranscriptGlobal"][value="${valueToShow}"]`);
-                            if (radioBtn) radioBtn.checked = true;
-                        }
-                        
-                        // Aktifkan kembali HANYA jika fitur tidak terkunci
-                        if (!isLocked) {
-                            announcementDateInput.disabled = false;
-                            radioButtons.forEach(radio => radio.disabled = false);
-                        }
-                    })
-                    .getGraduationSettings(userSpreadsheetId);
-            }
             
-            const gradFormHandler = document.getElementById('graduationSettingsForm');
-            if (gradFormHandler) {
-                gradFormHandler.removeEventListener('submit', handleSaveGraduationSettings);
-                gradFormHandler.addEventListener('submit', handleSaveGraduationSettings);
-            }
+            const dynamicKelasContainer = document.getElementById('dynamic-kelas-container');
+            dynamicKelasContainer.innerHTML = `<p class="text-gray-500 loading-animation p-2">Memuat pengaturan kelas...</p>`;
 
-            // Panggil fungsi untuk memuat gambar pratinjau.
-            // Ini sekarang akan berjalan terlepas dari status isLocked.
-            loadDocumentSettings();
+            Promise.all([
+                new Promise(res => google.script.run.withSuccessHandler(res).getSchoolData(userSpreadsheetId)),
+                new Promise(res => google.script.run.withSuccessHandler(res).getKelas(userSpreadsheetId))
+            ]).then(([schoolDataResponse, kelasResponse]) => {
+                const jenjang = schoolDataResponse ? schoolDataResponse.jenjang : null;
+                if (!jenjang) {
+                    // ===== PERBAIKAN UTAMA DI SINI =====
+                    // Menambahkan link langsung ke halaman Data Sekolah
+                    dynamicKelasContainer.innerHTML = `<div class="p-4 bg-red-50 border-l-4 border-red-400 text-red-700">
+                        <p class="font-bold">Jenjang sekolah belum diatur.</p>
+                        <p class="text-sm">Silakan atur terlebih dahulu di halaman 
+                            <a href="#" onclick="document.querySelector('.nav-link[data-page=data-sekolah]').click()" class="font-bold underline hover:text-red-900">
+                                Data Sekolah
+                            </a>.
+                        </p>
+                    </div>`;
+                    return;
+                    // ===== AKHIR PERBAIKAN =====
+                }
+
+                const kelasList = (kelasResponse && kelasResponse.status === 'success') ? kelasResponse.kelasList : [];
+                renderKelasInputs(jenjang, kelasList);
+
+            }).catch(err => {
+                dynamicKelasContainer.innerHTML = `<p class="text-red-500 p-2">Gagal memuat data: ${err.message}</p>`;
+            });
+
+            loadAndApplyPrintSettings();
         }
 
         /**
@@ -16087,6 +16094,122 @@
                 return `${kelas}${semester} ${jenis}`; // Contoh: "K.9.1 Peng"
             }
             return sheetName; // Fallback jika format tidak dikenali
+        }
+
+        // TAMBAHKAN DUA FUNGSI BARU INI DI DALAM TAG <script> PADA Index.html
+
+        /**
+         * Merender baris-baris input kelas dinamis berdasarkan jenjang dan data yang tersimpan.
+         * @param {string} jenjang - Jenjang sekolah (MI/MTS/MA).
+         * @param {Array<string>} savedKelasList - Daftar kelas yang sudah tersimpan.
+         */
+        function renderKelasInputs(jenjang, savedKelasList) {
+            const container = document.getElementById('dynamic-kelas-container');
+            container.innerHTML = ''; // Bersihkan kontainer
+
+            const baseOptionsMap = {
+                MI: ['6', 'VI'],
+                MTS: ['9', 'IX'],
+                MA: ['12', 'XII']
+            };
+            const baseOptions = baseOptionsMap[jenjang] || [];
+            const dropdownHtml = `<option value="">-- Pilih --</option>` + baseOptions.map(opt => `<option value="${opt}">${opt}</option>`).join('');
+
+            // Fungsi untuk mem-parsing nama kelas yang tersimpan
+            const parseKelas = (kelasString) => {
+                for (const base of [...baseOptions].sort((a, b) => b.length - a.length)) { // Prioritaskan yang lebih panjang (misal: XII vs VI)
+                    if (kelasString.startsWith(base)) {
+                        let peminatan = kelasString.substring(base.length).trim();
+                        // Hapus tanda baca di awal jika ada
+                        if (peminatan.length > 0 && /[.\-_]/.test(peminatan.charAt(0))) {
+                          // Biarkan tanda baca jika ada
+                        } else if (peminatan.length > 0) {
+                          // tidak melakukan apa-apa jika hanya spasi
+                        }
+                        return { dasar: base, peminatan: peminatan };
+                    }
+                }
+                return { dasar: '', peminatan: kelasString }; // Fallback
+            };
+            
+            // Buat baris input untuk setiap kelas yang sudah disimpan
+            if (savedKelasList && savedKelasList.length > 0) {
+                savedKelasList.forEach(kelas => {
+                    const parsed = parseKelas(kelas);
+                    const row = createKelasInputRow(dropdownHtml, parsed.dasar, parsed.peminatan);
+                    container.appendChild(row);
+                });
+            }
+
+            // Selalu tambahkan satu baris kosong di akhir
+            const emptyRow = createKelasInputRow(dropdownHtml);
+            container.appendChild(emptyRow);
+        }
+
+        /**
+         * Membuat satu elemen baris input kelas (DOM element).
+         * @param {string} dropdownOptionsHtml - String HTML untuk opsi dropdown.
+         * @param {string} [selectedDasar=''] - Nilai terpilih untuk kelas dasar.
+         * @param {string} [selectedPeminatan=''] - Nilai untuk input peminatan.
+         * @returns {HTMLElement} Elemen div yang berisi satu baris input.
+         */
+        function createKelasInputRow(dropdownOptionsHtml, selectedDasar = '', selectedPeminatan = '') {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'kelas-input-row grid grid-cols-[1fr_2fr_auto] gap-2 items-center';
+
+            rowDiv.innerHTML = `
+                <div>
+                    <select class="kelas-dasar-select w-full p-2 border border-gray-300 bg-white rounded-md shadow-sm">
+                        ${dropdownOptionsHtml}
+                    </select>
+                </div>
+                <div>
+                    <input type="text" class="peminatan-input w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Kelas Peminatan (Opsional)">
+                </div>
+                <div>
+                    <button type="button" class="remove-kelas-row text-red-500 hover:text-red-700 font-bold p-2 text-xl" title="Hapus Baris">&times;</button>
+                </div>
+            `;
+
+            // Set nilai yang sudah ada
+            const selectEl = rowDiv.querySelector('.kelas-dasar-select');
+            const inputEl = rowDiv.querySelector('.peminatan-input');
+            selectEl.value = selectedDasar;
+            inputEl.value = selectedPeminatan;
+
+            // Tambahkan event listener untuk hapus
+            rowDiv.querySelector('.remove-kelas-row').addEventListener('click', function() {
+                // Jangan hapus baris terakhir jika hanya ada satu
+                if (document.querySelectorAll('.kelas-input-row').length > 1) {
+                    rowDiv.remove();
+                } else {
+                    // Kosongkan saja nilainya
+                    selectEl.value = '';
+                    inputEl.value = '';
+                }
+            });
+            
+            // Fungsi untuk menambah baris baru jika perlu
+            const addRowIfNeeded = () => {
+                // Cek apakah ini adalah baris terakhir di kontainer
+                const isLastRow = rowDiv.parentElement.lastElementChild === rowDiv;
+                if (isLastRow && (selectEl.value || inputEl.value)) {
+                    const newRow = createKelasInputRow(dropdownOptionsHtml);
+                    rowDiv.parentElement.appendChild(newRow);
+                }
+            };
+            
+            // Tambahkan baris baru saat enter atau saat fokus hilang
+            inputEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addRowIfNeeded();
+                }
+            });
+            inputEl.addEventListener('blur', addRowIfNeeded);
+            selectEl.addEventListener('change', addRowIfNeeded);
+
+            return rowDiv;
         }
     </script>
 </body>
