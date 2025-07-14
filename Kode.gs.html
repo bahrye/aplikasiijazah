@@ -8713,19 +8713,16 @@ function terbilang(angka) {
 }
 
 /**
- * [REVISI FINAL] Membuat file PDF daftar nilai dengan validasi yang sudah diperbarui.
+ * [REVISI FINAL + Pengaturan Cetak Guru v2] Membuat file PDF daftar nilai.
  */
 function generateNilaiPdfForGuru(payload) {
   try {
     const { spreadsheetId, tipe, mapelKode, guruData, submissionId, kelas } = payload;
     
-    // --- PERBAIKAN: Gunakan fungsi helper yang baru ---
     if (!isSubmissionFullyApproved(spreadsheetId, submissionId)) {
       throw new Error("Cetak nilai gagal. Pastikan semua nilai siswa untuk pengajuan ini telah disetujui oleh admin.");
     }
-    // --- AKHIR PERBAIKAN ---
     
-    // --- Sisa dari fungsi ini tidak ada yang berubah ---
     const ss = SpreadsheetApp.openById(spreadsheetId);
     const schoolData = getSchoolData(spreadsheetId);
     const students = getStudentsForGuru(spreadsheetId);
@@ -8758,6 +8755,8 @@ function generateNilaiPdfForGuru(payload) {
     if (nilaiPerSiswa.length === 0) { throw new Error("Tidak ada data nilai yang disetujui untuk dicetak."); }
 
     const printSettings = getPrintSettings(spreadsheetId).settings || {};
+    const guruPrintSettings = getGuruPrintSettings(spreadsheetId).settings || {};
+    
     const tahunSekarang = new Date().getFullYear();
     const tahunAjaran = printSettings.tahunAjaran || `${tahunSekarang - 1}/${tahunSekarang}`;
     const tahunUntukJudul = tahunAjaran.split('/')[1] || tahunSekarang;
@@ -8796,8 +8795,21 @@ function generateNilaiPdfForGuru(payload) {
                 </div>
             </div>`;
     }
-    const tanggalCetak = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-    const tempatCetak = schoolData.kabupaten ? toProperCase(schoolData.kabupaten) : 'Tempat';
+
+    // ==== AWAL PERBAIKAN LOGIKA TEMPAT & TANGGAL ====
+    const tempatCetak = guruPrintSettings.tempatCetak ? toProperCase(guruPrintSettings.tempatCetak) : (schoolData.kabupaten ? toProperCase(schoolData.kabupaten) : 'Tempat');
+    
+    let tanggalCetak;
+    if (guruPrintSettings.tanggalCetak) {
+        // Buat objek tanggal dari string "YYYY-MM-DD" untuk menghindari masalah timezone
+        const dateParts = guruPrintSettings.tanggalCetak.split('-');
+        const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+        tanggalCetak = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    } else {
+        tanggalCetak = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+    // ==== AKHIR PERBAIKAN LOGIKA ====
+
     const htmlContent = `
       <html><head><style>
         body{font-family: 'Times New Roman', Times, serif; font-size: 11pt;} table{border-collapse: collapse; width: 100%;} 
@@ -8813,7 +8825,7 @@ function generateNilaiPdfForGuru(payload) {
             <tr><td class="no-border">Guru Pemeriksa</td><td class="no-border">:</td><td class="no-border font-bold">${guruData.nama.toUpperCase()}</td></tr>
         </table>
         <table><thead style="background-color: #e5e5e5; font-weight:bold;"><tr><th>No</th><th>Ruang<br>Ujian</th><th>Nomor Ujian</th><th>Nama Peserta Ujian</th><th>Nilai</th><th>Nilai dengan huruf</th></tr></thead>
-            <tbody>${nilaiPerSiswa.map((s, i) => `<tr><td class="text-center">${i + 1}</td><td class="text-center">${s.ruangUjian || '-'}</td><td class="text-center">${s.nomorUjian || '-'}</td><td>${s.nama}</td><td class="text-center font-bold">${s.nilai}</td><td style="font-style: italic;">${terbilang(s.nilai)}</td></tr>`).join('')}</tbody>
+            <tbody>${nilaiPerSiswa.map((s, i) => `<tr><td class="text-center">${i + 1}</td><td class="text-center">${s.ruangUjian || '-'}</td><td class="text-center" style="white-space: nowrap;">${s.nomorUjian || '-'}</td><td>${s.nama}</td><td class="text-center font-bold">${s.nilai}</td><td style="font-style: italic;">${terbilang(s.nilai)}</td></tr>`).join('')}</tbody>
         </table>
         <div style="margin-top: 40px; width: 100%; display: flex; justify-content: space-between; page-break-inside: avoid;">
             <div style="width: 45%; text-align: center;"><p style="margin-bottom: 60px;">Mengetahui,<br>Kepala Madrasah,</p><p style="font-weight: bold; text-decoration: underline; margin: 0; padding: 0;">${schoolData.namaKepsek ? schoolData.namaKepsek.toUpperCase() : '(NAMA KEPALA SEKOLAH)'}</p><p style="margin: 0; padding: 0;">NIP. ${schoolData.nipKepsek || '-'}</p></div>
@@ -10854,4 +10866,74 @@ function onOpen() {
       .createMenu('🛠️ Alat Superadmin')
       .addItem('Perbarui Semua Header Siswa', 'updateAllStudentSheetHeaders_Superadmin')
       .addToUi();
+}
+
+/**
+ * [PERBAIKAN] Menyimpan pengaturan cetak dari Portal Guru dengan penanganan timezone.
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @param {object} settings - Objek berisi { tempatCetak, tanggalCetak }.
+ * @returns {object} Status penyimpanan.
+ */
+function saveGuruPrintSettings(spreadsheetId, settings) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    let sheet = ss.getSheetByName(SHEET_PENGATURAN);
+    if (!sheet) {
+        sheet = ss.insertSheet(SHEET_PENGATURAN);
+        sheet.appendRow(['Nama Pengaturan', 'Value']);
+    }
+
+    // Fungsi helper untuk mencari atau membuat baris pengaturan
+    const findAndSet = (key, value) => {
+        const row = findOrCreateSettingRow(sheet, key);
+        
+        // ==== AWAL LOGIKA PERBAIKAN TIMEZONE ====
+        if (key === 'Cetak Guru - Tanggal' && value) {
+            // Jika ini adalah tanggal, buat objek Date secara manual untuk menghindari
+            // masalah konversi timezone UTC.
+            const dateParts = value.split('-'); // value akan berupa "YYYY-MM-DD"
+            // new Date(tahun, bulan-1, tanggal) akan membuat tanggal di timezone lokal skrip.
+            const correctedDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+            sheet.getRange(row, 2).setValue(correctedDate);
+        } else {
+            // Untuk data lain (seperti Tempat Cetak), simpan seperti biasa.
+            sheet.getRange(row, 2).setValue(value || '');
+        }
+        // ==== AKHIR LOGIKA PERBAIKAN TIMEZONE ====
+    };
+
+    findAndSet('Cetak Guru - Tempat', settings.tempatCetak);
+    findAndSet('Cetak Guru - Tanggal', settings.tanggalCetak);
+
+    return { status: 'success', message: 'Pengaturan cetak berhasil disimpan.' };
+  } catch (e) {
+    Logger.log("saveGuruPrintSettings Error: " + e.message);
+    return { status: 'error', message: 'Gagal menyimpan pengaturan cetak.' };
+  }
+}
+
+/**
+ * [BARU] Mengambil pengaturan cetak yang spesifik untuk Portal Guru.
+ * @param {string} spreadsheetId - ID spreadsheet sekolah.
+ * @returns {object} Objek berisi pengaturan yang tersimpan.
+ */
+function getGuruPrintSettings(spreadsheetId) {
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheet = ss.getSheetByName(SHEET_PENGATURAN);
+    const settings = { tempatCetak: '', tanggalCetak: '' }; // Default values
+
+    if (sheet) {
+        const data = sheet.getDataRange().getValues();
+        const settingsMap = new Map(data.map(row => [row[0], row[1]]));
+        
+        settings.tempatCetak = settingsMap.get('Cetak Guru - Tempat') || '';
+        const tgl = settingsMap.get('Cetak Guru - Tanggal');
+        settings.tanggalCetak = (tgl instanceof Date) ? Utilities.formatDate(tgl, Session.getScriptTimeZone(), "yyyy-MM-dd") : '';
+    }
+    
+    return { status: 'success', settings: settings };
+  } catch (e) {
+    return { status: 'error', message: 'Gagal memuat pengaturan cetak.' };
+  }
 }
