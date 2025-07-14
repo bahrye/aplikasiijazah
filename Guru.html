@@ -414,6 +414,32 @@
                                 </div>
                         </div>
                     </div>
+
+                    <div id="page-pengaturan-cetak" class="hidden content-view">
+                        <h1 class="text-3xl font-bold text-gray-800">Pengaturan Cetak Nilai</h1>
+                        <p class="mt-2 text-gray-600 mb-8">Atur tempat dan tanggal yang akan ditampilkan pada dokumen daftar nilai yang dicetak.</p>
+                        
+                        <div class="bg-white p-8 rounded-lg shadow-md max-w-2xl">
+                            <form id="guruPrintSettingsForm" class="space-y-6">
+                                <div>
+                                    <label for="guruTempatCetak" class="block text-sm font-medium text-gray-700">Tempat Cetak</label>
+                                    <input type="text" id="guruTempatCetak" class="mt-1 w-full max-w-sm p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Contoh: Jakarta">
+                                    <p class="text-xs text-gray-500 mt-1">Jika kosong, akan menggunakan nama kabupaten dari data sekolah.</p>
+                                </div>
+                                <div>
+                                    <label for="guruTanggalCetak" class="block text-sm font-medium text-gray-700">Tanggal Cetak</label>
+                                    <input type="date" id="guruTanggalCetak" class="mt-1 w-full max-w-sm p-2 border border-gray-300 rounded-md shadow-sm">
+                                    <p class="text-xs text-gray-500 mt-1">Jika kosong, akan menggunakan tanggal hari ini.</p>
+                                </div>
+                                <div class="pt-2">
+                                    <button type="submit" id="saveGuruPrintSettingsBtn" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors">
+                                        <span class="btn-text">Simpan Pengaturan Cetak</span>
+                                        <span class="btn-spinner hidden loading-animation">Menyimpan</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </main>
             </div>
         </div>
@@ -612,8 +638,6 @@
     }
 
     // File: Guru.html (di dalam tag <script>)
-    // Ganti keseluruhan fungsi initializeAppGuru() Anda dengan kode ini.
-
     function initializeAppGuru(guruData) {
         sessionStorage.setItem('isSubmissionEnabled', guruData.isSubmissionEnabled);
         document.getElementById('nama-guru-display').textContent = guruData.nama;
@@ -621,43 +645,58 @@
         const mapelContainer = document.getElementById('pilih-mapel-container');
         mapelContainer.innerHTML = ''; // Selalu kosongkan kontainer sebelum membangun menu baru
 
-        // Tambahkan menu "Profil Saya" secara dinamis
+        // --- AWAL KODE YANG DIPERBAIKI ---
+        // Menambahkan menu statis satu per satu untuk menghindari error layout
+        
+        // 1. Menu Profil Saya
         mapelContainer.insertAdjacentHTML('beforeend', `
             <a href="#" class="nav-link-guru flex items-center space-x-3 p-3 rounded-lg text-sm font-medium" data-page="profil-guru">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zM12 12a5 5 0 00-5 5h10a5 5 0 00-5-5z" clip-rule="evenodd" />
                 </svg>
                 <span>Profil Saya</span>
             </a>
         `);
         
-        // --- [AWAL PERUBAHAN] ---
-        // Tambahkan menu "Daftar Siswa" yang baru di sini
+        // 2. Menu Daftar Siswa
         mapelContainer.insertAdjacentHTML('beforeend', `
             <a href="#" class="nav-link-guru flex items-center space-x-3 p-3 rounded-lg text-sm font-medium" data-page="daftar-siswa">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                 </svg>
                 <span>Daftar Siswa</span>
             </a>
         `);
-        // --- [AKHIR PERUBAHAN] ---
 
-        // Tambahkan menu "Siswa Tanpa Kelas"
+        // 3. Menu Siswa Tanpa Kelas (dengan perbaikan pada SVG)
         mapelContainer.insertAdjacentHTML('beforeend', `
             <a href="#" id="nav-siswa-tanpa-kelas" class="nav-link-guru flex items-center space-x-3 p-3 rounded-lg text-sm font-medium" data-page="siswa-tanpa-kelas">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span>Siswa Tanpa Kelas</span>
             </a>
+        `);
+        
+        // 4. Menu Pengaturan Cetak (dengan perbaikan pada SVG)
+        mapelContainer.insertAdjacentHTML('beforeend', `
+            <a href="#" class="nav-link-guru flex items-center space-x-3 p-3 rounded-lg text-sm font-medium" data-page="pengaturan-cetak">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z" />
+                </svg>
+                <span>Pengaturan Cetak</span>
+            </a>
+        `);
+        
+        // 5. Pembatas dan Judul "MATA PELAJARAN"
+        mapelContainer.insertAdjacentHTML('beforeend', `
             <div class="border-t border-indigo-700 my-2"></div>
             <h3 class="px-2 text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-2">Mata Pelajaran</h3>
         `);
+        // --- AKHIR KODE YANG DIPERBAIKI ---
 
         // Loop melalui setiap mata pelajaran
         guruData.mapel.forEach(m => {
-            // [PERBAIKAN] Logika di dalam if ini diubah untuk menyertakan div wrapper baru
             if (m.kelas && m.kelas.length >= 1) {
                 let submenuHtml = '';
                 m.kelas.forEach(k => {
@@ -668,12 +707,11 @@
                     `;
                 });
 
-                // Menambahkan div baru ".submenu-content-wrapper" untuk membungkus link
                 mapelContainer.insertAdjacentHTML('beforeend', `
                     <div class="mapel-group">
                         <a href="#" class="nav-link-header nav-link-guru flex items-center justify-between p-3 rounded-lg text-sm font-medium">
                             <span class="flex items-center space-x-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a1 1 0 011-1h14a1 1 0 110 2H3a1 1 0 01-1-1z" /></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a1 1 0 011-1h14a1 1 0 110 2H3a1 1 0 01-1-1z" /></svg>
                                 <span>${m.nama}</span>
                             </span>
                             <svg class="chevron h-4 w-4 transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
@@ -688,52 +726,38 @@
             }
         });
 
-        // Event listener tidak perlu diubah, karena sudah dirancang untuk menangani dropdown
+        // Pasang kembali event listener
         const newMapelContainer = mapelContainer.cloneNode(true);
         mapelContainer.parentNode.replaceChild(newMapelContainer, mapelContainer);
 
         newMapelContainer.addEventListener('click', function(e) {
             stopAllGuruPolling();
-
             const target = e.target;
-            
-            // --- Logika untuk membuka/menutup submenu (DIPERBARUI) ---
             const header = target.closest('.nav-link-header');
             if (header) {
                 e.preventDefault();
                 const submenu = header.nextElementSibling;
                 const isOpen = header.classList.contains('open');
-
-                // Tutup semua submenu lain terlebih dahulu
                 document.querySelectorAll('.nav-link-header.open').forEach(otherHeader => {
                     if (otherHeader !== header) {
                         otherHeader.classList.remove('open');
-                        // Atur max-height kembali ke null agar kembali ke nilai CSS (yaitu 0)
                         otherHeader.nextElementSibling.style.maxHeight = null; 
                     }
                 });
-
-                // Toggle submenu yang diklik
                 if (isOpen) {
                     header.classList.remove('open');
-                    submenu.style.maxHeight = null; // Menutup submenu
+                    submenu.style.maxHeight = null;
                 } else {
                     header.classList.add('open');
-                    // [KUNCI PERBAIKAN] Mengatur max-height sesuai tinggi konten aslinya.
-                    // Ini akan memastikan kontainer cukup tinggi untuk semua item di dalamnya.
                     submenu.style.maxHeight = submenu.scrollHeight + "px"; 
                 }
-                return; // Hentikan eksekusi setelah menangani header
+                return;
             }
-
-            // --- Logika untuk memilih link kelas (Tidak berubah) ---
             const mapelLink = target.closest('.mapel-link');
             if (mapelLink) {
                 e.preventDefault();
                 handleMapelSelection(mapelLink.dataset.kode, mapelLink.dataset.jenisUjian, mapelLink.dataset.kelas);
             }
-            
-            // --- Logika untuk menu statis seperti "Profil Saya" (Tidak berubah) ---
             const navLink = target.closest('.nav-link-guru');
             if (navLink && !navLink.classList.contains('mapel-link') && !navLink.classList.contains('nav-link-header')) {
                 e.preventDefault();
@@ -742,12 +766,7 @@
             }
         });
 
-        // ===== AWAL BLOK KODE BARU =====
-
-        // Setelah UI navigasi siap, cek status pengajuan yang mungkin masih aktif
         startGuruStatusPolling(); 
-        // ===== AKHIR BLOK KODE BARU =====
-
         document.getElementById('logoutButtonGuru').addEventListener('click', handleGuruLogout);
         setupScoreInputValidation();
         setupTabs();
@@ -768,16 +787,21 @@
             document.getElementById('page-profil-guru').classList.remove('hidden');
             document.querySelector('.nav-link-guru[data-page="profil-guru"]').classList.add('active');
             loadProfilePage();
-        } else if (pageId === 'daftar-siswa') { // --- [PERUBAHAN] ---
+        } else if (pageId === 'daftar-siswa') {
             document.getElementById('page-daftar-siswa').classList.remove('hidden');
             document.querySelector('.nav-link-guru[data-page="daftar-siswa"]').classList.add('active');
-            loadDaftarSiswaPage(); // Panggil fungsi baru untuk memuat halaman ini
+            loadDaftarSiswaPage();
         } else if (pageId === 'siswa-tanpa-kelas') {
             document.getElementById('page-siswa-tanpa-kelas').classList.remove('hidden');
             document.getElementById('nav-siswa-tanpa-kelas').classList.add('active');
             loadSiswaTanpaKelas();
+        // ==== AWAL PENAMBAHAN KODE ====
+        } else if (pageId === 'pengaturan-cetak') {
+            document.getElementById('page-pengaturan-cetak').classList.remove('hidden');
+            document.querySelector('.nav-link-guru[data-page="pengaturan-cetak"]').classList.add('active');
+            loadPengaturanCetakPage();
+        // ==== AKHIR PENAMBAHAN KODE ====
         } else {
-            // Ini untuk halaman input nilai, biarkan seperti ini
             document.getElementById('form-container').classList.remove('hidden');
         }
     }
@@ -823,21 +847,18 @@
     // File: Guru.html (di dalam tag <script>)
 
     function handleMapelSelection(mapelKode, jenisUjian, kelas) {
-        // 1. Secara manual tampilkan container form dan sembunyikan halaman lain
-        document.getElementById('welcome-screen').classList.add('hidden');
-        document.getElementById('page-profil-guru').classList.add('hidden');
-        document.getElementById('page-siswa-tanpa-kelas').classList.add('hidden');
-        document.getElementById('page-daftar-siswa').classList.add('hidden');
-        document.getElementById('form-container').classList.remove('hidden');
+        // Panggil fungsi showGuruPage untuk menyembunyikan semua halaman lain
+        // dan hanya menampilkan kontainer form nilai.
+        showGuruPage('form-container'); 
 
-        // 2. Hapus status aktif dari semua link navigasi
+        // Hapus status aktif dari semua link navigasi
         document.querySelectorAll('.nav-link-guru.active, .mapel-link.active').forEach(l => l.classList.remove('active'));
 
-        // 3. Buat selector yang spesifik untuk kode mapel DAN kelas
+        // Buat selector yang spesifik untuk kode mapel DAN kelas
         const selector = `.mapel-link[data-kode="${mapelKode}"][data-kelas="${kelas}"]`;
         const activeLink = document.querySelector(selector);
         
-        // 4. Terapkan kelas .active pada link yang benar
+        // Terapkan kelas .active pada link yang benar
         if (activeLink) {
             activeLink.classList.add('active');
             // Jika link ada di dalam dropdown, aktifkan juga headernya
@@ -847,13 +868,13 @@
             }
         }
 
-        // 5. Reset tab ke "Nilai Ujian" (logika ini tidak berubah)
+        // Reset tab ke "Nilai Ujian" 
         document.querySelector('.tab-btn.active')?.classList.remove('active');
         document.querySelector('[data-tab="ujian"]').classList.add('active');
         document.getElementById('tab-ujian').classList.remove('hidden');
         document.getElementById('tab-rapor').classList.add('hidden');
         
-        // 6. Muat data form dengan parameter yang sudah benar (logika ini tidak berubah)
+        // Muat data form dengan parameter yang sudah benar
         buildUjianForm(mapelKode, jenisUjian, kelas);
         buildRaporForm(mapelKode, kelas);
     }
@@ -865,7 +886,6 @@
         });
     }
 
-    // GANTI FUNGSI INI DI Guru.html
     async function buildUjianForm(mapelKode, jenisUjian, kelas) {
         const container = document.getElementById('tab-ujian');
         container.innerHTML = `<p class="loading-animation p-4">Memuat data nilai ujian...</p>`;
@@ -894,9 +914,8 @@
             const wrapperDiv = document.createElement('div');
             wrapperDiv.className = 'bg-gray-50 p-4 rounded-lg';
 
-            // Perubahan di sini untuk memastikan layout yang benar
             const headerDiv = document.createElement('div');
-            headerDiv.className = 'space-y-4'; // Biarkan item di dalamnya tersusun vertikal
+            headerDiv.className = 'space-y-4';
 
             const titleDiv = document.createElement('div');
             titleDiv.innerHTML = `<h3 class="text-xl font-bold text-gray-800">${namaMapel} - Kelas ${kelas}</h3>`;
@@ -919,13 +938,17 @@
 
             const buttonsHtml = buildActionButtons(type, mapelKode, submittedValues, approvalStatus, null, submissionId, batchStatus, kelas, isLockedForGuru);
             buttonContainer.innerHTML = buttonsHtml;
+            
+            attachActivationListener('tab-ujian', type);
 
-            // ===== [BARU] MULAI POLLING JIKA PERLU =====
+            // ==== PERUBAHAN BARU: Cek draf saat load ====
+            checkAndEnableSubmitButton(type, savedValues);
+            // ==========================================
+
             const isSubmitted = submittedValues && submittedValues[type] && Object.keys(submittedValues[type]).length > 0;
             if (isSubmitted && submissionId && !batchStatus.allApproved) {
                 startGuruPolling(submissionId, type);
             }
-            // ==========================================
 
         } catch (error) {
             container.innerHTML = `<p class="text-red-500 p-4">Gagal memuat data: ${error.message}</p>`;
@@ -974,7 +997,6 @@
         }
     }
 
-    // GANTI FUNGSI INI DI Guru.html
     async function renderRaporSemesterTable(semesterKey, mapelKode, kelas) {
         const tableContainer = document.getElementById('rapor-table-container');
         tableContainer.innerHTML = `<p class="loading-animation p-4">Memuat data semester...</p>`;
@@ -1003,9 +1025,8 @@
             const wrapperDiv = document.createElement('div');
             wrapperDiv.className = 'bg-gray-50 p-4 rounded-lg';
 
-            // Perubahan di sini untuk memastikan layout yang benar
             const headerDiv = document.createElement('div');
-            headerDiv.className = 'space-y-4'; // Biarkan item di dalamnya tersusun vertikal
+            headerDiv.className = 'space-y-4';
 
             const titleDiv = document.createElement('div');
             titleDiv.innerHTML = `<h3 class="text-xl font-bold text-gray-800">${namaMapel} - Kelas ${kelas}</h3>`;
@@ -1028,36 +1049,35 @@
 
             const buttonsHtml = buildActionButtons(type, mapelKode, submittedValues, approvalStatus, null, submissionId, batchStatus, kelas, isLockedForGuru);
             buttonContainer.innerHTML = buttonsHtml;
+            
+            attachActivationListener('rapor-table-container', type);
 
-            // ===== [BARU] MULAI POLLING JIKA PERLU =====
+            // ==== PERUBAHAN BARU: Cek draf saat load ====
+            checkAndEnableSubmitButton(type, savedValues);
+            // ==========================================
+
             const isSubmitted = submittedValues && submittedValues[type] && Object.keys(submittedValues[type]).length > 0;
             if (isSubmitted && submissionId && !batchStatus.allApproved) {
                 startGuruPolling(submissionId, type);
             }
-            // ==========================================
 
         } catch (error) {
             tableContainer.innerHTML = `<p class="text-red-500 p-4">Gagal memuat tabel: ${error.message}</p>`;
         }
     }
     
-    // GANTI FUNGSI INI DI Guru.html
     /**
-     * [PERBAIKAN FINAL v7] Membangun tombol aksi dengan perataan kiri dan logika cetak yang disempurnakan.
+     * [PERBAIKAN FINAL v8] Membangun tombol aksi dengan tombol Simpan/Kirim dinonaktifkan secara default.
      */
     function buildActionButtons(type, mapelKode, submittedValues, approvalStatus, isSubmissionEnabled, submissionId, batchStatus, kelas, isLockedForGuru) {
         const isSubmitted = submittedValues && submittedValues[type] && Object.keys(submittedValues[type]).length > 0;
         let buttonsHtml = '';
 
-        // --- Kasus 1: Form DIKUNCI oleh admin ---
         if (isLockedForGuru) {
-            // Logika baru untuk tombol Cetak pada form terkunci
             const isFullyApproved = isSubmitted && batchStatus && batchStatus.allApproved;
             const btnClass = isFullyApproved ? 'bg-cyan-600 hover:bg-cyan-700' : 'bg-gray-400 cursor-not-allowed';
             const btnDisabled = isFullyApproved ? '' : 'disabled';
             const btnTitle = isFullyApproved ? 'Cetak Nilai' : 'Tombol Cetak akan aktif setelah semua nilai dikirim dan disetujui oleh admin.';
-
-            // Tombol Cetak selalu ditampilkan, namun statusnya (aktif/nonaktif) bergantung pada kondisi di atas
             const printButtonHtml = `<button data-action="print" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" data-kelas="${kelas}" class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 ${btnClass}" ${btnDisabled} title="${btnTitle}">Cetak Nilai</button>`;
 
             return `
@@ -1069,14 +1089,14 @@
                 </div>
             `;
         }
-
-        // --- Kasus 2: Form TIDAK DIKUNCI ---
+        
         if (isSubmitted) {
             const form = document.getElementById(`form-${type}`);
-            const hasRejectedInputs = form ? !!form.querySelector('.score-input.status-ditolak') : false;
+            const hasRejectedOrEmptyInputs = form ? !!form.querySelector('.score-input.status-ditolak, .score-input[value=""]') : false;
 
-            if (hasRejectedInputs) {
-                buttonsHtml += `<button data-action="resubmit" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 text-sm flex items-center gap-2">Kirim Kembali Revisi</button>`;
+            if (hasRejectedOrEmptyInputs) {
+                // Tombol Kirim Kembali Revisi, dinonaktifkan secara default
+                buttonsHtml += `<button id="resubmit-btn-${type}" data-action="resubmit" data-type="${type}" data-mapel-kode="${mapelKode}" data-submission-id="${submissionId}" class="bg-gray-400 cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2" disabled>Kirim Kembali Revisi</button>`;
             }
 
             const isFullyApproved = batchStatus && batchStatus.allApproved;
@@ -1086,22 +1106,22 @@
 
             buttonsHtml += `<button data-action="cancel" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 text-sm flex items-center gap-2">Batal Kirim</button>`;
         } else {
+            // ==== PERUBAHAN UTAMA ADA DI SINI ====
+            // Tombol Simpan dan Kirim dinonaktifkan secara default (abu-abu)
             buttonsHtml = `
                 <button data-action="export" data-type="${type}" data-mapel-kode="${mapelKode}" data-kelas="${kelas}" class="bg-teal-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700 text-sm flex items-center whitespace-nowrap"><div class="btn-content flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V3"></path></svg><span>Download Template</span></div><div class="btn-spinner hidden loading-spinner" style="width:20px; height:20px; border-width:3px;"></div></button>
                 <button data-action="import" data-type="${type}" data-mapel-kode="${mapelKode}" data-kelas="${kelas}" class="bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-700 text-sm flex items-center whitespace-nowrap"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg><span>Import Nilai</span></button>
                 <div class="h-6 border-l border-gray-300 hidden md:block"></div>
-                <button data-action="save" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 text-sm flex items-center gap-2">Simpan Draf</button>
-                <button data-action="submit" data-type="${type}" data-mapel-kode="${mapelKode}" class="text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 bg-green-600 hover:bg-green-700">Kirim Nilai</button>
+                <button id="save-draft-btn-${type}" data-action="save" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-gray-400 cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2" disabled>Simpan Draf</button>
+                <button id="submit-btn-${type}" data-action="submit" data-type="${type}" data-mapel-kode="${mapelKode}" class="bg-gray-400 cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2" disabled>Kirim Nilai</button>
             `;
         }
 
-        // Mengembalikan semua tombol dalam satu div dengan perataan kiri (justify-start)
         return `<div class="flex items-center justify-start flex-wrap gap-2">${buttonsHtml}</div>`;
     }
 
-    // GANTI FUNGSI INI DI Guru.html
     /**
-     * [MODIFIKASI] Membangun tabel nilai dengan mempertimbangkan status kunci (isLockedForGuru).
+     * [PERBAIKAN v3] Membangun tabel dan memasang listener input untuk mengaktifkan tombol.
      */
     function buildScoreTable(type, title, mapelKode, students, savedValues, submittedValues, approvalStatus, kkm, isLockedForGuru, options = {}) {
         const isSubmitted = submittedValues && submittedValues[type];
@@ -1177,7 +1197,15 @@
             studentRows += `<tr class="hover:bg-gray-50"><td class="px-4 py-2 text-gray-500 border border-gray-200 sticky-col-left">${s.nisn}</td><td class="px-4 py-2 font-medium border border-gray-200 sticky-col-left">${s.nama.toUpperCase()}</td>${inputsHtml(s)}<td class="px-2 py-1 border border-gray-200 text-center font-bold jumlah-nilai">0</td><td class="px-2 py-1 border border-gray-200 text-center font-bold rata-rata-nilai">0</td></tr>`;
         });
         let tableHtml = `${legendHtml}<form id="form-${type}" data-mapel-kode="${mapelKode}" data-type="${type}"><div class="overflow-x-auto"><table class="min-w-full border-collapse text-sm" data-kkm="${kkm}"><thead class="bg-gray-100"><tr>${headers}</tr></thead><tbody>${studentRows}</tbody></table></div></form>`;
-        setTimeout(() => { const tableContainer = document.getElementById(`form-${type}`); if(tableContainer) { tableContainer.querySelectorAll('tbody tr').forEach(row => updateRowStats(row)); tableContainer.addEventListener('input', e => { if (e.target.classList.contains('score-input')) { updateRowStats(e.target.closest('tr')); } }); } }, 0);
+        
+        // Listener input dipindahkan dari sini
+        setTimeout(() => { 
+            const tableContainer = document.getElementById(`form-${type}`); 
+            if(tableContainer) { 
+                tableContainer.querySelectorAll('tbody tr').forEach(row => updateRowStats(row));
+                // Event listener 'input' utama sekarang dipasang di buildUjianForm dan renderRaporSemesterTable
+            } 
+        }, 0);
         return tableHtml;
     }
 
@@ -1587,10 +1615,14 @@
             confirmColor: "bg-green-600 hover:bg-green-700",
             onConfirm: () => {
                 const payload = getFormData(type, mapelKode);
-                if (Object.keys(payload.nilai).length === 0) { 
-                    showNotification("Tidak ada nilai untuk dikirim.", "error"); 
-                    return; 
+
+                // ==== PERUBAHAN: Validasi nilai kosong sebelum mengirim ====
+                const nilaiArray = Object.values(payload.nilai);
+                if (nilaiArray.length === 0 || nilaiArray.every(v => v === '')) {
+                    showNotification("Tidak ada nilai untuk dikirim. Harap isi setidaknya satu nilai.", "error");
+                    return;
                 }
+                
                 const guruData = JSON.parse(sessionStorage.getItem('guruData'));
                 payload.nama = guruData.nama; 
                 const originalHtml = btn.innerHTML;
@@ -1601,12 +1633,8 @@
                     .withSuccessHandler(res => { 
                         showNotification(res.message, res.status === 'success' ? 'success' : 'error');
                         if (res.status === 'success') {
-                            // ===== PERUBAHAN UTAMA DI SINI =====
-                            // Setelah sukses, panggil fungsi polling dengan submissionId dari server
                             const activeMapelLink = document.querySelector('.mapel-link.active');
                             startGuruStatusPolling();
-                            // ===================================
-
                             if (type === 'ujian') {
                                 buildUjianForm(activeMapelLink.dataset.kode, activeMapelLink.dataset.jenisUjian, activeMapelLink.dataset.kelas);
                             } else if (type.startsWith('rapor_')) {
@@ -2149,6 +2177,174 @@
                 printButton.title = 'Cetak Nilai';
             }
         }
+    }
+
+    /**
+     * [BARU v2] Memeriksa kondisi form dan mengaktifkan/menonaktifkan tombol yang sesuai.
+     * @param {HTMLElement} formElement - Elemen form yang sedang diubah.
+     * @param {string} type - Tipe nilai (misal: 'ujian' atau 'rapor_k7_ganjil').
+     */
+    function updateButtonStatesOnInput(formElement, type) {
+        const resubmitBtn = document.getElementById(`resubmit-btn-${type}`);
+
+        if (resubmitBtn) {
+            // Logika untuk Tombol "Kirim Kembali Revisi"
+            const editableInputs = formElement.querySelectorAll('input.score-input:not([readonly])');
+            const hasValueInEditableInputs = Array.from(editableInputs).some(input => input.value.trim() !== '');
+
+            if (hasValueInEditableInputs) {
+                if (resubmitBtn.disabled) {
+                    resubmitBtn.disabled = false;
+                    resubmitBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                    resubmitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                }
+            } else {
+                if (!resubmitBtn.disabled) {
+                    resubmitBtn.disabled = true;
+                    resubmitBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                    resubmitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                }
+            }
+        } else {
+            // Logika untuk Tombol "Simpan Draf" dan "Kirim Nilai"
+            const allInputs = formElement.querySelectorAll('input.score-input');
+            const hasAnyValue = Array.from(allInputs).some(input => input.value.trim() !== '');
+            
+            const saveBtn = document.getElementById(`save-draft-btn-${type}`);
+            const submitBtn = document.getElementById(`submit-btn-${type}`);
+
+            [saveBtn, submitBtn].forEach(btn => {
+                if (!btn) return;
+                
+                if (hasAnyValue) {
+                    if (btn.disabled) {
+                        btn.disabled = false;
+                        btn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                        const activeColor = btn.dataset.action === 'save' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-green-600 hover:bg-green-700';
+                        btn.classList.add(...activeColor.split(' '));
+                    }
+                } else {
+                    if (!btn.disabled) {
+                        btn.disabled = true;
+                        btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                        const activeColor = btn.dataset.action === 'save' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-green-600 hover:bg-green-700';
+                        btn.classList.remove(...activeColor.split(' '));
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * [DIPERBARUI] Helper untuk memasang listener yang memanggil fungsi update state tombol.
+     * @param {string} containerId - ID elemen pembungkus form (misal: 'tab-ujian').
+     * @param {string} type - Tipe nilai (misal: 'ujian' atau 'rapor_k7_ganjil').
+     */
+    function attachActivationListener(containerId, type) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        // Hapus listener lama jika ada untuk mencegah duplikasi
+        const form = container.querySelector(`form#form-${type}`);
+        if (form && form.hasInputListener) return;
+
+        if (form) {
+            form.addEventListener('input', function(e) {
+                if (e.target.classList.contains('score-input')) {
+                    updateButtonStatesOnInput(form, type);
+                }
+            });
+            form.hasInputListener = true; // Tandai bahwa listener sudah dipasang
+        }
+    }
+
+    /**
+     * [BARU] Memeriksa apakah ada draf yang tersimpan dan mengaktifkan tombol Kirim.
+     * @param {string} type - Tipe nilai (misal: 'ujian' atau 'rapor_k7_ganjil').
+     * @param {object} savedValues - Objek nilai draf dari server.
+     */
+    function checkAndEnableSubmitButton(type, savedValues) {
+        const hasSavedDraft = savedValues && savedValues[type] && Object.values(savedValues[type]).some(v => v !== '');
+        
+        if (hasSavedDraft) {
+            const submitBtn = document.getElementById(`submit-btn-${type}`);
+            if (submitBtn && submitBtn.disabled) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                submitBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            }
+        }
+    }
+
+    /**
+     * [BARU] Memuat pengaturan cetak dari server dan mengisinya ke form.
+     */
+    function loadPengaturanCetakPage() {
+        const form = document.getElementById('guruPrintSettingsForm');
+        const tempatInput = document.getElementById('guruTempatCetak');
+        const tanggalInput = document.getElementById('guruTanggalCetak');
+        const saveBtn = document.getElementById('saveGuruPrintSettingsBtn');
+        
+        // Nonaktifkan form saat memuat data
+        saveBtn.disabled = true;
+        saveBtn.querySelector('.btn-text').textContent = "Memuat...";
+
+        const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+        google.script.run
+            .withSuccessHandler(response => {
+                if(response.status === 'success') {
+                    tempatInput.value = response.settings.tempatCetak || '';
+                    tanggalInput.value = response.settings.tanggalCetak || '';
+                } else {
+                    showNotification("Gagal memuat pengaturan: " + response.message, "error");
+                }
+                saveBtn.disabled = false;
+                saveBtn.querySelector('.btn-text').textContent = "Simpan Pengaturan Cetak";
+            })
+            .withFailureHandler(err => {
+                showNotification("Error: " + err.message, "error");
+                saveBtn.disabled = false;
+                saveBtn.querySelector('.btn-text').textContent = "Simpan Pengaturan Cetak";
+            })
+            .getGuruPrintSettings(guruData.spreadsheetId);
+
+        // Pasang listener untuk form submit
+        form.onsubmit = handleSaveGuruPrintSettings;
+    }
+
+    /**
+     * [BARU] Menangani penyimpanan pengaturan cetak.
+     */
+    function handleSaveGuruPrintSettings(event) {
+        event.preventDefault();
+        const saveBtn = document.getElementById('saveGuruPrintSettingsBtn');
+        const btnText = saveBtn.querySelector('.btn-text');
+        const spinner = saveBtn.querySelector('.btn-spinner');
+
+        saveBtn.disabled = true;
+        btnText.classList.add('hidden');
+        spinner.classList.remove('hidden');
+
+        const settings = {
+            tempatCetak: document.getElementById('guruTempatCetak').value,
+            tanggalCetak: document.getElementById('guruTanggalCetak').value
+        };
+        const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+
+        google.script.run
+            .withSuccessHandler(response => {
+                showNotification(response.message, response.status === 'success' ? 'success' : 'error');
+                saveBtn.disabled = false;
+                btnText.classList.remove('hidden');
+                spinner.classList.add('hidden');
+            })
+            .withFailureHandler(err => {
+                showNotification("Error: " + err.message, "error");
+                saveBtn.disabled = false;
+                btnText.classList.remove('hidden');
+                spinner.classList.add('hidden');
+            })
+            .saveGuruPrintSettings(guruData.spreadsheetId, settings);
     }
 </script>
 </body>
