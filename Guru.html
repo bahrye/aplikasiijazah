@@ -2135,51 +2135,6 @@
     }
 
     /**
-     * Memperbarui tampilan (kotak input dan tombol cetak) berdasarkan data live.
-     */
-    function updateUIWithLiveData(data, submissionId, formType) {
-        const { approvalStatus, allApproved } = data;
-        const form = document.getElementById(`form-${formType}`);
-        if (!form) return;
-
-        // Perbarui status setiap kotak input nilai
-        for (const key in approvalStatus) {
-            const parts = key.split('_');
-            const nisn = parts.pop();
-            const scoreTypeParts = parts;
-
-            let inputName = '';
-            if (scoreTypeParts[0] === 'ujian') {
-                inputName = `${nisn}_${scoreTypeParts[1]}`;
-            } else if (scoreTypeParts[0] === 'rapor') {
-                inputName = `${nisn}_${scoreTypeParts[3]}`;
-            }
-
-            if(inputName) {
-                const input = form.querySelector(`input[name="${inputName}"]`);
-                if (input) {
-                    const newStatus = approvalStatus[key];
-                    input.classList.remove('status-menunggu', 'status-ditolak', 'status-disetujui');
-                    if (newStatus === 'Disetujui') input.classList.add('status-disetujui');
-                    else if (newStatus === 'Ditolak') input.classList.add('status-ditolak');
-                    else input.classList.add('status-menunggu');
-                }
-            }
-        }
-
-        // Perbarui tombol Cetak Nilai
-        if (allApproved) {
-            const printButton = document.querySelector(`button[data-action="print"][data-submission-id="${submissionId}"]`);
-            if (printButton) {
-                printButton.disabled = false;
-                printButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
-                printButton.classList.add('bg-cyan-600', 'hover:bg-cyan-700');
-                printButton.title = 'Cetak Nilai';
-            }
-        }
-    }
-
-    /**
      * [BARU v2] Memeriksa kondisi form dan mengaktifkan/menonaktifkan tombol yang sesuai.
      * @param {HTMLElement} formElement - Elemen form yang sedang diubah.
      * @param {string} type - Tipe nilai (misal: 'ujian' atau 'rapor_k7_ganjil').
@@ -2345,6 +2300,91 @@
                 spinner.classList.add('hidden');
             })
             .saveGuruPrintSettings(guruData.spreadsheetId, settings);
+    }
+
+    /**
+     * [VERSI BARU & REAL-TIME] Memperbarui tampilan (kotak input DAN tombol aksi) berdasarkan data live.
+     * Fungsi ini sekarang akan membuat kotak input yang ditolak menjadi bisa diedit secara langsung.
+     */
+    function updateUIWithLiveData(data, submissionId, formType) {
+        const { approvalStatus, allApproved } = data;
+        const form = document.getElementById(`form-${formType}`);
+        if (!form) return;
+
+        let hasRejections = false;
+
+        // 1. Perbarui status dan readonly state untuk setiap kotak input
+        for (const key in approvalStatus) {
+            const parts = key.split('_');
+            const nisn = parts.pop();
+            const scoreTypeParts = parts;
+
+            let inputName = '';
+            if (scoreTypeParts[0] === 'ujian') {
+                inputName = `${nisn}_${scoreTypeParts[1]}`;
+            } else if (scoreTypeParts[0] === 'rapor') {
+                inputName = `${nisn}_${scoreTypeParts[3]}`;
+            }
+
+            if(inputName) {
+                const input = form.querySelector(`input[name="${inputName}"]`);
+                if (input) {
+                    const newStatus = approvalStatus[key];
+                    
+                    // Reset class dan state
+                    input.classList.remove('status-menunggu', 'status-ditolak', 'status-disetujui');
+                    
+                    if (newStatus === 'Ditolak') {
+                        // --- INI SOLUSINYA ---
+                        // Jika ditolak, buat input bisa diedit kembali
+                        input.readOnly = false;
+                        input.classList.add('status-ditolak');
+                        hasRejections = true;
+                    } else {
+                        // Untuk 'Disetujui' atau 'Menunggu Persetujuan', kunci inputnya
+                        input.readOnly = true;
+                        input.classList.add(newStatus === 'Disetujui' ? 'status-disetujui' : 'status-menunggu');
+                    }
+                }
+            }
+        }
+    
+        // 2. Cek apakah perlu membangun ulang tombol aksi
+        const resubmitBtnExists = !!document.getElementById(`resubmit-btn-${formType}`);
+        const printBtn = form.closest('.p-4.rounded-lg')?.querySelector(`button[data-action="print"][data-submission-id="${submissionId}"]`);
+        const isPrintBtnActive = printBtn && !printBtn.disabled;
+        
+        // Kondisi untuk membangun ulang tombol: 
+        // A) Ada penolakan TAPI tombol "Kirim Kembali" belum muncul.
+        // B) Semua sudah disetujui TAPI tombol Cetak belum muncul atau masih nonaktif.
+        if ((hasRejections && !resubmitBtnExists) || (allApproved && !isPrintBtnActive)) {
+            
+            // Dapatkan kontainer tombol yang relevan
+            const buttonContainer = form.closest('.p-4.rounded-lg')?.querySelector('.space-y-4 > div:last-child');
+            
+            if (buttonContainer) {
+                // Ambil semua data yang diperlukan untuk membangun ulang tombol dari elemen yang ada
+                const mapelKode = form.dataset.mapelKode;
+                const kelas = document.querySelector('.mapel-link.active')?.dataset.kelas || '';
+                const guruData = JSON.parse(sessionStorage.getItem('guruData'));
+
+                // Panggil data terbaru untuk memastikan tombol yang dibuat akurat
+                google.script.run
+                    .withSuccessHandler(response => {
+                        if (response.status !== 'success') return;
+                        
+                        const { submittedValues, batchStatus, isLockedForGuru } = response;
+                        
+                        // Buat ulang HTML tombol dan ganti yang lama
+                        const buttonsHtml = buildActionButtons(formType, mapelKode, submittedValues, approvalStatus, null, submissionId, batchStatus, kelas, isLockedForGuru);
+                        buttonContainer.innerHTML = buttonsHtml;
+                        
+                        // Pasang kembali listener agar tombol baru bisa berfungsi
+                        attachActivationListener(form.parentElement.id, formType);
+                    })
+                    .getNilaiPageData_Guru(guruData.spreadsheetId, guruData.username, mapelKode, formType, kelas);
+            }
+        }
     }
 </script>
 </body>
