@@ -7215,10 +7215,12 @@ function setFiturLock_Superadmin(adminEmail, targetUserEmail, isLocked) {
   }
 }
 
+// Di dalam file: Kode.gs.html
+
 /**
- * [SUPERADMIN] Mengambil daftar semua donasi yang masuk.
+ * [SUPERADMIN - VERSI BARU] Mengambil semua data donasi, termasuk detail pembayaran.
  * @param {string} adminEmail - Email Superadmin untuk verifikasi.
- * @returns {Array<object>} Daftar donasi.
+ * @returns {Array<object>} Daftar donasi yang sudah lengkap.
  */
 function getDonasiList_Superadmin(adminEmail) {
   if (!isSuperadmin(adminEmail)) {
@@ -7228,24 +7230,39 @@ function getDonasiList_Superadmin(adminEmail) {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Data Donasi");
     if (!sheet || sheet.getLastRow() < 2) return [];
     
-    const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues();
+    // Baca semua kolom secara dinamis
+    const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn());
+    const data = dataRange.getValues();
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    
+    // Buat pemetaan header ke indeks kolom untuk fleksibilitas
+    const headerMap = {};
+    headers.forEach((h, i) => { headerMap[h] = i; });
+
+    // Petakan data ke objek yang lebih deskriptif
     return data.map(row => ({
-      id: row[0],
-      tanggal: row[1].toISOString(),
-      email: row[2],
-      namaSekolah: row[3],
-      fileId: row[4],
-      fileUrl: row[5],
-      status: row[6]
-    })).sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+      id: row[headerMap["ID Donasi"]],
+      tanggal: row[headerMap["Tanggal"]].toISOString(),
+      email: row[headerMap["Email Pengguna"]],
+      namaSekolah: row[headerMap["Nama Sekolah"]],
+      metode: row[headerMap["Metode Pembayaran"]], // Data baru
+      namaPengirim: row[headerMap["Nama Pengirim"]], // Data baru
+      jumlah: row[headerMap["Jumlah Donasi"]],      // Data baru
+      fileUrl: row[headerMap["Link Bukti"]],
+      status: row[headerMap["Status"]]
+    })).sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal)); // Urutkan dari terbaru
+
   } catch (e) {
     Logger.log("getDonasiList_Superadmin Error: " + e.message);
     return [];
   }
 }
 
+// Di dalam file: Kode.gs.html
+
 /**
- * [SUPERADMIN - DIPERBARUI] Memverifikasi donasi, membuka kunci fitur, DAN menaikkan limit siswa.
+ * [SUPERADMIN - VERSI FINAL DENGAN PERBAIKAN KOLOM] 
+ * Memverifikasi donasi, membuka kunci fitur, menaikkan limit siswa, DAN mengirim email notifikasi.
  * @param {string} adminEmail - Email Superadmin.
  * @param {string} donasiId - ID donasi yang akan diverifikasi.
  * @param {string} targetUserEmail - Email pengguna yang fiturnya akan dibuka.
@@ -7258,37 +7275,65 @@ function verifyDonasi_Superadmin(adminEmail, donasiId, targetUserEmail) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     
-    // 1. Ubah status di sheet Data Donasi
     const donasiSheet = ss.getSheetByName("Data Donasi");
+    if (!donasiSheet) throw new Error("Sheet 'Data Donasi' tidak ditemukan.");
+
+    // ==========================================================
+    // === AWAL BLOK KODE YANG DIPERBAIKI =======================
+    // ==========================================================
+    
+    // Baca header untuk menemukan posisi kolom "Status" secara dinamis
+    const headers = donasiSheet.getRange(1, 1, 1, donasiSheet.getLastColumn()).getValues()[0];
+    const statusColumnIndex = headers.indexOf("Status") + 1; // +1 karena getRange menggunakan indeks 1-based
+
+    if (statusColumnIndex === 0) { // indexOf akan -1 jika tidak ketemu, ditambah 1 jadi 0
+      throw new Error("Kolom 'Status' tidak ditemukan di sheet Data Donasi.");
+    }
+    
     const idColumn = donasiSheet.getRange("A2:A").getValues().flat();
     const donasiRowIndex = idColumn.findIndex(id => id === donasiId);
 
     if (donasiRowIndex === -1) throw new Error("Donasi tidak ditemukan.");
     
-    donasiSheet.getRange(donasiRowIndex + 2, 7).setValue("Terverifikasi");
+    // Gunakan indeks dinamis untuk menulis di kolom yang benar
+    donasiSheet.getRange(donasiRowIndex + 2, statusColumnIndex).setValue("Terverifikasi");
+    
+    // ==========================================================
+    // === AKHIR BLOK KODE YANG DIPERBAIKI ======================
+    // ==========================================================
 
-    // --- AWAL MODIFIKASI ---
-
-    // 2. Temukan pengguna di sheet 'Data Pengguna' untuk update limit
     const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
     const userEmailColumn = userSheet.getRange("B2:B").getValues().flat();
     const userRowIndex = userEmailColumn.findIndex(email => email && email.toLowerCase() === targetUserEmail.toLowerCase());
 
     if (userRowIndex !== -1) {
         const userRowToUpdate = userRowIndex + 2;
-        // Kolom I (indeks 9) adalah 'Batas Siswa'
         userSheet.getRange(userRowToUpdate, 9).setValue(500);
     } else {
-        Logger.log(`Peringatan: Pengguna ${targetUserEmail} tidak ditemukan untuk update limit saat verifikasi donasi.`);
+        Logger.log(`Peringatan: Pengguna ${targetUserEmail} tidak ditemukan untuk update limit.`);
     }
 
-    // 3. Buka kunci fitur pengguna (fungsi ini sudah ada)
     const unlockResult = setFiturLock_Superadmin(adminEmail, targetUserEmail, false);
     if (unlockResult.status === 'error') throw new Error(unlockResult.message);
     
-    // --- AKHIR MODIFIKASI ---
+    // Kirim email notifikasi (kode ini sudah benar dari sebelumnya)
+    try {
+      const schoolName = userSheet.getRange(userRowIndex + 2, 4).getValue();
+      const subject = "Aktivasi Fitur Premium - Aplikasi Pengolahan Nilai Ijazah";
+      const body = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+          <h2>Selamat! Fitur Premium Telah Aktif</h2>
+          <p>Halo Admin ${schoolName},</p>
+          <p>Fitur premium untuk akun Anda kini telah berhasil diaktifkan.</p>
+          <p>Silakan muat ulang (refresh) halaman aplikasi Anda untuk mulai menggunakan semua fitur yang tersedia.</p>
+        </div>
+      `;
+      MailApp.sendEmail({ to: targetUserEmail, subject: subject, htmlBody: body });
+    } catch (emailError) {
+      Logger.log(`Gagal mengirim email notifikasi aktivasi ke ${targetUserEmail}. Error: ${emailError.message}`);
+    }
 
-    return { status: "success", message: `Donasi dari ${targetUserEmail} berhasil diverifikasi. Fitur telah dibuka dan limit siswa diatur ke 500.` };
+    return { status: "success", message: `Donasi dari ${targetUserEmail} berhasil diverifikasi.` };
 
   } catch (e) {
     return { status: "error", message: e.message };
@@ -7359,97 +7404,168 @@ function checkFiturLock(emailOrId) {
 }
 
 /**
- * [PUBLIC] Menerima data form donasi dan file bukti transfer.
- * @param {object} donationData - Data dari form { email, namaSekolah }.
+ * [PUBLIC - VERSI FINAL] Menerima data form donasi, menyimpan ke sheet,
+ * dan mengirim email notifikasi yang detail ke Superadmin serta email arsip ke Admin Sekolah.
+ * @param {object} donationData - Data dari form { email, namaSekolah, metodePembayaran, namaPengirim, jumlah }.
  * @param {object} fileData - Objek file dari frontend.
  * @returns {object} Hasil penyimpanan.
  */
 function simpanDonasi(donationData, fileData) {
   try {
-    // 1. Buat folder 'Bukti Donasi' jika belum ada di root Drive Anda
-    let folder;
-    const folders = DriveApp.getFoldersByName("Bukti Donasi Aplikasi Ijazah");
-    if (folders.hasNext()) {
-      folder = folders.next();
-    } else {
-      folder = DriveApp.createFolder("Bukti Donasi Aplikasi Ijazah");
+    const lock = LockService.getScriptLock();
+    lock.waitLock(30000); // Kunci proses selama 30 detik untuk mencegah duplikasi
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let donasiSheet = ss.getSheetByName("Data Donasi");
+    if (!donasiSheet) {
+      donasiSheet = ss.insertSheet("Data Donasi");
+      // Jika sheet baru dibuat, tambahkan header yang benar
+      donasiSheet.appendRow(["ID Donasi", "Tanggal", "Email Pengguna", "Nama Sekolah", "Metode Pembayaran", "Nama Pengirim", "Jumlah Donasi", "Status", "Link Bukti"]);
     }
 
-    // 2. Simpan file
-    const decoded = Utilities.base64Decode(fileData.content.split(',')[1]);
-    const blob = Utilities.newBlob(decoded, fileData.mimeType, fileData.fileName);
+    // Ganti dengan ID folder Google Drive Anda
+    const folder = DriveApp.getFolderById("1nY9jdNlhVXgkJCp1htaiNOdEXjuGmbhn"); 
+    const decodedContent = Utilities.base64Decode(fileData.content.split(',')[1]);
+    const blob = Utilities.newBlob(decodedContent, fileData.mimeType, fileData.fileName);
     const file = folder.createFile(blob);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); // Agar admin bisa lihat
-
-    // 3. Simpan data ke sheet 'Data Donasi'
-    const donasiSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Data Donasi");
-    donasiSheet.appendRow([
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    
+    const timestamp = new Date();
+    const newRowData = [
       Utilities.getUuid(),
-      new Date(),
+      timestamp,
       donationData.email,
       donationData.namaSekolah,
-      file.getId(),
-      file.getUrl(),
-      "Menunggu Verifikasi"
-    ]);
-
-    // --- AWAL KODE NOTIFIKASI EMAIL SUPERADMIN ---
+      donationData.metodePembayaran,
+      donationData.namaPengirim,
+      donationData.jumlah,
+      "Menunggu Verifikasi",
+      file.getUrl()
+    ];
+    donasiSheet.appendRow(newRowData);
+    
+    // Kirim notifikasi ke Superadmin
     try {
-      const superadminEmail = "syamsulbahri.agro27b@gmail.com"; // GANTI DENGAN EMAIL SUPERADMIN ANDA
-      const subject = "[Aplikasi Ijazah] Konfirmasi Donasi Baru";
-      const body = `
-        <p>Halo Superadmin,</p>
-        <p>Ada konfirmasi donasi baru yang masuk dari pengguna:</p>
-        <ul>
-          <li><b>Email Pengguna:</b> ${donationData.email}</li>
-          <li><b>Nama Sekolah:</b> ${donationData.namaSekolah}</li>
-          <li><b>Tanggal Konfirmasi:</b> ${new Date().toLocaleString('id-ID')}</li>
-        </ul>
-        <p>Bukti transfer dapat dilihat melalui link di panel Manajemen Donasi.</p>
-        <p>Silakan masuk untuk melakukan verifikasi dan membuka fitur premium untuk pengguna tersebut.</p>
-        <br>
-        <p>Terima kasih.</p>
+      const superadminEmail = "syamsulbahri.agro27b@gmail.com"; // Ganti dengan email Superadmin Anda
+      const subjectSuperadmin = `[Aplikasi Ijazah] Konfirmasi Donasi Baru dari ${donationData.namaSekolah}`;
+      const formattedJumlah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(donationData.jumlah || 0);
+      
+      const bodySuperadmin = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <h2 style="color: #0056b3;">Konfirmasi Donasi Baru Diterima</h2>
+          <p>Halo Superadmin,</p>
+          <p>Ada konfirmasi donasi baru yang masuk. Silakan tinjau detail di bawah ini dan lakukan verifikasi di panel Superadmin.</p>
+          <div style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #0056b3;">Detail Donasi:</h3>
+            <ul style="list-style-type: none; padding: 0;">
+              <li style="padding-bottom: 8px;"><strong>Nama Sekolah:</strong> ${donationData.namaSekolah}</li>
+              <li style="padding-bottom: 8px;"><strong>Email Pengguna:</strong> ${donationData.email}</li>
+              <li style="padding-bottom: 8px;"><strong>Tanggal Konfirmasi:</strong> ${timestamp.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'long' })}</li>
+            </ul>
+            <hr style="border: none; border-top: 1px solid #dee2e6; margin: 12px 0;">
+            <ul style="list-style-type: none; padding: 0;">
+              <li style="padding-bottom: 8px;"><strong>Jumlah Donasi:</strong> <span style="font-weight: bold; color: #28a745; font-size: 1.1em;">${formattedJumlah}</span></li>
+              <li style="padding-bottom: 8px;"><strong>Metode Transfer:</strong> ${donationData.metodePembayaran}</li>
+              <li><strong>Atas Nama Pengirim:</strong> ${donationData.namaPengirim}</li>
+            </ul>
+          </div>
+          <p>Bukti transfer dapat dilihat langsung melalui link di panel <strong>Manajemen Donasi</strong>.</p>
+        </div>
       `;
-      MailApp.sendEmail(superadminEmail, subject, "", { htmlBody: body });
+      MailApp.sendEmail({ to: superadminEmail, subject: subjectSuperadmin, htmlBody: bodySuperadmin });
     } catch (e) {
-      Logger.log("Gagal mengirim notifikasi email donasi ke Superadmin: " + e.message);
+      Logger.log("Gagal mengirim notifikasi ke Superadmin: " + e.message);
     }
-    // --- AKHIR KODE NOTIFIKASI EMAIL SUPERADMIN ---
+    
+    // Kirim email arsip ke Admin Sekolah
+    try {
+      const schoolAdminEmail = donationData.email;
+      const subjectAdmin = `[Arsip] Konfirmasi Donasi Anda Telah Terkirim`;
+      const formattedJumlahAdmin = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(donationData.jumlah || 0);
 
-    return { status: "success", message: "Data donasi dan bukti transfer berhasil dikirim. Admin akan segera memverifikasinya. Terima kasih!" };
+      const bodySchoolAdmin = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+          <h2>Konfirmasi Donasi Berhasil Dikirim</h2>
+          <p>Halo Admin ${donationData.namaSekolah},</p>
+          <p>Terima kasih. Konfirmasi donasi Anda telah berhasil kami kirimkan ke Superadmin untuk proses verifikasi. Berikut adalah detail pengajuan Anda sebagai arsip.</p>
+          <div style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Detail Konfirmasi:</h3>
+            <ul style="list-style-type: none; padding: 0;">
+              <li style="padding-bottom: 8px;"><strong>Tanggal Pengajuan:</strong> ${timestamp.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'long' })}</li>
+              <li style="padding-bottom: 8px;"><strong>Jumlah Donasi:</strong> ${formattedJumlahAdmin}</li>
+              <li style="padding-bottom: 8px;"><strong>Metode Transfer:</strong> ${donationData.metodePembayaran}</li>
+              <li><strong>Atas Nama Pengirim:</strong> ${donationData.namaPengirim}</li>
+            </ul>
+          </div>
+          <p>Anda akan menerima email pemberitahuan selanjutnya setelah Superadmin selesai melakukan verifikasi. Harap tunggu dengan sabar.</p>
+          <br>
+          <p>Terima kasih atas dukungan Anda.</p>
+        </div>
+      `;
+      MailApp.sendEmail({ to: schoolAdminEmail, subject: subjectAdmin, htmlBody: bodySchoolAdmin });
+      Logger.log("Email arsip konfirmasi donasi berhasil dikirim ke: " + schoolAdminEmail);
+    } catch (e) {
+      Logger.log(`Gagal mengirim email arsip ke admin sekolah ${donationData.email}. Error: ${e.message}`);
+    }
+
+    lock.releaseLock();
+    return { status: "success", message: "Konfirmasi donasi berhasil dikirim. Salinan detail pengajuan juga telah dikirim ke email Anda." };
   } catch (e) {
     Logger.log("simpanDonasi Error: " + e.message);
     return { status: "error", message: "Gagal menyimpan data donasi: " + e.message };
   }
 }
 
+// Di dalam file: Kode.gs.html
+
 /**
- * [PENGGUNA] Memeriksa status donasi terakhir dari pengguna.
+ * [PENGGUNA - VERSI DIPERBAIKI] Memeriksa status donasi terakhir dari pengguna
+ * dengan membaca header kolom secara dinamis.
  * @param {string} userEmail - Email pengguna yang akan diperiksa.
- * @returns {object|null} Detail donasi jika ada yang menunggu, atau null jika tidak.
+ * @returns {object|null} Detail donasi jika ada yang menunggu, atau null jika tidak ada.
  */
 function getDonationStatus_User(userEmail) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Data Donasi");
     if (!sheet || sheet.getLastRow() < 2) return null;
 
-    const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues();
-    // Cari dari bawah ke atas untuk mendapatkan data terbaru
-    for (let i = data.length - 1; i >= 0; i--) {
-      const row = data[i];
-      // Cek email dan status
-      if (row[2].toLowerCase() === userEmail.toLowerCase() && row[6] === "Menunggu Verifikasi") {
+    // Baca semua data termasuk header
+    const dataRange = sheet.getDataRange();
+    const values = dataRange.getValues();
+    const headers = values.shift(); // Ambil baris pertama sebagai header
+    
+    // Buat pemetaan nama header ke nomor kolom (indeks)
+    const headerMap = {};
+    headers.forEach((header, index) => {
+      headerMap[header] = index;
+    });
+
+    // Cek apakah kolom yang dibutuhkan ada
+    if (headerMap["Email Pengguna"] === undefined || headerMap["Status"] === undefined) {
+        throw new Error("Kolom 'Email Pengguna' atau 'Status' tidak ditemukan di sheet Data Donasi.");
+    }
+
+    // Cari dari baris terakhir (data terbaru) ke atas
+    for (let i = values.length - 1; i >= 0; i--) {
+      const row = values[i];
+      const emailInSheet = row[headerMap["Email Pengguna"]];
+      const statusInSheet = row[headerMap["Status"]];
+      
+      // Jika email cocok dan statusnya masih menunggu
+      if (emailInSheet && emailInSheet.toLowerCase() === userEmail.toLowerCase() && statusInSheet === "Menunggu Verifikasi") {
         return {
-          id: row[0],
-          fileUrl: row[5],
-          status: row[6]
+          id: row[headerMap["ID Donasi"]],
+          fileUrl: row[headerMap["Link Bukti"]],
+          status: statusInSheet
         };
       }
     }
+    
     return null; // Tidak ada donasi yang menunggu dari pengguna ini
+
   } catch (e) {
     Logger.log("getDonationStatus_User Error: " + e.message);
-    return null;
+    return null; // Jika terjadi error, anggap saja tidak ada status
   }
 }
 
@@ -9356,7 +9472,7 @@ function regenerateGuruCredentials(spreadsheetId, rowNum) {
 }
 
 /**
- * [MODIFIKASI - v5] Mengambil data lengkap untuk halaman nilai guru, termasuk status kunci pengiriman.
+ * [VERSI BARU] Mengambil data lengkap untuk halaman nilai guru, termasuk status kunci pengiriman.
  */
 function getNilaiPageData_Guru(spreadsheetId, username, mapelKode, tipeNilai, className = null) {
   try {
@@ -9373,10 +9489,8 @@ function getNilaiPageData_Guru(spreadsheetId, username, mapelKode, tipeNilai, cl
     const specificSubmissionId = submissionIds[tipeNilai] || null;
     const batchStatus = { allApproved: isSubmissionFullyApproved(spreadsheetId, specificSubmissionId) };
     
-    // ===== PERUBAHAN UTAMA ADA DI SINI =====
     // Periksa status kunci berdasarkan kelas dan tipe nilai
     const isLockedForGuru = isSubmissionLockedFor(spreadsheetId, className, tipeNilai);
-    // =======================================
 
     return {
       status: "success",
@@ -9387,8 +9501,8 @@ function getNilaiPageData_Guru(spreadsheetId, username, mapelKode, tipeNilai, cl
       submittedValues: submittedValues,
       approvalStatus: approvalStatus,
       submissionId: specificSubmissionId,
-      batchStatus: batchStatus,
-      isLockedForGuru: isLockedForGuru // <-- Properti baru dikirim ke frontend
+      batchStatus: batchStatus, // Pastikan ini dikirim
+      isLockedForGuru: isLockedForGuru // Pastikan ini juga dikirim
     };
 
   } catch(e) {
