@@ -300,6 +300,35 @@
         }
         /* === AKHIR KODE CSS BARU === */
 
+        /* Mendefinisikan animasi kedip warna-warni */
+        @keyframes rainbow-glow {
+            0%, 100% {
+                background-color: #ef4444; /* Merah */
+                color: white;
+                box-shadow: 0 0 7px #ef4444;
+            }
+            20% {
+                background-color: #f59e0b; /* Kuning */
+                color: white;
+                box-shadow: 0 0 7px #f59e0b;
+            }
+            40% {
+                background-color: #10b981; /* Hijau */
+                color: white;
+                box-shadow: 0 0 7px #10b981;
+            }
+            60% {
+                background-color: #3b82f6; /* Biru */
+                color: white;
+                box-shadow: 0 0 7px #3b82f6;
+            }
+            80% {
+                background-color: #8b5cf6; /* Ungu */
+                color: white;
+                box-shadow: 0 0 7px #8b5cf6;
+            }
+        }
+
         /* Tambahkan ini di dalam tag <style> */
         .locked-feature {
             opacity: 0.6;
@@ -309,17 +338,17 @@
         }
 
         .locked-feature::after {
-            content: ' terkunci ';
+            content: 'Premium'; /* Mengubah teks label menjadi "Premium" */
             position: absolute;
             top: 50%;
             right: 10px;
             transform: translateY(-50%);
-            background-color: #fefce8; /* bg-yellow-50 */
-            color: #b45309; /* text-amber-700 */
-            padding: 2px 6px;
+            padding: 3px 8px; /* Sedikit menambah padding agar lebih seimbang */
             border-radius: 9999px;
             font-size: 10px;
             font-weight: bold;
+            /* Menerapkan animasi kedip yang baru dibuat */
+            animation: rainbow-glow 2.5s linear infinite;
         }
 
         .locked-feature:hover {
@@ -5151,6 +5180,45 @@
                 }
             });
 
+            // AMBIL DATA PENGGUNA DARI SESI
+            const userEmail = sessionStorage.getItem('userEmail');
+            if (!userEmail) {
+                logoutUser();
+                return;
+            }
+
+            // --- PERBAIKAN DIMULAI DI SINI ---
+            // Panggil fungsi di backend untuk mendapatkan status kunci TERBARU
+            google.script.run
+                .withSuccessHandler(response => {
+                    // Perbarui sessionStorage dengan status yang baru didapat dari server
+                    const isLocked = response.isLocked;
+                    sessionStorage.setItem('isLocked', isLocked ? 'true' : 'false');
+
+                    // Lanjutkan sisa proses inisialisasi setelah mendapatkan status terbaru
+                    // Sekarang, semua logika UI akan menggunakan status yang benar.
+                    const lockedFeaturePages = ['transkrip', 'backup-restore', 'arsip-tahunan', 'data-guru', 'persetujuan-nilai'];
+                    document.querySelectorAll('.nav-link').forEach(link => {
+                        const page = link.dataset.page;
+                        if (lockedFeaturePages.includes(page)) {
+                            if (isLocked) {
+                                link.classList.add('locked-feature');
+                                link.dataset.isLocked = 'true';
+                            } else {
+                                link.classList.remove('locked-feature');
+                                link.dataset.isLocked = 'false';
+                            }
+                        }
+                    });
+                })
+                .withFailureHandler(err => {
+                    // Tangani jika gagal mengambil status, mungkin dengan membiarkan status lama
+                    console.error("Gagal memuat ulang status kunci fitur:", err);
+                    // Anda bisa melanjutkan dengan data lama atau menampilkan pesan error
+                })
+                .checkFiturLock(userEmail); // Memanggil fungsi backend yang sudah ada
+            // --- PERBAIKAN SELESAI ---
+
             const oldNav = document.getElementById('main-nav');
             const newNav = oldNav.cloneNode(true);
             oldNav.parentNode.replaceChild(newNav, oldNav);
@@ -5211,18 +5279,22 @@
 
             navContainer.addEventListener('click', (e) => {
                 const navLink = e.target.closest('.nav-link');
-                if (!navLink) return; 
+                if (!navLink) return;
+                if (navLink.id === 'logoutButton') return;
 
-                if (navLink.id === 'logoutButton') return; 
+                e.preventDefault();
 
-                e.preventDefault(); 
+                // SOLUSI: Panggil fungsi untuk menutup sidebar di awal
+                closeSidebar();
+
                 const targetPageId = navLink.dataset.page;
 
+                // Sekarang, sisa logika bisa berjalan seperti biasa
                 if (navLink.dataset.isLocked === 'true') {
-                    handleLockedFeatureClick(); 
+                    handleLockedFeatureClick();
                     document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
                     navLink.classList.add('active');
-                    return;
+                    return; // Return di sini sudah aman karena sidebar pasti tertutup
                 }
 
                 if (!targetPageId || !allowedUserPages.includes(targetPageId)) return;
