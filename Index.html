@@ -750,6 +750,18 @@
             /* background-color: #2563eb; /* Contoh: Warna biru lebih gelap saat aktif */ */
         }
         /* ===== AKHIR KODE BARU ===== */
+
+        /* Tambahkan ini di dalam tag <style> */
+        .drag-handle {
+          -webkit-user-select: none; /* Safari */
+          -ms-user-select: none;     /* IE 10+ dan Edge */
+          user-select: none;         /* Standar */
+          /* Pastikan cursor tetap grab agar jelas fungsinya */
+          cursor: grab;
+        }
+        .drag-handle:active {
+          cursor: grabbing;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
