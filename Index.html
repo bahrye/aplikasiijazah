@@ -8068,6 +8068,14 @@
          * @param {HTMLElement} requirementsContainer - Elemen div untuk daftar kriteria.
          */
         function setupRealtimePasswordValidation(passwordInput, requirementsContainer) {
+            // ===== AWAL PERBAIKAN =====
+            // Cek apakah elemen input password dan kontainer kriteria benar-benar ditemukan.
+            // Jika salah satunya tidak ada, hentikan fungsi untuk mencegah error.
+            if (!passwordInput || !requirementsContainer) {
+                console.warn('setupRealtimePasswordValidation: Input password atau container kriteria tidak ditemukan.');
+                return;
+            }
+            // ===== AKHIR PERBAIKAN =====
             const requirements = [
                 { id: "req-length", regex: /.{8,}/, text: "Minimal 8 karakter" },
                 { id: "req-upper", regex: /[A-Z]/, text: "Minimal satu huruf besar (A-Z)" },
@@ -8235,23 +8243,37 @@
         }
 
         /**
-         * [BARU] Memeriksa kecocokan password konfirmasi secara real-time.
+         * [BARU + NULL CHECK] Memeriksa kecocokan password konfirmasi secara real-time.
+         * Mencegah error jika elemen input tidak ditemukan.
          * @param {HTMLInputElement} passwordInput - Elemen input password pertama.
          * @param {HTMLInputElement} confirmInput - Elemen input password konfirmasi.
          * @param {HTMLElement} messageContainer - Elemen div untuk menampilkan pesan error.
          */
         function setupPasswordConfirmation(passwordInput, confirmInput, messageContainer) {
+            // ===== AWAL PERBAIKAN =====
+            // Cek apakah elemen input password, konfirmasi, dan kontainer pesan ada.
+            if (!passwordInput || !confirmInput || !messageContainer) {
+                console.warn('setupPasswordConfirmation: Satu atau lebih elemen input/pesan tidak ditemukan.');
+                return; // Hentikan fungsi jika ada elemen yang hilang
+            }
+            // ===== AKHIR PERBAIKAN =====
+
             const checkPasswords = () => {
                 const pass1 = passwordInput.value;
                 const pass2 = confirmInput.value;
-                
+
                 if (pass2 && pass1 !== pass2) {
                     messageContainer.textContent = 'Password tidak cocok.';
+                    // [Optional] Tambahkan kelas error jika perlu styling
+                    // confirmInput.classList.add('input-error');
                 } else {
                     messageContainer.textContent = '';
+                    // [Optional] Hapus kelas error
+                    // confirmInput.classList.remove('input-error');
                 }
             };
 
+            // Listener sekarang aman karena elemen sudah dipastikan ada
             passwordInput.addEventListener('input', checkPasswords);
             confirmInput.addEventListener('input', checkPasswords);
         }
