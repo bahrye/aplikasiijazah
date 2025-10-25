@@ -972,7 +972,7 @@ function saveSchoolData(spreadsheetId, dataObj) {
         dataObj.alamat||"", dataObj.provinsi||"", dataObj.tipeKabupaten||"Kabupaten", dataObj.kabupaten||"",
         dataObj.kecamatan||"", dataObj.tipeKelurahan||"Kelurahan", dataObj.kelurahan||"", dataObj.kodePos||"",
         dataObj.telepon||"", dataObj.email||"", dataObj.website||"", dataObj.namaKepsek||"",
-        dataObj.nipKepsek||""
+        dataObj.nipKepsek ? "'" + dataObj.nipKepsek : ""
     ];
     sheet.getRange(2, 1, 1, valuesToWrite.length).setValues([valuesToWrite]);
 
