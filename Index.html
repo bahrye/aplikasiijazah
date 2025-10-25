@@ -1776,6 +1776,8 @@
                             </div>
                         </div>
 
+
+
                         <div class="bg-white p-4 rounded-lg shadow-md mt-4">
                             <div id="siswaTableContainer" class="overflow-x-auto"></div>
                         </div>
@@ -1884,6 +1886,15 @@
                                 </div>
                                 <div class="bg-white p-4 rounded-lg shadow-md mt-4">
                                     <div id="mapelTableContainer" class="overflow-x-auto"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="mapel-sort-action-bar" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-auto bg-gray-800 text-white rounded-full shadow-2xl p-2 z-40 transition-all duration-300 ease-out transform opacity-0 -translate-y-full">
+                            <div class="flex items-center justify-between gap-4 px-4">
+                                <div class="flex items-center gap-2">
+                                    <button id="cancel-mapel-sort-btn" class="bg-gray-500 hover:bg-gray-600 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Batal</button>
+                                    <button id="save-mapel-order-btn" class="bg-purple-600 hover:bg-purple-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Simpan Urutan</button>
                                 </div>
                             </div>
                         </div>
@@ -3727,6 +3738,9 @@
         let isUploadCancelled = false;
         let approvalPollingInterval;
 
+        let initialMapelOrder = [];
+        let isMapelOrderChanged = false;
+
         // [TAMBAHKAN] Inisialisasi Dropzone.js (letakan di scope global)
         let nilaiDropzone;
         Dropzone.autoDiscover = false; // Penting untuk mencegah error inisialisasi otomatis
@@ -4671,6 +4685,7 @@
             });
 
             setupSortActionListeners();
+            setupMapelSortActionListeners();
         });
 
         function setupPasswordToggles() {
@@ -5349,7 +5364,12 @@
 
                 if (targetPageId === 'dashboard') loadDashboardData();
                 if (targetPageId === 'data-siswa') loadStudentsData();
-                if (targetPageId === 'mapel') { loadMapelData(); loadBobotData(); }
+                if (targetPageId === 'mapel') {
+                    isMapelOrderChanged = false; // <-- Tambahkan baris ini
+                    showMapelSortActionBar(false); // <-- Tambahkan baris ini
+                    loadMapelData();
+                    loadBobotData();
+                }
                 if (targetPageId === 'input-ujian') { calculateUjianAverage(); }
                 if (targetPageId === 'input-rapor') initRaporPage();
                 if (targetPageId === 'rekapitulasi') initRekapitulasiPage();
@@ -10419,17 +10439,35 @@
             // Inisialisasi SortableJS pada tbody
             new Sortable(tbody, {
                 animation: 150,
-                handle: '.drag-handle', // Menentukan elemen mana yang bisa di-drag
+                handle: '.drag-handle',
                 ghostClass: 'ghost-row',
                 chosenClass: 'chosen-row',
-                delay: 750, // Waktu tunda dalam milidetik (misalnya 750ms = 0.75 detik)
-                delayOnTouchOnly: true, // Terapkan tunda HANYA pada perangkat sentuh (ponsel/tablet)
+                delay: 750,
+                delayOnTouchOnly: true,
+                onStart: function(evt) {
+                    // Simpan urutan awal HANYA jika belum ada perubahan tersimpan
+                    if (!isMapelOrderChanged) {
+                        initialMapelOrder = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.kode);
+                    }
+                },
                 onEnd: function (evt) {
-                    // Dapatkan urutan kode mapel yang baru dari DOM
-                    const newOrderCodes = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.kode);
-                    
-                    // Panggil fungsi untuk menyimpan urutan baru ke backend
-                    saveMapelOrderFromDrag(newOrderCodes);
+                    const currentOrderCodes = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.kode);
+
+                    // Perbarui array 'allMapelData' secara lokal (tanpa menyimpan ke server)
+                    allMapelData.sort((a, b) => {
+                        return currentOrderCodes.indexOf(a.kode) - currentOrderCodes.indexOf(b.kode);
+                    });
+
+                    // Cek apakah urutan benar-benar berubah dari urutan awal yang disimpan
+                    if (JSON.stringify(currentOrderCodes) !== JSON.stringify(initialMapelOrder)) {
+                        isMapelOrderChanged = true;
+                        showMapelSortActionBar(true); // Tampilkan panel aksi
+                    } else {
+                        // Jika urutannya kembali seperti semula
+                        isMapelOrderChanged = false;
+                        showMapelSortActionBar(false); // Sembunyikan panel aksi
+                    }
+                    // HAPUS PANGGILAN saveMapelOrderFromDrag DARI SINI
                 },
             });
         }
@@ -15091,13 +15129,13 @@
             document.getElementById('saveOrderBtn').classList.remove('hidden');
         }
 
-        // [PERUBAHAN] Tambahkan fungsi baru ini di dalam tag <script>
         /**
-         * Menyimpan urutan mapel baru setelah di-drag & drop.
+         * [PERUBAHAN] Menyimpan urutan mapel baru setelah di-drag & drop.
+         * Fungsi ini sekarang HANYA menampilkan status global, logika utama di backend.
          * @param {Array<string>} newOrderCodes - Array berisi kode mapel yang sudah terurut.
          */
         function saveMapelOrderFromDrag(newOrderCodes) {
-            showGlobalStatus("Menyimpan urutan...", 'info');
+            showGlobalStatus("Menyimpan urutan mapel...", 'info');
 
             // Buat ulang array objek mapel lengkap berdasarkan urutan kode baru
             const orderedMapelArray = newOrderCodes.map(kode => {
@@ -15111,9 +15149,9 @@
                         // Perbarui data global dan render ulang untuk memastikan konsistensi
                         allMapelData = response.updatedMapelList;
                         renderMapelTable(allMapelData);
-                        syncRekapIndicator();
+                        // syncRekapIndicator(); // DIHAPUS DARI SINI
                     } else {
-                        // Jika gagal, muat ulang dari server untuk mendapatkan state terakhir yang valid
+                        // Jika gagal, muat ulang dari server
                         loadMapelData();
                     }
                 })
@@ -16539,6 +16577,62 @@
             selectEl.addEventListener('change', addRowIfNeeded);
 
             return rowDiv;
+        }
+
+        /**
+         * [BARU] Menampilkan atau menyembunyikan panel tombol Simpan/Batal Urutan Mapel.
+         * @param {boolean} show - True untuk menampilkan, false untuk menyembunyikan.
+         */
+        function showMapelSortActionBar(show) {
+            const actionBar = document.getElementById('mapel-sort-action-bar');
+            if (show) {
+                actionBar.classList.remove('hidden');
+                setTimeout(() => {
+                    actionBar.style.opacity = '1';
+                    actionBar.style.transform = 'translate(-50%, 0)';
+                }, 10);
+            } else {
+                actionBar.style.opacity = '0';
+                actionBar.style.transform = 'translate(-50%, 150%)';
+                setTimeout(() => {
+                    actionBar.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        /**
+         * [BARU] Mengatur semua event listener untuk tombol Simpan dan Batal urutan mapel.
+         */
+        function setupMapelSortActionListeners() {
+            const saveBtn = document.getElementById('save-mapel-order-btn');
+            const cancelBtn = document.getElementById('cancel-mapel-sort-btn');
+
+            saveBtn.addEventListener('click', () => {
+                const currentOrderCodes = Array.from(document.querySelector('#mapel-tbody').querySelectorAll('tr')).map(tr => tr.dataset.kode);
+                saveMapelOrderFromDrag(currentOrderCodes); // Panggil fungsi simpan yang sudah ada
+                isMapelOrderChanged = false; // Reset status perubahan
+                showMapelSortActionBar(false); // Sembunyikan tombol setelah disimpan
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                showGlobalStatus("Perubahan urutan mapel dibatalkan.", 'info');
+
+                // Buat array baru dari allMapelData yang mungkin sudah teracak
+                let revertedMapel = [...allMapelData];
+
+                // Urutkan array BARU ini berdasarkan urutan kode yang disimpan di initialMapelOrder
+                revertedMapel.sort((a, b) => {
+                    return initialMapelOrder.indexOf(a.kode) - initialMapelOrder.indexOf(b.kode);
+                });
+
+                // Update variabel global allMapelData
+                allMapelData = revertedMapel;
+
+                // Render ulang tabel
+                renderMapelTable(allMapelData);
+                isMapelOrderChanged = false; // Reset status perubahan
+                showMapelSortActionBar(false); // Sembunyikan tombol
+            });
         }
     </script>
 </body>
