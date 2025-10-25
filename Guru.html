@@ -217,24 +217,42 @@
           }
         }
 
-        /* ===== AWAL KODE BARU (CSS Tombol Hamburger Guru Transparan) ===== */
-        #hamburger-btn-guru {
+        /* ===== AWAL KODE BARU (CSS Tombol Hamburger Transparan) ===== */
+        #hamburger-btn, #hamburger-btn-guru {
             transition: opacity 0.3s ease-in-out, background-color 0.3s ease-in-out;
-            opacity: 0.5; /* Setengah transparan secara default */
-            position: fixed; /* Pastikan posisinya fixed */
-            top: 1rem;
-            left: 1rem;
-            z-index: 50; /* Pastikan di atas konten lain */
+            opacity: 0.5; /* Setengah transparan secara default saat sidebar tertutup */
+            position: fixed; /* Pastikan posisinya fixed agar tidak mengganggu layout */
+            top: 1rem;       /* Sesuaikan posisi jika perlu */
+            left: 1rem;      /* Sesuaikan posisi jika perlu */
+            z-index: 50;     /* Pastikan di atas konten lain */
         }
 
-        #hamburger-btn-guru:hover,
-        #hamburger-btn-guru.is-active-btn { /* Kelas baru untuk menandai aktif */
-            opacity: 1; /* Opacity penuh saat hover atau aktif */
-            background-color: #4338ca; /* Indigo-800 saat aktif */
+        /* Saat di-hover mouse, buat opacity penuh */
+        #hamburger-btn:hover,
+        #hamburger-btn-guru:hover {
+            opacity: 1;
+        }
+
+        /* Saat sidebar terbuka (kelas .is-active-btn ditambahkan oleh JS), buat opacity penuh */
+        /* Anda bisa juga mengubah warna latar jika diinginkan */
+        #hamburger-btn.is-active-btn,
+        #hamburger-btn-guru.is-active-btn {
+            opacity: 1;
+            /* background-color: #2563eb; /* Contoh: Warna biru lebih gelap saat aktif */ */
         }
         /* ===== AKHIR KODE BARU ===== */
 
-        /* ===== AKHIR KODE BARU ===== */
+        /* Tambahkan ini di dalam tag <style> */
+        .drag-handle {
+          -webkit-user-select: none; /* Safari */
+          -ms-user-select: none;     /* IE 10+ dan Edge */
+          user-select: none;         /* Standar */
+          /* Pastikan cursor tetap grab agar jelas fungsinya */
+          cursor: grab;
+        }
+        .drag-handle:active {
+          cursor: grabbing;
+        }
     </style>
 
     <!-- [PERBAIKAN] Tambahkan dua baris ini di dalam <head> pada Guru.html -->
