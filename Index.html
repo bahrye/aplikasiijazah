@@ -8050,35 +8050,177 @@
         }
 
         /**
-         * [BARU] Menampilkan validasi password secara real-time di bawah input.
-         * @param {HTMLInputElement} passwordInput - Elemen input password pertama.
-         * @param {HTMLElement} requirementsContainer - Elemen div untuk menampilkan daftar kriteria.
+         * [MODIFIKASI v4 - Perbaikan Timeout Cepat] Menampilkan validasi password.
+         * Ikon ceklis hijau muncul, bertahan ~1.5 detik, lalu menghilang.
+         * Lebih andal menangani input cepat.
+         * @param {HTMLInputElement} passwordInput - Elemen input password.
+         * @param {HTMLElement} requirementsContainer - Elemen div untuk daftar kriteria.
          */
         function setupRealtimePasswordValidation(passwordInput, requirementsContainer) {
             const requirements = [
-                { regex: /.{8,}/, text: "Minimal 8 karakter" },
-                { regex: /[A-Z]/, text: "Minimal satu huruf besar (A-Z)" },
-                { regex: /[a-z]/, text: "Minimal satu huruf kecil (a-z)" },
-                { regex: /[0-9]/, text: "Minimal satu angka (0-9)" },
-                { regex: /[^A-Za-z0-9]/, text: "Minimal satu karakter spesial (!@#$)" }
+                { id: "req-length", regex: /.{8,}/, text: "Minimal 8 karakter" },
+                { id: "req-upper", regex: /[A-Z]/, text: "Minimal satu huruf besar (A-Z)" },
+                { id: "req-lower", regex: /[a-z]/, text: "Minimal satu huruf kecil (a-z)" },
+                { id: "req-digit", regex: /[0-9]/, text: "Minimal satu angka (0-9)" },
+                { id: "req-special", regex: /[^A-Za-z0-9]/, text: "Minimal satu karakter spesial (!@#$)" }
             ];
 
             const icon_check = `<svg class="w-4 h-4 inline-block mr-1 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
             const icon_cross = `<svg class="w-4 h-4 inline-block mr-1 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
 
-            passwordInput.addEventListener('input', () => {
-                const password = passwordInput.value;
-                requirementsContainer.innerHTML = ''; // Kosongkan daftar setiap kali ada input
-                
-                if (!password) return; // Jika input kosong, jangan tampilkan apa-apa
+            // Objek untuk menyimpan timeout ID
+            let requirementTimeouts = {};
+            // Variabel untuk melacak apakah semua kriteria pernah terpenuhi
+            let allHaveBeenMet = false;
+
+            // Fungsi untuk merender/memperbarui daftar validasi
+            const renderRequirements = (password) => {
+                let allCurrentlyMet = true; // Flag untuk status saat ini
+                let anyItemVisible = false; // Flag apakah ada item yang sedang visible (belum hilang)
+
+                requirementsContainer.classList.remove('hidden'); // Tampilkan kontainer jika ada input
 
                 requirements.forEach(req => {
-                    const isValid = req.regex.test(password);
-                    const textClass = isValid ? 'text-gray-600' : 'text-gray-500';
-                    const icon = isValid ? icon_check : icon_cross;
-                    requirementsContainer.innerHTML += `<div class="${textClass}">${icon}<span>${req.text}</span></div>`;
+                    let reqElement = document.getElementById(req.id);
+                    const isCurrentlyValid = req.regex.test(password);
+
+                    // Jika elemen belum ada, buat baru
+                    if (!reqElement) {
+                        reqElement = document.createElement('div');
+                        reqElement.id = req.id;
+                        // Style awal + transisi (pastikan ada di CSS Anda)
+                        reqElement.className = 'text-gray-500 transition-all duration-300 ease-in-out opacity-100 max-h-10 py-1 overflow-hidden';
+                        requirementsContainer.appendChild(reqElement);
+                        reqElement.dataset.status = 'unmet'; // Status awal
+                    }
+
+                    // Ambil status sebelumnya
+                    const previousStatus = reqElement.dataset.status;
+
+                    // --- Logika Update Tampilan ---
+                    if (isCurrentlyValid) {
+                        // Jika BARU SAJA menjadi valid (sebelumnya unmet atau hidden)
+                        if (previousStatus !== 'met') {
+                            // Batalkan timeout HILANG yang mungkin sedang berjalan
+                            if (requirementTimeouts[req.id]) {
+                                clearTimeout(requirementTimeouts[req.id]);
+                                delete requirementTimeouts[req.id];
+                            }
+
+                            reqElement.innerHTML = `${icon_check}<span>${req.text}</span>`;
+                            reqElement.classList.replace('text-gray-500', 'text-gray-600');
+                            reqElement.dataset.status = 'met';
+
+                            // Pastikan elemen terlihat (reset style)
+                            reqElement.style.opacity = '1';
+                            reqElement.style.maxHeight = '10rem';
+                            reqElement.style.paddingTop = '';
+                            reqElement.style.paddingBottom = '';
+                            reqElement.style.marginTop = '';
+                            reqElement.style.marginBottom = '';
+                            anyItemVisible = true; // Item ini sedang visible
+
+                            // Atur timeout BARU untuk MENGHILANGKAN setelah jeda
+                            requirementTimeouts[req.id] = setTimeout(() => {
+                                reqElement.style.opacity = '0';
+                                reqElement.style.maxHeight = '0';
+                                reqElement.style.paddingTop = '0';
+                                reqElement.style.paddingBottom = '0';
+                                reqElement.style.marginTop = '-1px';
+                                reqElement.style.marginBottom = '-1px';
+                                delete requirementTimeouts[req.id]; // Hapus ID timeout
+
+                                // Cek lagi apakah kontainer perlu disembunyikan setelah item ini hilang
+                                checkAndHideContainer();
+
+                            }, 1500); // Tunggu 1.5 detik sebelum mulai menghilang
+                        }
+                         // Jika sudah 'met' sebelumnya DAN masih visible (timeout belum selesai), tandai visible
+                        else if (reqElement.style.opacity !== '0') {
+                             anyItemVisible = true;
+                        }
+                        // Jika sudah 'met' dan sudah hilang, biarkan saja (allCurrentlyMet tetap true)
+
+                    } else {
+                        // Jika TIDAK valid
+                        allCurrentlyMet = false; // Set flag utama
+
+                        // Batalkan timeout HILANG jika ada (penting saat user menghapus karakter)
+                        if (requirementTimeouts[req.id]) {
+                            clearTimeout(requirementTimeouts[req.id]);
+                            delete requirementTimeouts[req.id];
+                        }
+
+                        // Set ikon ke silang dan status unmet
+                        reqElement.innerHTML = `${icon_cross}<span>${req.text}</span>`;
+                        reqElement.classList.replace('text-gray-600', 'text-gray-500'); // Kembalikan warna teks
+                        reqElement.dataset.status = 'unmet';
+
+                        // Pastikan elemen terlihat (reset style jika sempat hilang)
+                        reqElement.style.opacity = '1';
+                        reqElement.style.maxHeight = '10rem';
+                        reqElement.style.paddingTop = '';
+                        reqElement.style.paddingBottom = '';
+                        reqElement.style.marginTop = '';
+                        reqElement.style.marginBottom = '';
+                        anyItemVisible = true; // Item ini visible
+                    }
                 });
+
+                 // Simpan status apakah semua *pernah* terpenuhi
+                if (allCurrentlyMet) {
+                    allHaveBeenMet = true;
+                }
+
+                // Cek apakah kontainer perlu disembunyikan
+                checkAndHideContainer();
+            };
+
+            // Fungsi untuk memeriksa dan menyembunyikan kontainer
+            const checkAndHideContainer = () => {
+                let shouldHide = true;
+                // Jika input kosong, pasti hide
+                if (!passwordInput.value) {
+                    shouldHide = true;
+                } else {
+                    // Cek apakah *semua* elemen anak saat ini memiliki opacity 0
+                    const children = Array.from(requirementsContainer.children);
+                    if (children.length < requirements.length) { // Jika belum semua elemen dibuat
+                        shouldHide = false;
+                    } else {
+                        shouldHide = children.every(el => el.style.opacity === '0');
+                    }
+                }
+
+                if (shouldHide && allHaveBeenMet) { // Hanya sembunyikan jika semua PERNAH terpenuhi
+                    requirementsContainer.classList.add('hidden');
+                } else if (passwordInput.value) { // Jika tidak hide dan ada input, pastikan terlihat
+                    requirementsContainer.classList.remove('hidden');
+                }
+            };
+
+            // Event listener saat pengguna mengetik
+            passwordInput.addEventListener('input', () => {
+                const password = passwordInput.value;
+                 allHaveBeenMet = false; // Reset status ini setiap kali user mengetik
+                if (!password) {
+                    requirementsContainer.innerHTML = '';
+                    requirementsContainer.classList.add('hidden');
+                    Object.values(requirementTimeouts).forEach(clearTimeout);
+                    requirementTimeouts = {};
+                } else {
+                    renderRequirements(password);
+                }
             });
+
+            // Render awal
+            const initialPassword = passwordInput.value;
+            if (initialPassword) {
+                 renderRequirements(initialPassword);
+            } else {
+                 requirementsContainer.innerHTML = '';
+                 requirementsContainer.classList.add('hidden');
+            }
         }
 
         /**
