@@ -10299,92 +10299,77 @@ function bulkUpdateKelasAndRuang(spreadsheetId, rowNumbers, newKelas, newRuang) 
   }
 }
 
+// File: Kode.gs.html
+// GANTI FUNGSI saveSiswaOrder LAMA DENGAN VERSI BARU INI
+
 /**
- * [VERSI FINAL 3.0] Mengurutkan siswa dengan mengelompokkan per kelas terlebih dahulu
- * untuk memastikan integritas urutan kelas secara global, sambil menerapkan
- * urutan manual baru pada kelas yang relevan.
+ * [VERSI BARU] Menyimpan urutan baru siswa berdasarkan NISN yang diberikan dari frontend.
+ * Fungsi ini menulis ulang data sesuai urutan yang diterima, membersihkan cache,
+ * dan mengembalikan daftar siswa yang sudah terurut.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {Array<string>} orderedNisnList Array berisi NISN siswa yang sudah diurutkan.
+ * @returns {object} Status penyimpanan dan daftar siswa yang sudah diupdate.
  */
 function saveSiswaOrder(spreadsheetId, orderedNisnList) {
   const lock = LockService.getScriptLock();
-  lock.waitLock(30000); // Menunggu hingga 30 detik jika ada proses lain
+  lock.waitLock(30000); // Menunggu hingga 30 detik
 
   try {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
-    if (sheet.getLastRow() < 2) {
+    if (!sheet || sheet.getLastRow() < 2) {
       return { status: "error", message: "Tidak ada data siswa untuk diurutkan." };
     }
 
     const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn());
     const allData = dataRange.getValues();
 
-    // 1. Buat Peta (Map) dari urutan baru yang dikirim frontend untuk pencarian cepat.
-    const newOrderMap = new Map(orderedNisnList.map((nisn, index) => [String(nisn), index]));
-
-    // 2. Kelompokkan semua siswa berdasarkan kelas mereka.
-    const studentsByClass = {};
+    // Buat peta dari NISN ke data baris lengkap untuk pencarian cepat
+    const nisnToRowMap = new Map();
     allData.forEach(row => {
-      const className = row[13] || 'Tanpa Kelas'; // Kolom kelas adalah indeks ke-13
-      if (!studentsByClass[className]) {
-        studentsByClass[className] = [];
-      }
-      studentsByClass[className].push(row);
+      nisnToRowMap.set(String(row[0]), row); // Kolom NISN adalah indeks 0
     });
 
-    // 3. Urutkan siswa di dalam setiap grup kelas.
-    for (const className in studentsByClass) {
-      studentsByClass[className].sort((a, b) => {
-        const nisnA = String(a[0]);
-        const nisnB = String(b[0]);
-        const aIsInNewOrder = newOrderMap.has(nisnA);
-        const bIsInNewOrder = newOrderMap.has(nisnB);
+    // Buat array data baru sesuai urutan NISN yang diterima
+    const finalSortedData = [];
+    orderedNisnList.forEach(nisn => {
+      const rowData = nisnToRowMap.get(String(nisn));
+      if (rowData) {
+        finalSortedData.push(rowData);
+      } else {
+        Logger.log(`Peringatan: NISN ${nisn} dari frontend tidak ditemukan di data sheet.`);
+      }
+    });
 
-        // Jika kedua siswa ada di dalam daftar yang baru diurutkan, gunakan urutan baru tersebut.
-        if (aIsInNewOrder && bIsInNewOrder) {
-          return newOrderMap.get(nisnA) - newOrderMap.get(nisnB);
-        }
-        // Jika tidak, biarkan posisi relatif mereka seperti semula (tidak mengubah urutan siswa di kelas lain).
-        return 0;
-      });
+    // Periksa apakah jumlah data cocok (seharusnya cocok jika frontend benar)
+    if (finalSortedData.length !== allData.length) {
+       Logger.log(`Peringatan: Jumlah data tidak cocok setelah pengurutan. Awal: ${allData.length}, Akhir: ${finalSortedData.length}`);
+       // Anda bisa memilih untuk mengembalikan error di sini jika perlu
+       // return { status: "error", message: "Terjadi ketidakcocokan data saat mengurutkan." };
     }
 
-    // 4. Dapatkan nama-nama kelas dan urutkan nama-nama tersebut menggunakan fungsi getSortableClassKey
-    const sortedClassNames = Object.keys(studentsByClass).sort((a, b) => {
-      const keyA = getSortableClassKey(a);
-      const keyB = getSortableClassKey(b);
-      // Logika perbandingan yang sama seperti di frontend
-      if (keyA[0] < keyB[0]) return -1;
-      if (keyA[0] > keyB[0]) return 1;
-      if (keyA[1] < keyB[1]) return -1;
-      if (keyA[1] > keyB[1]) return 1;
-      return 0;
-    });
-
-    // 5. Gabungkan kembali semua grup siswa menjadi satu daftar akhir yang terurut sempurna.
-    const finalSortedData = [];
-    sortedClassNames.forEach(className => {
-      finalSortedData.push(...studentsByClass[className]);
-    });
-
-    // 6. Tulis ulang seluruh data ke sheet.
+    // Hapus data lama dan tulis ulang dengan data yang sudah terurut
     dataRange.clearContent();
     if (finalSortedData.length > 0) {
       sheet.getRange(2, 1, finalSortedData.length, finalSortedData[0].length).setValues(finalSortedData);
     }
-    
+
     SpreadsheetApp.flush();
-    
-    // 7. Ambil kembali data yang sudah 100% benar dari sheet untuk dikirim ke frontend.
+
+    // Bersihkan cache siswa
+    clearStudentCache(spreadsheetId);
+
+    // Ambil kembali data yang sudah 100% benar dari sheet untuk dikirim ke frontend
     const updatedStudentList = getStudents(spreadsheetId);
 
-    return { 
-      status: "success", 
+    return {
+      status: "success",
       message: "Urutan siswa berhasil disimpan.",
       updatedStudentList: updatedStudentList
     };
 
   } catch (e) {
-    Logger.log(e);
+    Logger.log("saveSiswaOrder Error: " + e.message + " Stack: " + e.stack);
     return { status: "error", message: `Gagal menyimpan urutan: ${e.toString()}` };
   } finally {
     lock.releaseLock();
