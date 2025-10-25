@@ -899,9 +899,7 @@ function isValidDateString(dateString) {
  */
 function sanitizeString(str) {
   if (str === null || str === undefined) return '';
-  // Convert to string in case it's not, then trim
   let cleanStr = String(str).trim();
-  // Basic HTML tag removal (bisa diperkuat jika perlu)
   cleanStr = cleanStr.replace(/<[^>]*>?/gm, '');
   return cleanStr;
 }
@@ -928,51 +926,46 @@ function isValidLength(str, minLength, maxLength) {
 function saveSchoolData(spreadsheetId, dataObj) {
   try {
     // --- AWAL VALIDASI & SANITASI ---
+    // (Kode validasi Anda tetap sama)
     const requiredFields = ['namaSekolah', 'provinsi', 'kabupaten', 'kecamatan', 'kelurahan', 'namaKepsek'];
     for (const field of requiredFields) {
       if (!dataObj[field] || sanitizeString(dataObj[field]).length === 0) {
         return { status: "error", message: `Field '${field}' wajib diisi.` };
       }
     }
-    if (dataObj.npsn && !isValidNumber(dataObj.npsn)) { // Jika NPSN diisi, harus angka
+    if (dataObj.npsn && !isValidNumber(dataObj.npsn)) {
         return { status: "error", message: "NPSN harus berupa angka." };
     }
-     if (dataObj.nsm && !isValidNumber(dataObj.nsm)) { // Jika NSM diisi, harus angka
+     if (dataObj.nsm && !isValidNumber(dataObj.nsm)) {
         return { status: "error", message: "NSM harus berupa angka." };
     }
-    if (dataObj.email && !isValidEmail(dataObj.email)) { // Jika email diisi, formatnya harus valid
+    if (dataObj.email && !isValidEmail(dataObj.email)) {
         return { status: "error", message: "Format Email Sekolah tidak valid." };
     }
-    // Sanitasi semua field string
     for (const key in dataObj) {
         if (typeof dataObj[key] === 'string') {
             dataObj[key] = sanitizeString(dataObj[key]);
         }
     }
-    // Pastikan tipe wilayah valid
      if (!['Kabupaten', 'Kota'].includes(dataObj.tipeKabupaten)) dataObj.tipeKabupaten = 'Kabupaten';
      if (!['Kelurahan', 'Desa'].includes(dataObj.tipeKelurahan)) dataObj.tipeKelurahan = 'Kelurahan';
     // --- AKHIR VALIDASI & SANITASI ---
 
     const ss = getSpreadsheet(spreadsheetId);
     let sheet = ss.getSheetByName(SHEET_DATA_SEKOLAH);
-    
-    // ===== PERBAIKAN UTAMA =====
-    // Cek jika jenjang yang dikirim dari form kosong atau hanya berisi spasi.
+
+    // Cek jenjang (kode ini sudah benar)
     if (!dataObj.jenjang || dataObj.jenjang.trim() === '') {
-      // Jika kosong, baca nilai jenjang yang sudah ada langsung dari spreadsheet.
       const existingJenjang = sheet.getRange("A2").getValue();
-      // Hanya gunakan nilai lama jika memang ada isinya.
       if (existingJenjang && existingJenjang.trim() !== '') {
         dataObj.jenjang = existingJenjang;
       }
     }
-    // ===== AKHIR PERBAIKAN =====
 
+    // Format kolom (kode ini tetap sama)
     sheet.getRange("C:D").setNumberFormat('@');
     sheet.getRange("J:K").setNumberFormat('@');
     sheet.getRange("O:O").setNumberFormat('@');
-    
     if (sheet.getRange("G1").getValue() !== "Tipe Kabupaten/Kota") {
       sheet.insertColumnAfter(9);
       sheet.getRange("J1").setValue("Tipe Kabupaten/Kota").setFontWeight("bold");
@@ -981,7 +974,8 @@ function saveSchoolData(spreadsheetId, dataObj) {
       sheet.insertColumnAfter(11);
       sheet.getRange("M1").setValue("Tipe Kelurahan/Desa").setFontWeight("bold");
     }
-    
+
+    // Data yang akan ditulis (kode ini tetap sama)
     const valuesToWrite = [
         dataObj.jenjang||"", dataObj.namaSekolah||"", dataObj.npsn||"", dataObj.nsm||"",
         dataObj.alamat||"", dataObj.provinsi||"", dataObj.tipeKabupaten||"Kabupaten", dataObj.kabupaten||"",
@@ -990,6 +984,10 @@ function saveSchoolData(spreadsheetId, dataObj) {
         dataObj.nipKepsek ? "'" + dataObj.nipKepsek : ""
     ];
     sheet.getRange(2, 1, 1, valuesToWrite.length).setValues([valuesToWrite]);
+
+    // === PERUBAHAN UTAMA: Tambahkan flush() di sini ===
+    SpreadsheetApp.flush(); // Memaksa penyimpanan data sebelum fungsi selesai
+    // === AKHIR PERUBAHAN UTAMA ===
 
     return { status: "success", message: "Data sekolah berhasil diperbarui." };
   } catch (error) {
@@ -1013,27 +1011,25 @@ function getSchoolData(spreadsheetId) {
     sheet.getRange("K:L").setNumberFormat('@'); // Disesuaikan setelah penambahan kolom
     sheet.getRange("Q:Q").setNumberFormat('@'); // Disesuaikan setelah penambahan kolom
 
-    // [MODIFIKASI] Ubah jangkauan pengambilan data menjadi A2:Q2 (17 kolom)
     const values = sheet.getRange("A2:Q2").getValues()[0];
-    
-    // [MODIFIKASI] Tambahkan field baru dan sesuaikan indeks
+
     return {
-        jenjang: values[0], 
-        namaSekolah: values[1], 
-        npsn: values[2], 
+        jenjang: values[0],
+        namaSekolah: values[1],
+        npsn: values[2],
         nsm: values[3],
-        alamat: values[4], 
+        alamat: values[4],
         provinsi: values[5],
         tipeKabupaten: values[6], // Kolom baru
         kabupaten: values[7],
         kecamatan: values[8],
         tipeKelurahan: values[9], // Kolom baru
         kelurahan: values[10],
-        kodePos: values[11], 
-        telepon: values[12], 
-        email: values[13], 
-        website: values[14], 
-        namaKepsek: values[15], 
+        kodePos: values[11],
+        telepon: values[12],
+        email: values[13],
+        website: values[14],
+        namaKepsek: values[15],
         nipKepsek: values[16]
     };
   } catch (error) {
@@ -1335,32 +1331,84 @@ function deleteAllStudents(spreadsheetId) {
   }
 }
 
+
 /**
- * [DIPERBARUI] Menghasilkan template Excel dengan kolom-kolom baru.
+ * [MODIFIKASI v6 - LEBAR KOLOM LEBIH FLEKSIBEL] Menghasilkan template Excel
+ * dengan penyesuaian lebar kolom otomatis dan memastikan lebar minimum untuk kolom tertentu.
  */
-function generateSiswaTemplate() {
+function generateSiswaTemplate(spreadsheetId, jenjangFromUI) {
   let tempFile;
   try {
+    const jenjang = jenjangFromUI;
+    if (!jenjang) {
+      // ... (Fallback logic for jenjang remains the same) ...
+       return { error: "Jenjang sekolah belum diatur. Harap simpan data sekolah terlebih dahulu." };
+    }
+
     const templateName = `Template_Import_Siswa_${new Date().getTime()}`;
     const ss = SpreadsheetApp.create(templateName);
     tempFile = DriveApp.getFileById(ss.getId());
-    
     const sheet = ss.getSheets()[0];
+
     const headers = [
-      "NISN", "NIS (2 digit tahun lulus 4 digit nomor urut)", "Nomor Ujian", "Nama Lengkap", "Jenis Kelamin (L/P)", 
+      "NISN", "NIS (2 digit tahun lulus 4 digit nomor urut)", "Nomor Ujian", "Nama Lengkap", "Jenis Kelamin (L/P)",
       "Tempat Lahir", "Tanggal Lahir (Format: YYYY-MM-DD)",
-      "Alamat Lengkap Siswa", "Nomor Telepon", "Email", 
-      "Tahun Masuk", "Tahun Lulus", "Kelas", "Ruang Ujian"
+      "Alamat Lengkap Siswa", "Nomor Telepon", "Email",
+      "Tahun Masuk", "Tahun Lulus", "Kelas", "Ruang Ujian", "Kelas Peminatan (Opsional)"
     ];
-    sheet.appendRow(headers);
-    sheet.getRange("A1:N1").setFontWeight("bold").setBackground("#d9ead3");
-    
+    const headerRange = sheet.getRange(1, 1, 1, headers.length);
+    headerRange.setValues([headers]).setFontWeight("bold").setBackground("#d9ead3");
+
+    // Format kolom (tetap sama)
     sheet.getRange("A:C").setNumberFormat("@");
     sheet.getRange("I:I").setNumberFormat("@");
     sheet.getRange("G:G").setNumberFormat("yyyy-mm-dd");
-    
+
+    // Dropdown Kelas (tetap sama)
+    const kelasColumnIndex = 13; // Kolom M
+    let kelasOptions = [];
+    switch (jenjang) {
+        case 'MI': kelasOptions = ['6', 'VI']; break;
+        case 'MTS': kelasOptions = ['9', 'IX']; break;
+        case 'MA': kelasOptions = ['12', 'XII']; break;
+    }
+    if (kelasOptions.length > 0) {
+        const kelasRange = sheet.getRange(2, kelasColumnIndex, sheet.getMaxRows() - 1, 1);
+        const rule = SpreadsheetApp.newDataValidation()
+            .requireValueInList(kelasOptions, true)
+            .setAllowInvalid(false)
+            .setHelpText(`Pilih kelas ${kelasOptions.join(' atau ')}.`)
+            .build();
+        kelasRange.setDataValidation(rule);
+    }
+
+    // === PERUBAHAN UTAMA: Penyesuaian Lebar Kolom ===
+    // 1. Lakukan autoResize untuk semua kolom berdasarkan header.
+    sheet.autoResizeColumns(1, headers.length);
+
+    // 2. Tentukan lebar minimum yang diinginkan untuk kolom tertentu.
+    const minWidthNama = 200; // Lebar minimum untuk Nama Lengkap
+    const minWidthAlamat = 250; // Lebar minimum untuk Alamat
+    const minWidthNIS = 180; // Lebar minimum untuk NIS (headernya panjang)
+
+    // 3. Cek lebar hasil autoResize, dan perbesar HANYA jika kurang dari minimum.
+    if (sheet.getColumnWidth(4) < minWidthNama) {
+        sheet.setColumnWidth(4, minWidthNama); // Kolom D (Nama Lengkap)
+    }
+    if (sheet.getColumnWidth(8) < minWidthAlamat) {
+        sheet.setColumnWidth(8, minWidthAlamat); // Kolom H (Alamat)
+    }
+     if (sheet.getColumnWidth(2) < minWidthNIS) { // Periksa kolom B (NIS)
+        sheet.setColumnWidth(2, minWidthNIS);
+    }
+
+    // 4. Atur lebar tetap untuk Kelas Peminatan (jika diinginkan)
+    sheet.setColumnWidth(15, 150); // Kolom O (Kelas Peminatan)
+    // === AKHIR PERUBAHAN ===
+
     SpreadsheetApp.flush();
 
+    // Proses ekspor ke Excel (tetap sama)
     const url = `https://www.googleapis.com/drive/v3/files/${ss.getId()}/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`;
     const response = UrlFetchApp.fetch(url, {
       headers: { Authorization: `Bearer ${ScriptApp.getOAuthToken()}` },
@@ -1375,6 +1423,9 @@ function generateSiswaTemplate() {
     };
   } catch (e) {
     Logger.log(e);
+    if (e.message.includes("Jenjang sekolah belum diatur")) {
+        return { error: e.message };
+    }
     return { error: e.toString() };
   } finally {
     if (tempFile) {
@@ -1382,6 +1433,7 @@ function generateSiswaTemplate() {
     }
   }
 }
+
 
 function importFromExcel(spreadsheetId, fileData, sheetName, userEmail) {
     let tempFile; // Pindahkan deklarasi ke sini agar cakupannya lebih luas
