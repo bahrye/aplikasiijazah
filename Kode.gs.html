@@ -321,63 +321,51 @@ function sendVerificationEmail(email) {
 }
 
 /**
- * [MODIFIKASI FINAL v4 + IMPORT MAPEL DEFAULT] Mendaftarkan pengguna baru dengan KODE SEKOLAH unik,
- * mengirimkan email konfirmasi, menyimpan spreadsheet ke folder, DAN mengimpor mapel default.
- * @param {{email: string, password: string, namaSekolah: string, jenjang: string}} userData Objek berisi data pengguna baru.
+ * [MODIFIKASI v5 + AUTO PASSWORD] Mendaftarkan pengguna baru dengan password otomatis,
+ * mengirimkan email konfirmasi, menyimpan spreadsheet ke folder, mengimpor mapel default,
+ * dan menandai akun untuk ganti password.
+ * @param {{email: string, namaSekolah: string, jenjang: string}} userData Objek berisi data pengguna baru (tanpa password).
  * @param {string} otp Kode OTP yang dimasukkan pengguna.
  * @returns {{status: string, message: string}} Objek status pendaftaran.
  */
 function registerUser(userData, otp) {
-  const TARGET_FOLDER_ID = "1rdd42spFqNeud_f72eCcTb0_dnQ1MwFB"; 
+  const TARGET_FOLDER_ID = "1rdd42spFqNeud_f72eCcTb0_dnQ1MwFB"; // Ganti dengan ID Folder Google Drive Anda
 
   try {
-    const { email, password, namaSekolah, jenjang } = userData;
+    const { email, namaSekolah, jenjang } = userData;
 
-    // --- VALIDASI AWAL (Tetap sama) ---
-    if (!email || !password || !namaSekolah || !jenjang) {
-      return { status: "error", message: "Semua field (Email, Password, Nama Sekolah, Jenjang) wajib diisi." };
+    // --- VALIDASI AWAL ---
+    if (!email || !namaSekolah || !jenjang) { // Password dihapus dari validasi
+      return { status: "error", message: "Email, Nama Sekolah, dan Jenjang wajib diisi." };
     }
     if (!isValidEmail(email)) {
       return { status: "error", message: "Format email tidak valid." };
     }
-    if (password.length < 8) { 
-        return { status: "error", message: "Password minimal harus 8 karakter." };
-    }
+    // Validasi panjang password dihapus
     if (!['MI', 'MTS', 'MA'].includes(jenjang)) {
       return { status: "error", message: "Jenjang sekolah tidak valid." };
     }
     const cleanNamaSekolah = sanitizeString(namaSekolah);
-    if (cleanNamaSekolah.length === 0) {
+     if (cleanNamaSekolah.length === 0) {
         return { status: "error", message: "Nama Sekolah tidak boleh kosong." };
     }
-    userData.namaSekolah = cleanNamaSekolah; 
+    userData.namaSekolah = cleanNamaSekolah;
     // --- AKHIR VALIDASI ---
 
     if (!verifyOtp(email, otp)) {
       return { status: "error", message: "Kode OTP salah atau telah kedaluwarsa." };
     }
+
     const lock = LockService.getScriptLock();
-    lock.waitLock(300000);
+    lock.waitLock(300000); // Tunggu hingga 5 menit jika ada proses lain
 
     const ss = SpreadsheetApp.getActiveSpreadsheet(); // Spreadsheet Induk
     const configSheet = ss.getSheetByName('Konfigurasi Sistem');
-    const defaultLimit = configSheet ? configSheet.getRange("B2").getValue() : 100;
+    const defaultLimit = configSheet ? configSheet.getRange("B2").getValue() : 100; // Ambil batas default
     let userSheet = ss.getSheetByName(SHEET_PENGGUNA);
     if (!userSheet) throw new Error(`Sheet '${SHEET_PENGGUNA}' tidak ditemukan.`);
-    
-    // --- Pembuatan Kode Sekolah Unik (Tetap sama) ---
-    let schoolCode;
-    let isCodeUnique = false;
-    const existingCodes = userSheet.getLastRow() > 1 ? userSheet.getRange(2, 13, userSheet.getLastRow() - 1, 1).getValues().flat() : [];
-    while (!isCodeUnique) {
-      schoolCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      if (!existingCodes.includes(schoolCode)) { isCodeUnique = true; }
-    }
-    // --- Akhir Kode Sekolah ---
-    
-    const latestVersionInfo = getAppVersionInfo();
-    const latestVersion = latestVersionInfo ? latestVersionInfo.version : '';
 
+    // Cek duplikasi email
     if (userSheet.getLastRow() > 1) {
       const existingEmails = userSheet.getRange(2, 2, userSheet.getLastRow() - 1, 1).getValues().flat();
       if (existingEmails.some(e => e.toLowerCase() === email.toLowerCase())) {
@@ -386,85 +374,126 @@ function registerUser(userData, otp) {
       }
     }
 
-    const templateFile = DriveApp.getFileById(TEMPLATE_SPREADSHEET_ID);
-    const targetFolder = DriveApp.getFolderById(TARGET_FOLDER_ID); 
-    const newFileName = `Data Akademik - ${namaSekolah}`; 
-    const newFile = templateFile.makeCopy(newFileName, targetFolder); 
-    const newSpreadsheetId = newFile.getId();
-    const newSs = SpreadsheetApp.openById(newSpreadsheetId); // Spreadsheet baru pengguna
+    // --- Pembuatan Kode Sekolah Unik ---
+    let schoolCode;
+    let isCodeUnique = false;
+    const existingCodes = userSheet.getLastRow() > 1 ? userSheet.getRange(2, 13, userSheet.getLastRow() - 1, 1).getValues().flat() : [];
+    while (!isCodeUnique) {
+      schoolCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      if (!existingCodes.includes(schoolCode)) { isCodeUnique = true; }
+    }
+    // --- Akhir Kode Sekolah ---
 
-    // Isi Data Sekolah Awal (Tetap sama)
+    // --- GENERATE PASSWORD OTOMATIS ---
+    const generatedPassword = Math.random().toString(36).slice(-8); // Contoh: 8 karakter alfanumerik acak
+    // --- AKHIR GENERATE PASSWORD ---
+
+    // --- HASHING PASSWORD OTOMATIS ---
+    const userId = Utilities.getUuid();
+    const salt = generateSalt(); // Panggil fungsi generateSalt()
+    const hashedPassword = hashPassword(generatedPassword, salt); // Panggil fungsi hashPassword()
+    const storedPasswordString = `${salt}:${hashedPassword}`;
+    // --- AKHIR HASHING ---
+
+    const latestVersionInfo = getAppVersionInfo(); // Dapatkan info versi terbaru
+    const latestVersion = latestVersionInfo ? latestVersionInfo.version : ''; // Ambil nomor versinya
+
+    // Proses duplikasi spreadsheet template
+    const templateFile = DriveApp.getFileById(TEMPLATE_SPREADSHEET_ID);
+    const targetFolder = DriveApp.getFolderById(TARGET_FOLDER_ID);
+    const newFileName = `Data Akademik - ${namaSekolah}`;
+    const newFile = templateFile.makeCopy(newFileName, targetFolder);
+    const newSpreadsheetId = newFile.getId();
+    const newSs = SpreadsheetApp.openById(newSpreadsheetId); // Buka spreadsheet baru
+
+    // Isi Data Sekolah Awal
     const dataSekolahSheet = newSs.getSheetByName(SHEET_DATA_SEKOLAH);
     if (dataSekolahSheet) {
       dataSekolahSheet.getRange(2, 1).setValue(jenjang);
       dataSekolahSheet.getRange(2, 2).setValue(namaSekolah);
     }
 
-    // ==========================================================
-    // === AWAL BLOK KODE BARU: IMPORT MAPEL DEFAULT ===
-    // ==========================================================
+    // --- Import Mapel Default ---
     try {
         const mapelDefaultSheet = ss.getSheetByName(SHEET_MAPEL_DEFAULT);
         if (!mapelDefaultSheet) {
-          Logger.log(`PERINGATAN: Sheet '${SHEET_MAPEL_DEFAULT}' tidak ditemukan di spreadsheet induk.`);
+          Logger.log(`PERINGATAN: Sheet '${SHEET_MAPEL_DEFAULT}' tidak ditemukan.`);
         } else {
           const defaultMapelData = mapelDefaultSheet.getDataRange().getValues();
           defaultMapelData.shift(); // Hapus header
 
-          // Filter mapel berdasarkan jenjang yang dipilih saat registrasi
           const mapelForJenjang = defaultMapelData
-            .filter(row => row[0] === jenjang) // Kolom A (indeks 0) adalah Jenjang
-            .map(row => [row[1], row[2], row[3], row[4]]); // Ambil Kode, Nama, Kelompok, Jenis Ujian
+            .filter(row => row[0] === jenjang)
+            .map(row => [row[1], row[2], row[3], row[4]]); // Kode, Nama, Kelompok, Jenis Ujian
 
           if (mapelForJenjang.length > 0) {
             const targetMapelSheet = newSs.getSheetByName(SHEET_MAPEL);
             if (!targetMapelSheet) {
-              Logger.log(`PERINGATAN: Sheet '${SHEET_MAPEL}' tidak ditemukan di spreadsheet baru pengguna ${namaSekolah}.`);
+              Logger.log(`PERINGATAN: Sheet '${SHEET_MAPEL}' tidak ditemukan di spreadsheet baru.`);
             } else {
-              // Hapus data mapel contoh jika ada (dari baris 2 ke bawah)
+              // Hapus data contoh jika ada
               if (targetMapelSheet.getLastRow() >= 2) {
                 targetMapelSheet.getRange(2, 1, targetMapelSheet.getLastRow() - 1, targetMapelSheet.getLastColumn()).clearContent();
               }
-              // Tulis data mapel default yang sudah difilter
+              // Tulis mapel default
               targetMapelSheet.getRange(2, 1, mapelForJenjang.length, mapelForJenjang[0].length).setValues(mapelForJenjang);
-              Logger.log(`Berhasil mengimpor ${mapelForJenjang.length} mapel default untuk ${namaSekolah} (${jenjang}).`);
+              Logger.log(`Berhasil impor ${mapelForJenjang.length} mapel default untuk ${namaSekolah} (${jenjang}).`);
             }
           } else {
-              Logger.log(`Tidak ada mapel default ditemukan untuk jenjang ${jenjang} di spreadsheet induk.`);
+              Logger.log(`Tidak ada mapel default untuk jenjang ${jenjang}.`);
           }
         }
     } catch (mapelError) {
-        // Catat error jika impor mapel gagal, tapi jangan hentikan registrasi
-        Logger.log(`Gagal mengimpor mapel default untuk ${namaSekolah}. Error: ${mapelError.message}`);
+        Logger.log(`Gagal impor mapel default: ${mapelError.message}`);
     }
-    // ==========================================================
-    // === AKHIR BLOK KODE BARU =================================
-    // ==========================================================
+    // --- Akhir Import Mapel ---
 
-    // --- Pembuatan User ID dan Hashing Password (Tetap sama) ---
-    const userId = Utilities.getUuid();
-    const salt = generateSalt();
-    const hashedPassword = hashPassword(password, salt);
-    const storedPasswordString = `${salt}:${hashedPassword}`;
-    // --- Akhir User ID & Hashing ---
+    // --- Tambahkan kolom "Wajib Ganti Password" jika belum ada ---
+    const headers = userSheet.getRange("1:1").getValues()[0];
+    const passwordChangeColHeader = "Wajib Ganti Password";
+    let passwordChangeColIndex = headers.indexOf(passwordChangeColHeader);
 
-    userSheet.appendRow([
+    if (passwordChangeColIndex === -1) {
+        // Jika kolom belum ada, tambahkan di akhir (kolom P, index 15)
+        passwordChangeColIndex = userSheet.getLastColumn(); // Index kolom terakhir yang ada
+        userSheet.getRange(1, passwordChangeColIndex + 1).setValue(passwordChangeColHeader).setFontWeight("bold");
+        passwordChangeColIndex = passwordChangeColIndex; // index kolom baru (0-based)
+    } else {
+        passwordChangeColIndex = passwordChangeColIndex; // index kolom yang sudah ada (0-based)
+    }
+    // --- Akhir penambahan kolom ---
+
+    // --- Simpan data pengguna BARU ---
+    // Pastikan array ini memiliki panjang yang sama dengan jumlah kolom sampai kolom "Wajib Ganti Password"
+    const newUserRowData = [
         userId, email, storedPasswordString, namaSekolah, jenjang, newSpreadsheetId,
-        'Pengguna', 'Aktif', defaultLimit, latestVersion, '', '', schoolCode, '', 'YA'
-    ]);
-    
-    // ===== BLOK KODE NOTIFIKASI EMAIL (Tetap sama) =====
+        'Pengguna', 'Aktif', defaultLimit, latestVersion, '', '', schoolCode, '', 'YA', // Fitur Terkunci = YA
+        'YA' // Nilai untuk kolom "Wajib Ganti Password"
+    ];
+
+    // Sesuaikan jumlah kolom saat appendRow
+    const columnsToWrite = passwordChangeColIndex + 1;
+    // Pastikan panjang array sesuai
+    while (newUserRowData.length < columnsToWrite) {
+        newUserRowData.push(''); // Tambahkan string kosong jika perlu
+    }
+    // Hanya tulis sampai kolom yang dibutuhkan
+    userSheet.appendRow(newUserRowData.slice(0, columnsToWrite));
+
+
+    // --- KIRIM EMAIL KONFIRMASI DENGAN PASSWORD OTOMATIS ---
     try {
       const subject = "Pendaftaran Akun Aplikasi Ijazah Berhasil!";
       const body = `
         <div style="font-family: Arial, sans-serif; line-height: 1.6;">
           <h2>Selamat Datang di Aplikasi Pengolahan Nilai Ijazah!</h2>
           <p>Halo <strong>${namaSekolah}</strong>,</p>
-          <p>Akun Anda telah berhasil dibuat. Berikut adalah detail informasi login Anda. Harap simpan informasi ini di tempat yang aman:</p>
+          <p>Akun Anda telah berhasil dibuat. Berikut adalah detail informasi login SEMENTARA Anda. Harap simpan informasi ini:</p>
           <div style="background-color: #f9f9f9; border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin: 20px 0;">
             <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
-            <p style="margin: 5px 0;"><strong>Password:</strong> ${password}</p>
+            <p style="margin: 5px 0;"><strong>Password Sementara:</strong> <span style="font-family: monospace; background-color: #e0e0e0; padding: 2px 5px; border-radius: 3px;">${generatedPassword}</span></p>
           </div>
+          <p style="color: #d32f2f; font-weight: bold;">PENTING: Anda akan diminta untuk membuat password baru saat pertama kali login demi keamanan.</p>
           <p>Anda dapat mulai menggunakan aplikasi dengan mengunjungi link di bawah ini.</p>
           <p><a href="${ScriptApp.getService().getUrl()}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 5px;">Buka Aplikasi</a></p>
           <br>
@@ -477,27 +506,31 @@ function registerUser(userData, otp) {
     } catch (e) {
       Logger.log("Gagal mengirim email konfirmasi pendaftaran ke " + email + ". Error: " + e.message);
     }
-    // ===== AKHIR BLOK KODE NOTIFIKASI EMAIL =====
+    // --- AKHIR KIRIM EMAIL ---
 
-    CacheService.getScriptCache().remove(email.toLowerCase());
+    CacheService.getScriptCache().remove(email.toLowerCase()); // Hapus cache OTP
     lock.releaseLock();
-    return { status: "success", message: "Pendaftaran berhasil! Akun dan database sekolah Anda telah dibuat. Mapel default telah ditambahkan." }; // Pesan diupdate
+    return { status: "success", message: "Pendaftaran berhasil! Akun dan database sekolah Anda telah dibuat. Password sementara telah dikirim ke email Anda." };
 
   } catch (error) {
     Logger.log(error);
+    if (lock && lock.hasLock()) { // Lepaskan lock jika terjadi error
+        lock.releaseLock();
+    }
     if (error.message.includes("Invalid argument: id") || error.message.includes("Folder not found")) {
-        return { status: "error", message: `Gagal mendaftar: Folder tujuan dengan ID '${TARGET_FOLDER_ID}' tidak ditemukan atau tidak dapat diakses. Pastikan ID folder sudah benar.`};
+        return { status: "error", message: `Gagal mendaftar: Folder tujuan dengan ID '${TARGET_FOLDER_ID}' tidak ditemukan atau tidak dapat diakses.`};
     }
     return { status: "error", message: "Gagal mendaftar: " + error.message + " Stack: " + error.stack };
   }
 }
 
 /**
- * [MODIFIKASI FINAL & BROADCAST v2] Memeriksa kredensial login.
- * Menangani kasus Superadmin, status akun, dan mengirimkan changelog & broadcast baru.
+ * [MODIFIKASI v6 + First Login Password Change] Memeriksa kredensial login.
+ * Menangani kasus Superadmin, status akun, mengirimkan changelog & broadcast baru,
+ * dan mengecek apakah pengguna perlu mengganti password.
  * @param {string} email Email pengguna.
  * @param {string} password Password pengguna.
- * @returns {object} Objek status login, bisa berisi data changelog atau broadcast baru.
+ * @returns {object} Objek status login, bisa berisi data changelog/broadcast/flag ganti password.
  */
 function checkLogin(email, password) {
   try {
@@ -507,7 +540,8 @@ function checkLogin(email, password) {
       return { status: "error", message: "Konfigurasi pengguna tidak ditemukan." };
     }
 
-    const users = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 12).getValues(); 
+    // --- Baca data sampai kolom P (index 15) atau kolom ke-16 ---
+    const users = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 16).getValues(); // Baca 16 kolom
     const userIndex = users.findIndex(userRow => userRow[1].toLowerCase() === email.toLowerCase());
 
     if (userIndex === -1) {
@@ -515,84 +549,104 @@ function checkLogin(email, password) {
     }
 
     const userRow = users[userIndex];
-    const storedPassword = userRow[2].toString(); 
+    const storedPassword = userRow[2].toString();
     let spreadsheetId = userRow[5];
     const role = userRow[6] || 'Pengguna';
     const status = userRow[7] || 'Aktif';
     const lastSeenChangelogVersion = (userRow[10] || '').toString().trim();
+    // --- Ambil nilai dari kolom P (index 15) ---
+    // Kolom ke-16 adalah index 15 dalam array
+    const requiresPasswordChange = userRow[15] === 'YA';
 
-    if (status !== 'Aktif') {
+    // Validasi status akun
+     if (status !== 'Aktif') {
         return { status: "error", message: "Akun Anda saat ini tidak aktif. Silahkan hubungi Admin." };
     }
 
-    if (role === 'Superadmin') {
-      spreadsheetId = null;  
+    // Validasi spreadsheetId untuk non-Superadmin
+     if (role === 'Superadmin') {
+      spreadsheetId = null; // Superadmin tidak terikat ke spreadsheet spesifik
     } else if (!spreadsheetId) {
       return { status: "error", message: "Akun pengguna ini tidak terkonfigurasi dengan benar (tidak ada Spreadsheet ID)." };
     }
 
-    let passwordIsValid = false;
-    if (storedPassword.includes(':')) {
-      passwordIsValid = verifyPassword(password, storedPassword);
-    } else {
+    // Validasi password (menangani hash baru dan plain text lama)
+     let passwordIsValid = false;
+    if (storedPassword.includes(':')) { // Cek format 'salt:hash'
+      passwordIsValid = verifyPassword(password, storedPassword); // Gunakan fungsi verifikasi hash
+    } else { // Jika bukan format hash, anggap plain text lama
       passwordIsValid = (storedPassword === password);
-      if (passwordIsValid) {
+      if (passwordIsValid) { // Jika password lama benar, upgrade ke hash
         try {
           const salt = generateSalt();
           const newHashedPassword = hashPassword(password, salt);
+          // Kolom C adalah kolom ke-3
           userSheet.getRange(userIndex + 2, 3).setValue(`${salt}:${newHashedPassword}`);
+          Logger.log(`Password upgraded to hash for ${email}.`);
         } catch (e) {
           Logger.log(`Failed to upgrade password for ${email}. Error: ${e.message}`);
+          // Tetap lanjutkan login meskipun upgrade gagal
         }
       }
     }
 
-    // Ganti bagian ini di dalam fungsi checkLogin
+
     if (passwordIsValid) {
+      // Log aktivitas login
       logLoginActivity(email, userRow[3], userRow[4], role);
-
-      // --- AWAL MODIFIKASI ---
+      // Cek status fitur terkunci
       const lockStatus = checkFiturLock(email);
-      // --- AKHIR MODIFIKASI ---
 
-      const loginResponse = {  
-          status: "success",  
-          message: "Login berhasil.",  
-          spreadsheetId: spreadsheetId,  
-          email: userRow[1],  
-          role: role,  
+      // Siapkan objek respons
+      const loginResponse = {
+          status: "success",
+          message: "Login berhasil.",
+          spreadsheetId: spreadsheetId,
+          email: userRow[1],
+          role: role,
           webAppUrl: ScriptApp.getService().getUrl(),
-          // --- AWAL MODIFIKASI ---
-          isLocked: lockStatus.isLocked // Kirim status lock ke frontend
-          // --- AKHIR MODIFIKASI ---
+          isLocked: lockStatus.isLocked,
+          // --- Tambahkan flag baru untuk frontend ---
+          requiresPasswordChange: requiresPasswordChange
       };
 
-      if (role === 'Pengguna') {
+      // --- Logika untuk menghapus flag setelah dibaca (hanya jika flag aktif) ---
+      if (requiresPasswordChange) {
+        try {
+          // Kolom P adalah kolom ke-16
+          userSheet.getRange(userIndex + 2, 16).setValue('TIDAK');
+        } catch(e) {
+          Logger.log(`Gagal menghapus flag ganti password untuk ${email}: ${e.message}`);
+          // Tetap lanjutkan proses login meskipun gagal update flag
+        }
+      }
+
+      // Cek changelog dan broadcast baru untuk Pengguna biasa
+       if (role === 'Pengguna') {
+        // Cek changelog
         const latestVersionInfo = getAppVersionInfo();
         if (latestVersionInfo && latestVersionInfo.version !== lastSeenChangelogVersion) {
           loginResponse.newChangelog = latestVersionInfo;
         }
-
-        // --- PERUBAHAN UTAMA LOGIKA BROADCAST ---
-        const latestBroadcast = getLatestBroadcast();
+        // Cek broadcast
+         const latestBroadcast = getLatestBroadcast();
         if (latestBroadcast) {
-          // Cek apakah pengguna ini sudah membaca broadcast terbaru
-          const hasRead = hasUserReadBroadcast(latestBroadcast.id, email);
+          const hasRead = hasUserReadBroadcast(latestBroadcast.id, email); // Cek status baca
           if (!hasRead) {
-            loginResponse.newBroadcast = latestBroadcast;
+            loginResponse.newBroadcast = latestBroadcast; // Kirim jika belum dibaca
           }
         }
-        // --- AKHIR PERUBAHAN ---
       }
-      
-      return loginResponse;
+
+      return loginResponse; // Kembalikan objek respons lengkap
 
     } else {
+      // Jika password salah
       return { status: "error", message: "Password salah." };
     }
 
   } catch (error) {
-    Logger.log(error);
+    Logger.log(`checkLogin Error: ${error.stack}`); // Log error lengkap
     return { status: "error", message: "Kesalahan Server: " + error.message };
   }
 }
@@ -11439,5 +11493,49 @@ function getGuruPrintSettings(spreadsheetId) {
     return { status: 'success', settings: settings };
   } catch (e) {
     return { status: 'error', message: 'Gagal memuat pengaturan cetak.' };
+  }
+}
+
+/**
+ * [BARU] Mengubah password pengguna saat login pertama kali (tanpa password lama).
+ * Fungsi ini dipanggil dari modal khusus di frontend.
+ * @param {string} email Email pengguna yang akan diubah passwordnya.
+ * @param {string} newPassword Password baru yang akan diatur.
+ * @returns {{status: string, message: string}} Hasil proses perubahan password.
+ */
+function forceChangePassword(email, newPassword) {
+  try {
+    // Validasi input dasar
+    if (!email || !newPassword) {
+      return { status: "error", message: "Email dan Password baru tidak boleh kosong." };
+    }
+    // Anda bisa menambahkan validasi kekuatan password di sini jika perlu
+
+    // Hash password baru
+    const salt = generateSalt();
+    const hashedPassword = hashPassword(newPassword, salt);
+    const newStoredPasswordString = `${salt}:${hashedPassword}`;
+
+    // Temukan dan perbarui password di spreadsheet
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const userSheet = ss.getSheetByName(SHEET_PENGGUNA);
+    if (!userSheet) throw new Error(`Sheet '${SHEET_PENGGUNA}' tidak ditemukan.`);
+
+    const data = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 3).getValues(); // Ambil ID, email, password
+    const userIndex = data.findIndex(row => row[1].toLowerCase() === email.toLowerCase());
+
+    if (userIndex === -1) {
+      return { status: "error", message: "Terjadi kesalahan: Pengguna tidak ditemukan." };
+    }
+
+    // Update password di baris yang benar (kolom C adalah kolom ke-3)
+    const rowToUpdate = userIndex + 2;
+    userSheet.getRange(rowToUpdate, 3).setValue(newStoredPasswordString);
+
+    return { status: "success", message: "Password baru Anda telah berhasil disimpan." };
+
+  } catch (error) {
+    Logger.log(`forceChangePassword Error: ${error.toString()}`);
+    return { status: "error", message: "Gagal menyimpan password baru: " + error.message };
   }
 }
