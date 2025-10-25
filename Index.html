@@ -4078,14 +4078,6 @@
                 document.getElementById('signup-confirm-msg')
             );
 
-            // Ubah Password
-            setupRealtimePasswordValidation(document.getElementById('new-password-change'), document.getElementById('change-password-req'));
-            setupPasswordConfirmation(
-                document.getElementById('new-password-change'),
-                document.getElementById('confirm-password-change'),
-                document.getElementById('change-confirm-msg')
-            );
-
             // Lupa Password
             setupRealtimePasswordValidation(document.getElementById('fp-new-password'), document.getElementById('fp-password-req'));
             setupPasswordConfirmation(
@@ -5396,6 +5388,23 @@
                 if (targetPageId === 'data-guru') loadGuruData();
                 if (targetPageId === 'arsip-tahunan') { // tetap gunakan id lama
                     loadKelulusanPage();
+                }
+
+                if (targetPageId === 'ubah-password') {
+                    document.getElementById('page-ubah-password').classList.remove('hidden');
+                    // TAMBAHKAN PEMANGGILAN INI DI SINI:
+                    setupRealtimePasswordValidation(
+                        document.getElementById('new-password-change'),
+                        document.getElementById('change-password-req')
+                    );
+                    // Pastikan juga konfirmasi password di-setup di sini
+                    setupPasswordConfirmation(
+                        document.getElementById('new-password-change'),
+                        document.getElementById('confirm-password-change'),
+                        document.getElementById('change-confirm-msg')
+                    );
+                    // Panggil juga setup toggle mata password lagi untuk memastikan berfungsi
+                    setupPasswordToggles();
                 }
 
                 closeSidebar();
