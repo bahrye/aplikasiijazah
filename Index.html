@@ -15782,30 +15782,40 @@
             attachTableCheckboxListeners();
             updateBulkActionBar();
 
-            let originalSiswaOrder = [];
+            let initialSiswaOrderOnDragStart = []; // Simpan urutan awal saat drag dimulai
+
             new Sortable(tbody, {
                 animation: 150,
                 handle: '.drag-handle',
                 ghostClass: 'ghost-row',
                 chosenClass: 'chosen-row',
+                // Filter: Hanya izinkan drag jika di dalam kelas yang sama
                 onMove: function (evt) {
-                    const draggedClass = evt.dragged.dataset.kelas;
-                    const relatedClass = evt.related.dataset.kelas;
+                    const draggedClass = evt.dragged.dataset.kelas || 'tanpa-kelas';
+                    const relatedClass = evt.related.dataset.kelas || 'tanpa-kelas';
+                    // Izinkan perpindahan hanya jika kelasnya sama
                     return draggedClass === relatedClass;
                 },
                 onStart: function (evt) {
-                    if (!isOrderChanged) {
-                        originalSiswaOrder = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.nisn);
-                    }
+                    // Simpan urutan NISN saat ini sebelum drag dimulai
+                    initialSiswaOrderOnDragStart = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.nisn);
                 },
-                onEnd: function(evt) {
-                    const currentOrder = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.nisn);
-                    if (JSON.stringify(currentOrder) !== JSON.stringify(originalSiswaOrder)) {
+                onEnd: function (evt) {
+                    // Dapatkan urutan NISN baru dari DOM setelah drag selesai
+                    const currentOrderNisn = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.nisn);
+
+                    // Perbarui array 'allStudentsData' secara lokal sesuai urutan DOM baru
+                    allStudentsData.sort((a, b) => {
+                        return currentOrderNisn.indexOf(a.nisn) - currentOrderNisn.indexOf(b.nisn);
+                    });
+
+                    // Cek apakah urutan benar-benar berubah dari sebelum drag
+                    if (JSON.stringify(currentOrderNisn) !== JSON.stringify(initialSiswaOrderOnDragStart)) {
                         isOrderChanged = true;
-                        showSortActionBar(true);
+                        showSortActionBar(true); // Tampilkan tombol Simpan/Batal
                     } else {
                         isOrderChanged = false;
-                        showSortActionBar(false);
+                        showSortActionBar(false); // Sembunyikan jika tidak ada perubahan
                     }
                 },
             });
