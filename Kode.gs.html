@@ -487,12 +487,11 @@ function registerUser(userData, otp) {
       const body = `
         <div style="font-family: Arial, sans-serif; line-height: 1.6;">
           <h2>Selamat Datang di Aplikasi Pengolahan Nilai Ijazah!</h2>
-          <p>Halo <strong>${namaSekolah}</strong>,</p>
-          <p>Akun Anda telah berhasil dibuat. Berikut adalah detail informasi login SEMENTARA Anda. Harap simpan informasi ini:</p>
+          <p>Halo Admin <strong>${namaSekolah}</strong>,</p> <p>Akun Anda telah berhasil dibuat. Berikut adalah detail informasi login SEMENTARA Anda. Harap simpan informasi ini:</p>
           <div style="background-color: #f9f9f9; border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
-            <p style="margin: 5px 0;"><strong>Password Sementara:</strong> <span style="font-family: monospace; background-color: #e0e0e0; padding: 2px 5px; border-radius: 3px;">${generatedPassword}</span></p>
-          </div>
+            <p style="margin: 5px 0;"><strong>Nama Sekolah:</strong> ${namaSekolah}</p> <p style="margin: 5px 0;"><strong>Jenjang Sekolah:</strong> ${jenjang}</p> <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+            <p style="margin: 15px 0 5px 0;"><strong>Password Sementara:</strong></p>
+            <p style="font-family: monospace; background-color: #e0e0e0; padding: 8px 12px; border-radius: 3px; display: inline-block; font-size: 1.5em; font-weight: bold;">${generatedPassword}</p> </div>
           <p style="color: #d32f2f; font-weight: bold;">PENTING: Anda akan diminta untuk membuat password baru saat pertama kali login demi keamanan.</p>
           <p>Anda dapat mulai menggunakan aplikasi dengan mengunjungi link di bawah ini.</p>
           <p><a href="${ScriptApp.getService().getUrl()}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 5px;">Buka Aplikasi</a></p>
