@@ -320,40 +320,42 @@ function sendVerificationEmail(email) {
   }
 }
 
-
 // File: Kode.gs.html
 
 /**
- * [MODIFIKASI FINAL v3 + NOTIFIKASI EMAIL] Mendaftarkan pengguna baru dengan KODE SEKOLAH unik
- * dan mengirimkan email konfirmasi pendaftaran.
+ * [MODIFIKASI FINAL v3 + NOTIFIKASI EMAIL + SIMPAN KE FOLDER] Mendaftarkan pengguna baru dengan KODE SEKOLAH unik
+ * dan mengirimkan email konfirmasi pendaftaran serta menyimpan spreadsheet baru ke folder spesifik.
  * @param {{email: string, password: string, namaSekolah: string, jenjang: string}} userData Objek berisi data pengguna baru.
  * @param {string} otp Kode OTP yang dimasukkan pengguna.
  * @returns {{status: string, message: string}} Objek status pendaftaran.
  */
 function registerUser(userData, otp) {
+  // === AWAL TAMBAHAN: ID Folder Tujuan ===
+  const TARGET_FOLDER_ID = "1rdd42spFqNeud_f72eCcTb0_dnQ1MwFB"; 
+  // === AKHIR TAMBAHAN ===
+
   try {
     const { email, password, namaSekolah, jenjang } = userData;
 
     // --- AWAL VALIDASI ---
+    // (Validasi tetap sama seperti kode Anda sebelumnya)
     if (!email || !password || !namaSekolah || !jenjang) {
       return { status: "error", message: "Semua field (Email, Password, Nama Sekolah, Jenjang) wajib diisi." };
     }
     if (!isValidEmail(email)) {
       return { status: "error", message: "Format email tidak valid." };
     }
-    // Validasi password bisa ditambahkan sesuai kriteria (minimal panjang, dll)
-    if (password.length < 8) { // Contoh: minimal 8 karakter
+    if (password.length < 8) { 
         return { status: "error", message: "Password minimal harus 8 karakter." };
     }
     if (!['MI', 'MTS', 'MA'].includes(jenjang)) {
       return { status: "error", message: "Jenjang sekolah tidak valid." };
     }
-    // Sanitasi nama sekolah
     const cleanNamaSekolah = sanitizeString(namaSekolah);
     if (cleanNamaSekolah.length === 0) {
         return { status: "error", message: "Nama Sekolah tidak boleh kosong." };
     }
-    userData.namaSekolah = cleanNamaSekolah; // Gunakan nama yang sudah bersih
+    userData.namaSekolah = cleanNamaSekolah; 
     // --- AKHIR VALIDASI ---
 
     if (!verifyOtp(email, otp)) {
@@ -391,7 +393,16 @@ function registerUser(userData, otp) {
     }
 
     const templateFile = DriveApp.getFileById(TEMPLATE_SPREADSHEET_ID);
-    const newFile = templateFile.makeCopy(`Data Akademik - ${namaSekolah}`);
+    
+    // === AWAL PERUBAHAN: Mendapatkan folder tujuan ===
+    const targetFolder = DriveApp.getFolderById(TARGET_FOLDER_ID); 
+    // === AKHIR PERUBAHAN ===
+
+    // === AWAL PERUBAHAN: Menyalin file ke folder tujuan ===
+    const newFileName = `Data Akademik - ${namaSekolah}`; // Nama file baru
+    const newFile = templateFile.makeCopy(newFileName, targetFolder); 
+    // === AKHIR PERUBAHAN ===
+
     const newSpreadsheetId = newFile.getId();
     const newSs = SpreadsheetApp.openById(newSpreadsheetId);
     const dataSekolahSheet = newSs.getSheetByName(SHEET_DATA_SEKOLAH);
@@ -410,7 +421,7 @@ function registerUser(userData, otp) {
         'Pengguna', 'Aktif', defaultLimit, latestVersion, '', '', schoolCode, '', 'YA'
     ]);
     
-    // ===== AWAL BLOK KODE BARU UNTUK NOTIFIKASI EMAIL =====
+    // ===== BLOK KODE NOTIFIKASI EMAIL (Tetap sama seperti kode Anda sebelumnya) =====
     try {
       const subject = "Pendaftaran Akun Aplikasi Ijazah Berhasil!";
       const body = `
@@ -436,10 +447,9 @@ function registerUser(userData, otp) {
       });
       Logger.log("Email konfirmasi pendaftaran berhasil dikirim ke: " + email);
     } catch (e) {
-      // Mencatat log jika email gagal terkirim, namun tidak menghentikan proses pendaftaran utama.
       Logger.log("Gagal mengirim email konfirmasi pendaftaran ke " + email + ". Error: " + e.message);
     }
-    // ===== AKHIR BLOK KODE BARU =====
+    // ===== AKHIR BLOK KODE NOTIFIKASI EMAIL =====
 
     CacheService.getScriptCache().remove(email.toLowerCase());
     lock.releaseLock();
@@ -447,6 +457,11 @@ function registerUser(userData, otp) {
 
   } catch (error) {
     Logger.log(error);
+    // === PERUBAHAN: Menambahkan info error spesifik jika folder tidak ditemukan ===
+    if (error.message.includes("Invalid argument: id") || error.message.includes("Folder not found")) {
+        return { status: "error", message: `Gagal mendaftar: Folder tujuan dengan ID '${TARGET_FOLDER_ID}' tidak ditemukan atau tidak dapat diakses. Pastikan ID folder sudah benar.`};
+    }
+    // === AKHIR PERUBAHAN ===
     return { status: "error", message: "Gagal mendaftar: " + error.message + " Stack: " + error.stack };
   }
 }
