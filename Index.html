@@ -3755,11 +3755,13 @@
         let originalSiswaOrder = [];
         let initialSiswaOrder = [];
         let isOrderChanged = false;
+        let siswaSortableInstance = null;
         let isUploadCancelled = false;
         let approvalPollingInterval;
 
         let initialMapelOrder = [];
         let isMapelOrderChanged = false;
+        let mapelSortableInstance = null;
 
         // [TAMBAHKAN] Inisialisasi Dropzone.js (letakan di scope global)
         let nilaiDropzone;
@@ -10536,14 +10538,21 @@
                 .getDefaultMapelList(userSpreadsheetId);
         }
 
-        // [PERUBAHAN] Ganti seluruh fungsi renderMapelTable dengan yang ini
+        /**
+         * Merender tabel mapel dan menginisialisasi SortableJS.
+         */
         function renderMapelTable(mapelToRender) {
             const container = document.getElementById('mapelTableContainer');
-            container.innerHTML = ''; 
+            container.innerHTML = '';
 
             if (!mapelToRender || mapelToRender.length === 0) {
                 container.innerHTML = `<p class="text-center text-gray-500 py-4">Belum ada data mata pelajaran.</p>`;
                 return;
+            }
+
+            // Hanya simpan urutan awal jika belum diinisialisasi atau jika urutan belum diubah
+            if (initialMapelOrder.length === 0 || !isMapelOrderChanged) {
+                initialMapelOrder = mapelToRender.map(m => m.kode);
             }
 
             const table = document.createElement('table');
@@ -10559,15 +10568,14 @@
                     </tr>
                 </thead>
                 <tbody id="mapel-tbody" class="bg-white divide-y divide-gray-200"></tbody>`;
-            
+
             const tbody = table.querySelector('#mapel-tbody');
             mapelToRender.forEach((m) => {
                 const tr = document.createElement('tr');
-                // Tambahkan data-kode untuk identifikasi saat drag-and-drop
-                tr.dataset.kode = m.kode; 
-                
+                tr.dataset.kode = m.kode; // Gunakan kode sebagai identifier
+
                 tr.innerHTML = `
-                    <td class="px-4 py-4 text-center text-gray-400 drag-handle">
+                    <td class="px-4 py-4 text-center text-gray-400 drag-handle cursor-grab">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zM4 10a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1z" clip-rule="evenodd" />
                         </svg>
@@ -10579,47 +10587,59 @@
                         <button class="text-indigo-600 hover:text-indigo-900" data-action="edit">Edit</button>
                         <button class="text-red-600 hover:text-red-900 ml-4" data-action="delete">Hapus</button>
                     </td>`;
-                
+
                 tr.querySelector('[data-action="edit"]').addEventListener('click', () => handleEditMapel(m));
                 tr.querySelector('[data-action="delete"]').addEventListener('click', (e) => handleDeleteMapel(m, e.target));
-                
+
                 tbody.appendChild(tr);
             });
-            
+
             container.appendChild(table);
 
-            // Inisialisasi SortableJS pada tbody
-            new Sortable(tbody, {
+            // Hancurkan instance SortableJS lama jika ada
+            if (mapelSortableInstance) {
+                mapelSortableInstance.destroy();
+            }
+
+            // Inisialisasi SortableJS baru
+            mapelSortableInstance = new Sortable(tbody, {
                 animation: 150,
                 handle: '.drag-handle',
                 ghostClass: 'ghost-row',
                 chosenClass: 'chosen-row',
                 delay: 750,
                 delayOnTouchOnly: true,
-                onStart: function(evt) {
-                    // Simpan urutan awal HANYA jika belum ada perubahan tersimpan
+                onStart: function (evt) {
+                    // Simpan urutan KODE saat ini SEBELUM drag dimulai
+                    initialMapelOrderOnDragStart = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.kode);
+                    // Jika belum ada perubahan tersimpan, update juga urutan awal global
                     if (!isMapelOrderChanged) {
-                        initialMapelOrder = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.kode);
+                        initialMapelOrder = [...initialMapelOrderOnDragStart];
                     }
                 },
                 onEnd: function (evt) {
+                    // Dapatkan urutan KODE baru dari DOM setelah drag selesai
                     const currentOrderCodes = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.kode);
 
-                    // Perbarui array 'allMapelData' secara lokal (tanpa menyimpan ke server)
+                    // Perbarui array 'allMapelData' secara lokal sesuai urutan DOM baru
                     allMapelData.sort((a, b) => {
                         return currentOrderCodes.indexOf(a.kode) - currentOrderCodes.indexOf(b.kode);
                     });
 
-                    // Cek apakah urutan benar-benar berubah dari urutan awal yang disimpan
-                    if (JSON.stringify(currentOrderCodes) !== JSON.stringify(initialMapelOrder)) {
+                    // Cek apakah urutan berubah dari SEBELUM drag dimulai
+                    if (JSON.stringify(currentOrderCodes) !== JSON.stringify(initialMapelOrderOnDragStart)) {
                         isMapelOrderChanged = true;
-                        showMapelSortActionBar(true); // Tampilkan panel aksi
+                        showMapelSortActionBar(true);
                     } else {
-                        // Jika urutannya kembali seperti semula
-                        isMapelOrderChanged = false;
-                        showMapelSortActionBar(false); // Sembunyikan panel aksi
+                        // Jika tidak berubah dari sebelum drag, cek dengan urutan awal global
+                        if (JSON.stringify(currentOrderCodes) === JSON.stringify(initialMapelOrder)) {
+                            isMapelOrderChanged = false;
+                            showMapelSortActionBar(false);
+                        } else {
+                            // Biarkan tombol tampil jika berbeda dari awal global
+                            showMapelSortActionBar(true);
+                        }
                     }
-                    // HAPUS PANGGILAN saveMapelOrderFromDrag DARI SINI
                 },
             });
         }
@@ -15282,36 +15302,41 @@
         }
 
         /**
-         * [PERUBAHAN] Menyimpan urutan mapel baru setelah di-drag & drop.
-         * Fungsi ini sekarang HANYA menampilkan status global, logika utama di backend.
-         * @param {Array<string>} newOrderCodes - Array berisi kode mapel yang sudah terurut.
+         * Mengirim urutan mapel baru ke backend untuk disimpan.
+         * @param {Array<object>} orderedMapelArray - Array objek mapel yang sudah terurut.
          */
-        function saveMapelOrderFromDrag(newOrderCodes) {
+        function saveMapelOrderFromDrag(orderedMapelArray) {
             showGlobalStatus("Menyimpan urutan mapel...", 'info');
-
-            // Buat ulang array objek mapel lengkap berdasarkan urutan kode baru
-            const orderedMapelArray = newOrderCodes.map(kode => {
-                return allMapelData.find(mapel => mapel.kode === kode);
-            }).filter(Boolean); // Filter untuk memastikan tidak ada item 'undefined'
 
             google.script.run
                 .withSuccessHandler(response => {
                     showGlobalStatus(response.message, response.status === 'success');
                     if (response.status === 'success' && response.updatedMapelList) {
-                        // Perbarui data global dan render ulang untuk memastikan konsistensi
                         allMapelData = response.updatedMapelList;
-                        renderMapelTable(allMapelData);
-                        // syncRekapIndicator(); // DIHAPUS DARI SINI
+                        isMapelOrderChanged = false; // Reset status
+                        initialMapelOrder = orderedMapelArray.map(m => m.kode); // Update urutan awal global
+                        // Render ulang tabel sesuai filter yang mungkin aktif
+                        renderFilteredMapel(); // Gunakan fungsi render filter jika ada, atau renderMapelTable
                     } else {
-                        // Jika gagal, muat ulang dari server
-                        loadMapelData();
+                        loadMapelData(); // Muat ulang jika gagal
                     }
                 })
                 .withFailureHandler(err => {
                     showGlobalStatus(`Gagal menyimpan urutan: ${err.message}`, false);
-                    loadMapelData();
+                    loadMapelData(); // Muat ulang jika error
                 })
-                .saveMapelOrder(userSpreadsheetId, orderedMapelArray);
+                .saveMapelOrder(userSpreadsheetId, orderedMapelArray); // Kirim array objek
+        }
+
+        // Contoh fungsi render filter mapel (jika diperlukan)
+        function renderFilteredMapel() {
+            const keyword = document.getElementById('searchMapelInput').value.toLowerCase().trim();
+            const filteredMapel = allMapelData.filter(mapel => {
+                const nameMatch = mapel.nama.toLowerCase().includes(keyword);
+                const codeMatch = mapel.kode.toLowerCase().includes(keyword);
+                return nameMatch || codeMatch;
+            });
+            renderMapelTable(filteredMapel);
         }
 
         // [PERUBAHAN] Tambahkan fungsi baru ini di dalam tag <script>
@@ -15886,7 +15911,7 @@
         }
 
         /**
-         * Menampilkan atau menyembunyikan panel tombol Simpan/Batal Urutan.
+         * Menampilkan atau menyembunyikan panel tombol Simpan/Batal Urutan Siswa.
          * @param {boolean} show - True untuk menampilkan, false untuk menyembunyikan.
          */
         function showSortActionBar(show) {
@@ -15907,63 +15932,66 @@
         }
 
         /**
-         * Mengatur semua event listener untuk tombol Simpan dan Batal urutan.
+         * Mengatur semua event listener untuk tombol Simpan dan Batal urutan Siswa.
          */
         function setupSortActionListeners() {
             const saveBtn = document.getElementById('save-order-btn');
             const cancelBtn = document.getElementById('cancel-sort-btn');
 
             saveBtn.addEventListener('click', () => {
-                const newOrderNisn = Array.from(document.querySelector('#siswa-tbody').querySelectorAll('tr')).map(tr => tr.dataset.nisn);
-                saveNewSiswaOrder(newOrderNisn);
-                isOrderChanged = false; // Reset status perubahan
-                showSortActionBar(false); // Sembunyikan tombol setelah disimpan
+                // Ambil urutan NISN TERBARU dari DOM tabel
+                const currentOrderNisn = Array.from(document.querySelector('#siswa-tbody').querySelectorAll('tr')).map(tr => tr.dataset.nisn);
+                // Kirim urutan baru ini ke backend
+                saveNewSiswaOrder(currentOrderNisn);
+                // Setelah disimpan, reset status dan sembunyikan tombol
+                isOrderChanged = false;
+                initialSiswaOrder = [...currentOrderNisn]; // Update urutan awal global setelah simpan
+                showSortActionBar(false);
             });
 
             cancelBtn.addEventListener('click', () => {
                 showGlobalStatus("Perubahan urutan dibatalkan.", 'info');
 
-                // === PERBAIKAN UTAMA DI SINI ===
-                // 1. Buat array baru dari allStudentsData (yang mungkin sudah teracak)
+                // Buat array baru dari allStudentsData (yang mungkin sudah teracak)
                 let revertedStudents = [...allStudentsData];
 
-                // 2. Urutkan array BARU ini berdasarkan urutan NISN yang disimpan di initialSiswaOrder
+                // Urutkan array BARU ini berdasarkan urutan NISN yang disimpan di initialSiswaOrder
+                // (urutan sebelum drag dimulai atau setelah simpan/batal terakhir)
                 revertedStudents.sort((a, b) => {
                     return initialSiswaOrder.indexOf(a.nisn) - initialSiswaOrder.indexOf(b.nisn);
                 });
 
-                // 3. Update variabel global allStudentsData dengan urutan yang sudah benar
+                // Update variabel global allStudentsData dengan urutan yang sudah benar
                 allStudentsData = revertedStudents;
-                // === AKHIR PERBAIKAN ===
 
                 // Render ulang tabel dengan data yang sudah dikembalikan urutannya
                 renderSiswaTable(allStudentsData);
-                isOrderChanged = false; // Reset status perubahan
-                showSortActionBar(false); // Sembunyikan tombol
+                // Reset status perubahan dan sembunyikan tombol
+                isOrderChanged = false;
+                showSortActionBar(false);
             });
         }
 
-        // GANTI KESELURUHAN FUNGSI renderSiswaTable DI FILE Index.html DENGAN KODE INI
-
+        /**
+         * Merender tabel data siswa dan menginisialisasi SortableJS.
+         */
         function renderSiswaTable(studentsToRender) {
             const container = document.getElementById('siswaTableContainer');
-            container.innerHTML = ''; 
+            container.innerHTML = '';
 
             if (!studentsToRender || studentsToRender.length === 0) {
                 container.innerHTML = `<p class="text-center text-gray-500 py-4">Belum ada data siswa atau data tidak ditemukan.</p>`;
                 return;
             }
 
-            // === TAMBAHKAN KONDISI INI ===
-            // Hanya simpan urutan awal jika belum diinisialisasi atau jika urutan belum diubah
+            // Hanya simpan urutan awal global jika belum diinisialisasi atau jika urutan belum diubah
             if (initialSiswaOrder.length === 0 || !isOrderChanged) {
                 initialSiswaOrder = studentsToRender.map(s => s.nisn);
             }
-            // ============================
 
             const table = document.createElement('table');
             table.className = 'min-w-full divide-y divide-gray-200';
-            
+
             table.innerHTML = `
                 <thead class="bg-gray-50 sticky-header">
                     <tr>
@@ -15977,19 +16005,18 @@
                     </tr>
                 </thead>
                 <tbody id="siswa-tbody" class="bg-white divide-y divide-gray-200"></tbody>`;
-            
-            const tbody = table.querySelector('tbody');
+
+            const tbody = table.querySelector('#siswa-tbody');
 
             studentsToRender.forEach((s) => {
                 const tr = document.createElement('tr');
                 tr.dataset.nisn = s.nisn;
-                tr.dataset.kelas = s.kelas || 'tanpa-kelas'; 
-                
+                tr.dataset.kelas = s.kelas || 'tanpa-kelas';
+
                 const tglLahirFormatted = s.tanggalLahir ? formatIndonesianDate(s.tanggalLahir) : '-';
                 const tempatLahirFormatted = s.tempatLahir ? toProperCase(s.tempatLahir) : '';
                 const ttl = s.tempatLahir ? `${tempatLahirFormatted}, ${tglLahirFormatted}` : tglLahirFormatted;
-                
-                // [PERBAIKAN] Kode SVG diganti dengan karakter '+' yang lebih simpel dan andal
+
                 tr.innerHTML = `
                     <td class="px-4 py-4 whitespace-nowrap text-center text-gray-500 drag-handle cursor-grab text-2xl font-light">+</td>
                     <td class="px-4 py-4 whitespace-nowrap"><input type="checkbox" class="student-checkbox h-4 w-4 rounded border-gray-300" data-row="${s.row}" data-nisn="${s.nisn}"></td>
@@ -16001,42 +16028,42 @@
                         <button class="text-indigo-600 hover:text-indigo-900" data-action="edit">Edit</button>
                         <button class="text-red-600 hover:text-red-900 ml-4" data-action="delete">Hapus</button>
                     </td>`;
-                
+
                 tr.querySelector('[data-action="edit"]').addEventListener('click', () => handleEditStudent(s));
                 tr.querySelector('[data-action="delete"]').addEventListener('click', (e) => handleDeleteStudent(s, e.target));
-                
+
                 tbody.appendChild(tr);
             });
-            
+
             container.appendChild(table);
             attachTableCheckboxListeners();
             updateBulkActionBar();
 
-            let initialSiswaOrderOnDragStart = []; // Simpan urutan awal saat drag dimulai
+            // Hancurkan instance SortableJS lama jika ada
+            if (siswaSortableInstance) {
+                siswaSortableInstance.destroy();
+            }
 
-            new Sortable(tbody, {
+            // Inisialisasi SortableJS baru
+            siswaSortableInstance = new Sortable(tbody, {
                 animation: 150,
                 handle: '.drag-handle',
                 ghostClass: 'ghost-row',
                 chosenClass: 'chosen-row',
-                delay: 750, // Waktu tunda dalam milidetik (misalnya 750ms = 0.75 detik)
-                delayOnTouchOnly: true, // Terapkan tunda HANYA pada perangkat sentuh (ponsel/tablet)
-                // Filter: Hanya izinkan drag jika di dalam kelas yang sama
+                delay: 750,
+                delayOnTouchOnly: true,
                 onMove: function (evt) {
                     const draggedClass = evt.dragged.dataset.kelas || 'tanpa-kelas';
                     const relatedClass = evt.related.dataset.kelas || 'tanpa-kelas';
-                    // Izinkan perpindahan hanya jika kelasnya sama
                     return draggedClass === relatedClass;
                 },
                 onStart: function (evt) {
-                    // Simpan urutan NISN saat ini sebelum drag dimulai
+                    // Simpan urutan DOM saat ini SEBELUM drag dimulai
                     initialSiswaOrderOnDragStart = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.nisn);
-                    // === TAMBAHKAN KONDISI INI ===
-                    // Simpan juga urutan awal global jika ini adalah drag pertama setelah load/simpan/batal
+                    // Jika belum ada perubahan tersimpan, update juga urutan awal global
                     if (!isOrderChanged) {
                         initialSiswaOrder = [...initialSiswaOrderOnDragStart];
                     }
-                    // ============================
                 },
                 onEnd: function (evt) {
                     // Dapatkan urutan NISN baru dari DOM setelah drag selesai
@@ -16047,21 +16074,19 @@
                         return currentOrderNisn.indexOf(a.nisn) - currentOrderNisn.indexOf(b.nisn);
                     });
 
-                    // Cek apakah urutan benar-benar berubah dari SEBELUM drag dimulai
+                    // Cek apakah urutan berubah dari SEBELUM drag dimulai
                     if (JSON.stringify(currentOrderNisn) !== JSON.stringify(initialSiswaOrderOnDragStart)) {
-                      isOrderChanged = true;
-                      showSortActionBar(true);
+                        isOrderChanged = true;
+                        showSortActionBar(true);
                     } else {
-                      // Jika urutannya kembali seperti sebelum di-drag, cek lagi dengan urutan awal global
-                      if (JSON.stringify(currentOrderNisn) === JSON.stringify(initialSiswaOrder)) {
-                          isOrderChanged = false;
-                          showSortActionBar(false);
-                      } else {
-                          // Jika berbeda dari urutan awal global tapi sama seperti sebelum di-drag
-                          // (misal: drag lalu kembalikan ke posisi semula sebelum drag)
-                          // biarkan isOrderChanged tetap true dan tombol tetap tampil
-                          showSortActionBar(true);
-                      }
+                        // Jika tidak berubah dari sebelum drag, cek dengan urutan awal global
+                        if (JSON.stringify(currentOrderNisn) === JSON.stringify(initialSiswaOrder)) {
+                            isOrderChanged = false;
+                            showSortActionBar(false);
+                        } else {
+                            // Jika berbeda dari awal global tapi sama seperti sebelum drag, biarkan tombol tampil
+                            showSortActionBar(true);
+                        }
                     }
                 },
             });
@@ -16069,28 +16094,25 @@
 
         /**
          * Mengirim urutan NISN yang baru ke backend untuk disimpan.
-         * Fungsi ini dipanggil oleh tombol "Simpan Urutan".
          */
         function saveNewSiswaOrder(newOrderNisn) {
-            showGlobalStatus("Menyimpan urutan...", 'info');
+            showGlobalStatus("Menyimpan urutan siswa...", 'info');
             google.script.run
                 .withSuccessHandler(response => {
                     showGlobalStatus(response.message, response.status === 'success');
                     if (response.status === 'success' && response.updatedStudentList) {
-                        // Perbarui data utama dengan data terbaru dari server
                         allStudentsData = response.updatedStudentList;
-                        // Reset status perubahan
-                        isOrderChanged = false;
+                        isOrderChanged = false; // Reset status perubahan
+                        initialSiswaOrder = [...newOrderNisn]; // Update urutan awal global
                         // Render ulang tabel sesuai filter yang sedang aktif
-                        renderFilteredStudents();
+                        renderFilteredStudents(); // Gunakan fungsi ini agar filter tetap terjaga
                     } else {
-                        // Jika gagal, muat ulang semua data untuk memastikan konsistensi
-                        loadStudentsData();
+                        loadStudentsData(); // Muat ulang jika gagal
                     }
                 })
                 .withFailureHandler(err => {
                     showGlobalStatus(`Gagal menyimpan urutan: ${err.message}`, false);
-                    loadStudentsData(); // Muat ulang semua jika terjadi error
+                    loadStudentsData(); // Muat ulang jika error
                 })
                 .saveSiswaOrder(userSpreadsheetId, newOrderNisn);
         }
@@ -16732,8 +16754,7 @@
         }
 
         /**
-         * [BARU] Menampilkan atau menyembunyikan panel tombol Simpan/Batal Urutan Mapel.
-         * @param {boolean} show - True untuk menampilkan, false untuk menyembunyikan.
+         * Menampilkan atau menyembunyikan panel tombol Simpan/Batal Urutan Mapel.
          */
         function showMapelSortActionBar(show) {
             const actionBar = document.getElementById('mapel-sort-action-bar');
@@ -16753,37 +16774,39 @@
         }
 
         /**
-         * [BARU] Mengatur semua event listener untuk tombol Simpan dan Batal urutan mapel.
+         * Mengatur semua event listener untuk tombol Simpan dan Batal urutan mapel.
          */
         function setupMapelSortActionListeners() {
             const saveBtn = document.getElementById('save-mapel-order-btn');
             const cancelBtn = document.getElementById('cancel-mapel-sort-btn');
 
             saveBtn.addEventListener('click', () => {
+                // Ambil urutan KODE mapel terbaru dari DOM
                 const currentOrderCodes = Array.from(document.querySelector('#mapel-tbody').querySelectorAll('tr')).map(tr => tr.dataset.kode);
-                saveMapelOrderFromDrag(currentOrderCodes); // Panggil fungsi simpan yang sudah ada
-                isMapelOrderChanged = false; // Reset status perubahan
-                showMapelSortActionBar(false); // Sembunyikan tombol setelah disimpan
+                // Buat array objek mapel lengkap berdasarkan urutan kode baru
+                const orderedMapelArray = currentOrderCodes.map(kode => {
+                    return allMapelData.find(mapel => mapel.kode === kode);
+                }).filter(Boolean); // Filter null/undefined jika ada kode yang tidak cocok
+
+                saveMapelOrderFromDrag(orderedMapelArray); // Kirim array objek ke backend
+                isMapelOrderChanged = false;
+                initialMapelOrder = [...currentOrderCodes]; // Update urutan awal global
+                showMapelSortActionBar(false);
             });
 
             cancelBtn.addEventListener('click', () => {
                 showGlobalStatus("Perubahan urutan mapel dibatalkan.", 'info');
 
-                // Buat array baru dari allMapelData yang mungkin sudah teracak
                 let revertedMapel = [...allMapelData];
-
-                // Urutkan array BARU ini berdasarkan urutan kode yang disimpan di initialMapelOrder
+                // Urutkan berdasarkan urutan KODE awal
                 revertedMapel.sort((a, b) => {
                     return initialMapelOrder.indexOf(a.kode) - initialMapelOrder.indexOf(b.kode);
                 });
-
-                // Update variabel global allMapelData
                 allMapelData = revertedMapel;
 
-                // Render ulang tabel
                 renderMapelTable(allMapelData);
-                isMapelOrderChanged = false; // Reset status perubahan
-                showMapelSortActionBar(false); // Sembunyikan tombol
+                isMapelOrderChanged = false;
+                showMapelSortActionBar(false);
             });
         }
 
