@@ -16040,7 +16040,9 @@
                 const ttl = s.tempatLahir ? `${tempatLahirFormatted}, ${tglLahirFormatted}` : tglLahirFormatted;
 
                 tr.innerHTML = `
-                    <td class="px-4 py-4 whitespace-nowrap text-center text-gray-500 drag-handle cursor-grab text-2xl font-light">+</td>
+                    <td class="px-4 py-4 text-center drag-handle cursor-grab align-middle text-gray-400 text-xl">
+                        &#x2630;
+                    </td>
                     <td class="px-4 py-4 whitespace-nowrap"><input type="checkbox" class="student-checkbox h-4 w-4 rounded border-gray-300" data-row="${s.row}" data-nisn="${s.nisn}"></td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm"><div class="font-medium text-gray-900">${s.nama.toUpperCase()}</div><div class="text-gray-500">${s.nisn}</div></td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><div>Kelas: <span class="font-medium text-gray-800">${s.kelas || '-'}</span></div><div>No. Ujian: <span class="font-mono text-gray-800">${s.nomorUjian || '-'}</span></div></td>
