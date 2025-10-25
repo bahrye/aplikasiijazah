@@ -863,28 +863,6 @@
                                         <label for="signup-email" class="text-sm font-medium text-gray-700 block mb-2">Alamat Email</label>
                                         <input type="email" id="signup-email" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm" placeholder="nama@email.com" required>
                                     </div>
-                                    <div>
-                                        <label for="signup-password" class="text-sm font-medium text-gray-700 block mb-2">Kata Sandi</label>
-                                        <div class="relative">
-                                            <input type="password" id="signup-password" class="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg shadow-sm" placeholder="••••••••" required>
-                                            <button type="button" data-toggle-password="signup-password" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600">
-                                                <svg class="eye-icon h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                                <svg class="eye-slash-icon h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
-                                            </button>
-                                        </div>
-                                        <div id="signup-password-req" class="text-xs space-y-1 mt-2"></div>
-                                    </div>
-                                    <div>
-                                        <label for="confirm-password" class="text-sm font-medium text-gray-700 block mb-2">Konfirmasi Kata Sandi</label>
-                                        <div class="relative">
-                                            <input type="password" id="confirm-password" class="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg shadow-sm" placeholder="••••••••" required>
-                                            <button type="button" data-toggle-password="confirm-password" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600">
-                                                <svg class="eye-icon h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                                <svg class="eye-slash-icon h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
-                                            </button>
-                                        </div>
-                                        <div id="signup-confirm-msg" class="text-red-600 text-xs mt-1 h-4 font-medium"></div>
-                                    </div>
                                     <div class="pt-2">
                                         <button type="button" id="requestOtpButton" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:scale-105 shadow-lg">
                                             <span id="requestOtpButtonText">Kirim Kode Verifikasi</span>
@@ -3671,6 +3649,48 @@
         </div>
     </div>
 
+    <div id="first-login-password-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-[80]">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-lg transform scale-95 flex flex-col max-h-[90vh]">
+            <div class="flex-shrink-0 border-b p-6">
+                <h2 class="text-2xl font-bold text-gray-800">Selamat Datang! Atur Password Anda</h2>
+            </div>
+
+            <form id="firstChangePasswordForm" class="flex flex-col flex-grow min-h-0">
+                <div class="flex-grow overflow-y-auto p-6 space-y-4">
+                    <p class="text-gray-600 mb-6">Untuk keamanan, kami menyarankan Anda membuat password baru. Anda juga dapat tetap menggunakan password sementara yang dikirimkan ke email Anda.</p>
+                    <div>
+                        <label for="first-new-password" class="block text-sm font-medium text-gray-700">Password Baru</label>
+                        <div class="relative mt-1">
+                            <input type="password" id="first-new-password" class="w-full p-2 pr-10 border rounded-md" required>
+                            <button type="button" data-toggle-password="first-new-password" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600">
+                                <svg class="eye-icon h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                <svg class="eye-slash-icon h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"></path></svg>
+                            </button>
+                        </div>
+                        <div id="first-password-req" class="text-xs space-y-1 mt-2"></div> </div>
+                    <div>
+                        <label for="first-confirm-password" class="block text-sm font-medium text-gray-700">Konfirmasi Password Baru</label>
+                        <div class="relative mt-1">
+                            <input type="password" id="first-confirm-password" class="w-full p-2 pr-10 border rounded-md" required>
+                            <button type="button" data-toggle-password="first-confirm-password" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600">
+                                <svg class="eye-icon h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                <svg class="eye-slash-icon h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"></path></svg>
+                            </button>
+                        </div>
+                        <div id="first-confirm-msg" class="text-red-600 text-xs mt-1 h-4 font-medium"></div> </div>
+                    <div id="first-change-password-status" class="mt-4 text-center text-sm h-4"></div> </div>
+
+                <div class="flex-shrink-0 mt-auto p-6 border-t flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
+                    <button type="button" id="skipChangePasswordBtn" class="bg-gray-300 text-gray-800 py-2 px-6 rounded-md hover:bg-gray-400 font-medium order-2 sm:order-1">Gunakan Password Sementara</button>
+                    <button type="submit" id="confirmChangePasswordBtn" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 font-medium order-1 sm:order-2">
+                        <span class="btn-text">Simpan Password Baru</span>
+                        <span class="btn-spinner hidden loading-animation">Menyimpan</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div id="data-viewer-tooltip" class="hidden absolute z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm"></div>
     <div id="globalStatusMessage"></div>
 
@@ -4690,7 +4710,14 @@
 
         function setupPasswordToggles() {
             document.querySelectorAll('[data-toggle-password]').forEach(button => {
-                button.addEventListener('click', () => {
+                // Hapus listener lama jika ada (untuk mencegah duplikasi saat modal dibuka berkali-kali)
+                const oldHandler = button.clickHandler;
+                if (oldHandler) {
+                    button.removeEventListener('click', oldHandler);
+                }
+
+                // Buat handler baru
+                const newHandler = () => {
                     const inputId = button.getAttribute('data-toggle-password');
                     const passwordInput = document.getElementById(inputId);
                     if (passwordInput) {
@@ -4699,7 +4726,11 @@
                         button.querySelector('.eye-icon').classList.toggle('hidden');
                         button.querySelector('.eye-slash-icon').classList.toggle('hidden');
                     }
-                });
+                };
+
+                // Pasang handler baru dan simpan referensinya
+                button.addEventListener('click', newHandler);
+                button.clickHandler = newHandler; // Simpan referensi untuk dihapus nanti
             });
         }
 
@@ -4739,8 +4770,6 @@
             inactivityTimer = setTimeout(logoutUser, 30 * 60 * 1000); // 30 menit
         }
 
-        // GANTI LAGI FUNGSI handleLogin DI INDEX.HTML DENGAN KODE LENGKAP INI
-
         function handleLogin(event) {
             event.preventDefault();
             const emailInput = document.getElementById('email');
@@ -4775,28 +4804,27 @@
                         // [PERBAIKAN UTAMA] Gunakan try...catch untuk menangkap error setelah login
                         try {
                             console.log("Login berhasil, mencoba menampilkan dashboard...");
+                            // Simpan data sesi dasar
                             sessionStorage.setItem('userEmail', response.email);
                             sessionStorage.setItem('userRole', response.role);
                             sessionStorage.setItem('webAppUrl', response.webAppUrl);
                             sessionStorage.setItem('isLocked', response.isLocked ? 'true' : 'false');
-
-                            document.getElementById('auth-wrapper').classList.add('hidden');
-                            document.getElementById('app-container').classList.remove('hidden');
-                            document.getElementById('hamburger-btn').classList.add('is-active');
-
-                            if (response.role === 'Superadmin') {
-                                initializeSuperadminApp();
-                            } else {
-                                userSpreadsheetId = response.spreadsheetId;
-                                sessionStorage.setItem('userSpreadsheetId', userSpreadsheetId);
-                                initializeApp('dashboard');
+                            // Simpan spreadsheetId jika bukan superadmin
+                            if (response.role !== 'Superadmin') {
+                                sessionStorage.setItem('userSpreadsheetId', response.spreadsheetId);
                             }
-                            
-                            // Tampilkan notifikasi jika ada
-                            setTimeout(() => {
-                                if (response.newChangelog) showNewChangelogPopup(response.newChangelog);
-                                if (response.newBroadcast) showBroadcastModal(response.newBroadcast);
-                            }, 500);
+
+
+                            // === PERUBAHAN UTAMA DI SINI ===
+                            if (response.requiresPasswordChange) {
+                                // Jika perlu ganti password, tampilkan modal
+                                showFirstLoginPasswordModal(response);
+                            } else {
+                                // Jika tidak perlu, langsung lanjut ke aplikasi
+                                proceedToApp(response);
+                            }
+                            // === AKHIR PERUBAHAN ===
+
 
                         } catch (e) {
                             // Jika terjadi error saat mencoba menampilkan dashboard, tampilkan di UI dan console
@@ -4852,8 +4880,6 @@
         
         function handleRequestOtp() {
             const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-            const confirmPassword = document.getElementById('confirm-password').value;
             const namaSekolah = document.getElementById('signup-namasekolah').value;
             const jenjang = document.getElementById('signup-jenjang').value;
 
@@ -4865,31 +4891,8 @@
             messageDiv.innerHTML = ''; // Bersihkan pesan sebelumnya
             messageDiv.classList.remove('text-red-600', 'text-green-600');
 
-            // Validasi awal (apakah semua field terisi)
-            if (!email || !password || !namaSekolah || !jenjang || !confirmPassword) {
-                messageDiv.textContent = 'Semua field wajib diisi.';
-                messageDiv.classList.add('text-red-600');
-                return;
-            }
-
-            // Validasi kecocokan kata sandi
-            if (password !== confirmPassword) {
-                messageDiv.textContent = 'Kata sandi dan konfirmasi kata sandi tidak cocok.';
-                messageDiv.classList.add('text-red-600');
-                return;
-            }
-
-            // BARU: Validasi kekuatan kata sandi
-            const passwordErrors = validatePassword(password);
-            if (passwordErrors.length > 0) {
-                let errorHtml = '<strong class="block text-center">Password belum memenuhi syarat:</strong><ul class="list-disc list-inside text-left mt-1 text-sm">';
-                passwordErrors.forEach(error => {
-                    // [PERBAIKAN] Menggunakan `<li>` untuk setiap item error
-                    errorHtml += `<li>${error}</li>`;
-                });
-                errorHtml += '</ul>';
-                // [SOLUSI] Ganti .textContent menjadi .innerHTML
-                messageDiv.innerHTML = errorHtml;
+            if (!email || !namaSekolah || !jenjang) {
+                messageDiv.textContent = 'Nama Sekolah, Jenjang, dan Email wajib diisi.';
                 messageDiv.classList.add('text-red-600');
                 return;
             }
@@ -4939,7 +4942,6 @@
             const namaSekolah = document.getElementById('signup-namasekolah').value;
             const jenjang = document.getElementById('signup-jenjang').value;
             const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
             // [PERBAIKAN] Ambil kode OTP dan hapus spasi di awal/akhir menggunakan .trim()
             const otp = document.getElementById('signup-otp').value.trim(); 
 
@@ -4963,7 +4965,6 @@
 
             const userData = {
                 email: email,
-                password: password,
                 namaSekolah: namaSekolah,
                 jenjang: jenjang
             };
@@ -4987,7 +4988,7 @@
                         document.getElementById('login-container').classList.remove('hidden');
                         
                         const loginInfoMessageDiv = document.getElementById('login-info-message');
-                        loginInfoMessageDiv.textContent = "Pendaftaran berhasil! Silakan masuk dengan akun yang baru Anda buat.";
+                        loginInfoMessageDiv.textContent = "Pendaftaran berhasil! Silakan buka Email yang didaftarkan untuk melihat detail akun Anda.";
                         loginInfoMessageDiv.className = "mb-4 text-center text-sm p-3 bg-green-100 text-green-800 rounded-lg";
                     } else {
                         messageDiv.textContent = response ? response.message : 'Gagal mendaftar karena respons tidak valid dari server.';
@@ -16634,6 +16635,127 @@
                 showMapelSortActionBar(false); // Sembunyikan tombol
             });
         }
+
+        function showFirstLoginPasswordModal(loginResponse) {
+            const modal = document.getElementById('first-login-password-modal');
+            const form = document.getElementById('firstChangePasswordForm');
+            const skipBtn = document.getElementById('skipChangePasswordBtn');
+            const confirmBtn = document.getElementById('confirmChangePasswordBtn');
+            const statusDiv = document.getElementById('first-change-password-status');
+
+            // Reset form dan status
+            form.reset();
+            statusDiv.textContent = '';
+            statusDiv.className = 'mt-4 text-center text-sm h-4'; // Reset class
+
+            // Setup validasi real-time (gunakan fungsi yang sudah ada)
+            setupRealtimePasswordValidation(
+                document.getElementById('first-new-password'),
+                document.getElementById('first-password-req')
+            );
+            setupPasswordConfirmation(
+                document.getElementById('first-new-password'),
+                document.getElementById('first-confirm-password'),
+                document.getElementById('first-confirm-msg')
+            );
+
+            // Handler untuk tombol "Gunakan Password Sementara"
+            skipBtn.onclick = () => {
+                closeFirstLoginPasswordModal();
+                proceedToApp(loginResponse); // Lanjut ke aplikasi utama
+            };
+
+            // Handler untuk form submit (Simpan Password Baru)
+            form.onsubmit = (e) => {
+                e.preventDefault();
+                const newPassword = document.getElementById('first-new-password').value;
+                const confirmPassword = document.getElementById('first-confirm-password').value;
+
+                statusDiv.textContent = ''; // Clear previous messages
+
+                // Validasi
+                if (newPassword !== confirmPassword) {
+                    statusDiv.textContent = 'Password baru dan konfirmasi tidak cocok.';
+                    statusDiv.className = 'mt-4 text-center text-sm text-red-600';
+                    return;
+                }
+                const passwordErrors = validatePassword(newPassword); // Gunakan fungsi validasi yang ada
+                if (passwordErrors.length > 0) {
+                    let errorHtml = '<strong class="block text-center text-red-600">Password belum memenuhi syarat:</strong><ul class="list-disc list-inside text-left mt-1 text-sm text-red-600">';
+                    passwordErrors.forEach(error => { errorHtml += `<li>${error}</li>`; });
+                    errorHtml += '</ul>';
+                    statusDiv.innerHTML = errorHtml; // Use innerHTML
+                    // statusDiv.className = 'mt-4 text-center text-sm text-red-600'; // Class sudah di set di atas
+                    return;
+                }
+
+                // Tampilkan loading di tombol
+                const btnText = confirmBtn.querySelector('.btn-text');
+                const spinner = confirmBtn.querySelector('.btn-spinner');
+                confirmBtn.disabled = true;
+                btnText.classList.add('hidden');
+                spinner.classList.remove('hidden');
+
+                // Panggil fungsi backend BARU
+                google.script.run
+                    .withSuccessHandler(response => {
+                        confirmBtn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+
+                        if (response.status === 'success') {
+                            showGlobalStatus(response.message, true); // Tampilkan notifikasi global
+                            closeFirstLoginPasswordModal();
+                            proceedToApp(loginResponse); // Lanjut ke aplikasi utama
+                        } else {
+                            statusDiv.textContent = response.message;
+                            statusDiv.className = 'mt-4 text-center text-sm text-red-600';
+                        }
+                    })
+                    .withFailureHandler(error => {
+                        confirmBtn.disabled = false;
+                        btnText.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+                        statusDiv.textContent = 'Error: ' + error.message;
+                        statusDiv.className = 'mt-4 text-center text-sm text-red-600';
+                    })
+                    .forceChangePassword(loginResponse.email, newPassword); // Panggil fungsi backend baru
+            };
+
+            // Tampilkan modal
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.querySelector('.modal-content').style.transform = 'scale(1)', 10);
+            // Setup toggle mata password
+            setupPasswordToggles(); // Panggil ini setelah modal muncul
+        }
+
+        function closeFirstLoginPasswordModal() {
+            const modal = document.getElementById('first-login-password-modal');
+            modal.querySelector('.modal-content').style.transform = 'scale(0.95)';
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        // Fungsi helper untuk melanjutkan ke aplikasi setelah urusan password selesai
+        function proceedToApp(loginResponse) {
+            document.getElementById('auth-wrapper').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
+            document.getElementById('hamburger-btn').classList.add('is-active');
+
+            if (loginResponse.role === 'Superadmin') {
+                initializeSuperadminApp();
+            } else {
+                userSpreadsheetId = loginResponse.spreadsheetId; // Pastikan variabel global diset
+                sessionStorage.setItem('userSpreadsheetId', userSpreadsheetId); // Simpan juga di session
+                initializeApp('dashboard'); // Arahkan ke dashboard
+            }
+
+            // Tampilkan notifikasi (jika ada) setelah app diinisialisasi
+            setTimeout(() => {
+                if (loginResponse.newChangelog) showNewChangelogPopup(loginResponse.newChangelog);
+                if (loginResponse.newBroadcast) showBroadcastModal(loginResponse.newBroadcast);
+            }, 500);
+        }
+
     </script>
 </body>
 </html>
