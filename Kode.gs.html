@@ -320,25 +320,20 @@ function sendVerificationEmail(email) {
   }
 }
 
-// File: Kode.gs.html
-
 /**
- * [MODIFIKASI FINAL v3 + NOTIFIKASI EMAIL + SIMPAN KE FOLDER] Mendaftarkan pengguna baru dengan KODE SEKOLAH unik
- * dan mengirimkan email konfirmasi pendaftaran serta menyimpan spreadsheet baru ke folder spesifik.
+ * [MODIFIKASI FINAL v4 + IMPORT MAPEL DEFAULT] Mendaftarkan pengguna baru dengan KODE SEKOLAH unik,
+ * mengirimkan email konfirmasi, menyimpan spreadsheet ke folder, DAN mengimpor mapel default.
  * @param {{email: string, password: string, namaSekolah: string, jenjang: string}} userData Objek berisi data pengguna baru.
  * @param {string} otp Kode OTP yang dimasukkan pengguna.
  * @returns {{status: string, message: string}} Objek status pendaftaran.
  */
 function registerUser(userData, otp) {
-  // === AWAL TAMBAHAN: ID Folder Tujuan ===
   const TARGET_FOLDER_ID = "1rdd42spFqNeud_f72eCcTb0_dnQ1MwFB"; 
-  // === AKHIR TAMBAHAN ===
 
   try {
     const { email, password, namaSekolah, jenjang } = userData;
 
-    // --- AWAL VALIDASI ---
-    // (Validasi tetap sama seperti kode Anda sebelumnya)
+    // --- VALIDASI AWAL (Tetap sama) ---
     if (!email || !password || !namaSekolah || !jenjang) {
       return { status: "error", message: "Semua field (Email, Password, Nama Sekolah, Jenjang) wajib diisi." };
     }
@@ -364,22 +359,21 @@ function registerUser(userData, otp) {
     const lock = LockService.getScriptLock();
     lock.waitLock(300000);
 
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = SpreadsheetApp.getActiveSpreadsheet(); // Spreadsheet Induk
     const configSheet = ss.getSheetByName('Konfigurasi Sistem');
     const defaultLimit = configSheet ? configSheet.getRange("B2").getValue() : 100;
     let userSheet = ss.getSheetByName(SHEET_PENGGUNA);
     if (!userSheet) throw new Error(`Sheet '${SHEET_PENGGUNA}' tidak ditemukan.`);
     
+    // --- Pembuatan Kode Sekolah Unik (Tetap sama) ---
     let schoolCode;
     let isCodeUnique = false;
     const existingCodes = userSheet.getLastRow() > 1 ? userSheet.getRange(2, 13, userSheet.getLastRow() - 1, 1).getValues().flat() : [];
-    
     while (!isCodeUnique) {
       schoolCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      if (!existingCodes.includes(schoolCode)) {
-        isCodeUnique = true;
-      }
+      if (!existingCodes.includes(schoolCode)) { isCodeUnique = true; }
     }
+    // --- Akhir Kode Sekolah ---
     
     const latestVersionInfo = getAppVersionInfo();
     const latestVersion = latestVersionInfo ? latestVersionInfo.version : '';
@@ -393,35 +387,73 @@ function registerUser(userData, otp) {
     }
 
     const templateFile = DriveApp.getFileById(TEMPLATE_SPREADSHEET_ID);
-    
-    // === AWAL PERUBAHAN: Mendapatkan folder tujuan ===
     const targetFolder = DriveApp.getFolderById(TARGET_FOLDER_ID); 
-    // === AKHIR PERUBAHAN ===
-
-    // === AWAL PERUBAHAN: Menyalin file ke folder tujuan ===
-    const newFileName = `Data Akademik - ${namaSekolah}`; // Nama file baru
+    const newFileName = `Data Akademik - ${namaSekolah}`; 
     const newFile = templateFile.makeCopy(newFileName, targetFolder); 
-    // === AKHIR PERUBAHAN ===
-
     const newSpreadsheetId = newFile.getId();
-    const newSs = SpreadsheetApp.openById(newSpreadsheetId);
+    const newSs = SpreadsheetApp.openById(newSpreadsheetId); // Spreadsheet baru pengguna
+
+    // Isi Data Sekolah Awal (Tetap sama)
     const dataSekolahSheet = newSs.getSheetByName(SHEET_DATA_SEKOLAH);
     if (dataSekolahSheet) {
       dataSekolahSheet.getRange(2, 1).setValue(jenjang);
       dataSekolahSheet.getRange(2, 2).setValue(namaSekolah);
     }
 
+    // ==========================================================
+    // === AWAL BLOK KODE BARU: IMPORT MAPEL DEFAULT ===
+    // ==========================================================
+    try {
+        const mapelDefaultSheet = ss.getSheetByName(SHEET_MAPEL_DEFAULT);
+        if (!mapelDefaultSheet) {
+          Logger.log(`PERINGATAN: Sheet '${SHEET_MAPEL_DEFAULT}' tidak ditemukan di spreadsheet induk.`);
+        } else {
+          const defaultMapelData = mapelDefaultSheet.getDataRange().getValues();
+          defaultMapelData.shift(); // Hapus header
+
+          // Filter mapel berdasarkan jenjang yang dipilih saat registrasi
+          const mapelForJenjang = defaultMapelData
+            .filter(row => row[0] === jenjang) // Kolom A (indeks 0) adalah Jenjang
+            .map(row => [row[1], row[2], row[3], row[4]]); // Ambil Kode, Nama, Kelompok, Jenis Ujian
+
+          if (mapelForJenjang.length > 0) {
+            const targetMapelSheet = newSs.getSheetByName(SHEET_MAPEL);
+            if (!targetMapelSheet) {
+              Logger.log(`PERINGATAN: Sheet '${SHEET_MAPEL}' tidak ditemukan di spreadsheet baru pengguna ${namaSekolah}.`);
+            } else {
+              // Hapus data mapel contoh jika ada (dari baris 2 ke bawah)
+              if (targetMapelSheet.getLastRow() >= 2) {
+                targetMapelSheet.getRange(2, 1, targetMapelSheet.getLastRow() - 1, targetMapelSheet.getLastColumn()).clearContent();
+              }
+              // Tulis data mapel default yang sudah difilter
+              targetMapelSheet.getRange(2, 1, mapelForJenjang.length, mapelForJenjang[0].length).setValues(mapelForJenjang);
+              Logger.log(`Berhasil mengimpor ${mapelForJenjang.length} mapel default untuk ${namaSekolah} (${jenjang}).`);
+            }
+          } else {
+              Logger.log(`Tidak ada mapel default ditemukan untuk jenjang ${jenjang} di spreadsheet induk.`);
+          }
+        }
+    } catch (mapelError) {
+        // Catat error jika impor mapel gagal, tapi jangan hentikan registrasi
+        Logger.log(`Gagal mengimpor mapel default untuk ${namaSekolah}. Error: ${mapelError.message}`);
+    }
+    // ==========================================================
+    // === AKHIR BLOK KODE BARU =================================
+    // ==========================================================
+
+    // --- Pembuatan User ID dan Hashing Password (Tetap sama) ---
     const userId = Utilities.getUuid();
     const salt = generateSalt();
     const hashedPassword = hashPassword(password, salt);
     const storedPasswordString = `${salt}:${hashedPassword}`;
+    // --- Akhir User ID & Hashing ---
 
     userSheet.appendRow([
         userId, email, storedPasswordString, namaSekolah, jenjang, newSpreadsheetId,
         'Pengguna', 'Aktif', defaultLimit, latestVersion, '', '', schoolCode, '', 'YA'
     ]);
     
-    // ===== BLOK KODE NOTIFIKASI EMAIL (Tetap sama seperti kode Anda sebelumnya) =====
+    // ===== BLOK KODE NOTIFIKASI EMAIL (Tetap sama) =====
     try {
       const subject = "Pendaftaran Akun Aplikasi Ijazah Berhasil!";
       const body = `
@@ -440,11 +472,7 @@ function registerUser(userData, otp) {
           <p>Tim Aplikasi</p>
         </div>
       `;
-      MailApp.sendEmail({
-        to: email,
-        subject: subject,
-        htmlBody: body
-      });
+      MailApp.sendEmail({ to: email, subject: subject, htmlBody: body });
       Logger.log("Email konfirmasi pendaftaran berhasil dikirim ke: " + email);
     } catch (e) {
       Logger.log("Gagal mengirim email konfirmasi pendaftaran ke " + email + ". Error: " + e.message);
@@ -453,15 +481,13 @@ function registerUser(userData, otp) {
 
     CacheService.getScriptCache().remove(email.toLowerCase());
     lock.releaseLock();
-    return { status: "success", message: "Pendaftaran berhasil! Akun dan database sekolah Anda telah dibuat." };
+    return { status: "success", message: "Pendaftaran berhasil! Akun dan database sekolah Anda telah dibuat. Mapel default telah ditambahkan." }; // Pesan diupdate
 
   } catch (error) {
     Logger.log(error);
-    // === PERUBAHAN: Menambahkan info error spesifik jika folder tidak ditemukan ===
     if (error.message.includes("Invalid argument: id") || error.message.includes("Folder not found")) {
         return { status: "error", message: `Gagal mendaftar: Folder tujuan dengan ID '${TARGET_FOLDER_ID}' tidak ditemukan atau tidak dapat diakses. Pastikan ID folder sudah benar.`};
     }
-    // === AKHIR PERUBAHAN ===
     return { status: "error", message: "Gagal mendaftar: " + error.message + " Stack: " + error.stack };
   }
 }
@@ -1331,7 +1357,6 @@ function deleteAllStudents(spreadsheetId) {
   }
 }
 
-
 /**
  * [MODIFIKASI v6 - LEBAR KOLOM LEBIH FLEKSIBEL] Menghasilkan template Excel
  * dengan penyesuaian lebar kolom otomatis dan memastikan lebar minimum untuk kolom tertentu.
@@ -1341,7 +1366,6 @@ function generateSiswaTemplate(spreadsheetId, jenjangFromUI) {
   try {
     const jenjang = jenjangFromUI;
     if (!jenjang) {
-      // ... (Fallback logic for jenjang remains the same) ...
        return { error: "Jenjang sekolah belum diatur. Harap simpan data sekolah terlebih dahulu." };
     }
 
@@ -5260,7 +5284,6 @@ function generateNilaiTemplate(spreadsheetId, templateName, selectedKelas) {
     const studentData = (students || []).map(s => ["'" + s.nisn, s.nama.toUpperCase()]);
 
     const populateSheet = (sheet, mapel) => {
-      // ... (sisa dari fungsi populateSheet tidak berubah)
       if (!mapel || mapel.length === 0) {
         sheet.appendRow(["Tidak ada mata pelajaran yang dikonfigurasi untuk jenis ini."]);
         return;
