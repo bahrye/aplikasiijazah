@@ -333,6 +333,29 @@ function sendVerificationEmail(email) {
 function registerUser(userData, otp) {
   try {
     const { email, password, namaSekolah, jenjang } = userData;
+
+    // --- AWAL VALIDASI ---
+    if (!email || !password || !namaSekolah || !jenjang) {
+      return { status: "error", message: "Semua field (Email, Password, Nama Sekolah, Jenjang) wajib diisi." };
+    }
+    if (!isValidEmail(email)) {
+      return { status: "error", message: "Format email tidak valid." };
+    }
+    // Validasi password bisa ditambahkan sesuai kriteria (minimal panjang, dll)
+    if (password.length < 8) { // Contoh: minimal 8 karakter
+        return { status: "error", message: "Password minimal harus 8 karakter." };
+    }
+    if (!['MI', 'MTS', 'MA'].includes(jenjang)) {
+      return { status: "error", message: "Jenjang sekolah tidak valid." };
+    }
+    // Sanitasi nama sekolah
+    const cleanNamaSekolah = sanitizeString(namaSekolah);
+    if (cleanNamaSekolah.length === 0) {
+        return { status: "error", message: "Nama Sekolah tidak boleh kosong." };
+    }
+    userData.namaSekolah = cleanNamaSekolah; // Gunakan nama yang sudah bersih
+    // --- AKHIR VALIDASI ---
+
     if (!verifyOtp(email, otp)) {
       return { status: "error", message: "Kode OTP salah atau telah kedaluwarsa." };
     }
@@ -801,6 +824,85 @@ function toProperCase(str) {
   });
 }
 
+/**
+ * [BARU] Membersihkan cache data siswa untuk spreadsheet tertentu.
+ * Fungsi ini HARUS dipanggil setiap kali data siswa diubah.
+ * @param {string} spreadsheetId ID spreadsheet yang cache-nya akan dibersihkan.
+ */
+function clearStudentCache(spreadsheetId) {
+  const cache = CacheService.getScriptCache();
+  const cacheKey = spreadsheetId + '_students';
+  cache.remove(cacheKey);
+  Logger.log('Cache siswa dibersihkan untuk spreadsheet: ' + spreadsheetId);
+}
+
+// =================================================================
+// [BARU] FUNGSI HELPER VALIDASI INPUT
+// =================================================================
+
+/**
+ * Memeriksa apakah string adalah format email yang valid.
+ * @param {string} email String email.
+ * @returns {boolean} True jika valid.
+ */
+function isValidEmail(email) {
+  if (!email || typeof email !== 'string') return false;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+/**
+ * Memeriksa apakah nilai adalah angka yang valid dalam rentang tertentu.
+ * @param {*} value Nilai yang akan diperiksa.
+ * @param {number} [min=-Infinity] Nilai minimum (inklusif).
+ * @param {number} [max=Infinity] Nilai maksimum (inklusif).
+ * @returns {boolean} True jika valid.
+ */
+function isValidNumber(value, min = -Infinity, max = Infinity) {
+  const num = Number(value);
+  return !isNaN(num) && num >= min && num <= max;
+}
+
+/**
+ * Memeriksa apakah string adalah format tanggal YYYY-MM-DD yang valid.
+ * @param {string} dateString String tanggal.
+ * @returns {boolean} True jika valid.
+ */
+function isValidDateString(dateString) {
+  if (!dateString || typeof dateString !== 'string') return false;
+  const regex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!regex.test(dateString)) return false;
+  const date = new Date(dateString);
+  // Cek apakah tanggal valid (misal tidak ada 31 Feb) dan sesuai format
+  return !isNaN(date.getTime()) && date.toISOString().slice(0, 10) === dateString;
+}
+
+/**
+ * Membersihkan string: trim spasi, hapus tag HTML (basic).
+ * @param {*} str Input string.
+ * @returns {string} String yang sudah dibersihkan atau string kosong.
+ */
+function sanitizeString(str) {
+  if (str === null || str === undefined) return '';
+  // Convert to string in case it's not, then trim
+  let cleanStr = String(str).trim();
+  // Basic HTML tag removal (bisa diperkuat jika perlu)
+  cleanStr = cleanStr.replace(/<[^>]*>?/gm, '');
+  return cleanStr;
+}
+
+/**
+ * [BARU] Memvalidasi panjang string.
+ * @param {string} str String yang akan divalidasi.
+ * @param {number} minLength Panjang minimum.
+ * @param {number} maxLength Panjang maksimum.
+ * @returns {boolean} True jika panjangnya valid.
+ */
+function isValidLength(str, minLength, maxLength) {
+    const cleanStr = sanitizeString(str);
+    return cleanStr.length >= minLength && cleanStr.length <= maxLength;
+}
+
 
 // =================================================================
 // FUNGSI MANAJEMEN DATA SEKOLAH, SISWA, MAPEL, DLL.
@@ -810,6 +912,33 @@ function toProperCase(str) {
 
 function saveSchoolData(spreadsheetId, dataObj) {
   try {
+    // --- AWAL VALIDASI & SANITASI ---
+    const requiredFields = ['namaSekolah', 'provinsi', 'kabupaten', 'kecamatan', 'kelurahan', 'namaKepsek'];
+    for (const field of requiredFields) {
+      if (!dataObj[field] || sanitizeString(dataObj[field]).length === 0) {
+        return { status: "error", message: `Field '${field}' wajib diisi.` };
+      }
+    }
+    if (dataObj.npsn && !isValidNumber(dataObj.npsn)) { // Jika NPSN diisi, harus angka
+        return { status: "error", message: "NPSN harus berupa angka." };
+    }
+     if (dataObj.nsm && !isValidNumber(dataObj.nsm)) { // Jika NSM diisi, harus angka
+        return { status: "error", message: "NSM harus berupa angka." };
+    }
+    if (dataObj.email && !isValidEmail(dataObj.email)) { // Jika email diisi, formatnya harus valid
+        return { status: "error", message: "Format Email Sekolah tidak valid." };
+    }
+    // Sanitasi semua field string
+    for (const key in dataObj) {
+        if (typeof dataObj[key] === 'string') {
+            dataObj[key] = sanitizeString(dataObj[key]);
+        }
+    }
+    // Pastikan tipe wilayah valid
+     if (!['Kabupaten', 'Kota'].includes(dataObj.tipeKabupaten)) dataObj.tipeKabupaten = 'Kabupaten';
+     if (!['Kelurahan', 'Desa'].includes(dataObj.tipeKelurahan)) dataObj.tipeKelurahan = 'Kelurahan';
+    // --- AKHIR VALIDASI & SANITASI ---
+
     const ss = getSpreadsheet(spreadsheetId);
     let sheet = ss.getSheetByName(SHEET_DATA_SEKOLAH);
     
@@ -900,36 +1029,47 @@ function getSchoolData(spreadsheetId) {
 
 // GANTI FUNGSI INI DI Kode.gs.html
 
+/**
+ * [MODIFIKASI v2 - DENGAN CACHING] Mengambil daftar siswa dari spreadsheet ID tertentu.
+ * Menggunakan CacheService untuk mempercepat pengambilan data.
+ */
 function getStudents(spreadsheetId) {
+  // --- AWAL LOGIKA CACHING ---
+  const cache = CacheService.getScriptCache();
+  const cacheKey = spreadsheetId + '_students'; // Kunci unik untuk cache siswa
+  const cachedData = cache.get(cacheKey);
+
+  if (cachedData != null) {
+    Logger.log('Mengambil data siswa dari cache untuk spreadsheet: ' + spreadsheetId);
+    return JSON.parse(cachedData); // Kembalikan data dari cache jika ada
+  }
+  // --- AKHIR LOGIKA CACHING ---
+
+  Logger.log('Membaca data siswa dari spreadsheet: ' + spreadsheetId);
   try {
     const ss = getSpreadsheet(spreadsheetId);
     const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
     if (!sheet || sheet.getLastRow() < 2) return [];
 
-    // ===== AWAL PERBAIKAN =====
-    // Paksa kolom NISN, NIS, No. Ujian, dan Kelas menjadi format Teks Biasa
-    // untuk mencegah konversi otomatis menjadi tanggal atau angka.
-    sheet.getRange("A:C").setNumberFormat('@'); 
-    sheet.getRange("F:F").setNumberFormat('@'); 
-    sheet.getRange("I:I").setNumberFormat('@');
-    sheet.getRange("N:N").setNumberFormat('@'); // Ini adalah baris KUNCI untuk memperbaiki masalah Kelas
-    // ===== AKHIR PERBAIKAN =====
+    // Paksa kolom NISN, NIS, No. Ujian, Kelas, dan Ruang Ujian menjadi Teks
+    sheet.getRange("A:C").setNumberFormat('@'); // NISN, NIS, No. Ujian
+    sheet.getRange("N:O").setNumberFormat('@'); // Kelas, Ruang Ujian
 
+    // Ambil data dari baris 2 hingga akhir, dan 15 kolom (A sampai O)
     const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, 15);
-    // [PERBAIKAN TAMBAHAN] Gunakan .getDisplayValues() untuk memastikan kita mendapatkan
-    // nilai persis seperti yang ditampilkan di sheet.
-    const values = dataRange.getDisplayValues();
+    const values = dataRange.getDisplayValues(); // Gunakan getDisplayValues
 
-    return values.map((row, index) => {
+    const studentsData = values.map((row, index) => {
       let tanggalLahirStr = '';
-      // Logika untuk tanggal lahir tidak perlu diubah karena kita ingin formatnya tetap benar
-      const tglLahirCell = sheet.getRange(index + 2, 7).getValue();
-      if (tglLahirCell && tglLahirCell instanceof Date && !isNaN(tglLahirCell)) {
+      // Logika untuk tanggal lahir (tidak berubah)
+      const tglLahirCell = sheet.getRange(index + 2, 7).getValue(); // Kolom G
+      if (tglLahirCell instanceof Date && !isNaN(tglLahirCell)) {
         tanggalLahirStr = Utilities.formatDate(tglLahirCell, Session.getScriptTimeZone(), "yyyy-MM-dd");
       } else if (tglLahirCell) {
-        tanggalLahirStr = tglLahirCell.toString();
+        tanggalLahirStr = tglLahirCell.toString(); // Jika bukan Date, ambil sebagai string
       }
 
+      // Pastikan semua nilai adalah string atau ''
       return {
         row: index + 2,
         nisn: String(row[0] || ''),
@@ -944,15 +1084,48 @@ function getStudents(spreadsheetId) {
         emailSiswa: String(row[9] || ''),
         tahunMasuk: String(row[10] || ''),
         tahunLulus: String(row[11] || ''),
-        tampilkanTranskrip: String(row[12] || 'TIDAK'),
-        kelas: String(row[13] || ''),
-        ruangUjian: String(row[14] || '')
+        tampilkanTranskrip: String(row[12] || 'TIDAK').trim().toUpperCase(), // Kolom M
+        kelas: String(row[13] || ''),       // Kolom N
+        ruangUjian: String(row[14] || '') // Kolom O
       };
     });
+
+    // --- AWAL LOGIKA CACHING ---
+    // Simpan data ke cache sebelum mengembalikannya
+    // Durasi cache 6 jam (21600 detik). Sesuaikan jika perlu.
+    cache.put(cacheKey, JSON.stringify(studentsData), 21600);
+    // --- AKHIR LOGIKA CACHING ---
+
+    return studentsData;
   } catch (e) {
-    Logger.log(`getStudents Error: ${e.stack}`);
+    Logger.log(`getStudents Error (spreadsheetId: ${spreadsheetId}): ${e.stack}`);
+    // Kembalikan array kosong jika terjadi error agar frontend tidak rusak
     return [];
   }
+}
+
+function validateStudentData(studentData) {
+  // Wajib diisi
+  if (!studentData.nama || sanitizeString(studentData.nama).length === 0) return { isValid: false, message: "Nama Siswa wajib diisi." };
+  if (!studentData.nisn || sanitizeString(studentData.nisn).length === 0) return { isValid: false, message: "NISN wajib diisi." };
+  if (!studentData.tanggalLahir) return { isValid: false, message: "Tanggal Lahir wajib diisi." };
+  if (!studentData.jenisKelamin || !['L', 'P'].includes(studentData.jenisKelamin)) return { isValid: false, message: "Jenis Kelamin tidak valid." };
+  if (!studentData.kelas || sanitizeString(studentData.kelas).length === 0) return { isValid: false, message: "Kelas wajib diisi." };
+
+
+  // Format
+  if (!isValidNumber(studentData.nisn)) return { isValid: false, message: "NISN harus berupa angka." };
+  if (studentData.nis && !isValidNumber(studentData.nis)) return { isValid: false, message: "NIS harus berupa angka." };
+  if (!isValidDateString(studentData.tanggalLahir)) return { isValid: false, message: "Format Tanggal Lahir salah (harus YYYY-MM-DD)." };
+  if (studentData.emailSiswa && !isValidEmail(studentData.emailSiswa)) return { isValid: false, message: "Format Email Siswa tidak valid." };
+  if (studentData.tahunMasuk && !isValidNumber(studentData.tahunMasuk, 1900, 2100)) return { isValid: false, message: "Tahun Masuk tidak valid." };
+  if (studentData.tahunLulus && !isValidNumber(studentData.tahunLulus, 1900, 2100)) return { isValid: false, message: "Tahun Lulus tidak valid." };
+  if (studentData.tampilkanTranskrip && !['YA', 'TIDAK'].includes(studentData.tampilkanTranskrip.toUpperCase())) {
+      return { isValid: false, message: "Nilai Tampilkan Transkrip tidak valid (harus YA atau TIDAK)." };
+  }
+
+
+  return { isValid: true, message: "" };
 }
 
 /**
@@ -965,6 +1138,19 @@ function getStudents(spreadsheetId) {
  */
 function addStudent(spreadsheetId, studentData, userEmail) {
   try {
+    // --- AWAL VALIDASI ---
+    const validation = validateStudentData(studentData);
+    if (!validation.isValid) {
+      return { status: "error", message: validation.message };
+    }
+    // Sanitasi input string
+    studentData.nama = sanitizeString(studentData.nama);
+    studentData.tempatLahir = sanitizeString(studentData.tempatLahir);
+    studentData.alamat = sanitizeString(studentData.alamat);
+    studentData.kelas = sanitizeString(studentData.kelas);
+    studentData.ruangUjian = sanitizeString(studentData.ruangUjian);
+    // --- AKHIR VALIDASI ---
+
     const limitCheck = checkStudentLimit(spreadsheetId, userEmail); 
     if (limitCheck.limitReached) {
         return { status: "error", message: limitCheck.message };
@@ -1008,6 +1194,7 @@ function addStudent(spreadsheetId, studentData, userEmail) {
     sortAndRewriteStudentSheet(spreadsheetId);
     
     SpreadsheetApp.flush();
+    clearStudentCache(spreadsheetId);
     const updatedStudentList = getStudents(spreadsheetId);
     
     return { 
@@ -1027,6 +1214,19 @@ function addStudent(spreadsheetId, studentData, userEmail) {
  */
 function updateStudent(spreadsheetId, studentData) {
   try {
+    // --- AWAL VALIDASI ---
+    const validation = validateStudentData(studentData);
+    if (!validation.isValid) {
+      return { status: "error", message: validation.message };
+    }
+     // Sanitasi input string
+    studentData.nama = sanitizeString(studentData.nama);
+    studentData.tempatLahir = sanitizeString(studentData.tempatLahir);
+    studentData.alamat = sanitizeString(studentData.alamat);
+    studentData.kelas = sanitizeString(studentData.kelas);
+    studentData.ruangUjian = sanitizeString(studentData.ruangUjian);
+    // --- AKHIR VALIDASI ---
+
     const allStudents = getStudents(spreadsheetId);
     const duplicateStudent = allStudents.find(s =>
       s.nisn.toString().trim() === studentData.nisn.toString().trim() &&
@@ -1062,6 +1262,7 @@ function updateStudent(spreadsheetId, studentData) {
     sortAndRewriteStudentSheet(spreadsheetId);
 
     SpreadsheetApp.flush();
+    clearStudentCache(spreadsheetId);
     const updatedStudentList = getStudents(spreadsheetId);
 
     return { 
@@ -1088,6 +1289,7 @@ function deleteStudent(spreadsheetId, rowNumber) {
     sheet.deleteRow(rowNumber);
     // -- PERUBAHAN INTI --
     SpreadsheetApp.flush();
+    clearStudentCache(spreadsheetId);
     const updatedStudentList = getStudents(spreadsheetId);
 
     return { 
@@ -1110,6 +1312,7 @@ function deleteAllStudents(spreadsheetId) {
     if (sheet && sheet.getLastRow() > 1) {
       sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
     }
+    clearStudentCache(spreadsheetId);
     return { status: "success", message: "Semua data siswa telah berhasil dihapus." };
   } catch (e) {
     Logger.log(e);
@@ -1284,6 +1487,10 @@ function importFromExcel(spreadsheetId, fileData, sheetName, userEmail) {
             }
             if (enrichedStudents.length > 0) {
                 batchUpdateStudents(spreadsheetId, enrichedStudents);
+            }
+
+            if (newStudents.length > 0 || enrichedStudents.length > 0) {
+              clearStudentCache(spreadsheetId); // <--- TAMBAHKAN INI
             }
 
             return {
@@ -1488,9 +1695,21 @@ function deleteAllMapel(spreadsheetId) {
  */
 function saveBobot(spreadsheetId, bobotData) {
   try {
+    // --- AWAL VALIDASI ---
+    const bobotUjian = Number(bobotData.bobotUjian);
+    const bobotRapor = Number(bobotData.bobotRapor);
+    if (!isValidNumber(bobotUjian, 0, 100) || !isValidNumber(bobotRapor, 0, 100)) {
+      return { status: "error", message: "Bobot harus berupa angka antara 0 dan 100." };
+    }
+    if (bobotUjian + bobotRapor !== 100) {
+        return { status: "error", message: "Total bobot ujian dan rapor harus 100." };
+    }
+    // --- AKHIR VALIDASI ---
+
     const ss = getSpreadsheet(spreadsheetId);
     let sheet = ss.getSheetByName(SHEET_BOBOT);
-    const bobotRow = [bobotData.bobotUjian, bobotData.bobotRapor];
+    // [MODIFIKASI] Gunakan nilai yang sudah divalidasi
+    const bobotRow = [bobotUjian, bobotRapor];
     if (sheet.getLastRow() >= 2) sheet.getRange("A2:B2").clearContent();
     sheet.getRange(2, 1, 1, bobotRow.length).setValues([bobotRow]);
     return { status: "success", message: "Bobot nilai berhasil disimpan." };
@@ -1535,6 +1754,13 @@ function getBobot(spreadsheetId) {
  */
 function saveKkm(spreadsheetId, kkm) {
   try {
+    // --- AWAL VALIDASI ---
+    if (!isValidNumber(kkm, 0, 100)) {
+      return { status: "error", message: "KKM harus berupa angka antara 0 dan 100." };
+    }
+    const kkmValue = Math.round(Number(kkm)); // Pastikan integer jika perlu
+    // --- AKHIR VALIDASI ---
+
     const ss = getSpreadsheet(spreadsheetId);
     let sheet = ss.getSheetByName(SHEET_PENGATURAN);
 
@@ -1552,7 +1778,7 @@ function saveKkm(spreadsheetId, kkm) {
     }
     
     // Simpan nilai KKM di sel B2
-    sheet.getRange("B2").setValue(kkm);
+    sheet.getRange("B2").setValue(kkmValue);
 
     return { status: "success", message: "Nilai KKM berhasil disimpan." };
   } catch (e) {
@@ -2586,7 +2812,7 @@ function getExamScoreShare(spreadsheetId) {
     const rekapUjianSheet = ss.getSheetByName(SHEET_REKAP_UJIAN);
 
     if (!rekapUjianSheet || rekapUjianSheet.getLastRow() < 2) {
-      return [{ nama: 'Belum Ada Data', skor: 1 }];
+      return [];
     }
 
     const dataRange = rekapUjianSheet.getRange(2, 1, rekapUjianSheet.getLastRow() - 1, rekapUjianSheet.getLastColumn()).getValues();
@@ -2747,6 +2973,9 @@ function batchUpdateStudents(spreadsheetId, studentsToUpdate) {
       targetRange.setValues([rowToUpdate]);
       updatedCount++;
     });
+
+    SpreadsheetApp.flush(); // Pastikan flush sebelum clear cache
+    clearStudentCache(spreadsheetId); // <--- TAMBAHKAN INI
 
     return { status: "success", message: `${updatedCount} data siswa berhasil diperbarui.` };
   } catch (e) {
@@ -4894,6 +5123,7 @@ function bulkDeleteStudents(spreadsheetId, rowNumbers) {
     
     SpreadsheetApp.flush();
     // Ambil dan kirim kembali daftar siswa yang sudah fresh
+    clearStudentCache(spreadsheetId);
     const updatedStudentList = getStudents(spreadsheetId);
 
     return { 
@@ -4929,6 +5159,7 @@ function bulkUpdateTahunLulus(spreadsheetId, rowNumbers, tahunLulus) {
 
     SpreadsheetApp.flush();
     // Ambil dan kirim kembali daftar siswa yang sudah fresh
+    clearStudentCache(spreadsheetId);
     const updatedStudentList = getStudents(spreadsheetId);
 
     return { 
@@ -6131,15 +6362,32 @@ function saveScoresToSheet(spreadsheetId, sheetName, mapelList, nilaiData) {
     const finalDataToWrite = [];
     students.forEach(student => {
       const nisn = student.nisn.toString();
-      const studentScores = nilaiDataMap.get(nisn) || {}; // Ambil skor dari input, atau objek kosong jika tidak ada
+      const studentScoresFromInput = nilaiDataMap.get(nisn) || {};
       const newRow = [student.nisn, student.nama];
+      let hasInvalidScore = false; // Flag untuk error per siswa
 
       mapelList.forEach(mapel => {
-        // Gunakan nilai dari input jika ada, jika tidak, biarkan kosong
-        const score = studentScores[mapel.kode] !== undefined ? studentScores[mapel.kode] : '';
-        newRow.push(score);
+        const scoreInput = studentScoresFromInput[mapel.kode];
+        let scoreToWrite = ''; // Default kosong
+
+        // Hanya proses jika ada input dan tidak kosong
+        if (scoreInput !== undefined && scoreInput !== null && String(scoreInput).trim() !== '') {
+            // --- VALIDASI NILAI DI SINI ---
+            if (!isValidNumber(scoreInput, 0, 100)) {
+                // Jika tidak valid, jangan tulis apa-apa (atau bisa lempar error)
+                scoreToWrite = ''; // Atau bisa set ke nilai default, misal 0
+                hasInvalidScore = true; // Tandai ada error
+                Logger.log(`Nilai tidak valid untuk ${nisn} - Mapel ${mapel.kode}: ${scoreInput}`);
+            } else {
+                // Jika valid, gunakan nilainya (mungkin dibulatkan)
+                scoreToWrite = Math.round(Number(scoreInput));
+            }
+        }
+        newRow.push(scoreToWrite);
       });
       finalDataToWrite.push(newRow);
+      // Anda bisa menambahkan logika di sini jika `hasInvalidScore` true,
+      // misalnya mengembalikan pesan error spesifik siswa.
     });
 
     // 4. Hapus semua data lama dan tulis kembali dengan data yang baru dan lengkap
@@ -8383,8 +8631,39 @@ function getGuru(spreadsheetId) {
   }
 }
 
+function validateGuruData(guruData, isEditing = false) {
+    if (!guruData.nama_guru || sanitizeString(guruData.nama_guru).length === 0) return { isValid: false, message: "Nama Guru wajib diisi." };
+    if (!guruData.username_guru || sanitizeString(guruData.username_guru).length === 0) return { isValid: false, message: "Username wajib diisi." };
+    if (!isEditing && (!guruData.password_guru || guruData.password_guru.length === 0)) return { isValid: false, message: "Password wajib diisi saat menambah guru baru." };
+    if (!guruData.mapel_kode_guru || sanitizeString(guruData.mapel_kode_guru).length === 0) return { isValid: false, message: "Kode Mapel wajib diisi." };
+
+    // Validasi format Kode Mapel (contoh: hanya huruf, angka, koma)
+    if (guruData.mapel_kode_guru && !/^[A-Za-z0-9, ]+$/.test(guruData.mapel_kode_guru)) {
+        return { isValid: false, message: "Format Kode Mapel tidak valid (hanya huruf, angka, koma, spasi)." };
+    }
+    // Validasi format Kelas Diajar (contoh: KODE:KELAS,KODE:KELAS)
+    if (guruData.kelas_diajar && !/^[A-Za-z0-9]+:[A-Za-z0-9 .]+(,\s*[A-Za-z0-9]+:[A-Za-z0-9 .]+)*$/.test(guruData.kelas_diajar)) {
+        // Regex ini mungkin perlu disesuaikan tergantung format kelas yang diizinkan
+        // return { isValid: false, message: "Format Kelas Diajar salah (harus KODE:KELAS, dipisah koma)." };
+    }
+
+    return { isValid: true };
+}
+
 function saveGuru(spreadsheetId, guruData) {
     try {
+        // --- AWAL VALIDASI ---
+        const validation = validateGuruData(guruData, false); // false = bukan mode edit
+        if (!validation.isValid) {
+            return { status: "error", message: validation.message };
+        }
+        // Sanitasi
+        guruData.nama_guru = sanitizeString(guruData.nama_guru);
+        guruData.username_guru = sanitizeString(guruData.username_guru);
+        guruData.mapel_kode_guru = sanitizeString(guruData.mapel_kode_guru).toUpperCase();
+        guruData.kelas_diajar = sanitizeString(guruData.kelas_diajar);
+        // --- AKHIR VALIDASI ---
+
         const ss = getSpreadsheet(spreadsheetId);
         const sheet = ss.getSheetByName(SHEET_DATA_GURU);
 
@@ -8417,7 +8696,7 @@ function saveGuru(spreadsheetId, guruData) {
         ]);
 
         return { status: "success", message: "Data guru berhasil disimpan." };
-    } catch (e) {
+    } catch (e) { // Tangkap error jika ada
         Logger.log(`saveGuru Error: ${e.message}`);
         return { status: "error", message: `Gagal menyimpan: ${e.message}` };
     }
@@ -8429,6 +8708,18 @@ function saveGuru(spreadsheetId, guruData) {
  */
 function updateGuru(spreadsheetId, guruData) {
     try {
+        // --- AWAL VALIDASI ---
+        const validation = validateGuruData(guruData, true); // true = mode edit
+        if (!validation.isValid) {
+            return { status: "error", message: validation.message };
+        }
+        // Sanitasi
+        guruData.nama_guru = sanitizeString(guruData.nama_guru);
+        guruData.username_guru = sanitizeString(guruData.username_guru);
+        guruData.mapel_kode_guru = sanitizeString(guruData.mapel_kode_guru).toUpperCase();
+        guruData.kelas_diajar = sanitizeString(guruData.kelas_diajar);
+        // --- AKHIR VALIDASI ---
+
         const ss = getSpreadsheet(spreadsheetId);
         const sheet = ss.getSheetByName(SHEET_DATA_GURU);
         const rowToUpdate = parseInt(guruData.guruRow);
@@ -8469,7 +8760,7 @@ function updateGuru(spreadsheetId, guruData) {
         }
         
         return { status: "success", message: "Data guru berhasil diperbarui." };
-    } catch (e) {
+    } catch (e) { // Tangkap error jika ada
         Logger.log(`updateGuru Error: ${e.message}`);
         return { status: "error", message: `Gagal memperbarui: ${e.message}` };
     }
@@ -9927,6 +10218,7 @@ function bulkUpdateKelasAndRuang(spreadsheetId, rowNumbers, newKelas, newRuang) 
     sortAndRewriteStudentSheet(spreadsheetId);
 
     SpreadsheetApp.flush();
+    clearStudentCache(spreadsheetId);
     const updatedStudentList = getStudents(spreadsheetId);
 
     return { 
@@ -10275,7 +10567,7 @@ function processApprovalChunk_Admin(spreadsheetId, rowNumbers, status) {
  * @returns {number} Angka integer.
  */
 function romanToInt(s) {
-    const map = { 'I': 1, 'V': 5, 'X': 10, 'L': 50 };
+    const map = { 'I': 1, 'V': 5, 'X': 10, 'L': 50 }; // Hanya perlu sampai L untuk kelas 12
     let result = 0;
     for (let i = 0; i < s.length; i++) {
         const current = map[s[i].toUpperCase()];
@@ -10302,7 +10594,7 @@ function getSortableClassKey(className) {
         return [Infinity, '']; // Menempatkan siswa tanpa kelas di akhir.
     }
     const trimmedClass = className.trim();
-    
+
     // Coba deteksi angka Romawi (I-XII) di awal string
     const romanMatch = trimmedClass.match(/^(XII|XI|X|IX|IV|V?I{0,3})(.*)/i);
     if (romanMatch) {
@@ -10324,62 +10616,85 @@ function getSortableClassKey(className) {
 }
 
 /**
- * [BARU & INTI - DIPERBAIKI] Mengambil semua data siswa, mengurutkannya, dan menulis ulang ke sheet.
- * Fungsi ini menjaga urutan asli untuk siswa di kelas yang sama.
+ * [VERSI FINAL 3.0] Mengurutkan siswa dengan mengelompokkan per kelas terlebih dahulu
+ * untuk memastikan integritas urutan kelas secara global, sambil menerapkan
+ * urutan manual baru pada kelas yang relevan. Fungsi ini juga membersihkan cache siswa.
  * @param {string} spreadsheetId - ID dari spreadsheet yang akan diurutkan.
+ * @returns {object} Objek berisi status dan daftar siswa yang sudah diurutkan dan diperbarui.
  */
 function sortAndRewriteStudentSheet(spreadsheetId) {
-    const lock = LockService.getScriptLock();
-    lock.waitLock(30000);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000); // Menunggu hingga 30 detik jika ada proses lain
 
-    try {
-        const ss = getSpreadsheet(spreadsheetId);
-        const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
-        if (!sheet || sheet.getLastRow() < 2) {
-            return;
-        }
-
-        const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn());
-        const values = dataRange.getValues();
-
-        // Buat objek sementara untuk diurutkan, dengan menyertakan data baris asli
-        let studentsToSort = values.map((row) => ({
-            originalRowData: row,
-            kelas: row[13] || '' // Kolom Kelas adalah indeks 13 (kolom N)
-        }));
-
-        // Urutkan array siswa. Sort() di Apps Script bersifat stabil,
-        // yang berarti urutan asli akan dipertahankan jika hasil perbandingan 0.
-        studentsToSort.sort((a, b) => {
-            const keyA = getSortableClassKey(a.kelas);
-            const keyB = getSortableClassKey(b.kelas);
-
-            // 1. Urutkan berdasarkan angka kelas
-            if (keyA[0] < keyB[0]) return -1;
-            if (keyA[0] > keyB[0]) return 1;
-
-            // 2. Jika angka sama, urutkan berdasarkan sisa teksnya (cth: ".a" vs ".b")
-            if (keyA[1] < keyB[1]) return -1;
-            if (keyA[1] > keyB[1]) return 1;
-            
-            // 3. Jika kelas sama persis, kembalikan 0 untuk mempertahankan urutan input asli.
-            return 0;
-        });
-
-        // Ambil kembali data baris yang sudah terurut
-        const sortedValues = studentsToSort.map(item => item.originalRowData);
-
-        // Hapus data lama dan tulis ulang data yang sudah terurut
-        dataRange.clearContent();
-        if (sortedValues.length > 0) {
-            sheet.getRange(2, 1, sortedValues.length, sortedValues[0].length).setValues(sortedValues);
-        }
-        
-    } catch (e) {
-        Logger.log("Error during student sort: " + e.message);
-    } finally {
-        lock.releaseLock();
+  try {
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheet = ss.getSheetByName(SHEET_DATA_SISWA);
+    if (!sheet || sheet.getLastRow() < 2) {
+      // Jika tidak ada data, tidak perlu melakukan apa-apa, cache tidak perlu dibersihkan
+      // Kembalikan status sukses dengan daftar kosong
+       return {
+         status: "success",
+         message: "Tidak ada data siswa untuk diurutkan.",
+         updatedStudentList: [] // Kembalikan array kosong
+       };
     }
+
+    const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn());
+    const allData = dataRange.getValues();
+
+    // Buat objek sementara untuk diurutkan, dengan menyertakan data baris asli
+    let studentsToSort = allData.map((row) => ({
+      originalRowData: row,
+      kelas: row[13] || '' // Kolom Kelas adalah indeks ke-13 (kolom N)
+    }));
+
+    // Urutkan array siswa. Sort() di Apps Script bersifat stabil.
+    studentsToSort.sort((a, b) => {
+      const keyA = getSortableClassKey(a.kelas);
+      const keyB = getSortableClassKey(b.kelas);
+
+      // 1. Urutkan berdasarkan angka kelas
+      if (keyA[0] < keyB[0]) return -1;
+      if (keyA[0] > keyB[0]) return 1;
+
+      // 2. Jika angka sama, urutkan berdasarkan sisa teksnya
+      if (keyA[1] < keyB[1]) return -1;
+      if (keyA[1] > keyB[1]) return 1;
+
+      // 3. Jika kelas sama persis, kembalikan 0 (pertahankan urutan asli)
+      return 0;
+    });
+
+    // Ambil kembali data baris yang sudah terurut
+    const sortedValues = studentsToSort.map(item => item.originalRowData);
+
+    // Hapus data lama dan tulis ulang data yang sudah terurut
+    dataRange.clearContent();
+    if (sortedValues.length > 0) {
+      sheet.getRange(2, 1, sortedValues.length, sortedValues[0].length).setValues(sortedValues);
+    }
+
+    SpreadsheetApp.flush();
+
+    // --- PENTING: Bersihkan cache SETELAH data ditulis ulang ---
+    clearStudentCache(spreadsheetId);
+
+    // Ambil kembali data yang sudah 100% benar dari sheet (setelah cache dibersihkan)
+    const updatedStudentList = getStudents(spreadsheetId);
+
+    return {
+      status: "success",
+      message: "Data siswa berhasil diurutkan berdasarkan kelas.",
+      updatedStudentList: updatedStudentList // Kembalikan data terbaru
+    };
+
+  } catch (e) {
+    Logger.log("Error during student sort: " + e.message + " Stack: " + e.stack);
+    // Jika gagal, cache mungkin tidak dibersihkan, tapi lebih baik beri tahu error
+    return { status: "error", message: `Gagal mengurutkan siswa: ${e.toString()}` };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 /**
