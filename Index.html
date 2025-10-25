@@ -4982,7 +4982,7 @@
                         document.getElementById('login-container').classList.remove('hidden');
                         
                         const loginInfoMessageDiv = document.getElementById('login-info-message');
-                        loginInfoMessageDiv.textContent = "Pendaftaran berhasil! Silakan buka Email yang didaftarkan untuk melihat detail akun Anda.";
+                        loginInfoMessageDiv.textContent = "Pendaftaran berhasil! Detail akun dan password sementara telah dikirim ke email Anda. Silakan periksa email dan gunakan detail tersebut untuk login.";
                         loginInfoMessageDiv.className = "mb-4 text-center text-sm p-3 bg-green-100 text-green-800 rounded-lg";
                     } else {
                         messageDiv.textContent = response ? response.message : 'Gagal mendaftar karena respons tidak valid dari server.';
