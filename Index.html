@@ -1662,7 +1662,7 @@
                                         <input type="text" id="searchSiswaInput" class="block w-full rounded-md border-gray-300 pl-10 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="Cari Siswa (berdasarkan Nama atau NISN)...">
                                     </div>
                                 </div>
-                                <div class="flex space-x-2">
+                                <div class="flex flex-wrap justify-center gap-2">
                                     <button id="saveOrderBtn" class="hidden bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-md text-sm transition-all flex items-center gap-2">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
                                         <span>Simpan Urutan</span>
@@ -1682,7 +1682,7 @@
                             </div>
                             <!-- Baris Filter dan Sortir -->
                             <div class="bg-gray-50 p-3 rounded-lg border">
-                                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
                                     <div>
                                         <label for="filter-kelas" class="block text-xs font-medium text-gray-600">Filter Kelas</label>
                                         <select id="filter-kelas" class="mt-1 block w-full rounded-md border-gray-300 py-2 pl-3 pr-8 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm">
@@ -1747,7 +1747,6 @@
 
                         <div id="sort-action-bar" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-auto bg-gray-800 text-white rounded-full shadow-2xl p-2 z-40 transition-all duration-300 ease-out transform opacity-0 -translate-y-full">
                             <div class="flex items-center justify-between gap-4 px-4">
-                                <span class="font-semibold whitespace-nowrap">Urutan siswa telah diubah.</span>
                                 <div class="flex items-center gap-2">
                                     <button id="cancel-sort-btn" class="bg-gray-500 hover:bg-gray-600 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Batal</button>
                                     <button id="save-order-btn" class="bg-purple-600 hover:bg-purple-700 font-semibold py-2 px-4 rounded-full text-sm whitespace-nowrap">Simpan Urutan</button>
@@ -10401,6 +10400,8 @@
                 handle: '.drag-handle', // Menentukan elemen mana yang bisa di-drag
                 ghostClass: 'ghost-row',
                 chosenClass: 'chosen-row',
+                delay: 750, // Waktu tunda dalam milidetik (misalnya 750ms = 0.75 detik)
+                delayOnTouchOnly: true, // Terapkan tunda HANYA pada perangkat sentuh (ponsel/tablet)
                 onEnd: function (evt) {
                     // Dapatkan urutan kode mapel yang baru dari DOM
                     const newOrderCodes = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.kode);
@@ -15709,12 +15710,22 @@
 
             cancelBtn.addEventListener('click', () => {
                 showGlobalStatus("Perubahan urutan dibatalkan.", 'info');
-                // Urutkan kembali data siswa di memori sesuai urutan awal
-                const sortedStudents = [...allStudentsData].sort((a, b) => {
+
+                // === PERBAIKAN UTAMA DI SINI ===
+                // 1. Buat array baru dari allStudentsData (yang mungkin sudah teracak)
+                let revertedStudents = [...allStudentsData];
+
+                // 2. Urutkan array BARU ini berdasarkan urutan NISN yang disimpan di initialSiswaOrder
+                revertedStudents.sort((a, b) => {
                     return initialSiswaOrder.indexOf(a.nisn) - initialSiswaOrder.indexOf(b.nisn);
                 });
+
+                // 3. Update variabel global allStudentsData dengan urutan yang sudah benar
+                allStudentsData = revertedStudents;
+                // === AKHIR PERBAIKAN ===
+
                 // Render ulang tabel dengan data yang sudah dikembalikan urutannya
-                renderSiswaTable(sortedStudents);
+                renderSiswaTable(allStudentsData);
                 isOrderChanged = false; // Reset status perubahan
                 showSortActionBar(false); // Sembunyikan tombol
             });
@@ -15730,6 +15741,13 @@
                 container.innerHTML = `<p class="text-center text-gray-500 py-4">Belum ada data siswa atau data tidak ditemukan.</p>`;
                 return;
             }
+
+            // === TAMBAHKAN KONDISI INI ===
+            // Hanya simpan urutan awal jika belum diinisialisasi atau jika urutan belum diubah
+            if (initialSiswaOrder.length === 0 || !isOrderChanged) {
+                initialSiswaOrder = studentsToRender.map(s => s.nisn);
+            }
+            // ============================
 
             const table = document.createElement('table');
             table.className = 'min-w-full divide-y divide-gray-200';
@@ -15789,6 +15807,8 @@
                 handle: '.drag-handle',
                 ghostClass: 'ghost-row',
                 chosenClass: 'chosen-row',
+                delay: 750, // Waktu tunda dalam milidetik (misalnya 750ms = 0.75 detik)
+                delayOnTouchOnly: true, // Terapkan tunda HANYA pada perangkat sentuh (ponsel/tablet)
                 // Filter: Hanya izinkan drag jika di dalam kelas yang sama
                 onMove: function (evt) {
                     const draggedClass = evt.dragged.dataset.kelas || 'tanpa-kelas';
@@ -15799,6 +15819,12 @@
                 onStart: function (evt) {
                     // Simpan urutan NISN saat ini sebelum drag dimulai
                     initialSiswaOrderOnDragStart = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.nisn);
+                    // === TAMBAHKAN KONDISI INI ===
+                    // Simpan juga urutan awal global jika ini adalah drag pertama setelah load/simpan/batal
+                    if (!isOrderChanged) {
+                        initialSiswaOrder = [...initialSiswaOrderOnDragStart];
+                    }
+                    // ============================
                 },
                 onEnd: function (evt) {
                     // Dapatkan urutan NISN baru dari DOM setelah drag selesai
@@ -15809,13 +15835,21 @@
                         return currentOrderNisn.indexOf(a.nisn) - currentOrderNisn.indexOf(b.nisn);
                     });
 
-                    // Cek apakah urutan benar-benar berubah dari sebelum drag
+                    // Cek apakah urutan benar-benar berubah dari SEBELUM drag dimulai
                     if (JSON.stringify(currentOrderNisn) !== JSON.stringify(initialSiswaOrderOnDragStart)) {
-                        isOrderChanged = true;
-                        showSortActionBar(true); // Tampilkan tombol Simpan/Batal
+                      isOrderChanged = true;
+                      showSortActionBar(true);
                     } else {
-                        isOrderChanged = false;
-                        showSortActionBar(false); // Sembunyikan jika tidak ada perubahan
+                      // Jika urutannya kembali seperti sebelum di-drag, cek lagi dengan urutan awal global
+                      if (JSON.stringify(currentOrderNisn) === JSON.stringify(initialSiswaOrder)) {
+                          isOrderChanged = false;
+                          showSortActionBar(false);
+                      } else {
+                          // Jika berbeda dari urutan awal global tapi sama seperti sebelum di-drag
+                          // (misal: drag lalu kembalikan ke posisi semula sebelum drag)
+                          // biarkan isOrderChanged tetap true dan tombol tetap tampil
+                          showSortActionBar(true);
+                      }
                     }
                 },
             });
