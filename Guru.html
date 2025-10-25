@@ -216,6 +216,24 @@
             transform: translate3d(4px, 0, 0);
           }
         }
+
+        /* ===== AWAL KODE BARU (CSS Tombol Hamburger Guru Transparan) ===== */
+        #hamburger-btn-guru {
+            transition: opacity 0.3s ease-in-out, background-color 0.3s ease-in-out;
+            opacity: 0.5; /* Setengah transparan secara default */
+            position: fixed; /* Pastikan posisinya fixed */
+            top: 1rem;
+            left: 1rem;
+            z-index: 50; /* Pastikan di atas konten lain */
+        }
+
+        #hamburger-btn-guru:hover,
+        #hamburger-btn-guru.is-active-btn { /* Kelas baru untuk menandai aktif */
+            opacity: 1; /* Opacity penuh saat hover atau aktif */
+            background-color: #4338ca; /* Indigo-800 saat aktif */
+        }
+        /* ===== AKHIR KODE BARU ===== */
+
         /* ===== AKHIR KODE BARU ===== */
     </style>
 
@@ -602,39 +620,33 @@
         const openSidebar = () => {
             sidebar.classList.add('is-open');
             overlay.classList.remove('hidden');
+            hamburgerBtn.classList.add('is-active-btn'); // <-- Tambahkan kelas aktif
         };
 
         const closeSidebar = () => {
             sidebar.classList.remove('is-open');
             overlay.classList.add('hidden');
+            hamburgerBtn.classList.remove('is-active-btn'); // <-- Hapus kelas aktif
         };
 
-        hamburgerBtn.addEventListener('click', openSidebar);
+        hamburgerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (sidebar.classList.contains('is-open')) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        });
+
         overlay.addEventListener('click', closeSidebar);
-        
-        // --- [AWAL PERUBAHAN UTAMA] ---
-        // Logika event listener yang disempurnakan
+
+        // Logika event listener yang disempurnakan (tidak berubah dari sebelumnya)
         sidebar.addEventListener('click', (e) => {
-            // Cari tag <a> terdekat yang diklik oleh pengguna
             const link = e.target.closest('a');
-
-            // Jika tidak ada link yang diklik, abaikan
-            if (!link) {
-                return;
-            }
-
-            // Cek apakah link yang diklik adalah header dropdown
-            if (link.classList.contains('nav-link-header')) {
-                // Jika YA, JANGAN tutup sidebar. Biarkan event listener lain
-                // yang menangani buka/tutup submenu bekerja.
-                return; 
-            }
-            
-            // Jika BUKAN header dropdown (misalnya link "Profil Saya" atau link kelas),
-            // maka tutup sidebar.
+            if (!link) return;
+            if (link.classList.contains('nav-link-header')) return;
             closeSidebar();
         });
-        // --- [AKHIR PERUBAHAN UTAMA] ---
     }
 
     // File: Guru.html (di dalam tag <script>)
