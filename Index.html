@@ -727,18 +727,28 @@
         }
 
         /* ===== AWAL KODE BARU (CSS Tombol Hamburger Transparan) ===== */
-        #hamburger-btn {
+        #hamburger-btn, #hamburger-btn-guru {
             transition: opacity 0.3s ease-in-out, background-color 0.3s ease-in-out;
-            opacity: 0.5; /* Setengah transparan secara default */
+            opacity: 0.3; /* Setengah transparan secara default saat sidebar tertutup */
+            position: fixed; /* Pastikan posisinya fixed agar tidak mengganggu layout */
+            top: 1rem;       /* Sesuaikan posisi jika perlu */
+            left: 1rem;      /* Sesuaikan posisi jika perlu */
+            z-index: 50;     /* Pastikan di atas konten lain */
         }
 
+        /* Saat di-hover mouse, buat opacity penuh */
         #hamburger-btn:hover,
-        #hamburger-btn.is-active-btn { /* Kelas baru untuk menandai aktif */
-            opacity: 1; /* Opacity penuh saat hover atau aktif */
-            background-color: #2563eb; /* Sedikit lebih gelap saat aktif */
+        #hamburger-btn-guru:hover {
+            opacity: 1;
         }
-        /* ===== AKHIR KODE BARU ===== */
 
+        /* Saat sidebar terbuka (kelas .is-active-btn ditambahkan oleh JS), buat opacity penuh */
+        /* Anda bisa juga mengubah warna latar jika diinginkan */
+        #hamburger-btn.is-active-btn,
+        #hamburger-btn-guru.is-active-btn {
+            opacity: 1;
+            /* background-color: #2563eb; /* Contoh: Warna biru lebih gelap saat aktif */ */
+        }
         /* ===== AKHIR KODE BARU ===== */
     </style>
 </head>
