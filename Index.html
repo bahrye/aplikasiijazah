@@ -5521,9 +5521,46 @@
             function openSiswaUploadModal() {
                 const modal = document.getElementById('siswa-upload-modal');
                 const importStatusDiv = document.getElementById('importStatus');
+                const downloadBtn = document.getElementById('downloadSiswaTemplateBtnModal'); // Ambil tombol download
+
+                // === AWAL PERUBAHAN: Nonaktifkan tombol saat modal dibuka ===
+                downloadBtn.disabled = true;
+                downloadBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                downloadBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                const downloadBtnText = downloadBtn.querySelector('span'); // Asumsi hanya ada 1 span
+                if(downloadBtnText) downloadBtnText.textContent = 'Memuat Jenjang...';
+                // === AKHIR PERUBAHAN ===
+
                 importStatusDiv.innerHTML = '';
                 modal.classList.remove('hidden');
 
+                // === AWAL PERUBAHAN: Ambil data jenjang ===
+                google.script.run
+                    .withSuccessHandler(schoolData => {
+                        const jenjang = schoolData ? schoolData.jenjang : null;
+                        if (jenjang) {
+                            // Jika jenjang didapat, aktifkan tombol
+                            downloadBtn.disabled = false;
+                            downloadBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                            downloadBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                            if(downloadBtnText) downloadBtnText.textContent = 'Download Template Excel';
+                            // Simpan jenjang di tombol untuk digunakan saat di-klik
+                            downloadBtn.dataset.jenjang = jenjang;
+                        } else {
+                            // Jika jenjang tidak ada, biarkan tombol nonaktif dan beri pesan
+                            if(downloadBtnText) downloadBtnText.textContent = 'Jenjang Belum Diatur';
+                            showGlobalStatus("Gagal memuat jenjang. Harap atur di menu Data Sekolah.", false);
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        // Jika gagal ambil data, biarkan tombol nonaktif
+                        if(downloadBtnText) downloadBtnText.textContent = 'Gagal Memuat';
+                        showGlobalStatus("Error saat memuat data sekolah: " + err.message, false);
+                    })
+                    .getSchoolData(userSpreadsheetId);
+                // === AKHIR PERUBAHAN ===
+
+                // Inisialisasi Dropzone (tetap sama)
                 if (!siswaDropzone) {
                     siswaDropzone = new Dropzone("#siswa-dropzone-form", {
                         url: "#",
@@ -5542,6 +5579,9 @@
                             });
                         }
                     });
+                } else {
+                    // Jika Dropzone sudah ada, hapus file sebelumnya
+                    siswaDropzone.removeAllFiles(true);
                 }
             }
 
@@ -5552,6 +5592,16 @@
                     siswaDropzone.removeAllFiles(true);
                 }
                 document.getElementById('importStatus').innerHTML = '';
+
+                // === TAMBAHAN: Reset tombol download saat modal ditutup ===
+                const downloadBtn = document.getElementById('downloadSiswaTemplateBtnModal');
+                downloadBtn.disabled = true; // Nonaktifkan lagi
+                downloadBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                downloadBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                const downloadBtnText = downloadBtn.querySelector('span');
+                if(downloadBtnText) downloadBtnText.textContent = 'Download Template Excel';
+                delete downloadBtn.dataset.jenjang; // Hapus data jenjang
+                // === AKHIR TAMBAHAN ===
             }
 
             // [PERUBAHAN] Ganti seluruh fungsi handleSiswaFileUpload dengan yang ini
@@ -5719,17 +5769,32 @@
             if (closeSiswaUploadModalBtn) closeSiswaUploadModalBtn.addEventListener('click', closeSiswaUploadModal);
             if (closeSiswaUploadModalBtn2) closeSiswaUploadModalBtn2.addEventListener('click', closeSiswaUploadModal);
 
-            if (downloadSiswaTemplateBtnModal) {
-                downloadSiswaTemplateBtnModal.addEventListener('click', () => {
-                    const btn = downloadSiswaTemplateBtnModal;
-                    const originalContent = btn.innerHTML;
+            const downloadBtnModal = document.getElementById('downloadSiswaTemplateBtnModal');
+            if (downloadBtnModal) {
+                downloadBtnModal.addEventListener('click', () => {
+                    // Ambil referensi tombol lagi di dalam handler ini
+                    const btn = document.getElementById('downloadSiswaTemplateBtnModal');
+                    const originalContent = btn.innerHTML; // Simpan HTML asli (termasuk ikon)
+
+                    // === PERUBAHAN UTAMA: Ambil jenjang dari dataset ===
+                    const jenjangSekolah = btn.dataset.jenjang;
+                    // === AKHIR PERUBAHAN ===
+
+                    // Jika jenjang belum ada di dataset (karena gagal load), jangan lakukan apa-apa
+                    if (!jenjangSekolah) {
+                        showGlobalStatus("Jenjang sekolah belum termuat. Tidak bisa membuat template.", false);
+                        return;
+                    }
+
+                    // Tampilkan loading (tetap sama)
                     btn.disabled = true;
                     btn.innerHTML = '<span class="loading-animation">Membuat</span>';
+
                     google.script.run
                         .withSuccessHandler(result => {
                             btn.disabled = false;
-                            btn.innerHTML = originalContent;
-                             if (result.base64Data) {
+                            btn.innerHTML = originalContent; // Kembalikan HTML asli
+                            if (result.base64Data) {
                                 const link = document.createElement('a');
                                 link.href = `data:${result.mimeType};base64,${result.base64Data}`;
                                 link.download = result.fileName;
@@ -5738,15 +5803,17 @@
                                 document.body.removeChild(link);
                                 showGlobalStatus('Template berhasil diunduh.', 'success');
                             } else {
+                                // Tampilkan error dari backend jika ada
                                 showGlobalStatus('Gagal membuat template: ' + (result.error || 'Unknown error'), 'error');
                             }
                         })
                         .withFailureHandler(error => {
                             btn.disabled = false;
-                            btn.innerHTML = originalContent;
-                             showGlobalStatus('Error: ' + error.message, 'error');
+                            btn.innerHTML = originalContent; // Kembalikan HTML asli
+                            showGlobalStatus('Error: ' + error.message, 'error');
                         })
-                        .generateSiswaTemplate();
+                        // Kirim jenjang yang sudah disimpan
+                        .generateSiswaTemplate(userSpreadsheetId, jenjangSekolah);
                 });
             }
 
