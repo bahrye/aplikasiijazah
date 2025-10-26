@@ -1337,6 +1337,32 @@
                             </form>
                         </div>
 
+                        <div id="jumlah-semester-container" class="mt-10 pt-8 border-t">
+                            <h2 class="text-2xl font-bold text-gray-700">Pengaturan Jumlah Semester Rapor (Khusus MI)</h2>
+                            <p class="text-sm text-gray-500 mt-1 mb-4">Pilih jumlah semester terakhir yang akan dihitung untuk nilai rapor. Pengaturan ini hanya berlaku untuk jenjang MI.</p>
+
+                            <div class="bg-white p-8 rounded-lg shadow-md max-w-2xl">
+                                <form id="jumlahSemesterForm" class="space-y-6">
+                                    <div>
+                                        <label for="jumlahSemesterSelect" class="block text-sm font-medium text-gray-700">Jumlah Semester Rapor</label>
+                                        <p class="text-xs text-gray-500 mt-1 mb-2">Pilih 3 (Kelas 5 & 6 Ganjil) atau 5 (Kelas 4, 5, & 6 Ganjil).</p>
+                                        <select id="jumlahSemesterSelect" class="mt-1 w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="5">5 Semester (Kls 4 Ganjil s/d Kls 6 Ganjil)</option>
+                                            <option value="3">3 Semester (Kls 5 Ganjil s/d Kls 6 Ganjil)</option>
+                                        </select>
+                                        <p id="jenjang-lock-info" class="text-xs text-gray-500 mt-1 hidden">Pengaturan ini terkunci ke 5 semester untuk jenjang MTS dan MA.</p>
+                                    </div>
+
+                                    <div class="mt-8 pt-5 border-t">
+                                        <button type="submit" id="saveJumlahSemesterBtn" class="w-full md:w-auto flex justify-center py-2 px-8 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400">
+                                            <span id="jmlSemBtnText">Simpan Jumlah Semester</span>
+                                            <span id="jmlSemSpinner" class="hidden loading-animation">Menyimpan</span>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
                         <div id="pengumuman-kelulusan-container" class="mt-10 pt-8 border-t">
                             <h2 class="text-2xl font-bold text-gray-700">Pengaturan Pengumuman Kelulusan</h2>
                             <p class="text-sm text-gray-500 mt-1 mb-4">Atur kapan siswa bisa melihat status kelulusan dan kontrol akses ke transkrip nilai.</p>
@@ -1964,9 +1990,12 @@
                                     <button data-rekap="ijazah" class="rekap-btn bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg transition-colors active">Rekap Nilai Ijazah</button>
                                 </div>
 
-                                <button id="updateRekapBtn" class="w-full md:w-auto bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center disabled:bg-green-400">
-                                    <span id="updateRekapBtnText">Perbarui & Muat Ulang Data</span>
-                                    <span id="updateRekapSpinner" class="hidden loading-animation">Memperbarui</span>
+                                <button id="updateRekapBtn" class="w-full md:w-auto bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center disabled:bg-green-400 relative">
+                                    <span id="update-rekap-indicator" class="absolute top-0 right-0 -mt-1 -mr-1 flex h-3 w-3 hidden">
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                        <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                    </span>
+                                    <span id="updateRekapBtnText">Update Data Terkini</span> <span id="updateRekapSpinner" class="hidden loading-animation">Memperbarui</span>
                                 </button>
                             </div>
                             <div id="rekap-display-area">
@@ -6570,36 +6599,71 @@
                     });
             }
 
-            // ===== GANTI FUNGSI LAMA DENGAN VERSI BARU INI =====
+            // GANTI FUNGSI initRaporPage LAMA DENGAN VERSI BARU INI
             function initRaporPage() {
                 const container = document.getElementById('rapor-container');
-                container.innerHTML = '<p>Memeriksa data sekolah...</p>';
-                google.script.run
-                    .withSuccessHandler(schoolData => {
-                        if (!schoolData || !schoolData.jenjang) {
-                            container.innerHTML = `<div class="p-4 bg-yellow-100 text-yellow-800 rounded-lg">Harap atur <b>Jenjang Sekolah</b> di halaman <a href="#" onclick="document.querySelector('[data-page=data-sekolah]').click()" class="font-bold underline">Data Sekolah</a> terlebih dahulu.</div>`;
-                            return;
-                        }
-                        const jenjang = schoolData.jenjang;
-                        const semesterList = semesters[jenjang];
-                        let html = '';
-                        for (const key in semesterList) {
+                container.innerHTML = '<p>Memeriksa data sekolah dan pengaturan semester...</p>';
+
+                // Ambil data sekolah DAN pengaturan jumlah semester
+                Promise.all([
+                    new Promise(res => google.script.run.withSuccessHandler(res).getSchoolData(userSpreadsheetId)),
+                    new Promise(res => google.script.run.withSuccessHandler(res).getJumlahSemester(userSpreadsheetId))
+                ]).then(([schoolDataResponse, jumlahSemesterResponse]) => {
+
+                    if (!schoolDataResponse || !schoolDataResponse.jenjang) {
+                        container.innerHTML = `<div class="p-4 bg-yellow-100 text-yellow-800 rounded-lg">Harap atur <b>Jenjang Sekolah</b> di halaman <a href="#" onclick="document.querySelector('[data-page=data-sekolah]').click()" class="font-bold underline">Data Sekolah</a> terlebih dahulu.</div>`;
+                        return;
+                    }
+                    const jenjang = schoolDataResponse.jenjang;
+                    // Ambil jumlah semester dari respons, default ke 5 jika gagal
+                    const jumlahSemester = (jumlahSemesterResponse && jumlahSemesterResponse.status === 'success') ? jumlahSemesterResponse.jumlah : 5;
+
+                    const semesterListMap = {
+                        MI: { k4_ganjil: 'Kelas 4 Ganjil', k4_genap: 'Kelas 4 Genap', k5_ganjil: 'Kelas 5 Ganjil', k5_genap: 'Kelas 5 Genap', k6_ganjil: 'Kelas 6 Ganjil' },
+                        MTS: { k7_ganjil: 'Kelas 7 Ganjil', k7_genap: 'Kelas 7 Genap', k8_ganjil: 'Kelas 8 Ganjil', k8_genap: 'Kelas 8 Genap', k9_ganjil: 'Kelas 9 Ganjil' },
+                        MA: { k10_ganjil: 'Kelas 10 Ganjil', k10_genap: 'Kelas 10 Genap', k11_ganjil: 'Kelas 11 Ganjil', k11_genap: 'Kelas 11 Genap', k12_ganjil: 'Kelas 12 Ganjil' }
+                    };
+                    const fullSemesterList = semesterListMap[jenjang] || {};
+                    let semestersToShow = {};
+
+                    // Logika untuk menentukan semester yang ditampilkan
+                    if (jenjang === 'MI' && jumlahSemester === 3) {
+                        // Ambil 3 semester terakhir untuk MI
+                        const keys = Object.keys(fullSemesterList);
+                        const lastThreeKeys = keys.slice(-3);
+                        lastThreeKeys.forEach(key => {
+                            semestersToShow[key] = fullSemesterList[key];
+                        });
+                    } else {
+                        // Tampilkan semua 5 semester (default atau untuk MTS/MA)
+                        semestersToShow = fullSemesterList;
+                    }
+
+                    // Bangun HTML berdasarkan semestersToShow
+                    let html = '';
+                    if (Object.keys(semestersToShow).length === 0) {
+                        html = `<p class="text-gray-500 text-center">Tidak ada data semester rapor yang relevan untuk jenjang ${jenjang}.</p>`;
+                    } else {
+                        for (const key in semestersToShow) {
                             html += `
                                 <div class="mb-6 bg-white p-4 rounded-lg shadow-sm rapor-semester-container">
-                                    <h3 class="text-xl font-bold text-gray-700">${semesterList[key]}</h3>
+                                    <h3 class="text-xl font-bold text-gray-700">${semestersToShow[key]}</h3>
                                     <div class="flex flex-wrap gap-4 mt-3">
                                         <button onclick="buildRaporScoreTable(this, '${key}', 'Pengetahuan')" class="rapor-semester-btn bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-colors text-sm">Input Nilai Pengetahuan</button>
                                         <button onclick="buildRaporScoreTable(this, '${key}', 'Keterampilan')" class="rapor-semester-btn bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-colors text-sm">Input Nilai Keterampilan</button>
                                         <button onclick="calculateRaporAverage(this, '${key}')" class="rapor-semester-btn bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-colors text-sm">Cek Rata-Rata Nilai</button>
-                                        <button class="delete-rapor-semester-btn bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 text-sm" data-semester-key="${key}" data-semester-name="${semesterList[key]}">Hapus Data Semester Ini</button>
+                                        <button class="delete-rapor-semester-btn bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 text-sm" data-semester-key="${key}" data-semester-name="${semestersToShow[key]}">Hapus Data Semester Ini</button>
                                     </div>
                                     <div id="table-container-${key}" class="mt-4 rapor-table-display-area"></div>
                                 </div>
                             `;
                         }
-                        container.innerHTML = html;
-                    })
-                    .getSchoolData(userSpreadsheetId);
+                    }
+                    container.innerHTML = html;
+
+                }).catch(err => {
+                    container.innerHTML = `<p class="text-red-500">Gagal memuat halaman rapor: ${err.message}</p>`;
+                });
             }
 
             // GANTI FUNGSI LAMA DENGAN VERSI YANG SUDAH DIPERBAIKI INI
@@ -11148,28 +11212,38 @@
         // ===== [BARU] FUNGSI UNTUK INDIKATOR REKAPITULASI =====
 
         /**
-         * [VERSI BARU] Memanggil backend untuk memeriksa status sinkronisasi rekapitulasi
-         * dan menampilkan/menyembunyikan indikator notifikasi berdasarkan hasilnya.
+         * [VERSI BARU 2.0] Memanggil backend untuk memeriksa status sinkronisasi rekapitulasi
+         * dan menampilkan/menyembunyikan indikator notifikasi di sidebar DAN di tombol Update Data.
          */
         function syncRekapIndicator() {
-            const indicator = document.getElementById('rekap-indicator');
-            if (!indicator) return;
+            const sidebarIndicator = document.getElementById('rekap-indicator'); // Indikator di sidebar
+            const buttonIndicator = document.getElementById('update-rekap-indicator'); // Indikator di tombol
 
-            // Panggil fungsi backend yang baru
+            // Jika salah satu elemen indikator tidak ada, hentikan fungsi
+            if (!sidebarIndicator || !buttonIndicator) {
+                 console.warn("Elemen indikator rekap tidak ditemukan.");
+                 return;
+            }
+
+            // Panggil fungsi backend checkRekapSyncStatus (tidak berubah)
             google.script.run
                 .withSuccessHandler(response => {
+                    // Tampilkan atau sembunyikan KEDUA indikator berdasarkan hasil
                     if (response && response.needsUpdate) {
-                        indicator.classList.remove('hidden');
+                        sidebarIndicator.classList.remove('hidden');
+                        buttonIndicator.classList.remove('hidden'); // Tampilkan dot di tombol
                     } else {
-                        indicator.classList.add('hidden');
+                        sidebarIndicator.classList.add('hidden');
+                        buttonIndicator.classList.add('hidden'); // Sembunyikan dot di tombol
                     }
                 })
                 .withFailureHandler(err => {
-                    // Jika gagal memeriksa, lebih baik tampilkan indikator untuk jaga-jaga
-                    indicator.classList.remove('hidden');
+                    // Jika gagal memeriksa, lebih baik tampilkan KEDUA indikator
+                    sidebarIndicator.classList.remove('hidden');
+                    buttonIndicator.classList.remove('hidden');
                     console.error("Gagal memeriksa status rekap:", err);
                 })
-                .checkRekapSyncStatus(userSpreadsheetId);
+                .checkRekapSyncStatus(userSpreadsheetId); // Fungsi backend tetap sama
         }
 
         /**
@@ -11931,40 +12005,54 @@
             });
         }
 
-        // GANTI FUNGSI INI DI Index.html
-
+        // GANTI FUNGSI loadPengaturanPage LAMA DENGAN VERSI BARU INI
         function loadPengaturanPage() {
+            // --- Logika Kunci Fitur Premium (Tetap Ada) ---
             const isLocked = sessionStorage.getItem('isLocked') === 'true';
             const premiumContainers = [
                 document.getElementById('pengumuman-kelulusan-container'),
                 document.getElementById('kop-surat-container')
+                // Tambahkan ID container lain jika ada fitur premium baru di halaman ini
             ];
 
             premiumContainers.forEach(container => {
                 if (container) {
                     if (isLocked) {
                         container.classList.add('feature-locked-section');
-                        container.onclick = handleLockedFeatureClick;
+                        container.onclick = handleLockedFeatureClick; // Pastikan fungsi ini ada
                     } else {
                         container.classList.remove('feature-locked-section');
                         container.onclick = null;
                     }
                 }
             });
+            // --- Akhir Logika Kunci Fitur ---
 
+            // --- Logika Pengaturan KKM (Tetap Ada) ---
             const kkmInput = document.getElementById('kkmSekolah');
             if (kkmInput) {
-                kkmInput.disabled = true;
+                kkmInput.disabled = true; // Nonaktifkan saat memuat
                 google.script.run
                     .withSuccessHandler(response => {
                         if (response.status === 'success') {
                             kkmInput.value = response.kkm;
+                        } else {
+                            // Mungkin beri nilai default atau kosong jika gagal
+                            kkmInput.value = 75; // Contoh default
+                            showGlobalStatus("Gagal memuat KKM.", false);
                         }
-                        kkmInput.disabled = false;
+                        kkmInput.disabled = false; // Aktifkan kembali setelah selesai
+                    })
+                    .withFailureHandler(err => {
+                        kkmInput.value = 75; // Contoh default
+                        showGlobalStatus("Error memuat KKM: " + err.message, false);
+                        kkmInput.disabled = false; // Aktifkan kembali jika error
                     })
                     .getKkm(userSpreadsheetId);
             }
-            
+            // --- Akhir Logika KKM ---
+
+            // --- Logika Pengaturan Kelas Dinamis (Tetap Ada) ---
             const dynamicKelasContainer = document.getElementById('dynamic-kelas-container');
             dynamicKelasContainer.innerHTML = `<p class="text-gray-500 loading-animation p-2">Memuat pengaturan kelas...</p>`;
 
@@ -11974,28 +12062,123 @@
             ]).then(([schoolDataResponse, kelasResponse]) => {
                 const jenjang = schoolDataResponse ? schoolDataResponse.jenjang : null;
                 if (!jenjang) {
-                    // ===== PERBAIKAN UTAMA DI SINI =====
-                    // Menambahkan link langsung ke halaman Data Sekolah
                     dynamicKelasContainer.innerHTML = `<div class="p-4 bg-red-50 border-l-4 border-red-400 text-red-700">
                         <p class="font-bold">Jenjang sekolah belum diatur.</p>
-                        <p class="text-sm">Silakan atur terlebih dahulu di halaman 
+                        <p class="text-sm">Silakan atur terlebih dahulu di halaman
                             <a href="#" onclick="document.querySelector('.nav-link[data-page=data-sekolah]').click()" class="font-bold underline hover:text-red-900">
                                 Data Sekolah
                             </a>.
                         </p>
                     </div>`;
                     return;
-                    // ===== AKHIR PERBAIKAN =====
                 }
 
                 const kelasList = (kelasResponse && kelasResponse.status === 'success') ? kelasResponse.kelasList : [];
-                renderKelasInputs(jenjang, kelasList);
+                renderKelasInputs(jenjang, kelasList); // Panggil helper render
 
             }).catch(err => {
                 dynamicKelasContainer.innerHTML = `<p class="text-red-500 p-2">Gagal memuat data: ${err.message}</p>`;
             });
+            // --- Akhir Logika Kelas Dinamis ---
 
-            loadAndApplyPrintSettings();
+            // --- AWAL KODE BARU UNTUK JUMLAH SEMESTER ---
+            const jumlahSemesterContainer = document.getElementById('jumlah-semester-container'); // Pastikan ID ini ada di HTML
+            const jumlahSemesterSelect = document.getElementById('jumlahSemesterSelect');
+            const saveJumlahSemesterBtn = document.getElementById('saveJumlahSemesterBtn');
+            const jenjangLockInfo = document.getElementById('jenjang-lock-info');
+
+            // Set ke loading state awal
+            jumlahSemesterSelect.disabled = true;
+            saveJumlahSemesterBtn.disabled = true;
+            jenjangLockInfo.classList.add('hidden');
+            jumlahSemesterSelect.classList.add('bg-gray-100', 'cursor-not-allowed');
+            saveJumlahSemesterBtn.classList.add('disabled:bg-gray-400');
+
+            // Ambil jenjang dan pengaturan jumlah semester secara bersamaan
+            Promise.all([
+                new Promise(res => google.script.run.withSuccessHandler(res).getSchoolData(userSpreadsheetId)),
+                new Promise(res => google.script.run.withSuccessHandler(res).getJumlahSemester(userSpreadsheetId)) // Panggil fungsi backend baru
+            ]).then(([schoolDataResponse, jumlahSemesterResponse]) => {
+                const jenjang = schoolDataResponse ? schoolDataResponse.jenjang : null;
+                const currentJumlah = (jumlahSemesterResponse && jumlahSemesterResponse.status === 'success') ? jumlahSemesterResponse.jumlah : 5; // Default ke 5
+
+                jumlahSemesterSelect.value = currentJumlah;
+
+                if (jenjang === 'MI') {
+                    // Aktifkan untuk MI
+                    jumlahSemesterSelect.disabled = false;
+                    saveJumlahSemesterBtn.disabled = false;
+                    jenjangLockInfo.classList.add('hidden');
+                    jumlahSemesterSelect.classList.remove('bg-gray-100', 'cursor-not-allowed');
+                    saveJumlahSemesterBtn.classList.remove('disabled:bg-gray-400'); // Hapus class disabled jika ada
+                } else if (jenjang === 'MTS' || jenjang === 'MA') {
+                    // Kunci untuk MTS dan MA, paksa nilai ke 5
+                    jumlahSemesterSelect.value = 5; // Paksa value ke 5
+                    jumlahSemesterSelect.disabled = true;
+                    saveJumlahSemesterBtn.disabled = true;
+                    jenjangLockInfo.classList.remove('hidden');
+                    jumlahSemesterSelect.classList.add('bg-gray-100', 'cursor-not-allowed');
+                    saveJumlahSemesterBtn.classList.add('disabled:bg-gray-400'); // Tambahkan class disabled
+                } else {
+                    // Jika jenjang tidak valid/belum diisi, biarkan terkunci
+                    jumlahSemesterSelect.value = 5; // Default ke 5
+                    jumlahSemesterSelect.disabled = true;
+                    saveJumlahSemesterBtn.disabled = true;
+                    jenjangLockInfo.textContent = "Atur jenjang sekolah terlebih dahulu di Data Sekolah."; // Pesan info
+                    jenjangLockInfo.classList.remove('hidden');
+                    jumlahSemesterSelect.classList.add('bg-gray-100', 'cursor-not-allowed');
+                    saveJumlahSemesterBtn.classList.add('disabled:bg-gray-400');
+                }
+            }).catch(err => {
+                showGlobalStatus("Gagal memuat pengaturan jumlah semester.", false);
+                // Biarkan nonaktif jika gagal load
+                jumlahSemesterSelect.value = 5; // Default ke 5
+                jumlahSemesterSelect.disabled = true;
+                saveJumlahSemesterBtn.disabled = true;
+                jenjangLockInfo.textContent = "Gagal memuat pengaturan.";
+                jenjangLockInfo.classList.remove('hidden');
+                jumlahSemesterSelect.classList.add('bg-gray-100', 'cursor-not-allowed');
+                saveJumlahSemesterBtn.classList.add('disabled:bg-gray-400');
+            });
+
+            // Pasang event listener untuk form submit jumlah semester (pastikan fungsi handleSaveJumlahSemester ada)
+            const jumlahSemesterForm = document.getElementById('jumlahSemesterForm');
+            if (jumlahSemesterForm) {
+                 // Hapus listener lama jika ada
+                 const oldHandler = jumlahSemesterForm.submitHandler;
+                 if (oldHandler) {
+                     jumlahSemesterForm.removeEventListener('submit', oldHandler);
+                 }
+                 // Tambah listener baru
+                 jumlahSemesterForm.submitHandler = handleSaveJumlahSemester; // Simpan referensi
+                 jumlahSemesterForm.addEventListener('submit', handleSaveJumlahSemester);
+            } else {
+                console.error("Elemen form 'jumlahSemesterForm' tidak ditemukan!");
+            }
+            // --- AKHIR KODE BARU UNTUK JUMLAH SEMESTER ---
+
+            // --- Logika Pengaturan Kelulusan (Tetap Ada) ---
+            const graduationSettingsForm = document.getElementById('graduationSettingsForm');
+            if (graduationSettingsForm) {
+                 // Hapus listener lama jika ada
+                 const oldGradHandler = graduationSettingsForm.submitHandler;
+                 if (oldGradHandler) {
+                      graduationSettingsForm.removeEventListener('submit', oldGradHandler);
+                 }
+                 // Tambah listener baru
+                 graduationSettingsForm.submitHandler = handleSaveGraduationSettings; // Simpan referensi
+                 graduationSettingsForm.addEventListener('submit', handleSaveGraduationSettings);
+                 loadGraduationSettings(); // Muat data pengaturan kelulusan
+            } else {
+                console.error("Elemen form 'graduationSettingsForm' tidak ditemukan!");
+            }
+            // --- Akhir Logika Kelulusan ---
+
+            // --- Logika Pengaturan Dokumen/Kop Surat (Tetap Ada) ---
+            loadDocumentSettings(); // Muat data gambar/logo
+            // --- Akhir Logika Dokumen ---
+
+            loadAndApplyPrintSettings(); // Pastikan ini tetap ada untuk memuat pengaturan cetak transkrip
         }
 
         /**
@@ -12332,48 +12515,63 @@
             }
         }
 
-
-        // GANTI FUNGSI LAMA DENGAN VERSI BARU INI
-        /**
-         * [DIPERBARUI] Fungsi untuk menginisialisasi halaman upload nilai.
-         * Kini hanya membuat satu tombol per semester yang templatenya berisi 2 sheet.
-         */
+        // GANTI FUNGSI initUploadNilaiPage LAMA DENGAN VERSI BARU INI
         function initUploadNilaiPage() {
-            // 1. Ambil data sekolah untuk menentukan jenjang dan semester
-            google.script.run
-                .withSuccessHandler(schoolData => {
-                    if (!schoolData || !schoolData.jenjang) {
-                        document.getElementById('rapor-upload-buttons-container').innerHTML = `<p class="text-red-600 col-span-full">Jenjang sekolah belum diatur di menu Data Sekolah.</p>`;
-                        return;
-                    }
-                    
-                    const semesterMap = {
-                        MI: { k4_ganjil: 'Kelas 4 Ganjil', k4_genap: 'Kelas 4 Genap', k5_ganjil: 'Kelas 5 Ganjil', k5_genap: 'Kelas 5 Genap', k6_ganjil: 'Kelas 6 Ganjil' },
-                        MTS: { k7_ganjil: 'Kelas 7 Ganjil', k7_genap: 'Kelas 7 Genap', k8_ganjil: 'Kelas 8 Ganjil', k8_genap: 'Kelas 8 Genap', k9_ganjil: 'Kelas 9 Ganjil' },
-                        MA: { k10_ganjil: 'Kelas 10 Ganjil', k10_genap: 'Kelas 10 Genap', k11_ganjil: 'Kelas 11 Ganjil', k11_genap: 'Kelas 11 Genap', k12_ganjil: 'Kelas 12 Ganjil' }
-                    };
-                    const semesters = semesterMap[schoolData.jenjang] || {};
-                    const container = document.getElementById('rapor-upload-buttons-container');
-                    container.innerHTML = ''; // Kosongkan pesan loading
+            const container = document.getElementById('rapor-upload-buttons-container');
+            container.innerHTML = '<p class="text-gray-500 loading-animation">Memuat tombol upload rapor...</p>';
 
-                    // 2. Buat SATU tombol untuk setiap semester
-                    Object.entries(semesters).forEach(([key, name]) => {
+            // Ambil data sekolah DAN pengaturan jumlah semester
+            Promise.all([
+                new Promise(res => google.script.run.withSuccessHandler(res).getSchoolData(userSpreadsheetId)),
+                new Promise(res => google.script.run.withSuccessHandler(res).getJumlahSemester(userSpreadsheetId))
+            ]).then(([schoolDataResponse, jumlahSemesterResponse]) => {
+
+                if (!schoolDataResponse || !schoolDataResponse.jenjang) {
+                    container.innerHTML = `<p class="text-red-600 col-span-full">Jenjang sekolah belum diatur di menu Data Sekolah.</p>`;
+                    return;
+                }
+                const jenjang = schoolDataResponse.jenjang;
+                const jumlahSemester = (jumlahSemesterResponse && jumlahSemesterResponse.status === 'success') ? jumlahSemesterResponse.jumlah : 5;
+
+                const semesterMap = {
+                    MI: { k4_ganjil: 'Kelas 4 Ganjil', k4_genap: 'Kelas 4 Genap', k5_ganjil: 'Kelas 5 Ganjil', k5_genap: 'Kelas 5 Genap', k6_ganjil: 'Kelas 6 Ganjil' },
+                    MTS: { k7_ganjil: 'Kelas 7 Ganjil', k7_genap: 'Kelas 7 Genap', k8_ganjil: 'Kelas 8 Ganjil', k8_genap: 'Kelas 8 Genap', k9_ganjil: 'Kelas 9 Ganjil' },
+                    MA: { k10_ganjil: 'Kelas 10 Ganjil', k10_genap: 'Kelas 10 Genap', k11_ganjil: 'Kelas 11 Ganjil', k11_genap: 'Kelas 11 Genap', k12_ganjil: 'Kelas 12 Ganjil' }
+                };
+                const fullSemesterList = semesterMap[jenjang] || {};
+                let semestersToShow = {};
+
+                // Logika untuk menentukan semester yang ditampilkan
+                if (jenjang === 'MI' && jumlahSemester === 3) {
+                    const keys = Object.keys(fullSemesterList);
+                    const lastThreeKeys = keys.slice(-3);
+                    lastThreeKeys.forEach(key => {
+                        semestersToShow[key] = fullSemesterList[key];
+                    });
+                } else {
+                    semestersToShow = fullSemesterList;
+                }
+
+                container.innerHTML = ''; // Kosongkan pesan loading
+
+                if (Object.keys(semestersToShow).length === 0) {
+                     container.innerHTML = `<p class="text-gray-500 col-span-full">Tidak ada semester rapor yang relevan untuk jenjang ${jenjang}.</p>`;
+                } else {
+                    Object.entries(semestersToShow).forEach(([key, name]) => {
                         const btn = document.createElement('button');
                         btn.className = 'upload-nilai-btn bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-left';
-                        // Dataset diubah untuk mencerminkan satu jenis upload per semester
                         btn.dataset.uploadType = `rapor_${key}`;
-                        btn.dataset.templateName = `Rapor_${key}`; 
+                        btn.dataset.templateName = `Rapor_${key}`;
                         btn.innerHTML = `<h3 class="font-bold text-gray-800">Upload Nilai Rapor ${name}</h3><p class="text-sm text-gray-500 mt-1">Unggah nilai Pengetahuan & Keterampilan sekaligus.</p>`;
                         container.appendChild(btn);
                     });
+                }
+                // Pasang event listener ke semua tombol upload yang baru dibuat
+                setupUploadButtonListeners();
 
-                    // 3. Pasang event listener ke semua tombol upload yang ada di halaman
-                    setupUploadButtonListeners();
-                })
-                .withFailureHandler(err => {
-                    document.getElementById('rapor-upload-buttons-container').innerHTML = `<p class="text-red-600">Gagal memuat data sekolah: ${err.message}</p>`;
-                })
-                .getSchoolData(userSpreadsheetId);
+            }).catch(err => {
+                container.innerHTML = `<p class="text-red-600">Gagal memuat tombol upload: ${err.message}</p>`;
+            });
         }
 
         /**
@@ -16952,6 +17150,45 @@
                 if (loginResponse.newChangelog) showNewChangelogPopup(loginResponse.newChangelog);
                 if (loginResponse.newBroadcast) showBroadcastModal(loginResponse.newBroadcast);
             }, 500);
+        }
+
+        /**
+         * [BARU] Menangani penyimpanan pengaturan Jumlah Semester Rapor.
+         */
+        function handleSaveJumlahSemester(event) {
+            event.preventDefault();
+            const btn = document.getElementById('saveJumlahSemesterBtn');
+            const btnText = document.getElementById('jmlSemBtnText');
+            const spinner = document.getElementById('jmlSemSpinner');
+            const select = document.getElementById('jumlahSemesterSelect');
+            const selectedValue = select.value;
+
+            btn.disabled = true;
+            btnText.classList.add('hidden');
+            spinner.classList.remove('hidden');
+
+            google.script.run
+                .withSuccessHandler(response => {
+                    showGlobalStatus(response.message, response.status === 'success');
+                    if (response.status === 'success') {
+                        // Jika berhasil disimpan, refresh halaman pengaturan
+                        loadPengaturanPage();
+                        // PENTING: Panggil syncRekapIndicator karena perubahan ini mempengaruhi rekap rapor
+                        syncRekapIndicator();
+                    }
+                    // Kembalikan tombol ke normal setelah ada respons
+                    btn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    spinner.classList.add('hidden');
+                })
+                .withFailureHandler(err => {
+                    showGlobalStatus(`Error: ${err.message}`, false);
+                    // Kembalikan tombol ke normal jika gagal
+                    btn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    spinner.classList.add('hidden');
+                })
+                .saveJumlahSemester(userSpreadsheetId, selectedValue); // Panggil fungsi backend baru
         }
 
     </script>
