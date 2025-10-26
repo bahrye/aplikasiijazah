@@ -2605,9 +2605,8 @@ function checkRekapSheetsExist(spreadsheetId) {
 }
 
 /**
- * [MODIFIKASI v9 - PERBAIKAN PENULISAN HEADER MERGE] Mengekspor data rekapitulasi ke format PDF atau Excel
- * menggunakan template Google Sheet yang dinamis, dengan merge header mapel, lebar kolom seragam,
- * dan header kolom terakhir yang dinamis.
+ * [MODIFIKASI v14 - PENYESUAIAN LEBAR KOLOM RATA-RATA & STATUS] Mengekspor data rekapitulasi ke format PDF atau Excel
+ * dengan penyesuaian format tampilan.
  * @param {string} spreadsheetId ID spreadsheet target (data pengguna).
  * @param {string} type Jenis rekap ('ujian', 'rapor', 'ijazah').
  * @param {string} format Format ekspor ('pdf' atau 'excel').
@@ -2617,12 +2616,17 @@ function checkRekapSheetsExist(spreadsheetId) {
  */
 function exportRekapData(spreadsheetId, type, format, exportOptions, selectedKelas) {
     // --- KONFIGURASI TEMPLATE ---
-    const REKAP_TEMPLATE_ID = "1Gt1BBYl3upONzZ4WAABfBVYk1cLeRG6eQP8lHTNJ_vc"; // <<< GANTI DENGAN ID TEMPLATE ANDA
+    const REKAP_TEMPLATE_ID = "1Gt1BBYl3upONzZ4WAABfBVYk1cLeRG6eQP8lHTNJ_vc"; // <<< PASTIKAN ID INI BENAR
     const MAPEL_START_PLACEHOLDER = "[[MAPEL_START]]";
-    const MAPEL_HEADER_PLACEHOLDER = "[[MAPEL_HEADER_TEXT]]"; // Placeholder baru
     const LAST_COLUMN_PLACEHOLDER = "[[LAST_COLUMN_HEADER]]";
     const MAPEL_COLUMN_WIDTH = 70;
-    const SUMMARY_COLUMN_WIDTH = 85;
+    // [PERUBAHAN] Tambah lebar kolom summary
+    const SUMMARY_COLUMN_WIDTH = 95; // Sebelumnya 85
+    const LAST_COLUMN_WIDTH = 110; // Sebelumnya 100 (Lebar untuk Status/Pembulatan)
+    // ----------------------------
+    const MAPEL_HEADER_TEXT = "MATA PELAJARAN";
+    const WARNA_LULUS = "#b6d7a8";
+    const WARNA_TIDAK_LULUS = "#ea9999";
     // ---------------------------
 
     let tempSpreadsheetFileId = null;
@@ -2665,210 +2669,109 @@ function exportRekapData(spreadsheetId, type, format, exportOptions, selectedKel
         const tempSheet = tempSpreadsheet.getSheets()[0];
         tempSheet.setName("Rekapitulasi");
 
-        // 4. Cari Kolom Placeholder Mapel Start dan Header Mapel Text
-        let mapelStartIndex = -1;
-        let mapelCodeRowIndex = -1;   // Baris untuk [[MAPEL_START]]
-        let mapelHeaderRowIndex = -1; // Baris untuk [[MAPEL_HEADER_TEXT]]
-        let mapelHeaderColIndex = -1; // Kolom untuk [[MAPEL_HEADER_TEXT]]
-
-        const maxHeaderSearchRow = Math.max(1, tempSheet.getFrozenRows());
+        // 4. Cari Posisi "MATA PELAJARAN" dan "[[MAPEL_START]]"
+        let mapelStartColIndex = -1, mapelCodeRowIndex = -1, mapelHeaderRowIndex = -1;
+        const maxHeaderSearchRow = Math.max(5, tempSheet.getFrozenRows());
         const headerSearchRange = tempSheet.getRange(1, 1, maxHeaderSearchRow, tempSheet.getLastColumn());
-        const allHeaderValues = headerSearchRange.getValues();
-
+        const allHeaderValues = headerSearchRange.getDisplayValues();
         for (let r = 0; r < allHeaderValues.length; r++) {
-            const colIndexStart = allHeaderValues[r].indexOf(MAPEL_START_PLACEHOLDER);
-            const colIndexHeader = allHeaderValues[r].indexOf(MAPEL_HEADER_PLACEHOLDER);
-
-            if (colIndexStart !== -1) {
-                mapelStartIndex = colIndexStart;
-                mapelCodeRowIndex = r;
-            }
-            if (colIndexHeader !== -1) {
-                mapelHeaderColIndex = colIndexHeader;
-                mapelHeaderRowIndex = r;
-            }
-            if (mapelStartIndex !== -1 && mapelHeaderColIndex !== -1) break;
+            const rowValues = allHeaderValues[r];
+            const colIndexStart = rowValues.indexOf(MAPEL_START_PLACEHOLDER);
+            const colIndexHeader = rowValues.findIndex(cell => typeof cell === 'string' && cell.trim().toUpperCase() === MAPEL_HEADER_TEXT);
+            if (colIndexStart !== -1 && mapelCodeRowIndex === -1) { mapelStartColIndex = colIndexStart; mapelCodeRowIndex = r; }
+            if (colIndexHeader !== -1 && mapelHeaderRowIndex === -1) { mapelHeaderRowIndex = r; if (mapelStartColIndex === -1) mapelStartColIndex = colIndexHeader; }
+            if (mapelCodeRowIndex !== -1 && mapelHeaderRowIndex !== -1) { if (mapelStartColIndex !== colIndexHeader && colIndexHeader !== -1) Logger.log(`Peringatan: Kolom header berbeda.`); break; }
         }
+        if (mapelStartColIndex === -1 || mapelCodeRowIndex === -1 || mapelHeaderRowIndex === -1 || mapelHeaderRowIndex >= mapelCodeRowIndex) throw new Error(`Struktur header mapel di template tidak sesuai.`);
 
-        if (mapelStartIndex === -1) throw new Error(`Header placeholder "${MAPEL_START_PLACEHOLDER}" tidak ditemukan.`);
-        if (mapelHeaderColIndex === -1) throw new Error(`Header placeholder "${MAPEL_HEADER_PLACEHOLDER}" tidak ditemukan.`);
-        if (mapelStartIndex < mapelHeaderColIndex) throw new Error(`Placeholder "${MAPEL_START_PLACEHOLDER}" harus berada di kolom yang sama atau setelah "${MAPEL_HEADER_PLACEHOLDER}".`);
-        if (maxHeaderSearchRow > 1 && mapelCodeRowIndex !== mapelHeaderRowIndex + 1) {
-             Logger.log(`Peringatan: Baris ${MAPEL_START_PLACEHOLDER} (baris ${mapelCodeRowIndex+1}) tidak tepat di bawah ${MAPEL_HEADER_PLACEHOLDER} (baris ${mapelHeaderRowIndex+1}).`);
-             mapelCodeRowIndex = mapelHeaderRowIndex + 1; // Fallback
-        }
-
-        const mapelStartCol = mapelStartIndex + 1;
-        const mapelHeaderStartCol = mapelHeaderColIndex + 1;
+        const mapelStartCol = mapelStartColIndex + 1;
+        const mapelCodeActualRow = mapelCodeRowIndex + 1;
+        const mapelHeaderActualRow = mapelHeaderRowIndex + 1;
         const numMapel = mapel.length;
 
-        // Sisipkan kolom
+        // 5. Sisipkan kolom mapel
         if (numMapel > 1) {
             tempSheet.insertColumnsAfter(mapelStartCol, numMapel - 1);
             SpreadsheetApp.flush();
         }
 
-        // 5. Tulis Header Kode Mapel dan Merge Header "MATA PELAJARAN"
-        const mapelCodeActualRow = mapelCodeRowIndex + 1;
-        const mapelHeaderActualRow = mapelHeaderRowIndex + 1;
-        const lastMapelCol = mapelHeaderStartCol + numMapel - 1;
-
-        // Tulis kode mapel
+        // 6. Tulis Kode Mapel dan Merge Header
         const mapelCodeHeaderRange = tempSheet.getRange(mapelCodeActualRow, mapelStartCol, 1, numMapel);
-        mapelCodeHeaderRange.setValues([mapel.map(m => m.kode)]);
-        mapelCodeHeaderRange.setFontWeight("bold").setHorizontalAlignment("center").setBackground("#ffff00");
-
-        // --- PERBAIKAN v10: Hapus Placeholder Dulu, Tulis, Baru Merge ---
-        // Isi dan Merge header "MATA PELAJARAN"
+        mapelCodeHeaderRange.setValues([mapel.map(m => m.kode)]).setFontWeight("bold").setHorizontalAlignment("center").setBackground("#ffff00");
         if (mapelHeaderRowIndex >= 0 && numMapel > 0) {
-            const mapelTitleStartCell = tempSheet.getRange(mapelHeaderActualRow, mapelHeaderStartCol);
-            Logger.log(`Target start cell for Mapel Header Text placeholder: ${mapelTitleStartCell.getA1Notation()}`);
             try {
-                // 1. Hapus placeholder [[MAPEL_HEADER_TEXT]]
-                mapelTitleStartCell.clearContent();
-                SpreadsheetApp.flush(); // Pastikan placeholder terhapus
-
-                // 2. Tulis "MATA PELAJARAN" di sel pertama
-                mapelTitleStartCell.setValue("MATA PELAJARAN")
-                                   .setHorizontalAlignment("center")
-                                   .setVerticalAlignment("middle")
-                                   .setFontWeight("bold");
-                SpreadsheetApp.flush(); // Pastikan nilai tertulis
-                Logger.log(`Set value 'MATA PELAJARAN' in ${mapelTitleStartCell.getA1Notation()}`);
-
-                // 3. Baru lakukan merge JIKA diperlukan (lebih dari 1 mapel)
-                if (numMapel > 1) {
-                    const mapelTitleMergeRange = tempSheet.getRange(mapelHeaderActualRow, mapelHeaderStartCol, 1, numMapel);
-                    Logger.log(`Attempting merge for 'MATA PELAJARAN' on range: ${mapelTitleMergeRange.getA1Notation()}`);
-                    mapelTitleMergeRange.merge();
-                    SpreadsheetApp.flush(); // Pastikan merge selesai
-                    Logger.log(`Successfully merged range for 'MATA PELAJARAN'.`);
-                } else {
-                     Logger.log(`Single mapel column, no merge needed.`);
-                }
-
-            } catch (headerError) {
-                 Logger.log(`Error setting/merging Mapel Header Text: ${headerError}`);
-                 // Fallback jika error (jarang)
-                 try {
-                     tempSheet.getRange(mapelHeaderActualRow, mapelHeaderStartCol)
-                              .setValue("MATA PELAJARAN - ERROR").setHorizontalAlignment("center").setVerticalAlignment("middle").setFontWeight("bold");
-                     SpreadsheetApp.flush();
-                 } catch (fallbackError){
-                      Logger.log(`Fallback header set also failed: ${fallbackError}`);
-                 }
-            }
+                const mapelTitleMergeRange = tempSheet.getRange(mapelHeaderActualRow, mapelStartCol, 1, numMapel);
+                if (numMapel > 1) mapelTitleMergeRange.merge();
+                mapelTitleMergeRange.setHorizontalAlignment("center").setVerticalAlignment("middle").setFontWeight("bold");
+                SpreadsheetApp.flush();
+            } catch (mergeError) { Logger.log(`Error merging Mapel Header: ${mergeError}`); tempSheet.getRange(mapelHeaderActualRow, mapelStartCol).setValue(MAPEL_HEADER_TEXT).setHorizontalAlignment("center").setVerticalAlignment("middle").setFontWeight("bold"); }
         }
-        // --- AKHIR PERBAIKAN v10 ---
+        for (let c = 0; c < numMapel; c++) tempSheet.setColumnWidth(mapelStartCol + c, MAPEL_COLUMN_WIDTH);
 
-        // Atur Lebar Kolom Mapel
-        for (let c = 0; c < numMapel; c++) {
-            tempSheet.setColumnWidth(mapelStartCol + c, MAPEL_COLUMN_WIDTH);
-        }
-
-        // 6. Siapkan Data Tabel Body
+        // 7. Siapkan Data Tabel Body
         const tableBodyData = [];
         studentsToExport.forEach((student, index) => {
-            const nisn = student.nisn;
-            const studentScores = dataToProcess[nisn] || {};
-            const rowDataPrefix = [index + 1, `'${nisn}`, student.nama.toUpperCase(), student.kelas || '-'];
-            const rowDataScores = [];
-            let total = 0;
-            let validScoresCount = 0;
-            mapel.forEach(m => {
-                const score = parseFloat(studentScores[m.kode]);
-                let displayValue = 0;
-                if (!isNaN(score)) {
-                    const roundedScore = Math.round(score);
-                    displayValue = roundedScore;
-                    total += roundedScore;
-                    validScoresCount++;
-                }
-                rowDataScores.push(displayValue);
-            });
-            const mapelCount = mapel.length;
-            const average = mapelCount > 0 ? (total / mapelCount) : 0;
-            const averageFormatted = average.toFixed(2).replace('.', ',');
-            const rowDataSuffix = [total, averageFormatted];
-            if (type === 'ujian') {
-                rowDataSuffix.push(Math.round(average));
-            } else if (type === 'ijazah') {
-                const status = (validScoresCount > 0 && average >= kkm) ? 'LULUS' : 'TIDAK LULUS';
-                rowDataSuffix.push(status);
-            }
-            tableBodyData.push([...rowDataPrefix, ...rowDataScores, ...rowDataSuffix]);
+            const nisn = student.nisn; const studentScores = dataToProcess[nisn] || {}; const rowDataPrefix = [index + 1, `'${nisn}`, student.nama.toUpperCase(), student.kelas || '-']; const rowDataScores = []; let total = 0; let validScoresCount = 0;
+            mapel.forEach(m => { const score = parseFloat(studentScores[m.kode]); let displayValue = 0; if (!isNaN(score)) { const roundedScore = Math.round(score); displayValue = roundedScore; total += roundedScore; validScoresCount++; } rowDataScores.push(displayValue); });
+            const mapelCount = mapel.length; const average = mapelCount > 0 ? (total / mapelCount) : 0; const averageFormatted = average.toFixed(2).replace('.', ','); const rowDataSuffix = [total, averageFormatted];
+            if (type === 'ujian') rowDataSuffix.push(Math.round(average)); else if (type === 'ijazah') rowDataSuffix.push((validScoresCount > 0 && average >= kkm) ? 'LULUS' : 'TIDAK LULUS'); tableBodyData.push([...rowDataPrefix, ...rowDataScores, ...rowDataSuffix]);
         });
 
-        // 7. Cari dan Atur Kolom Terakhir (Jumlah, Rata-rata, Header Dinamis)
-        let jumlahActualCol = -1, rataRataActualCol = -1, lastHeaderActualCol = -1;
-        let lastHeaderActualRow = -1;
-        let finalHeaderValue = "";
-        let deleteLastColumn = false;
+        // 8. Sisipkan baris sebelum menulis data
+        const bodyStartRow = mapelCodeActualRow + 1;
+        const numDataRows = tableBodyData.length;
+        const existingEmptyRows = 1;
+        const rowsToInsert = numDataRows - existingEmptyRows;
+        if (rowsToInsert > 0) {
+            let ttdPlaceholderRow = -1; const ttdSearchRange = tempSheet.getRange(bodyStartRow, 1, tempSheet.getMaxRows() - bodyStartRow + 1, tempSheet.getLastColumn()); const ttdValues = ttdSearchRange.getDisplayValues();
+            for(let r = 0; r < ttdValues.length; r++){ if(ttdValues[r].includes("[[TEMPAT_TANGGAL_TTD]]")){ ttdPlaceholderRow = bodyStartRow + r; break; } }
+            if (ttdPlaceholderRow !== -1) { tempSheet.insertRowsBefore(ttdPlaceholderRow, rowsToInsert); Logger.log(`Sisip ${rowsToInsert} baris sblm ${ttdPlaceholderRow}`); SpreadsheetApp.flush(); }
+            else { Logger.log(`TTD tdk ketemu, sisip ${rowsToInsert} baris stlh ${mapelCodeActualRow}.`); tempSheet.insertRowsAfter(mapelCodeActualRow, rowsToInsert); SpreadsheetApp.flush(); }
+        }
 
+        // 9. Cari dan Atur Kolom Terakhir
+        let jumlahActualCol = -1, rataRataActualCol = -1, lastHeaderActualCol = -1, statusActualCol = -1;
+        let lastHeaderActualRow = -1; let deleteLastColumn = false;
         SpreadsheetApp.flush();
         const finalSheetLastCol = tempSheet.getLastColumn();
-        const finalHeadersRange = tempSheet.getRange(1, 1, tempSheet.getLastRow(), finalSheetLastCol);
+        const finalHeadersRange = tempSheet.getRange(1, 1, tempSheet.getMaxRows(), finalSheetLastCol);
         const finalHeadersValues = finalHeadersRange.getValues();
-
         for (let r = 0; r < finalHeadersValues.length; r++) {
-            for (let c = 0; c < finalHeadersValues[r].length; c++) {
-                const headerText = finalHeadersValues[r][c].toString();
-                if (headerText.toUpperCase() === "JUMLAH" && jumlahActualCol === -1) jumlahActualCol = c + 1;
-                if (headerText.toUpperCase() === "RATA-RATA" && rataRataActualCol === -1) rataRataActualCol = c + 1;
-                if (headerText === LAST_COLUMN_PLACEHOLDER && lastHeaderActualCol === -1) {
-                    lastHeaderActualCol = c + 1;
-                    lastHeaderActualRow = r + 1;
-                }
-            }
-            if (jumlahActualCol > 0 && rataRataActualCol > 0 && lastHeaderActualCol > 0) break;
+             for (let c = 0; c < finalHeadersValues[r].length; c++) { const headerText = finalHeadersValues[r][c].toString(); if (headerText.toUpperCase() === "JUMLAH" && jumlahActualCol === -1) jumlahActualCol = c + 1; if (headerText.toUpperCase() === "RATA-RATA" && rataRataActualCol === -1) rataRataActualCol = c + 1; if (headerText === LAST_COLUMN_PLACEHOLDER && lastHeaderActualCol === -1) { lastHeaderActualCol = c + 1; lastHeaderActualRow = r + 1; } if (headerText.toUpperCase() === "STATUS" && statusActualCol === -1) statusActualCol = c + 1; }
+             if (jumlahActualCol > 0 && rataRataActualCol > 0 && lastHeaderActualCol > 0 && lastHeaderActualRow > 0 && (type !== 'ijazah' || statusActualCol > 0)) break;
         }
-
+        if (lastHeaderActualCol === -1) {
+             for (let r = 0; r < finalHeadersValues.length; r++) { for (let c = 0; c < finalHeadersValues[r].length; c++) { if (finalHeadersValues[r][c].toString() === LAST_COLUMN_PLACEHOLDER) { lastHeaderActualCol = c + 1; lastHeaderActualRow = r + 1; break; } } if (lastHeaderActualCol > 0) break; }
+        }
+        // [PERUBAHAN] Terapkan SUMMARY_COLUMN_WIDTH ke kolom Jumlah & Rata-rata
         if (jumlahActualCol > 0) tempSheet.setColumnWidth(jumlahActualCol, SUMMARY_COLUMN_WIDTH);
         if (rataRataActualCol > 0) tempSheet.setColumnWidth(rataRataActualCol, SUMMARY_COLUMN_WIDTH);
-
-        // Ganti Header Kolom Terakhir atau Hapus
+        // [PERUBAHAN] Terapkan LAST_COLUMN_WIDTH ke kolom Status/Pembulatan
+        if (statusActualCol > 0) tempSheet.setColumnWidth(statusActualCol, LAST_COLUMN_WIDTH);
         if (lastHeaderActualCol !== -1 && lastHeaderActualRow !== -1) {
-            if (type === 'ijazah') {
-                finalHeaderValue = "STATUS";
-                tempSheet.getRange(lastHeaderActualRow, lastHeaderActualCol).setValue(finalHeaderValue);
-                tempSheet.setColumnWidth(lastHeaderActualCol, 100);
-            } else if (type === 'ujian') {
-                finalHeaderValue = "PEMBULATAN";
-                tempSheet.getRange(lastHeaderActualRow, lastHeaderActualCol).setValue(finalHeaderValue);
-                tempSheet.setColumnWidth(lastHeaderActualCol, 100);
-            } else {
-                deleteLastColumn = true;
-            }
-        } else if (type !== 'rapor') {
-             Logger.log(`Peringatan: Placeholder ${LAST_COLUMN_PLACEHOLDER} tidak ditemukan.`);
-        }
+             const lastHeaderCell = tempSheet.getRange(lastHeaderActualRow, lastHeaderActualCol);
+             if (type === 'ijazah') { lastHeaderCell.setValue("STATUS"); tempSheet.setColumnWidth(lastHeaderActualCol, LAST_COLUMN_WIDTH); statusActualCol = lastHeaderActualCol; }
+             else if (type === 'ujian') { lastHeaderCell.setValue("PEMBULATAN"); tempSheet.setColumnWidth(lastHeaderActualCol, LAST_COLUMN_WIDTH); }
+             else { deleteLastColumn = true; }
+        } else if (type !== 'rapor') Logger.log(`Peringatan: Placeholder ${LAST_COLUMN_PLACEHOLDER} tidak ditemukan.`);
+        if (deleteLastColumn && lastHeaderActualCol > 0) { if (lastHeaderActualCol <= tempSheet.getLastColumn()) tempSheet.deleteColumn(lastHeaderActualCol); }
 
-        if (deleteLastColumn && lastHeaderActualCol > 0) {
-            tempSheet.deleteColumn(lastHeaderActualCol);
-        }
-
-        // 8. Tulis Data Body ke Sheet
-        const bodyStartRow = mapelCodeActualRow + 1;
-        if (tableBodyData.length > 0) {
-             const lastDataColBeforeMapel = mapelStartCol -1;
-             const suffixColsCount = deleteLastColumn ? 2 : 3;
-             const totalActualColumns = lastDataColBeforeMapel + numMapel + suffixColsCount;
-             const lastColNumAfterMaybeDelete = tempSheet.getLastColumn();
-             const writeRange = tempSheet.getRange(bodyStartRow, 1, tableBodyData.length, Math.min(totalActualColumns, lastColNumAfterMaybeDelete));
-             const dataToWrite = tableBodyData.map(row => row.slice(0, writeRange.getNumColumns()));
+        // 10. Tulis Data Body ke Sheet
+        if (numDataRows > 0) {
+             const numPrefixCols = 4; const numSuffixCols = deleteLastColumn ? 2 : 3; const totalExpectedColumns = numPrefixCols + numMapel + numSuffixCols;
+             const lastActualColNum = tempSheet.getLastColumn(); const numColsToWrite = Math.min(totalExpectedColumns, lastActualColNum);
+             const writeRange = tempSheet.getRange(bodyStartRow, 1, numDataRows, numColsToWrite);
+             const dataToWrite = tableBodyData.slice(0, numDataRows).map(row => row.slice(0, numColsToWrite));
              writeRange.setValues(dataToWrite);
         }
 
-        // 9. Isi Placeholder Header & TTD
+        // 11. Isi Placeholder Header & TTD
         const schoolData = getSchoolData(spreadsheetId);
         tempSheet.createTextFinder('[[JUDUL_LAPORAN]]').replaceAllWith(reportTitle);
         tempSheet.createTextFinder('[[NAMA_SEKOLAH]]').replaceAllWith((schoolData.namaSekolah || "NAMA SEKOLAH").toUpperCase());
         tempSheet.createTextFinder('[[TAHUN_AJARAN]]').replaceAllWith(`Tahun Ajaran ${exportOptions.tahunAjaran || ""}`);
         const formatDateToIndonesian = (dateString) => {
-          if (!dateString) return "";
-          const date = new Date(dateString);
-          return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(date);
-        };
+            if (!dateString) return ""; try { const date = new Date(dateString); date.setMinutes(date.getMinutes() + date.getTimezoneOffset()); return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(date); } catch (e) { return dateString; } };
         const ttdDate = formatDateToIndonesian(exportOptions.tanggalTTD || new Date().toISOString().split('T')[0]);
         const tempatTanggal = `${exportOptions.tempatTTD || (schoolData.kabupaten ? toProperCase(schoolData.kabupaten) : 'Tempat')}, ${ttdDate}`;
         tempSheet.createTextFinder('[[TEMPAT_TANGGAL_TTD]]').replaceAllWith(tempatTanggal);
@@ -2876,66 +2779,98 @@ function exportRekapData(spreadsheetId, type, format, exportOptions, selectedKel
         tempSheet.createTextFinder('[[NAMA_KEPSEK]]').replaceAllWith(schoolData.namaKepsek || "Nama Kepala");
         tempSheet.createTextFinder('[[NIP_KEPSEK]]').replaceAllWith(schoolData.nipKepsek ? `NIP. ${schoolData.nipKepsek}` : "NIP. -");
 
-        // 10. Hapus Kolom Placeholder Mapel Start
-        tempSheet.deleteColumn(mapelStartCol);
-
-        // --- Formatting Tambahan ---
-        const dataEndRow = bodyStartRow + tableBodyData.length - 1;
-        const lastColumnAfterDelete = tempSheet.getLastColumn();
+        // 12. Formatting Tambahan
+        const dataEndRow = bodyStartRow + numDataRows - 1;
+        const lastColumnAfterMaybeDelete = tempSheet.getLastColumn();
         if (dataEndRow >= bodyStartRow) {
              const tableHeaderStartRow = mapelHeaderActualRow;
-             const tableRange = tempSheet.getRange(tableHeaderStartRow, 1, tableBodyData.length + (mapelCodeActualRow - mapelHeaderActualRow + 1), lastColumnAfterDelete);
+             const totalHeaderRows = mapelCodeActualRow - mapelHeaderActualRow + 1;
+             const tableRange = tempSheet.getRange(tableHeaderStartRow, 1, numDataRows + totalHeaderRows, lastColumnAfterMaybeDelete);
              tableRange.setBorder(true, true, true, true, true, true).setVerticalAlignment("middle");
 
-             const firstMapelDataCol = mapelStartCol; // Kolom mapel sekarang dimulai dari sini
-             tempSheet.getRange(bodyStartRow, 1, tableBodyData.length, 1).setHorizontalAlignment("center"); // No
-             tempSheet.getRange(bodyStartRow, 2, tableBodyData.length, 1).setHorizontalAlignment("center"); // NISN
-             tempSheet.getRange(bodyStartRow, 3, tableBodyData.length, 1).setHorizontalAlignment("left");   // Nama
-             tempSheet.getRange(bodyStartRow, 4, tableBodyData.length, 1).setHorizontalAlignment("center"); // Kelas
-             tempSheet.getRange(bodyStartRow, firstMapelDataCol, tableBodyData.length, lastColumnAfterDelete - firstMapelDataCol + 1).setHorizontalAlignment("center");
+             const firstMapelDataCol = mapelStartCol;
+
+             // Kolom sebelum Mapel
+             tempSheet.getRange(bodyStartRow, 1, numDataRows, 1).setHorizontalAlignment("center"); // No
+             tempSheet.getRange(bodyStartRow, 2, numDataRows, 1).setHorizontalAlignment("center"); // NISN
+             tempSheet.getRange(bodyStartRow, 3, numDataRows, 1).setHorizontalAlignment("left").setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP); // Nama (WRAP TEXT AKTIF)
+             tempSheet.getRange(bodyStartRow, 4, numDataRows, 1).setHorizontalAlignment("center"); // Kelas
+
+             // Kolom Mapel
+             if(numMapel > 0){
+                tempSheet.getRange(bodyStartRow, firstMapelDataCol, numDataRows, numMapel).setHorizontalAlignment("center");
+             }
+
+             // Kolom Setelah Mapel
+             if(jumlahActualCol > 0) tempSheet.getRange(bodyStartRow, jumlahActualCol, numDataRows, 1).setHorizontalAlignment("center");
+             if(rataRataActualCol > 0) {
+                 tempSheet.getRange(mapelCodeActualRow, rataRataActualCol).setHorizontalAlignment("center"); // Header Rata-rata CENTER
+                 tempSheet.getRange(bodyStartRow, rataRataActualCol, numDataRows, 1).setHorizontalAlignment("center"); // Data Rata-rata CENTER
+             }
+             if(statusActualCol > 0 && type === 'ijazah') {
+                 // Format Header Status
+                 const statusHeaderCell = tempSheet.getRange(mapelCodeActualRow, statusActualCol);
+                 if (statusHeaderCell.getValue().toString().toUpperCase() === 'STATUS') {
+                     statusHeaderCell.setHorizontalAlignment("center"); // Header Status CENTER
+                 }
+                 // Format Data Status & Conditional Formatting
+                 const statusDataRange = tempSheet.getRange(bodyStartRow, statusActualCol, numDataRows, 1);
+                 statusDataRange.setHorizontalAlignment("center").setFontWeight("bold"); // Data Status CENTER & Bold
+
+                 // Hapus aturan lama
+                 const rules = tempSheet.getConditionalFormatRules();
+                 const rulesToRemove = rules.filter(rule => { const ranges = rule.getRanges(); return ranges.length > 0 && ranges[0].getColumn() === statusActualCol && ranges[0].getRow() >= bodyStartRow; });
+                 if (rulesToRemove.length > 0) tempSheet.removeConditionalFormatRules(rulesToRemove);
+
+                 // Buat aturan baru
+                 const ruleLulus = SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("LULUS").setBackground(WARNA_LULUS).setRanges([statusDataRange]).build();
+                 const ruleTidakLulus = SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("TIDAK LULUS").setBackground(WARNA_TIDAK_LULUS).setRanges([statusDataRange]).build();
+                 tempSheet.setConditionalFormatRules([...rules.filter(rule => !rulesToRemove.includes(rule)), ruleLulus, ruleTidakLulus]);
+
+             }
+             // Kolom Pembulatan (jika ada)
+             const pembulatanCol = (type === 'ujian' && lastHeaderActualCol > 0 && !deleteLastColumn) ? lastHeaderActualCol : -1;
+             if(pembulatanCol > 0){
+                 tempSheet.getRange(mapelCodeActualRow, pembulatanCol).setHorizontalAlignment("center"); // Header Pembulatan CENTER
+                 tempSheet.getRange(bodyStartRow, pembulatanCol, numDataRows, 1).setHorizontalAlignment("center"); // Data Pembulatan CENTER
+             }
         }
-        tempSheet.getRange(bodyStartRow, 2, tableBodyData.length > 0 ? tableBodyData.length : 1, 1).setNumberFormat("@");
+        tempSheet.getRange(bodyStartRow, 2, numDataRows > 0 ? numDataRows : 1, 1).setNumberFormat("@"); // Format NISN
 
         SpreadsheetApp.flush();
 
-        // 11. Ekspor file
+        // 13. Ekspor file
         const exportUrl = `https://docs.google.com/spreadsheets/d/${tempSpreadsheetFileId}/export`;
         const token = ScriptApp.getOAuthToken();
         const fetchOptions = { headers: { Authorization: `Bearer ${token}` }, muteHttpExceptions: true };
         let blob, fileNameResult, mimeType;
 
         if (format === 'excel') {
-            fileNameResult = `${reportTitle.replace(/ /g, "_")}.xlsx`;
+            fileNameResult = `${reportTitle.replace(/ /g, "_")}_${selectedKelas}.xlsx`;
             mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
             const url = `${exportUrl}?format=xlsx`;
             blob = UrlFetchApp.fetch(url, fetchOptions).getBlob().setName(fileNameResult);
         } else { // PDF
-            fileNameResult = `${reportTitle.replace(/ /g, "_")}.pdf`;
+            fileNameResult = `${reportTitle.replace(/ /g, "_")}_${selectedKelas}.pdf`;
             mimeType = 'application/pdf';
             const pdfOptions = `?exportFormat=pdf&format=pdf&size=A4&portrait=false&fitw=true&sheetnames=false&printtitle=false&gridlines=false&gid=${tempSheet.getSheetId()}`;
             const url = `${exportUrl}${pdfOptions}`;
-            blob = UrlFetchApp.fetch(url, fetchOptions).getBlob().setName(fileNameResult);
+             try { blob = UrlFetchApp.fetch(url, fetchOptions).getBlob().setName(fileNameResult); }
+             catch (pdfError) { Logger.log(`PDF Export Error: ${pdfError}. URL: ${url}`); throw new Error(`Gagal membuat PDF.`); }
         }
 
         if (!blob || blob.getBytes().length === 0) throw new Error("Gagal membuat file ekspor. Blob kosong.");
 
-        return {
-            fileName: fileNameResult,
-            mimeType: mimeType,
-            base64Data: Utilities.base64Encode(blob.getBytes())
-        };
+        return { fileName: fileNameResult, mimeType: mimeType, base64Data: Utilities.base64Encode(blob.getBytes()) };
 
     } catch (e) {
         Logger.log(`Export Error: ${e.toString()}\nStack: ${e.stack}`);
-        if (tempSpreadsheetFileId) {
-            try { DriveApp.getFileById(tempSpreadsheetFileId).setTrashed(true); } catch (delErr) { Logger.log(`Gagal menghapus file sementara ${tempSpreadsheetFileId}: ${delErr}`); }
-        }
+        if (tempSpreadsheetFileId) { try { DriveApp.getFileById(tempSpreadsheetFileId).setTrashed(true); } catch (delErr) { Logger.log(`Gagal hapus temp: ${delErr}`); } }
         return { error: e.toString() };
     } finally {
-         if (tempSpreadsheet) {
-             try { DriveApp.getFileById(tempSpreadsheet.getId()).setTrashed(true); } catch (delErr) {Logger.log(`Gagal menghapus file sementara ${tempSpreadsheetFileId} di finally: ${delErr}`);}
-         } else if (tempSpreadsheetFileId) {
-            try { DriveApp.getFileById(tempSpreadsheetFileId).setTrashed(true); } catch (delErr) {Logger.log(`Gagal menghapus file sementara ${tempSpreadsheetFileId} di finally (tanpa object): ${delErr}`);}
+         if (tempSpreadsheetFileId) {
+             try { const file = DriveApp.getFileById(tempSpreadsheetFileId); if (file && !file.isTrashed()) { file.setTrashed(true); Logger.log(`File sementara ${tempSpreadsheetFileId} dihapus di finally.`); }
+             } catch (delErr) { Logger.log(`Gagal hapus temp di finally: ${delErr}`); }
          }
     }
 }
