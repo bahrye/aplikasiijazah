@@ -2749,7 +2749,7 @@ function exportRekapData(spreadsheetId, type, format, exportOptions, selectedKel
         studentsToExport.forEach((student, index) => {
             const nisn = student.nisn; const studentScores = dataToProcess[nisn] || {}; const rowDataPrefix = [index + 1, `'${nisn}`, student.nama.toUpperCase(), student.kelas || '-']; const rowDataScores = []; let total = 0; let validScoresCount = 0;
             mapel.forEach(m => { const score = parseFloat(studentScores[m.kode]); let displayValue = 0; if (!isNaN(score)) { const roundedScore = Math.round(score); displayValue = roundedScore; total += roundedScore; validScoresCount++; } rowDataScores.push(displayValue); });
-            const mapelCount = mapel.length; const average = mapelCount > 0 ? (total / mapelCount) : 0; const averageFormatted = average.toFixed(2).replace('.', ','); const rowDataSuffix = [total, averageFormatted];
+            const mapelCount = mapel.length; const average = mapelCount > 0 ? (total / mapelCount) : 0; const averageFormatted = "'" + average.toFixed(2).replace('.', ','); const rowDataSuffix = [total, averageFormatted];
             if (type === 'ujian') rowDataSuffix.push(Math.round(average)); else if (type === 'ijazah') rowDataSuffix.push((validScoresCount > 0 && average >= kkm) ? 'LULUS' : 'TIDAK LULUS'); tableBodyData.push([...rowDataPrefix, ...rowDataScores, ...rowDataSuffix]);
         });
 
