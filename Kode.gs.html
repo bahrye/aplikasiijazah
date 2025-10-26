@@ -2605,8 +2605,8 @@ function checkRekapSheetsExist(spreadsheetId) {
 }
 
 /**
- * [MODIFIKASI v14 - PENYESUAIAN LEBAR KOLOM RATA-RATA & STATUS] Mengekspor data rekapitulasi ke format PDF atau Excel
- * dengan penyesuaian format tampilan.
+ * [MODIFIKASI v14 - PENYESUAIAN LEBAR KOLOM RATA-RATA & STATUS + PEMINDAHAN TTD DINAMIS + FIX ERROR + FONT/ROW HEIGHT]
+ * Mengekspor data rekapitulasi ke format PDF atau Excel dengan penyesuaian format tampilan.
  * @param {string} spreadsheetId ID spreadsheet target (data pengguna).
  * @param {string} type Jenis rekap ('ujian', 'rapor', 'ijazah').
  * @param {string} format Format ekspor ('pdf' atau 'excel').
@@ -2620,13 +2620,13 @@ function exportRekapData(spreadsheetId, type, format, exportOptions, selectedKel
     const MAPEL_START_PLACEHOLDER = "[[MAPEL_START]]";
     const LAST_COLUMN_PLACEHOLDER = "[[LAST_COLUMN_HEADER]]";
     const MAPEL_COLUMN_WIDTH = 70;
-    // [PERUBAHAN] Tambah lebar kolom summary
-    const SUMMARY_COLUMN_WIDTH = 95; // Sebelumnya 85
-    const LAST_COLUMN_WIDTH = 110; // Sebelumnya 100 (Lebar untuk Status/Pembulatan)
-    // ----------------------------
+    const SUMMARY_COLUMN_WIDTH = 98; // Lebar untuk Jumlah & Rata-rata
+    const LAST_COLUMN_WIDTH = 115; // Lebar untuk Status/Pembulatan
     const MAPEL_HEADER_TEXT = "MATA PELAJARAN";
     const WARNA_LULUS = "#b6d7a8";
     const WARNA_TIDAK_LULUS = "#ea9999";
+    const FONT_SIZE_BODY = 12; // Ukuran font untuk data tabel dan TTD
+    const ROW_HEIGHT = 21; // Tinggi baris dalam piksel
     // ---------------------------
 
     let tempSpreadsheetFileId = null;
@@ -2720,52 +2720,127 @@ function exportRekapData(spreadsheetId, type, format, exportOptions, selectedKel
         // 8. Sisipkan baris sebelum menulis data
         const bodyStartRow = mapelCodeActualRow + 1;
         const numDataRows = tableBodyData.length;
-        const existingEmptyRows = 1;
+        const existingEmptyRows = 1; // Asumsi ada 1 baris kosong di template antara header dan TTD
         const rowsToInsert = numDataRows - existingEmptyRows;
         if (rowsToInsert > 0) {
-            let ttdPlaceholderRow = -1; const ttdSearchRange = tempSheet.getRange(bodyStartRow, 1, tempSheet.getMaxRows() - bodyStartRow + 1, tempSheet.getLastColumn()); const ttdValues = ttdSearchRange.getDisplayValues();
-            for(let r = 0; r < ttdValues.length; r++){ if(ttdValues[r].includes("[[TEMPAT_TANGGAL_TTD]]")){ ttdPlaceholderRow = bodyStartRow + r; break; } }
-            if (ttdPlaceholderRow !== -1) { tempSheet.insertRowsBefore(ttdPlaceholderRow, rowsToInsert); Logger.log(`Sisip ${rowsToInsert} baris sblm ${ttdPlaceholderRow}`); SpreadsheetApp.flush(); }
-            else { Logger.log(`TTD tdk ketemu, sisip ${rowsToInsert} baris stlh ${mapelCodeActualRow}.`); tempSheet.insertRowsAfter(mapelCodeActualRow, rowsToInsert); SpreadsheetApp.flush(); }
+            let ttdPlaceholderRow = -1;
+            const ttdSearchRange = tempSheet.getRange(bodyStartRow, 1, tempSheet.getMaxRows() - bodyStartRow + 1, tempSheet.getLastColumn());
+            const ttdValues = ttdSearchRange.getDisplayValues();
+            for (let r = 0; r < ttdValues.length; r++) {
+                if (ttdValues[r].includes("[[TEMPAT_TANGGAL_TTD]]")) {
+                    ttdPlaceholderRow = bodyStartRow + r; break;
+                }
+            }
+            if (ttdPlaceholderRow !== -1) {
+                tempSheet.insertRowsBefore(ttdPlaceholderRow, rowsToInsert);
+                Logger.log(`Menyisipkan ${rowsToInsert} baris sebelum baris TTD ${ttdPlaceholderRow}`);
+                SpreadsheetApp.flush();
+            } else {
+                Logger.log(`Placeholder TTD tidak ditemukan. Menyisipkan ${rowsToInsert} baris setelah baris header mapel ${mapelCodeActualRow}.`);
+                tempSheet.insertRowsAfter(mapelCodeActualRow, rowsToInsert);
+                SpreadsheetApp.flush();
+            }
         }
 
-        // 9. Cari dan Atur Kolom Terakhir
+        // 9. Cari dan Atur Kolom Terakhir (Jumlah, Rata-rata, Status/Pembulatan)
         let jumlahActualCol = -1, rataRataActualCol = -1, lastHeaderActualCol = -1, statusActualCol = -1;
         let lastHeaderActualRow = -1; let deleteLastColumn = false;
         SpreadsheetApp.flush();
         const finalSheetLastCol = tempSheet.getLastColumn();
-        const finalHeadersRange = tempSheet.getRange(1, 1, tempSheet.getMaxRows(), finalSheetLastCol);
-        const finalHeadersValues = finalHeadersRange.getValues();
+        const finalHeadersSearchRange = tempSheet.getRange(1, 1, Math.max(mapelCodeActualRow, bodyStartRow), finalSheetLastCol);
+        const finalHeadersValues = finalHeadersSearchRange.getValues();
         for (let r = 0; r < finalHeadersValues.length; r++) {
-             for (let c = 0; c < finalHeadersValues[r].length; c++) { const headerText = finalHeadersValues[r][c].toString(); if (headerText.toUpperCase() === "JUMLAH" && jumlahActualCol === -1) jumlahActualCol = c + 1; if (headerText.toUpperCase() === "RATA-RATA" && rataRataActualCol === -1) rataRataActualCol = c + 1; if (headerText === LAST_COLUMN_PLACEHOLDER && lastHeaderActualCol === -1) { lastHeaderActualCol = c + 1; lastHeaderActualRow = r + 1; } if (headerText.toUpperCase() === "STATUS" && statusActualCol === -1) statusActualCol = c + 1; }
+            for (let c = 0; c < finalHeadersValues[r].length; c++) {
+                const headerText = finalHeadersValues[r][c].toString().toUpperCase();
+                if (headerText === "JUMLAH" && jumlahActualCol === -1) jumlahActualCol = c + 1;
+                if (headerText === "RATA-RATA" && rataRataActualCol === -1) rataRataActualCol = c + 1;
+                if (finalHeadersValues[r][c].toString() === LAST_COLUMN_PLACEHOLDER && lastHeaderActualCol === -1) { lastHeaderActualCol = c + 1; lastHeaderActualRow = r + 1; }
+                if (headerText === "STATUS" && statusActualCol === -1) statusActualCol = c + 1;
+            }
              if (jumlahActualCol > 0 && rataRataActualCol > 0 && lastHeaderActualCol > 0 && lastHeaderActualRow > 0 && (type !== 'ijazah' || statusActualCol > 0)) break;
         }
         if (lastHeaderActualCol === -1) {
-             for (let r = 0; r < finalHeadersValues.length; r++) { for (let c = 0; c < finalHeadersValues[r].length; c++) { if (finalHeadersValues[r][c].toString() === LAST_COLUMN_PLACEHOLDER) { lastHeaderActualCol = c + 1; lastHeaderActualRow = r + 1; break; } } if (lastHeaderActualCol > 0) break; }
+            Logger.log(`Peringatan: Placeholder kolom terakhir '${LAST_COLUMN_PLACEHOLDER}' tidak ditemukan.`);
+            lastHeaderActualCol = mapelStartCol + numMapel + 2;
+            lastHeaderActualRow = mapelCodeActualRow;
+            tempSheet.getRange(lastHeaderActualRow, lastHeaderActualCol).setValue(LAST_COLUMN_PLACEHOLDER);
         }
-        // [PERUBAHAN] Terapkan SUMMARY_COLUMN_WIDTH ke kolom Jumlah & Rata-rata
         if (jumlahActualCol > 0) tempSheet.setColumnWidth(jumlahActualCol, SUMMARY_COLUMN_WIDTH);
         if (rataRataActualCol > 0) tempSheet.setColumnWidth(rataRataActualCol, SUMMARY_COLUMN_WIDTH);
-        // [PERUBAHAN] Terapkan LAST_COLUMN_WIDTH ke kolom Status/Pembulatan
-        if (statusActualCol > 0) tempSheet.setColumnWidth(statusActualCol, LAST_COLUMN_WIDTH);
         if (lastHeaderActualCol !== -1 && lastHeaderActualRow !== -1) {
              const lastHeaderCell = tempSheet.getRange(lastHeaderActualRow, lastHeaderActualCol);
-             if (type === 'ijazah') { lastHeaderCell.setValue("STATUS"); tempSheet.setColumnWidth(lastHeaderActualCol, LAST_COLUMN_WIDTH); statusActualCol = lastHeaderActualCol; }
-             else if (type === 'ujian') { lastHeaderCell.setValue("PEMBULATAN"); tempSheet.setColumnWidth(lastHeaderActualCol, LAST_COLUMN_WIDTH); }
-             else { deleteLastColumn = true; }
-        } else if (type !== 'rapor') Logger.log(`Peringatan: Placeholder ${LAST_COLUMN_PLACEHOLDER} tidak ditemukan.`);
-        if (deleteLastColumn && lastHeaderActualCol > 0) { if (lastHeaderActualCol <= tempSheet.getLastColumn()) tempSheet.deleteColumn(lastHeaderActualCol); }
+             if (type === 'ijazah') {
+                 lastHeaderCell.setValue("STATUS");
+                 tempSheet.setColumnWidth(lastHeaderActualCol, LAST_COLUMN_WIDTH);
+                 statusActualCol = lastHeaderActualCol;
+             } else if (type === 'ujian') {
+                 lastHeaderCell.setValue("PEMBULATAN");
+                 tempSheet.setColumnWidth(lastHeaderActualCol, LAST_COLUMN_WIDTH);
+             } else {
+                 deleteLastColumn = true;
+             }
+        }
+        if (deleteLastColumn && lastHeaderActualCol > 0) {
+            if (lastHeaderActualCol <= tempSheet.getLastColumn()) { tempSheet.deleteColumn(lastHeaderActualCol); }
+        }
+        const numPrefixCols = 4;
+        const numSuffixCols = deleteLastColumn ? 2 : 3;
+        const totalExpectedColumns = numPrefixCols + numMapel + numSuffixCols;
 
         // 10. Tulis Data Body ke Sheet
         if (numDataRows > 0) {
-             const numPrefixCols = 4; const numSuffixCols = deleteLastColumn ? 2 : 3; const totalExpectedColumns = numPrefixCols + numMapel + numSuffixCols;
-             const lastActualColNum = tempSheet.getLastColumn(); const numColsToWrite = Math.min(totalExpectedColumns, lastActualColNum);
+             const lastActualColNum = tempSheet.getLastColumn();
+             const numColsToWrite = Math.min(totalExpectedColumns, lastActualColNum);
+             const dataToWrite = tableBodyData.map(row => row.slice(0, numColsToWrite));
              const writeRange = tempSheet.getRange(bodyStartRow, 1, numDataRows, numColsToWrite);
-             const dataToWrite = tableBodyData.slice(0, numDataRows).map(row => row.slice(0, numColsToWrite));
              writeRange.setValues(dataToWrite);
         }
 
-        // 11. Isi Placeholder Header & TTD
+        // 11. Cari Posisi Placeholder TTD AWAL, Hapus, dan Tulis Ulang di Lokasi Target
+        let dateTargetRow = -1, jabatanTargetRow = -1, namaTargetRow = -1, nipTargetRow = -1;
+        try {
+            const lastMapelCol = mapelStartCol + numMapel - 1;
+            const targetStartCol = Math.max(1, lastMapelCol - 1);
+            const targetEndCol = Math.min(tempSheet.getLastColumn(), Math.max(targetStartCol + 2, rataRataActualCol > 0 ? rataRataActualCol : (jumlahActualCol > 0 ? jumlahActualCol : targetStartCol + 1)));
+            const numColsToMerge = targetEndCol - targetStartCol + 1;
+            const lastDataRow = bodyStartRow + numDataRows - 1;
+            const targetStartRowOffset = 2;
+
+            const findPlaceholderInfo = (placeholderText) => {
+                 const finder = tempSheet.createTextFinder(placeholderText).findNext();
+                 return finder ? { range: finder, row: finder.getRow(), col: finder.getColumn(), value: finder.getValue() } : null;
+            };
+            const dateInfo = findPlaceholderInfo('[[TEMPAT_TANGGAL_TTD]]');
+            const jabatanInfo = findPlaceholderInfo('[[JABATAN_TTD]]');
+            const namaInfo = findPlaceholderInfo('[[NAMA_KEPSEK]]');
+            const nipInfo = findPlaceholderInfo('[[NIP_KEPSEK]]');
+
+            dateTargetRow = lastDataRow + targetStartRowOffset;
+            jabatanTargetRow = dateTargetRow + 1;
+            namaTargetRow = jabatanTargetRow + 5; // +1 for jabatan, +4 for empty rows
+            nipTargetRow = namaTargetRow + 1;
+
+            const relocatePlaceholder = (placeholderInfo, targetRow, alignment = 'left', weight = 'normal', line = 'none', mergeCells = true) => {
+                if (!placeholderInfo) { Logger.log(`Placeholder tidak ditemukan.`); return; }
+                const placeholderValue = placeholderInfo.value;
+                placeholderInfo.range.clearContent();
+                const targetRange = tempSheet.getRange(targetRow, targetStartCol, 1, numColsToMerge);
+                targetRange.setWrapStrategy(SpreadsheetApp.WrapStrategy.OVERFLOW);
+                tempSheet.getRange(targetRow, targetStartCol).setValue(placeholderValue);
+                 if (mergeCells && numColsToMerge > 1) { targetRange.merge(); }
+                targetRange.setHorizontalAlignment(alignment).setFontWeight(weight).setFontLine(line);
+            };
+            relocatePlaceholder(dateInfo, dateTargetRow, 'left');
+            relocatePlaceholder(jabatanInfo, jabatanTargetRow, 'left');
+            relocatePlaceholder(namaInfo, namaTargetRow, 'left', 'bold', 'underline');
+            relocatePlaceholder(nipInfo, nipTargetRow, 'left');
+            SpreadsheetApp.flush();
+        } catch (moveError) {
+             Logger.log(`Error saat memindahkan placeholder TTD: ${moveError}. Stack: ${moveError.stack}`);
+             dateTargetRow = jabatanTargetRow = namaTargetRow = nipTargetRow = -1;
+        }
+
+        // 12. Isi Placeholder Header & TTD
         const schoolData = getSchoolData(spreadsheetId);
         tempSheet.createTextFinder('[[JUDUL_LAPORAN]]').replaceAllWith(reportTitle);
         tempSheet.createTextFinder('[[NAMA_SEKOLAH]]').replaceAllWith((schoolData.namaSekolah || "NAMA SEKOLAH").toUpperCase());
@@ -2779,67 +2854,61 @@ function exportRekapData(spreadsheetId, type, format, exportOptions, selectedKel
         tempSheet.createTextFinder('[[NAMA_KEPSEK]]').replaceAllWith(schoolData.namaKepsek || "Nama Kepala");
         tempSheet.createTextFinder('[[NIP_KEPSEK]]').replaceAllWith(schoolData.nipKepsek ? `NIP. ${schoolData.nipKepsek}` : "NIP. -");
 
-        // 12. Formatting Tambahan
+        // 13. Formatting Tambahan (Ukuran Font dan Tinggi Baris)
         const dataEndRow = bodyStartRow + numDataRows - 1;
         const lastColumnAfterMaybeDelete = tempSheet.getLastColumn();
+        const tableHeaderStartRow = mapelHeaderActualRow;
+        const lastContentRow = Math.max(dataEndRow, nipTargetRow, namaTargetRow, jabatanTargetRow, dateTargetRow);
+
         if (dataEndRow >= bodyStartRow) {
-             const tableHeaderStartRow = mapelHeaderActualRow;
              const totalHeaderRows = mapelCodeActualRow - mapelHeaderActualRow + 1;
-             const tableRange = tempSheet.getRange(tableHeaderStartRow, 1, numDataRows + totalHeaderRows, lastColumnAfterMaybeDelete);
+             const tableLastCol = Math.min(lastColumnAfterMaybeDelete, totalExpectedColumns);
+             const tableRange = tempSheet.getRange(tableHeaderStartRow, 1, numDataRows + totalHeaderRows, tableLastCol);
              tableRange.setBorder(true, true, true, true, true, true).setVerticalAlignment("middle");
 
+             const tableBodyRange = tempSheet.getRange(bodyStartRow, 1, numDataRows, tableLastCol);
+             tableBodyRange.setFontSize(FONT_SIZE_BODY);
+
              const firstMapelDataCol = mapelStartCol;
-
-             // Kolom sebelum Mapel
-             tempSheet.getRange(bodyStartRow, 1, numDataRows, 1).setHorizontalAlignment("center"); // No
-             tempSheet.getRange(bodyStartRow, 2, numDataRows, 1).setHorizontalAlignment("center"); // NISN
-             tempSheet.getRange(bodyStartRow, 3, numDataRows, 1).setHorizontalAlignment("left").setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP); // Nama (WRAP TEXT AKTIF)
-             tempSheet.getRange(bodyStartRow, 4, numDataRows, 1).setHorizontalAlignment("center"); // Kelas
-
-             // Kolom Mapel
-             if(numMapel > 0){
-                tempSheet.getRange(bodyStartRow, firstMapelDataCol, numDataRows, numMapel).setHorizontalAlignment("center");
-             }
-
-             // Kolom Setelah Mapel
+             tempSheet.getRange(bodyStartRow, 1, numDataRows, 1).setHorizontalAlignment("center");
+             tempSheet.getRange(bodyStartRow, 2, numDataRows, 1).setHorizontalAlignment("center");
+             tempSheet.getRange(bodyStartRow, 3, numDataRows, 1).setHorizontalAlignment("left").setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
+             tempSheet.getRange(bodyStartRow, 4, numDataRows, 1).setHorizontalAlignment("center");
+             if(numMapel > 0){ tempSheet.getRange(bodyStartRow, firstMapelDataCol, numDataRows, numMapel).setHorizontalAlignment("center"); }
              if(jumlahActualCol > 0) tempSheet.getRange(bodyStartRow, jumlahActualCol, numDataRows, 1).setHorizontalAlignment("center");
-             if(rataRataActualCol > 0) {
-                 tempSheet.getRange(mapelCodeActualRow, rataRataActualCol).setHorizontalAlignment("center"); // Header Rata-rata CENTER
-                 tempSheet.getRange(bodyStartRow, rataRataActualCol, numDataRows, 1).setHorizontalAlignment("center"); // Data Rata-rata CENTER
-             }
+             if(rataRataActualCol > 0) { tempSheet.getRange(mapelCodeActualRow, rataRataActualCol).setHorizontalAlignment("center"); tempSheet.getRange(bodyStartRow, rataRataActualCol, numDataRows, 1).setHorizontalAlignment("center"); }
              if(statusActualCol > 0 && type === 'ijazah') {
-                 // Format Header Status
-                 const statusHeaderCell = tempSheet.getRange(mapelCodeActualRow, statusActualCol);
-                 if (statusHeaderCell.getValue().toString().toUpperCase() === 'STATUS') {
-                     statusHeaderCell.setHorizontalAlignment("center"); // Header Status CENTER
-                 }
-                 // Format Data Status & Conditional Formatting
+                const statusHeaderCell = tempSheet.getRange(mapelCodeActualRow, statusActualCol);
+                 if (statusHeaderCell.getValue().toString().toUpperCase() === 'STATUS') { statusHeaderCell.setHorizontalAlignment("center"); }
                  const statusDataRange = tempSheet.getRange(bodyStartRow, statusActualCol, numDataRows, 1);
-                 statusDataRange.setHorizontalAlignment("center").setFontWeight("bold"); // Data Status CENTER & Bold
-
-                 // Hapus aturan lama
+                 statusDataRange.setHorizontalAlignment("center").setFontWeight("bold");
                  const rules = tempSheet.getConditionalFormatRules();
                  const rulesToRemove = rules.filter(rule => { const ranges = rule.getRanges(); return ranges.length > 0 && ranges[0].getColumn() === statusActualCol && ranges[0].getRow() >= bodyStartRow; });
                  if (rulesToRemove.length > 0) tempSheet.removeConditionalFormatRules(rulesToRemove);
-
-                 // Buat aturan baru
                  const ruleLulus = SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("LULUS").setBackground(WARNA_LULUS).setRanges([statusDataRange]).build();
                  const ruleTidakLulus = SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("TIDAK LULUS").setBackground(WARNA_TIDAK_LULUS).setRanges([statusDataRange]).build();
                  tempSheet.setConditionalFormatRules([...rules.filter(rule => !rulesToRemove.includes(rule)), ruleLulus, ruleTidakLulus]);
-
              }
-             // Kolom Pembulatan (jika ada)
              const pembulatanCol = (type === 'ujian' && lastHeaderActualCol > 0 && !deleteLastColumn) ? lastHeaderActualCol : -1;
-             if(pembulatanCol > 0){
-                 tempSheet.getRange(mapelCodeActualRow, pembulatanCol).setHorizontalAlignment("center"); // Header Pembulatan CENTER
-                 tempSheet.getRange(bodyStartRow, pembulatanCol, numDataRows, 1).setHorizontalAlignment("center"); // Data Pembulatan CENTER
-             }
+             if(pembulatanCol > 0 && pembulatanCol <= tempSheet.getLastColumn()){ tempSheet.getRange(mapelCodeActualRow, pembulatanCol).setHorizontalAlignment("center"); tempSheet.getRange(bodyStartRow, pembulatanCol, numDataRows, 1).setHorizontalAlignment("center"); }
         }
-        tempSheet.getRange(bodyStartRow, 2, numDataRows > 0 ? numDataRows : 1, 1).setNumberFormat("@"); // Format NISN
+        tempSheet.getRange(bodyStartRow, 2, numDataRows > 0 ? numDataRows : 1, 1).setNumberFormat("@");
 
+        const ttdStartRow = dateTargetRow > 0 ? dateTargetRow : (lastDataRow + targetStartRowOffset);
+        if (ttdStartRow > 0 && lastContentRow >= ttdStartRow) {
+            const ttdRange = tempSheet.getRange(ttdStartRow, 1, lastContentRow - ttdStartRow + 1, lastColumnAfterMaybeDelete);
+            ttdRange.setFontSize(FONT_SIZE_BODY);
+        }
+
+        if (lastContentRow >= tableHeaderStartRow) {
+            for (let r = tableHeaderStartRow; r <= lastContentRow; r++) {
+                 try { tempSheet.setRowHeight(r, ROW_HEIGHT); }
+                 catch (rowHeightError) { Logger.log(`Gagal mengatur tinggi baris ${r}: ${rowHeightError}`); }
+            }
+        }
         SpreadsheetApp.flush();
 
-        // 13. Ekspor file
+        // 14. Ekspor file
         const exportUrl = `https://docs.google.com/spreadsheets/d/${tempSpreadsheetFileId}/export`;
         const token = ScriptApp.getOAuthToken();
         const fetchOptions = { headers: { Authorization: `Bearer ${token}` }, muteHttpExceptions: true };
@@ -2853,7 +2922,11 @@ function exportRekapData(spreadsheetId, type, format, exportOptions, selectedKel
         } else { // PDF
             fileNameResult = `${reportTitle.replace(/ /g, "_")}_${selectedKelas}.pdf`;
             mimeType = 'application/pdf';
-            const pdfOptions = `?exportFormat=pdf&format=pdf&size=A4&portrait=false&fitw=true&sheetnames=false&printtitle=false&gridlines=false&gid=${tempSheet.getSheetId()}`;
+            const pdfOptions = `?exportFormat=pdf&format=pdf` +
+                               `&size=A4&portrait=false` +
+                               `&top_margin=0.2&bottom_margin=0.2&left_margin=0.2&right_margin=0.2` +
+                               `&fitw=true&sheetnames=false&printtitle=false&gridlines=false` +
+                               `&gid=${tempSheet.getSheetId()}`;
             const url = `${exportUrl}${pdfOptions}`;
              try { blob = UrlFetchApp.fetch(url, fetchOptions).getBlob().setName(fileNameResult); }
              catch (pdfError) { Logger.log(`PDF Export Error: ${pdfError}. URL: ${url}`); throw new Error(`Gagal membuat PDF.`); }
@@ -2865,11 +2938,19 @@ function exportRekapData(spreadsheetId, type, format, exportOptions, selectedKel
 
     } catch (e) {
         Logger.log(`Export Error: ${e.toString()}\nStack: ${e.stack}`);
-        if (tempSpreadsheetFileId) { try { DriveApp.getFileById(tempSpreadsheetFileId).setTrashed(true); } catch (delErr) { Logger.log(`Gagal hapus temp: ${delErr}`); } }
+        if (tempSpreadsheetFileId) {
+            try { DriveApp.getFileById(tempSpreadsheetFileId).setTrashed(true); }
+            catch (delErr) { Logger.log(`Gagal menghapus file sementara ${tempSpreadsheetFileId} saat error: ${delErr}`); }
+        }
         return { error: e.toString() };
     } finally {
          if (tempSpreadsheetFileId) {
-             try { const file = DriveApp.getFileById(tempSpreadsheetFileId); if (file && !file.isTrashed()) { file.setTrashed(true); Logger.log(`File sementara ${tempSpreadsheetFileId} dihapus di finally.`); }
+             try {
+                 const file = DriveApp.getFileById(tempSpreadsheetFileId);
+                 if (file && !file.isTrashed()) {
+                     file.setTrashed(true);
+                     Logger.log(`File sementara ${tempSpreadsheetFileId} dihapus di finally.`);
+                 }
              } catch (delErr) { Logger.log(`Gagal hapus temp di finally: ${delErr}`); }
          }
     }
