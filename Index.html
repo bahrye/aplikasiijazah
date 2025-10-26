@@ -6429,6 +6429,18 @@
                 resetFloatingButtons();
                 clearHistoryAndHideButtons();
                 document.getElementById('undo-redo-container').classList.remove('hidden');
+
+                // ===== AWAL PERUBAHAN 1: Nonaktifkan Edit FAB saat loading =====
+                const editFabBtn = document.getElementById('edit-scores-floating-btn');
+                if (editFabBtn) {
+                    editFabBtn.disabled = true;
+                    editFabBtn.parentElement.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+                // Pastikan Undo/Redo juga dinonaktifkan di awal
+                document.getElementById('undo-btn').disabled = true;
+                document.getElementById('redo-btn').disabled = true;
+                // ===== AKHIR PERUBAHAN 1 =====
+
                 setupScoreInputListeners('input-ujian-container');
 
                 const container = document.getElementById('input-ujian-container');
@@ -6447,10 +6459,22 @@
 
                     if (!students || students.length === 0) {
                         container.innerHTML = `<p class="text-center text-red-500 p-4">Data siswa tidak ditemukan. Harap isi data siswa terlebih dahulu.</p>`;
+                        // ===== AWAL PERUBAHAN 2a: Aktifkan kembali tombol jika error =====
+                        if (editFabBtn) {
+                            editFabBtn.disabled = false;
+                            editFabBtn.parentElement.classList.remove('opacity-50', 'cursor-not-allowed');
+                        }
+                        // ===== AKHIR PERUBAHAN 2a =====
                         return;
                     }
                     if (!mapelList || mapelList.length === 0) {
                         container.innerHTML = `<p class="text-center text-red-500 p-4">Tidak ada mata pelajaran yang ditandai untuk Ujian ${jenis}. Silahkan edit dan ubah Jenis Ujian pada Mata Pelajaran.</p>`;
+                        // ===== AWAL PERUBAHAN 2b: Aktifkan kembali tombol jika error =====
+                        if (editFabBtn) {
+                            editFabBtn.disabled = false;
+                            editFabBtn.parentElement.classList.remove('opacity-50', 'cursor-not-allowed');
+                        }
+                        // ===== AKHIR PERUBAHAN 2b =====
                         return;
                     }
 
@@ -6539,9 +6563,23 @@
                         resetFloatingButtons(); // Reset tombol setiap kali filter berubah
                     });
 
+                    // ===== AWAL PERUBAHAN 3: Aktifkan Edit FAB setelah render selesai =====
+                    if (editFabBtn) {
+                        editFabBtn.disabled = false;
+                        editFabBtn.parentElement.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                    resetFloatingButtons(); // Panggil ini untuk memastikan state tombol awal benar (Undo/Redo disable)
+                    // ===== AKHIR PERUBAHAN 3 =====
+
 
                 }).catch(err => {
                     container.innerHTML = `<p class="text-center text-red-500 p-4">Terjadi kesalahan saat memuat data: ${err.message}</p>`;
+                    // ===== AWAL PERUBAHAN 4: Aktifkan kembali tombol jika promise gagal =====
+                    if (editFabBtn) {
+                        editFabBtn.disabled = false;
+                        editFabBtn.parentElement.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                    // ===== AKHIR PERUBAHAN 4 =====
                 });
             }
 
@@ -6551,6 +6589,12 @@
                 const form = document.getElementById(`form-nilai-${jenisUjian}`);
                 const saveBtn = document.getElementById('save-floating-btn'); // Targetkan tombol mengambang
 
+                // ===== AWAL PERUBAHAN BARU: Ambil tombol lain =====
+                const clearBtn = document.getElementById('clear-floating-btn');
+                const undoBtn = document.getElementById('undo-btn');
+                const redoBtn = document.getElementById('redo-btn');
+                // ===== AKHIR PERUBAHAN BARU =====
+
                 // Tampilkan notifikasi "Menyimpan"
                 showGlobalStatus('Menyimpan nilai...', 'success');
 
@@ -6559,6 +6603,12 @@
                     saveBtn.disabled = true;
                     // Kita tidak perlu mengubah teksnya karena hanya ikon
                 }
+
+                // ===== AWAL PERUBAHAN BARU: Nonaktifkan tombol lain =====
+                if (clearBtn) clearBtn.disabled = true;
+                if (undoBtn) undoBtn.disabled = true;
+                if (redoBtn) redoBtn.disabled = true;
+                // ===== AKHIR PERUBAHAN BARU =====
                 
                 const allRows = form.querySelectorAll('tbody tr');
                 const nilaiData = [];
@@ -6585,6 +6635,12 @@
                         if (saveBtn) {
                             saveBtn.disabled = false;
                         }
+
+                        // ===== AWAL PERUBAHAN BARU: Aktifkan kembali tombol lain =====
+                        if (clearBtn) clearBtn.disabled = false;
+                        // Aktifkan undo/redo berdasarkan riwayat setelah save selesai
+                        // updateUndoRedoButtonsState();
+                        // ===== AKHIR PERUBAHAN BARU =====
                     })
                     .withFailureHandler(err => {
                         showGlobalStatus(`Gagal menyimpan: ${err.message}`, false);
@@ -6592,6 +6648,12 @@
                         if (saveBtn) {
                             saveBtn.disabled = false;
                         }
+
+                        // ===== AWAL PERUBAHAN BARU: Aktifkan kembali tombol lain jika gagal =====
+                        if (clearBtn) clearBtn.disabled = false;
+                        // Aktifkan undo/redo berdasarkan riwayat jika save gagal
+                        updateUndoRedoButtonsState();
+                        // ===== AKHIR PERUBAHAN BARU =====
                     })
                     .saveNilai(userSpreadsheetId, {
                         jenis: jenisUjian,
@@ -7586,6 +7648,12 @@
             const form = document.getElementById(`form-nilai-${tableKey}`);
             const saveBtn = document.getElementById('save-floating-btn'); // Targetkan tombol mengambang
 
+            // ===== AWAL PERUBAHAN BARU: Ambil tombol lain =====
+            const clearBtn = document.getElementById('clear-floating-btn');
+            const undoBtn = document.getElementById('undo-btn');
+            const redoBtn = document.getElementById('redo-btn');
+            // ===== AKHIR PERUBAHAN BARU =====
+
             // Tampilkan notifikasi "Menyimpan"
             showGlobalStatus('Menyimpan nilai...', 'success');
             
@@ -7593,6 +7661,12 @@
             if (saveBtn) {
                 saveBtn.disabled = true;
             }
+
+            // ===== AWAL PERUBAHAN BARU: Nonaktifkan tombol lain =====
+            if (clearBtn) clearBtn.disabled = true;
+            if (undoBtn) undoBtn.disabled = true;
+            if (redoBtn) redoBtn.disabled = true;
+            // ===== AKHIR PERUBAHAN BARU =====
 
             const allRows = form.querySelectorAll('tbody tr');
             const nilaiData = [];
@@ -7615,6 +7689,12 @@
                     if (saveBtn) {
                         saveBtn.disabled = false;
                     }
+
+                    // ===== AWAL PERUBAHAN BARU: Aktifkan kembali tombol lain =====
+                    if (clearBtn) clearBtn.disabled = false;
+                    // Aktifkan undo/redo berdasarkan riwayat setelah save selesai
+                    // updateUndoRedoButtonsState();
+                    // ===== AKHIR PERUBAHAN BARU =====
                 })
                 .withFailureHandler(err => {
                     showGlobalStatus(`Gagal menyimpan: ${err.message}`, false);
@@ -7622,6 +7702,12 @@
                     if (saveBtn) {
                         saveBtn.disabled = false;
                     }
+
+                    // ===== AWAL PERUBAHAN BARU: Aktifkan kembali tombol lain jika gagal =====
+                    if (clearBtn) clearBtn.disabled = false;
+                    // Aktifkan undo/redo berdasarkan riwayat jika save gagal
+                    updateUndoRedoButtonsState();
+                    // ===== AKHIR PERUBAHAN BARU =====
                 })
                 .saveNilaiRapor(userSpreadsheetId, { semesterKey, jenisNilai, nilai: nilaiData });
         }
@@ -7643,6 +7729,18 @@
             resetFloatingButtons();
             clearHistoryAndHideButtons();
             document.getElementById('undo-redo-container').classList.remove('hidden');
+
+            // ===== AWAL PERUBAHAN 1: Nonaktifkan Edit FAB saat loading =====
+            const editFabBtn = document.getElementById('edit-scores-floating-btn');
+            if (editFabBtn) {
+                editFabBtn.disabled = true;
+                editFabBtn.parentElement.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            // Pastikan Undo/Redo juga dinonaktifkan di awal
+            document.getElementById('undo-btn').disabled = true;
+            document.getElementById('redo-btn').disabled = true;
+            // ===== AKHIR PERUBAHAN 1 =====
+
             setupScoreInputListeners(`table-container-${semesterKey}`);
 
             const container = document.getElementById(`table-container-${semesterKey}`);
@@ -7658,8 +7756,26 @@
                 new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getExistingNilai(userSpreadsheetId, sheetName)),
                 new Promise((resolve) => google.script.run.withSuccessHandler(resolve).getKkm(userSpreadsheetId))
             ]).then(([students, mapelList, existingScores, kkmResponse]) => {
-                if (!students || students.length === 0) { container.innerHTML = `<p class="text-center text-red-500 p-4">Data siswa tidak ditemukan.</p>`; return; }
-                if (!mapelList || mapelList.length === 0) { container.innerHTML = `<p class="text-center text-red-500 p-4">Data mata pelajaran tidak ditemukan.</p>`; return; }
+                if (!students || students.length === 0) { 
+                    container.innerHTML = `<p class="text-center text-red-500 p-4">Data siswa tidak ditemukan.</p>`; 
+                    // ===== AWAL PERUBAHAN 2a: Aktifkan kembali tombol jika error =====
+                    if (editFabBtn) {
+                        editFabBtn.disabled = false;
+                        editFabBtn.parentElement.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                    // ===== AKHIR PERUBAHAN 2a =====
+                    return; 
+                }
+                if (!mapelList || mapelList.length === 0) { 
+                    container.innerHTML = `<p class="text-center text-red-500 p-4">Data mata pelajaran tidak ditemukan.</p>`; 
+                    // ===== AWAL PERUBAHAN 2b: Aktifkan kembali tombol jika error =====
+                    if (editFabBtn) {
+                        editFabBtn.disabled = false;
+                        editFabBtn.parentElement.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                    // ===== AKHIR PERUBAHAN 2b =====
+                    return; 
+                }
                 
                 const kkmValue = (kkmResponse && kkmResponse.status === 'success') ? kkmResponse.kkm : 75;
                 const uniqueKelas = [...new Set(students.map(s => s.kelas).filter(Boolean))].sort();
@@ -7749,8 +7865,23 @@
                 if (semesterContainer) {
                     semesterContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
+
+                // ===== AWAL PERUBAHAN 3: Aktifkan Edit FAB setelah render selesai =====
+                if (editFabBtn) {
+                    editFabBtn.disabled = false;
+                    editFabBtn.parentElement.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+                resetFloatingButtons(); // Panggil ini untuk memastikan state tombol awal benar (Undo/Redo disable)
+                // ===== AKHIR PERUBAHAN 3 =====
+
             }).catch(err => {
                 container.innerHTML = `<p class="text-center text-red-500 p-4">Terjadi kesalahan saat memuat data: ${err.message}</p>`;
+                // ===== AWAL PERUBAHAN 4: Aktifkan kembali tombol jika promise gagal =====
+                if (editFabBtn) {
+                    editFabBtn.disabled = false;
+                    editFabBtn.parentElement.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+                // ===== AKHIR PERUBAHAN 4 =====
             });
         }
 
@@ -10971,13 +11102,20 @@
 
         // ===== GANTI FUNGSI LAMA DENGAN VERSI BARU INI =====
         function clearHistoryAndHideButtons() {
-            isEditModeActive = false; 
+            isEditModeActive = false;
 
             undoHistory = [];
             redoHistory = [];
             activeTableKey = null; // <-- TAMBAHKAN BARIS INI
             document.getElementById('undo-redo-container').classList.add('hidden');
-            updateUndoRedoButtonsState();
+
+            // ===== PERUBAHAN DI SINI =====
+            // Pastikan tombol nonaktif saat panel disembunyikan
+            document.getElementById('undo-btn').disabled = true;
+            document.getElementById('redo-btn').disabled = true;
+            // ============================
+
+            updateUndoRedoButtonsState(); // Perbarui status visual (meskipun sudah nonaktif)
         }
 
         /**
@@ -11650,60 +11788,65 @@
             isEditModeActive = true;
 
             showGlobalStatus('Mode Edit', 'success');
-            const editBtn = document.getElementById(`edit-scores-btn-${key}`);
-            // const actionsContainer = document.getElementById(`actions-container-${key}`);
-            const form = document.getElementById(`form-nilai-${key}`); 
-            
+            const editBtn = document.getElementById(`edit-scores-btn-${key}`); // Tidak dipakai lagi, bisa dihapus
+            const form = document.getElementById(`form-nilai-${key}`);
+
             const editScoresGroup = document.getElementById('edit-scores-group');
             const saveScoresGroup = document.getElementById('save-scores-group');
-            // [TAMBAHKAN BARIS INI]
             const clearScoresGroup = document.getElementById('clear-scores-group');
 
             if (!form) return;
             const scoreInputs = form.querySelectorAll('.score-input');
 
             scoreInputs.forEach(input => {
-                input.readOnly = false;
-                input.classList.remove('cursor-not-allowed', 'bg-gray-50');
-                input.classList.remove('text-red-600', 'font-bold'); 
+                // HANYA aktifkan input yang tidak memiliki status 'disetujui' atau 'menunggu'
+                if (!input.classList.contains('status-disetujui') && !input.classList.contains('status-menunggu')) {
+                    input.readOnly = false;
+                    input.classList.remove('cursor-not-allowed', 'bg-gray-50');
+                }
+                input.classList.remove('text-red-600', 'font-bold'); // Hapus style KKM saat edit
             });
 
-            if (editBtn) editBtn.classList.add('hidden');
             if (editScoresGroup) editScoresGroup.classList.add('hidden');
-            if (saveScoresGroup) saveScoresGroup.classList.remove('hidden'); 
-            // [TAMBAHKAN BARIS INI]
+            if (saveScoresGroup) saveScoresGroup.classList.remove('hidden');
             if (clearScoresGroup) clearScoresGroup.classList.remove('hidden');
-            // if (actionsContainer) actionsContainer.classList.remove('hidden');
+
+            // ===== PERUBAHAN DI SINI =====
+            // Aktifkan tombol Undo/Redo berdasarkan riwayat saat ini
+            updateUndoRedoButtonsState();
+            // ============================
         }
 
         function disableScoreEditing(key) {
             isEditModeActive = false;
 
-            const editBtn = document.getElementById(`edit-scores-btn-${key}`);
-            // const actionsContainer = document.getElementById(`actions-container-${key}`);
+            const editBtn = document.getElementById(`edit-scores-btn-${key}`); // Tidak dipakai lagi
             const form = document.getElementById(`form-nilai-${key}`);
-            
+
             const editScoresGroup = document.getElementById('edit-scores-group');
             const saveScoresGroup = document.getElementById('save-scores-group');
-            // [TAMBAHKAN BARIS INI]
             const clearScoresGroup = document.getElementById('clear-scores-group');
-            
+            const undoBtn = document.getElementById('undo-btn'); // Ambil tombol Undo
+            const redoBtn = document.getElementById('redo-btn'); // Ambil tombol Redo
+
             if (!form) return;
             const scoreInputs = form.querySelectorAll('.score-input');
 
             scoreInputs.forEach(input => {
                 input.readOnly = true;
-                // [TAMBAHKAN] Tambahkan kelas nonaktif secara visual
                 input.classList.add('cursor-not-allowed', 'bg-gray-50');
             });
             applyKkmStylesOnView(form);
 
-            if (editBtn) editBtn.classList.remove('hidden');
-            if (editScoresGroup) editScoresGroup.classList.remove('hidden'); 
+            if (editScoresGroup) editScoresGroup.classList.remove('hidden');
             if (saveScoresGroup) saveScoresGroup.classList.add('hidden');
-            // [TAMBAHKAN BARIS INI]
             if (clearScoresGroup) clearScoresGroup.classList.add('hidden');
-            // if (actionsContainer) actionsContainer.classList.add('hidden');
+
+            // ===== PERUBAHAN DI SINI =====
+            // Nonaktifkan tombol Undo dan Redo saat kembali ke mode lihat
+            if(undoBtn) undoBtn.disabled = true;
+            if(redoBtn) redoBtn.disabled = true;
+            // ============================
         }
 
         /**
@@ -14048,16 +14191,25 @@
         }
 
         /**
-         * [BARU] Mengembalikan panel tombol mengambang ke kondisi awal (mode lihat).
+         * [BARU - DIPERBAIKI] Mengembalikan panel tombol mengambang ke kondisi awal (mode lihat)
+         * dan menonaktifkan Undo/Redo.
          */
         function resetFloatingButtons() {
             const editScoresGroup = document.getElementById('edit-scores-group');
             const saveScoresGroup = document.getElementById('save-scores-group');
             const clearScoresGroup = document.getElementById('clear-scores-group');
+            const undoBtn = document.getElementById('undo-btn'); // Ambil tombol Undo
+            const redoBtn = document.getElementById('redo-btn'); // Ambil tombol Redo
 
             if (editScoresGroup) editScoresGroup.classList.remove('hidden');
             if (saveScoresGroup) saveScoresGroup.classList.add('hidden');
             if (clearScoresGroup) clearScoresGroup.classList.add('hidden');
+
+            // ===== PERUBAHAN DI SINI =====
+            // Selalu nonaktifkan Undo dan Redo saat kembali ke mode lihat/awal
+            if(undoBtn) undoBtn.disabled = true;
+            if(redoBtn) redoBtn.disabled = true;
+            // ============================
         }
 
         // ===== AWAL BLOK KODE WILAYAH VERSI FINAL (DIPERBAIKI) =====
