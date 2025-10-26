@@ -11553,24 +11553,33 @@
         }
 
         /**
-         * [DIPERBARUI] Merender hasil validasi per Jenis Ujian/Sheet dengan header horizontal.
+         * [MODIFIKASI - TANPA KOLOM NAMA STICKY]
+         * Merender hasil validasi per Jenis Ujian/Sheet dengan header horizontal.
+         * Kolom Nama Siswa tidak lagi sticky.
          */
         function renderValidationBySheet(response) {
             const container = document.getElementById('validationResultContainer');
             const { data, sheetHeaders } = response;
 
-            const fullyCompleteCount = data.filter(student => !Object.values(student.completeness).includes(false)).length;
+            // Filter siswa berdasarkan kelas yang dipilih (jika ada)
+            const filterDropdown = document.getElementById('validation-filter-kelas');
+            const selectedKelas = filterDropdown.value;
+            const studentsToRender = (selectedKelas === 'semua')
+                ? data
+                : data.filter(student => student.kelas === selectedKelas);
+
+            const fullyCompleteCount = studentsToRender.filter(student => student.missingCount === 0).length;
 
             let html = `
                 <div class="p-4 mb-6 rounded-lg bg-blue-50 border border-blue-200 text-center">
                     <h3 class="text-lg font-bold text-blue-800">Hasil Validasi per Jenis Ujian</h3>
-                    <p class="text-blue-700">Ditemukan <strong>${fullyCompleteCount} dari ${data.length} siswa</strong> dengan data nilai yang 100% lengkap.</p>
+                    <p class="text-blue-700">Ditemukan <strong>${fullyCompleteCount} dari ${studentsToRender.length} siswa</strong> dengan data nilai yang 100% lengkap (di kelas ${selectedKelas === 'semua' ? 'semua' : selectedKelas}).</p>
                 </div>
                 <div class="overflow-x-auto border rounded-lg">
                     <table class="min-w-full text-sm">
-                        <thead class="bg-gray-100">
+                        <thead class="bg-gray-100 sticky top-0 z-10">
                             <tr>
-                                <th class="px-3 py-3 text-left font-medium text-gray-600 sticky left-0 bg-gray-100 z-10 w-48 align-middle">Nama Siswa</th>
+                                <th class="px-3 py-3 text-left font-medium text-gray-600 bg-gray-100 align-middle">Nama Siswa</th>
                                 ${sheetHeaders.map(header => `
                                     <th class="p-2 text-center align-middle border-l border-gray-200" title="${header.replace(/_/g, ' ')}">
                                         ${formatSheetHeader(header)}
@@ -11581,18 +11590,23 @@
                         <tbody class="divide-y divide-gray-200">
             `;
 
-            data.forEach(student => {
-                html += `
-                    <tr>
-                        <td class="px-3 py-2 font-medium text-gray-800 whitespace-nowrap sticky left-0 bg-white z-10">${student.nama.toUpperCase()}</td>
-                        ${sheetHeaders.map(header => {
-                            const isComplete = student.completeness[header];
-                            const icon = isComplete === undefined ? '<span title="Sheet tidak ditemukan">-</span>' : (isComplete ? '<span title="Lengkap">✅</span>' : '<span title="Tidak Lengkap">❌</span>');
-                            return `<td class="text-center p-2 border-l border-gray-200 align-middle">${icon}</td>`;
-                        }).join('')}
-                    </tr>
-                `;
-            });
+            if (studentsToRender.length === 0) {
+                html += `<tr><td colspan="${sheetHeaders.length + 1}" class="text-center p-8 text-gray-500">Tidak ada siswa di kelas ${selectedKelas}.</td></tr>`;
+            } else {
+                studentsToRender.forEach(student => {
+                    html += `
+                        <tr>
+                            <td class="px-3 py-2 font-medium text-gray-800 whitespace-nowrap bg-white">${student.nama.toUpperCase()}</td>
+                            ${sheetHeaders.map(header => {
+                                const isComplete = student.completeness[header];
+                                // Tampilkan ikon berdasarkan status, atau '-' jika sheet tidak relevan/ada
+                                const icon = isComplete === undefined ? '<span title="Sheet tidak ada/relevan">-</span>' : (isComplete ? '<span title="Lengkap">✅</span>' : '<span title="Tidak Lengkap">❌</span>');
+                                return `<td class="text-center p-2 border-l border-gray-200 align-middle">${icon}</td>`;
+                            }).join('')}
+                        </tr>
+                    `;
+                });
+            }
 
             html += '</tbody></table></div>';
             container.innerHTML = html;
@@ -11641,81 +11655,97 @@
         }
 
         /**
-         * [DIPERBARUI] Merender hasil validasi per Mata Pelajaran dengan rasio yang bisa diklik.
+         * [MODIFIKASI - TANPA KOLOM NAMA STICKY]
+         * Merender hasil validasi per Mata Pelajaran dengan rasio yang bisa diklik.
+         * Kolom Nama Siswa tidak lagi sticky.
          */
         function renderValidationBySubject(response) {
             const container = document.getElementById('validationResultContainer');
             const { data, mapelHeaders } = response;
 
+            // Filter siswa berdasarkan kelas yang dipilih (jika ada)
+            const filterDropdown = document.getElementById('validation-filter-kelas');
+            const selectedKelas = filterDropdown.value;
+            const studentsToRender = (selectedKelas === 'semua')
+                ? data
+                : data.filter(student => student.kelas === selectedKelas);
+
             let html = `
                 <div class="p-4 mb-6 rounded-lg bg-green-50 border border-green-200 text-center">
                     <h3 class="text-lg font-bold text-green-800">Hasil Validasi per Mata Pelajaran</h3>
-                    <p class="text-green-700">Tabel menunjukkan jumlah nilai terisi / total nilai seharusnya. <strong>Klik pada angka rasio untuk melihat detail nilai yang kosong.</strong></p>
+                    <p class="text-green-700">Tabel menunjukkan jumlah nilai terisi / total nilai seharusnya (sesuai pengaturan semester). <strong>Klik pada angka rasio untuk melihat detail nilai yang kosong.</strong></p>
                 </div>
                 <div class="overflow-x-auto border rounded-lg">
                     <table id="validation-by-subject-table" class="min-w-full text-sm">
-                        <thead class="bg-gray-100">
+                        <thead class="bg-gray-100 sticky top-0 z-10">
                             <tr>
-                                <th class="px-3 py-3 text-left font-medium text-gray-600 sticky left-0 bg-gray-100 z-10 w-48">Nama Siswa</th>
+                                <th class="px-3 py-3 text-left font-medium text-gray-600 bg-gray-100 w-48">Nama Siswa</th>
                                 ${mapelHeaders.map(mapel => `<th class="p-2 border-l border-gray-200" title="${mapel.nama}"><div class="transform -rotate-90 whitespace-nowrap h-20 flex items-center justify-center">${mapel.kode}</div></th>`).join('')}
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
             `;
 
-            data.forEach(student => {
-                html += `
-                    <tr>
-                        <td class="px-3 py-2 font-medium text-gray-800 whitespace-nowrap sticky left-0 bg-white z-10">${student.nama.toUpperCase()}</td>
-                        ${mapelHeaders.map(mapel => {
-                            const status = student.subjectCompleteness[mapel.kode];
-                            if (!status) return '<td class="text-center p-2 border-l border-gray-200">-</td>';
+            if (studentsToRender.length === 0) {
+                html += `<tr><td colspan="${mapelHeaders.length + 1}" class="text-center p-8 text-gray-500">Tidak ada siswa di kelas ${selectedKelas}.</td></tr>`;
+            } else {
+                studentsToRender.forEach(student => {
+                    html += `
+                        <tr>
+                            <td class="px-3 py-2 font-medium text-gray-800 whitespace-nowrap bg-white">${student.nama.toUpperCase()}</td>
+                            ${mapelHeaders.map(mapel => {
+                                const status = student.subjectCompleteness[mapel.kode];
+                                if (!status) return '<td class="text-center p-2 border-l border-gray-200">-</td>';
 
-                            const { complete, total, missing } = status;
-                            let bgColorClass = 'bg-red-100 text-red-800';
-                            if (total > 0) {
-                                const percentage = (complete / total) * 100;
-                                if (percentage === 100) {
-                                    bgColorClass = 'bg-green-100 text-green-800';
-                                } else if (percentage > 0) {
-                                    bgColorClass = 'bg-yellow-100 text-yellow-800';
+                                const { complete, total, missing } = status;
+                                let bgColorClass = 'bg-red-100 text-red-800'; // Default merah (tidak lengkap)
+                                if (total > 0) {
+                                    const percentage = (complete / total) * 100;
+                                    if (percentage === 100) {
+                                        bgColorClass = 'bg-green-100 text-green-800'; // Hijau jika 100%
+                                    } else if (percentage > 0) {
+                                        bgColorClass = 'bg-yellow-100 text-yellow-800'; // Kuning jika sebagian
+                                    }
+                                } else if (total === 0) {
+                                  bgColorClass = 'bg-gray-100 text-gray-500'; // Abu-abu jika tidak ada nilai yg diperlukan
                                 }
-                            } else if (total === 0) {
-                              bgColorClass = 'bg-gray-100 text-gray-500';
-                            }
 
-                            // [PERUBAHAN INTI] Buat elemen bisa diklik jika tidak lengkap
-                            if (complete < total) {
-                                const detailsPayload = JSON.stringify({
-                                    studentName: student.nama,
-                                    mapelName: mapel.nama,
-                                    missingList: missing
-                                }).replace(/"/g, '&quot;'); // Ganti kutip ganda agar aman di atribut HTML
+                                // Buat elemen bisa diklik jika tidak lengkap
+                                if (complete < total) {
+                                    const detailsPayload = JSON.stringify({
+                                        studentName: student.nama,
+                                        mapelName: mapel.nama,
+                                        missingList: missing
+                                    }).replace(/"/g, '&quot;'); // Ganti kutip ganda agar aman di atribut HTML
 
-                                return `<td class="text-center p-2 border-l border-gray-200">
-                                    <span class="px-2 py-1 rounded-md font-bold ${bgColorClass} clickable-ratio" data-details="${detailsPayload}">${complete}/${total}</span>
-                                </td>`;
-                            } else {
-                                // Jika sudah lengkap, tidak perlu bisa diklik
-                                return `<td class="text-center p-2 border-l border-gray-200">
-                                    <span class="px-2 py-1 rounded-md font-bold ${bgColorClass}">${complete}/${total}</span>
-                                </td>`;
-                            }
-                        }).join('')}
-                    </tr>
-                `;
-            });
+                                    return `<td class="text-center p-2 border-l border-gray-200">
+                                        <span class="px-2 py-1 rounded-md font-bold ${bgColorClass} clickable-ratio" data-details="${detailsPayload}">${complete}/${total}</span>
+                                    </td>`;
+                                } else {
+                                    // Jika sudah lengkap, tidak perlu bisa diklik
+                                    return `<td class="text-center p-2 border-l border-gray-200">
+                                        <span class="px-2 py-1 rounded-md font-bold ${bgColorClass}">${complete}/${total}</span>
+                                    </td>`;
+                                }
+                            }).join('')}
+                        </tr>
+                    `;
+                });
+            }
 
             html += '</tbody></table></div>';
             container.innerHTML = html;
 
-            // [BARU] Pasang event listener pada tabel menggunakan event delegation
-            document.getElementById('validation-by-subject-table').addEventListener('click', function(e) {
-                if (e.target && e.target.classList.contains('clickable-ratio')) {
-                    const detailsString = e.target.getAttribute('data-details').replace(/&quot;/g, '"');
-                    showMissingDetailsModal(JSON.parse(detailsString));
-                }
-            });
+            // Pasang event listener pada tabel menggunakan event delegation
+            const validationTable = document.getElementById('validation-by-subject-table');
+            if (validationTable) { // Pastikan tabel ada sebelum menambah listener
+                validationTable.addEventListener('click', function(e) {
+                    if (e.target && e.target.classList.contains('clickable-ratio')) {
+                        const detailsString = e.target.getAttribute('data-details').replace(/&quot;/g, '"');
+                        showMissingDetailsModal(JSON.parse(detailsString));
+                    }
+                });
+            }
         }
 
         /**
@@ -16727,17 +16757,19 @@
 
         // TAMBAHKAN FUNGSI BARU INI DI Index.html
         /**
-         * Merender pengaturan izin pengiriman dalam format tabel.
+         * [MODIFIKASI - SESUAI PENGATURAN SEMESTER]
+         * Merender pengaturan izin pengiriman dalam format tabel, hanya menampilkan kolom semester yang relevan.
          * @param {Array<string>} kelasList - Daftar semua nama kelas.
          * @param {string} jenjang - Jenjang sekolah (MI/MTS/MA).
          * @param {object} currentSettings - Pengaturan kunci yang tersimpan saat ini.
+         * @param {number} jumlahSemester - Pengaturan jumlah semester (3 atau 5).
          */
-        function renderSubmissionSettingsTable(kelasList, jenjang, currentSettings) {
+        function renderSubmissionSettingsTable(kelasList, jenjang, currentSettings, jumlahSemester) {
             const contentDiv = document.getElementById('submission-settings-content');
             contentDiv.innerHTML = '';
 
-            // Definisikan pemetaan semester dan header kolom berdasarkan jenjang
-            const semesterHeaders = {
+            // Definisikan pemetaan semester LENGKAP
+            const semesterHeadersMap = {
                 MI: [
                     { key: 'rapor_k4_ganjil', label: 'K.4.1' }, { key: 'rapor_k4_genap', label: 'K.4.2' },
                     { key: 'rapor_k5_ganjil', label: 'K.5.1' }, { key: 'rapor_k5_genap', label: 'K.5.2' },
@@ -16755,22 +16787,33 @@
                 ]
             };
 
+            const fullSemesterHeaders = semesterHeadersMap[jenjang] || [];
+
+            // ===== AWAL LOGIKA FILTER SEMESTER =====
+            let relevantSemesterHeaders;
+            if (jenjang === 'MI' && jumlahSemester === 3) {
+                relevantSemesterHeaders = fullSemesterHeaders.slice(-3); // Ambil 3 terakhir
+            } else {
+                relevantSemesterHeaders = fullSemesterHeaders; // Ambil semua (5)
+            }
+            // ===== AKHIR LOGIKA FILTER SEMESTER =====
+
+            // Definisikan semua jenis penilaian yang akan ditampilkan
             const assessmentTypes = [
                 { key: 'ujian', label: 'UM' },
-                ...(semesterHeaders[jenjang] || [])
+                ...relevantSemesterHeaders // Gunakan header semester yang sudah difilter
             ];
 
-            // Buat Keterangan / Legenda
+            // Buat Keterangan / Legenda (tidak berubah)
             const legendHtml = `
                 <div class="mb-4 p-3 bg-gray-50 rounded-md text-xs text-gray-600 border">
-                    <strong>Keterangan:</strong> 
-                    <span class="font-mono bg-gray-200 px-1 rounded">UM</span> = Ujian, 
-                    <span class="font-mono bg-gray-200 px-1 rounded">K.7.1</span> = Rapor Kelas 7 Semester Ganjil, 
-                    <span class="font-mono bg-gray-200 px-1 rounded">K.7.2</span> = Rapor Kelas 7 Semester Genap, dan seterusnya.
+                    <strong>Keterangan:</strong>
+                    <span class="font-mono bg-gray-200 px-1 rounded">UM</span> = Ujian,
+                    <span class="font-mono bg-gray-200 px-1 rounded">K.4.1</span> = Rapor Kelas 4 Semester Ganjil, dst.
                 </div>
             `;
 
-            // Buat header tabel
+            // Buat header tabel menggunakan assessmentTypes yang sudah difilter
             const tableHeaderHtml = `
                 <tr>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase sticky left-0 bg-gray-100 z-10">Kelas</th>
@@ -16778,11 +16821,11 @@
                 </tr>
             `;
 
-            // Buat baris-baris tabel
+            // Buat baris-baris tabel (logika di dalam loop ini tidak berubah signifikan)
             const tableRowsHtml = kelasList.map(kelas => {
                 const classSettings = currentSettings[kelas] || {};
-                const cellsHtml = assessmentTypes.map(type => {
-                    const isChecked = classSettings[type.key] !== 'TERKUNCI'; // Defaultnya aktif (tidak terkunci)
+                const cellsHtml = assessmentTypes.map(type => { // Loop menggunakan assessmentTypes yang difilter
+                    const isChecked = classSettings[type.key] !== 'TERKUNCI'; // Default aktif
                     return `
                         <td class="px-4 py-2 text-center">
                             <label class="flex items-center justify-center cursor-pointer">
@@ -16821,7 +16864,15 @@
 
             // Pasang kembali event listener pada semua saklar yang baru dibuat
             document.querySelectorAll('.submission-toggle').forEach(toggle => {
-                toggle.addEventListener('change', handleToggleChange);
+                // Hapus listener lama jika ada
+                const oldHandler = toggle.changeHandler;
+                if (oldHandler) {
+                    toggle.removeEventListener('change', oldHandler);
+                }
+                // Tambahkan listener baru
+                const newHandler = handleToggleChange; // Pastikan fungsi handleToggleChange ada
+                toggle.addEventListener('change', newHandler);
+                toggle.changeHandler = newHandler; // Simpan referensi
             });
         }
 
