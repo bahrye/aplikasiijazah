@@ -6165,7 +6165,7 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
     const docSettings = docSettingsResponse.settings || {};
     const { logo, signature, stamp, customHeader } = docSettings;
 
-    // 3. Fungsi Helper dan Kalkulasi Nilai
+    // 3. Fungsi Helper dan Kalkulasi Nilai (bagian ini tidak berubah)
     const toProperCase = (str) => {
         if (!str || typeof str !== 'string') return '';
         return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
@@ -6183,7 +6183,7 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
     });
     const rataRataIjazah = mapelCount > 0 ? (totalNilaiIjazah / mapelCount).toFixed(2).replace('.', ',') : '0,00';
 
-    // 4. Logika Dinamis untuk Teks Transkrip (berdasarkan data yang sudah diambil)
+    // 4. Logika Dinamis untuk Teks Transkrip (bagian ini tidak berubah)
     let tahunAjaranText = '';
     if (printSettings && printSettings.tahunAjaran && printSettings.tahunAjaran.trim() !== '') {
         tahunAjaranText = printSettings.tahunAjaran;
@@ -6200,16 +6200,23 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
         tanggalTTD = inputDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
     }
 
-    let qrCodeHtml = '';
+    // ==========================================================
+    // === AWAL PERBAIKAN UTAMA: Pindahkan Logika QR Code ke Sini ===
+    // ==========================================================
+    let qrCodeHtml = ''; // Inisialisasi variabel di sini
     if (printSettings.showQRCode) {
-        // PENTING: Pastikan nisn dan spreadsheetId dikirim ke sini
+        // Panggil fungsi getQrCodeAsBase64 SEBELUM membuat htmlContent
         const qrCodeBase64 = getQrCodeAsBase64(nisn, spreadsheetId);
         if (qrCodeBase64) {
+            // Isi variabel qrCodeHtml jika berhasil
             qrCodeHtml = `<img src="data:image/png;base64,${qrCodeBase64}" style="width: 80px; height: 80px;" alt="QR Code"><br><span style="font-size:7pt;">Scan untuk validasi</span>`;
         }
     }
-    
-    // 6. Logika untuk Kop Surat
+    // ==========================================================
+    // === AKHIR PERBAIKAN UTAMA ================================
+    // ==========================================================
+
+    // 6. Logika untuk Kop Surat (bagian ini tidak berubah)
     let headerHtml;
     if (customHeader) {
         headerHtml = `<div style="width: 100%; margin-bottom: 10px; border-bottom: 3px solid black;"><img src="${customHeader}" alt="Kop Surat" style="width: 100%; height: auto;"></div>`;
@@ -6218,7 +6225,7 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
         const tipeKabSingkat = school.tipeKabupaten === 'Kabupaten' ? 'Kab.' : 'Kota';
         const tipeKelSingkat = school.tipeKelurahan === 'Kelurahan' ? 'Kel.' : 'Desa';
         const alamatLengkap = [ school.alamat, `${tipeKelSingkat} ${toProperCase(school.kelurahan || '')}`, `Kec. ${toProperCase(school.kecamatan || '')}`, `${tipeKabSingkat} ${toProperCase(school.kabupaten || '')}`, toProperCase(school.provinsi || ''), school.kodePos ].filter(Boolean).join(', ');
-        
+
         const phone = school.telepon ? `Telepon : ${school.telepon}` : '';
         const web = school.website ? `Website : ${school.website}` : '';
         let contactLine = '';
@@ -6242,17 +6249,17 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
             </div>`;
     }
 
-    // 7. Template HTML untuk PDF
+    // 7. Template HTML untuk PDF (Sekarang menggunakan qrCodeHtml yang sudah diisi)
     const htmlContent = `
       <html>
         <head>
           <style>
-            body{font-family: Arial, sans-serif; font-size: 10pt;} 
-            table{border-collapse: collapse; width: 100%;} 
-            th, td{border: 1px solid black; padding: 4px; text-align: left; vertical-align: middle;} 
+            body{font-family: Arial, sans-serif; font-size: 10pt;}
+            table{border-collapse: collapse; width: 100%;}
+            th, td{border: 1px solid black; padding: 4px; text-align: left; vertical-align: middle;}
             .no-border{border: none !important;}
-            .text-center{text-align: center;} 
-            .font-bold{font-weight: bold;} 
+            .text-center{text-align: center;}
+            .font-bold{font-weight: bold;}
             .bg-gray{background-color: #f2f2f2;}
             .footer-container { margin-top: 40px; width: 100%; display: flex; justify-content: space-between; align-items: flex-end; }
             .ttd-block { width: 45%; text-align: center; font-size: 10pt; }
@@ -6271,7 +6278,7 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
              <h3 class="font-bold" style="text-decoration: underline; font-size: 14pt; margin-bottom: 0;">TRANSKRIP NILAI</h3>
              ${tahunAjaranText ? `<p style="font-size: 11pt; font-weight: bold; margin-top: 0; margin-bottom: 10px;">TAHUN AJARAN ${tahunAjaranText}</p>` : ''}
           </div>
-          
+
           <table class="no-border" style="margin-top: 1rem; margin-bottom: 1rem;">
               <tbody>
                   <tr><td class="no-border" style="padding: 1px; width: 180px;">Nama Peserta Didik</td><td class="no-border" style="padding: 1px; width: 10px;">:</td><td class="no-border font-bold" style="padding: 1px;">${student.nama.toUpperCase()}</td></tr>
@@ -6290,7 +6297,7 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
           </table>
 
           <div style="font-style: italic; font-size: 8pt; margin-top: 15px;">
-              Ket: Nilai Ijazah = ${bobot.bobotUjian}% Nilai Ujian Madrasah + ${bobot.bobotRapor}% Nilai Rapor 5 Semester
+              Ket: Nilai Ijazah = ${bobot.bobotUjian}% Nilai Ujian Madrasah + ${bobot.bobotRapor}% Nilai Rapor (sesuai pengaturan semester)
           </div>
 
           <div class="footer-container">
@@ -6314,10 +6321,10 @@ function generateTranscriptPdfForSiswa(spreadsheetId, nisn) {
       </html>
     `;
 
-    // 8. Konversi ke PDF
+    // 8. Konversi ke PDF (bagian ini tidak berubah)
     const pdfBlob = Utilities.newBlob(htmlContent, MimeType.HTML).getAs(MimeType.PDF);
     pdfBlob.setName(`Transkrip - ${student.nama}.pdf`);
-    
+
     return {
       status: 'success',
       fileName: pdfBlob.getName(),
