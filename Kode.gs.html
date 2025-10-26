@@ -5066,14 +5066,16 @@ function adminRestoreFromCode_Superadmin(adminEmail, uniqueCode, targetSpreadshe
 // ===== [BARU] FUNGSI UNTUK VALIDASI KELENGKAPAN NILAI =====
 
 /**
+ * [MODIFIKASI - SESUAI PENGATURAN SEMESTER]
  * Memvalidasi kelengkapan semua nilai (ujian dan rapor) untuk setiap siswa.
+ * Kini memperhitungkan pengaturan Jumlah Semester Rapor.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @returns {object} Objek berisi hasil validasi atau pesan error.
  */
 function validateAllScores(spreadsheetId) {
   try {
     const ss = getSpreadsheet(spreadsheetId);
-    
+
     // 1. Ambil data-data dasar yang diperlukan
     const students = getStudents(spreadsheetId);
     if (!students || students.length === 0) {
@@ -5084,25 +5086,40 @@ function validateAllScores(spreadsheetId) {
     if (!mapel || mapel.length === 0) {
       return { status: 'error', message: 'Tidak ada data mata pelajaran untuk divalidasi.' };
     }
-    
+
     const schoolData = getSchoolData(spreadsheetId);
     const jenjang = schoolData ? schoolData.jenjang : null;
     if (!jenjang) {
       return { status: 'error', message: 'Jenjang sekolah belum diatur di menu Data Sekolah.' };
     }
 
-    // 2. Tentukan semua nama sheet yang akan diperiksa berdasarkan jenjang
-    const semesterKeys = {
+    // ===== AWAL PERUBAHAN LOGIKA SEMESTER =====
+    // Ambil pengaturan jumlah semester
+    const jumlahSemesterSetting = getJumlahSemester(spreadsheetId);
+    const jumlahSemester = jumlahSemesterSetting.jumlah;
+
+    // Definisikan semua kemungkinan semester per jenjang
+    const semesterKeysMap = {
       MI: ['k4_ganjil', 'k4_genap', 'k5_ganjil', 'k5_genap', 'k6_ganjil'],
       MTS: ['k7_ganjil', 'k7_genap', 'k8_ganjil', 'k8_genap', 'k9_ganjil'],
       MA: ['k10_ganjil', 'k10_genap', 'k11_ganjil', 'k11_genap', 'k12_ganjil']
     };
-    
-    const semestersForJenjang = semesterKeys[jenjang] || [];
-    
+    const fullSemesterKeys = semesterKeysMap[jenjang] || [];
+
+    // Tentukan semester yang akan diperiksa berdasarkan pengaturan
+    let semestersForJenjang;
+    if (jenjang === 'MI' && jumlahSemester === 3) {
+        semestersForJenjang = fullSemesterKeys.slice(-3); // Ambil 3 terakhir untuk MI
+    } else {
+        semestersForJenjang = fullSemesterKeys; // Ambil semua (5) untuk MI (jika 5), MTS, MA
+    }
+    // ===== AKHIR PERUBAHAN LOGIKA SEMESTER =====
+
+    // 2. Tentukan semua nama sheet yang akan diperiksa berdasarkan jenjang DAN pengaturan semester
     const sheetNamesToCheck = [
       SHEET_NILAI_UJIAN_MADRASAH,
       SHEET_NILAI_UJIAN_PRAKTEK,
+      // Gunakan semestersForJenjang yang sudah difilter
       ...semestersForJenjang.flatMap(smKey => [`Rapor_Pengetahuan_${smKey}`, `Rapor_Keterampilan_${smKey}`])
     ];
 
@@ -5126,7 +5143,7 @@ function validateAllScores(spreadsheetId) {
         kelas: student.kelas,
         completeness: {}
       };
-      
+
       let totalMissingCount = 0;
 
       sheetNamesToCheck.forEach(sheetName => {
@@ -5148,7 +5165,7 @@ function validateAllScores(spreadsheetId) {
            studentStatus.completeness[sheetName] = true;
            return; // Lanjut ke sheet berikutnya
         }
-        
+
         // Cek setiap mapel yang disyaratkan
         for (const m of requiredMapel) {
           const score = studentScoresOnSheet[m.kode];
@@ -5160,7 +5177,7 @@ function validateAllScores(spreadsheetId) {
         }
         studentStatus.completeness[sheetName] = isComplete;
       });
-      
+
       studentStatus.missingCount = totalMissingCount;
       return studentStatus;
     });
@@ -5168,7 +5185,7 @@ function validateAllScores(spreadsheetId) {
     return {
       status: 'success',
       data: validationResults,
-      sheetHeaders: sheetNamesToCheck
+      sheetHeaders: sheetNamesToCheck // Kirim daftar sheet yang benar-benar diperiksa
     };
 
   } catch (e) {
@@ -5178,8 +5195,9 @@ function validateAllScores(spreadsheetId) {
 }
 
 /**
- * [DIPERBARUI] Memvalidasi kelengkapan nilai berdasarkan per-mata pelajaran untuk setiap siswa.
- * Kini juga menyertakan daftar detail nilai yang kosong.
+ * [MODIFIKASI - SESUAI PENGATURAN SEMESTER & DETAIL KOSONG]
+ * Memvalidasi kelengkapan nilai berdasarkan per-mata pelajaran untuk setiap siswa.
+ * Kini juga menyertakan daftar detail nilai yang kosong dan menghitung total sesuai pengaturan semester.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @returns {object} Objek berisi hasil validasi atau pesan error.
  */
@@ -5197,12 +5215,34 @@ function validateScoresBySubject(spreadsheetId) {
     if (!mapelList || mapelList.length === 0) {
       return { status: 'error', message: 'Tidak ada data mata pelajaran untuk divalidasi.' };
     }
-    
+
     const schoolData = getSchoolData(spreadsheetId);
     const jenjang = schoolData ? schoolData.jenjang : null;
     if (!jenjang) {
       return { status: 'error', message: 'Jenjang sekolah belum diatur di menu Data Sekolah.' };
     }
+
+    // ===== AWAL PERUBAHAN LOGIKA SEMESTER =====
+    // Ambil pengaturan jumlah semester
+    const jumlahSemesterSetting = getJumlahSemester(spreadsheetId);
+    const jumlahSemester = jumlahSemesterSetting.jumlah;
+
+    // Definisikan semua kemungkinan semester per jenjang
+    const semesterKeysMap = {
+      MI: ['k4_ganjil', 'k4_genap', 'k5_ganjil', 'k5_genap', 'k6_ganjil'],
+      MTS: ['k7_ganjil', 'k7_genap', 'k8_ganjil', 'k8_genap', 'k9_ganjil'],
+      MA: ['k10_ganjil', 'k10_genap', 'k11_ganjil', 'k11_genap', 'k12_ganjil']
+    };
+    const fullSemesterKeys = semesterKeysMap[jenjang] || [];
+
+    // Tentukan semester yang akan diperiksa berdasarkan pengaturan
+    let semestersForJenjang;
+    if (jenjang === 'MI' && jumlahSemester === 3) {
+        semestersForJenjang = fullSemesterKeys.slice(-3); // Ambil 3 terakhir untuk MI
+    } else {
+        semestersForJenjang = fullSemesterKeys; // Ambil semua (5) untuk MI (jika 5), MTS, MA
+    }
+    // ===== AKHIR PERUBAHAN LOGIKA SEMESTER =====
 
     // Peta untuk nama yang lebih ramah pengguna
     const semesterNameMap = {
@@ -5214,13 +5254,7 @@ function validateScoresBySubject(spreadsheetId) {
       k11_genap: 'Kelas 11 Genap', k12_ganjil: 'Kelas 12 Ganjil'
     };
 
-    const semesterKeys = {
-      MI: ['k4_ganjil', 'k4_genap', 'k5_ganjil', 'k5_genap', 'k6_ganjil'],
-      MTS: ['k7_ganjil', 'k7_genap', 'k8_ganjil', 'k8_genap', 'k9_ganjil'],
-      MA: ['k10_ganjil', 'k10_genap', 'k11_ganjil', 'k11_genap', 'k12_ganjil']
-    };
-    
-    const semestersForJenjang = semesterKeys[jenjang] || [];
+    // Tentukan sheet mana saja yang perlu dibaca datanya
     const raporSheetNames = semestersForJenjang.flatMap(smKey => [`Rapor_Pengetahuan_${smKey}`, `Rapor_Keterampilan_${smKey}`]);
     const allSheetNames = [SHEET_NILAI_UJIAN_MADRASAH, SHEET_NILAI_UJIAN_PRAKTEK, ...raporSheetNames];
 
@@ -5245,59 +5279,59 @@ function validateScoresBySubject(spreadsheetId) {
       };
 
       mapelList.forEach(mapel => {
-        let requiredCount = 0;
+        let requiredCount = 0; // Mulai dari 0
         let filledCount = 0;
-        let missingDetails = []; // <-- [PERUBAHAN] Array untuk menyimpan detail yang kosong
+        let missingDetails = [];
         const mapelKode = mapel.kode;
         const jenisUjian = mapel.jenisUjian;
 
-        // Cek Nilai Ujian Madrasah
+        // Cek Nilai Ujian Madrasah (jika relevan)
         if (jenisUjian === 'Ujian Madrasah' || jenisUjian === 'Keduanya') {
-          requiredCount++;
+          requiredCount++; // Tambah total yang dibutuhkan
           const score = (allScoreData[SHEET_NILAI_UJIAN_MADRASAH][nisn] || {})[mapelKode];
           if (score !== undefined && score !== null && String(score).trim() !== '') {
             filledCount++;
           } else {
-            missingDetails.push('Nilai Ujian Madrasah'); // <-- [PERUBAHAN] Catat jika kosong
+            missingDetails.push('Nilai Ujian Madrasah');
           }
         }
-        
-        // Cek Nilai Ujian Praktek
+
+        // Cek Nilai Ujian Praktek (jika relevan)
         if (jenisUjian === 'Ujian Praktek' || jenisUjian === 'Keduanya') {
-          requiredCount++;
+          requiredCount++; // Tambah total yang dibutuhkan
           const score = (allScoreData[SHEET_NILAI_UJIAN_PRAKTEK][nisn] || {})[mapelKode];
           if (score !== undefined && score !== null && String(score).trim() !== '') {
             filledCount++;
           } else {
-            missingDetails.push('Nilai Ujian Praktek'); // <-- [PERUBAHAN] Catat jika kosong
+            missingDetails.push('Nilai Ujian Praktek');
           }
         }
-        
-        // Cek semua nilai rapor
-        semestersForJenjang.forEach(smKey => {
+
+        // Cek semua nilai rapor SESUAI PENGATURAN SEMESTER
+        semestersForJenjang.forEach(smKey => { // Gunakan semestersForJenjang
             // Cek Pengetahuan
-            requiredCount++;
+            requiredCount++; // Tambah total yang dibutuhkan
             const scoreP = (allScoreData[`Rapor_Pengetahuan_${smKey}`][nisn] || {})[mapelKode];
             if (scoreP !== undefined && scoreP !== null && String(scoreP).trim() !== '') {
                 filledCount++;
             } else {
-                missingDetails.push(`Rapor Pengetahuan ${semesterNameMap[smKey]}`); // <-- [PERUBAHAN] Catat jika kosong
+                missingDetails.push(`Rapor Pengetahuan ${semesterNameMap[smKey]}`);
             }
 
             // Cek Keterampilan
-            requiredCount++;
+            requiredCount++; // Tambah total yang dibutuhkan
             const scoreK = (allScoreData[`Rapor_Keterampilan_${smKey}`][nisn] || {})[mapelKode];
             if (scoreK !== undefined && scoreK !== null && String(scoreK).trim() !== '') {
                 filledCount++;
             } else {
-                missingDetails.push(`Rapor Keterampilan ${semesterNameMap[smKey]}`); // <-- [PERUBAHAN] Catat jika kosong
+                missingDetails.push(`Rapor Keterampilan ${semesterNameMap[smKey]}`);
             }
         });
 
         studentResult.subjectCompleteness[mapelKode] = {
           complete: filledCount,
-          total: requiredCount,
-          missing: missingDetails // <-- [PERUBAHAN] Sertakan array detail yang kosong
+          total: requiredCount, // Total yang dihitung sesuai logika di atas
+          missing: missingDetails
         };
       });
 
@@ -5307,7 +5341,7 @@ function validateScoresBySubject(spreadsheetId) {
     return {
       status: 'success',
       data: validationResults,
-      mapelHeaders: mapelList
+      mapelHeaders: mapelList // Kirim daftar mapel untuk header tabel
     };
 
   } catch (e) {
@@ -11751,4 +11785,48 @@ function getJumlahSemester(spreadsheetId) {
     Logger.log(`getJumlahSemester Error: ${e.message}`);
     return { status: 'error', message: e.message, jumlah: 5 }; // Kembalikan default jika error
   }
+}
+
+// GANTI FUNGSI INI DI Kode.gs
+/**
+ * [MODIFIKASI - SESUAI PENGATURAN SEMESTER]
+ * Memuat semua data untuk halaman Persetujuan Nilai, termasuk pengaturan kunci per kelas,
+ * DAN pengaturan jumlah semester rapor.
+ */
+function loadAndRenderSubmissionSettings() {
+    const contentDiv = document.getElementById('submission-settings-content');
+    const loader = document.getElementById('submission-settings-loader');
+
+    loader.classList.remove('hidden');
+    contentDiv.classList.add('hidden');
+
+    Promise.all([
+        new Promise(res => google.script.run.withSuccessHandler(res).getKelas(userSpreadsheetId)),
+        new Promise(res => google.script.run.withSuccessHandler(res).getSchoolData(userSpreadsheetId)),
+        new Promise(res => google.script.run.withSuccessHandler(res).getSubmissionLockSettings(userSpreadsheetId)),
+        // ===== TAMBAHKAN PEMANGGILAN INI =====
+        new Promise(res => google.script.run.withSuccessHandler(res).getJumlahSemester(userSpreadsheetId))
+    ]).then(([kelasResponse, schoolDataResponse, settingsResponse, jumlahSemesterResponse]) => { // <-- Tambah parameter baru
+        const kelasList = (kelasResponse && kelasResponse.status === 'success') ? kelasResponse.kelasList : [];
+        const jenjang = (schoolDataResponse) ? schoolDataResponse.jenjang : null;
+        const currentSettings = settingsResponse || {};
+        // ===== AMBIL JUMLAH SEMESTER DARI RESPONSE =====
+        const jumlahSemester = (jumlahSemesterResponse && jumlahSemesterResponse.status === 'success') ? jumlahSemesterResponse.jumlah : 5; // Default 5 jika gagal
+
+        if (kelasList.length === 0 || !jenjang) {
+            contentDiv.innerHTML = '<p class="text-sm text-gray-500 text-center">Data kelas atau jenjang sekolah belum diatur. Harap lengkapi di menu Pengaturan dan Data Sekolah.</p>';
+        } else {
+            // ===== TERUSKAN JUMLAH SEMESTER KE FUNGSI RENDER =====
+            renderSubmissionSettingsTable(kelasList, jenjang, currentSettings, jumlahSemester);
+        }
+
+        loader.classList.add('hidden');
+        contentDiv.classList.remove('hidden');
+
+    }).catch(error => {
+        console.error("Gagal memuat pengaturan: ", error);
+        loader.classList.add('hidden');
+        contentDiv.innerHTML = '<p class="text-red-500 text-center">Gagal memuat pengaturan.</p>';
+        contentDiv.classList.remove('hidden');
+    });
 }
