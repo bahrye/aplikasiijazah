@@ -2203,48 +2203,63 @@ function getSheetDataAsObject(spreadsheetId, sheetName) {
 }
 
 /**
- * Memperbarui semua data di sheet rekapitulasi.
+ * [MODIFIKASI] Memperbarui semua data di sheet rekapitulasi,
+ * kini memperhitungkan pengaturan Jumlah Semester Rapor.
  * @param {string} spreadsheetId ID spreadsheet target.
  * @returns {{status: string, message: string}} Status pembaruan.
  */
 function updateRekapitulasi(spreadsheetId) {
   try {
-    const students = getStudents(spreadsheetId); //
+    const students = getStudents(spreadsheetId);
     if (!students || students.length === 0) {
       return {status: 'error', message: 'Tidak ada data siswa untuk direkap.'};
     }
-    const mapel = getMapel(spreadsheetId); //
+    const mapel = getMapel(spreadsheetId);
     if (!mapel || mapel.length === 0) {
       return {status: 'error', message: 'Tidak ada data mata pelajaran untuk direkap.'};
     }
-    const bobot = getBobot(spreadsheetId) || { bobotUjian: 0, bobotRapor: 0 }; //
-    const jenjang = (getSchoolData(spreadsheetId) || {}).jenjang; //
+    const bobot = getBobot(spreadsheetId) || { bobotUjian: 0, bobotRapor: 0 };
+    const schoolData = getSchoolData(spreadsheetId); // Ambil data sekolah
+    const jenjang = schoolData ? schoolData.jenjang : null; // Ambil jenjang
 
     if (!jenjang) {
       return {status: 'error', message: 'Jenjang sekolah belum diatur di menu Data Sekolah.'};
     }
 
-    const semesterKeys = {
+    // ===== AWAL PERUBAHAN LOGIKA SEMESTER =====
+    const jumlahSemesterSetting = getJumlahSemester(spreadsheetId);
+    const jumlahSemester = jumlahSemesterSetting.jumlah;
+
+    const semesterKeysMap = {
       MI: ['k4_ganjil', 'k4_genap', 'k5_ganjil', 'k5_genap', 'k6_ganjil'],
       MTS: ['k7_ganjil', 'k7_genap', 'k8_ganjil', 'k8_genap', 'k9_ganjil'],
       MA: ['k10_ganjil', 'k10_genap', 'k11_ganjil', 'k11_genap', 'k12_ganjil']
     };
-    const semestersForJenjang = semesterKeys[jenjang] || [];
+    const fullSemesterKeys = semesterKeysMap[jenjang] || [];
 
-    const sheetsToRead = [SHEET_NILAI_UJIAN_MADRASAH, SHEET_NILAI_UJIAN_PRAKTEK]; //
-    semestersForJenjang.forEach(smKey => {
+    // Tentukan semester yang akan dibaca berdasarkan pengaturan
+    let semestersForJenjang;
+    if (jenjang === 'MI' && jumlahSemester === 3) {
+        semestersForJenjang = fullSemesterKeys.slice(-3); // Ambil 3 terakhir
+    } else {
+        semestersForJenjang = fullSemesterKeys; // Ambil semua (5)
+    }
+    // ===== AKHIR PERUBAHAN LOGIKA SEMESTER =====
+
+    const sheetsToRead = [SHEET_NILAI_UJIAN_MADRASAH, SHEET_NILAI_UJIAN_PRAKTEK];
+    semestersForJenjang.forEach(smKey => { // Gunakan semestersForJenjang yang sudah difilter
         sheetsToRead.push(`Rapor_Pengetahuan_${smKey}`);
         sheetsToRead.push(`Rapor_Keterampilan_${smKey}`);
     });
-    
+
     const allData = {};
     sheetsToRead.forEach(sheetName => {
-        allData[sheetName] = getSheetDataAsObject(spreadsheetId, sheetName); //
+        allData[sheetName] = getSheetDataAsObject(spreadsheetId, sheetName);
     });
 
-    const nilaiUjianMadrasah = allData[SHEET_NILAI_UJIAN_MADRASAH] || {}; //
-    const nilaiUjianPraktek = allData[SHEET_NILAI_UJIAN_PRAKTEK] || {}; //
-    
+    const nilaiUjianMadrasah = allData[SHEET_NILAI_UJIAN_MADRASAH] || {};
+    const nilaiUjianPraktek = allData[SHEET_NILAI_UJIAN_PRAKTEK] || {};
+
     const rekapUjian = {};
     const rekapRapor = {};
     const rekapIjazah = {};
@@ -2260,58 +2275,62 @@ function updateRekapitulasi(spreadsheetId) {
             const nilaiUM = parseFloat( (nilaiUjianMadrasah[nisn] || {})[kode] );
             const nilaiUP = parseFloat( (nilaiUjianPraktek[nisn] || {})[kode] );
 
-            let rataUjian = null; // Default ke null
+            let rataUjian = null;
             const hasUM = !isNaN(nilaiUM);
             const hasUP = !isNaN(nilaiUP);
 
             if (hasUM && hasUP) rataUjian = (nilaiUM + nilaiUP) / 2;
             else if (hasUM) rataUjian = nilaiUM;
             else if (hasUP) rataUjian = nilaiUP;
-            
+
             if(rataUjian !== null) rekapUjian[nisn][kode] = rataUjian;
 
-            let totalNilaiRapor = 0;
-            let semesterCount = 0;
-            
+            // ===== AWAL PERUBAHAN LOGIKA RATA-RATA RAPOR =====
+            let totalNilaiRaporSemester = 0;
+            // Hitung nilai per semester YANG DIPILIH
             semestersForJenjang.forEach(smKey => {
                 const sheetNameP = `Rapor_Pengetahuan_${smKey}`;
                 const sheetNameK = `Rapor_Keterampilan_${smKey}`;
-                
+
                 const nilaiP = parseFloat( ((allData[sheetNameP] || {})[nisn] || {})[kode] );
                 const nilaiK = parseFloat( ((allData[sheetNameK] || {})[nisn] || {})[kode] );
 
-                if (!isNaN(nilaiP) && !isNaN(nilaiK)) {
-                    totalNilaiRapor += (nilaiP + nilaiK) / 2;
-                    semesterCount++;
-                } else if (!isNaN(nilaiP)) {
-                    totalNilaiRapor += nilaiP;
-                    semesterCount++;
-                } else if (!isNaN(nilaiK)) {
-                    totalNilaiRapor += nilaiK;
-                    semesterCount++;
+                // Hitung rata-rata per semester (P & K), anggap 0 jika salah satu kosong
+                let avgSemesterScore = 0;
+                const validP = !isNaN(nilaiP);
+                const validK = !isNaN(nilaiK);
+
+                if (validP && validK) {
+                    avgSemesterScore = (nilaiP + nilaiK) / 2;
+                } else if (validP) {
+                    avgSemesterScore = nilaiP;
+                } else if (validK) {
+                    avgSemesterScore = nilaiK;
                 }
+                // Jika keduanya kosong, avgSemesterScore tetap 0
+
+                totalNilaiRaporSemester += avgSemesterScore;
             });
 
-            const rataRapor = semesterCount > 0 ? totalNilaiRapor / semesterCount : 0;
-            if (semesterCount > 0) rekapRapor[nisn][kode] = rataRapor;
+            // Bagi total dengan JUMLAH SEMESTER YANG DITETAPKAN (bukan jumlah yang terisi)
+            const rataRapor = totalNilaiRaporSemester / semestersForJenjang.length;
+            rekapRapor[nisn][kode] = rataRapor; // Simpan rata-rata rapor
+            // ===== AKHIR PERUBAHAN LOGIKA RATA-RATA RAPOR =====
 
             const bobotUjianVal = parseFloat(bobot.bobotUjian) || 0;
             const bobotRaporVal = parseFloat(bobot.bobotRapor) || 0;
 
             const finalRataUjian = rataUjian !== null ? rataUjian : 0;
-            const finalRataRapor = semesterCount > 0 ? rataRapor : 0;
-
-            if (rataUjian !== null || semesterCount > 0) {
-              const nilaiAkhir = (finalRataUjian * (bobotUjianVal / 100)) + (finalRataRapor * (bobotRaporVal / 100));
-              rekapIjazah[nisn][kode] = nilaiAkhir;
-            }
+            // rataRapor sudah dihitung dengan benar di atas
+            const nilaiAkhir = (finalRataUjian * (bobotUjianVal / 100)) + (rataRapor * (bobotRaporVal / 100));
+            rekapIjazah[nisn][kode] = nilaiAkhir;
         });
     });
 
-    saveRekapSheet(spreadsheetId, SHEET_REKAP_UJIAN, students, mapel, rekapUjian); //
-    saveRekapSheet(spreadsheetId, SHEET_REKAP_RAPOR, students, mapel, rekapRapor); //
-    saveRekapSheet(spreadsheetId, SHEET_REKAP_IJAZAH, students, mapel, rekapIjazah); //
-    
+    saveRekapSheet(spreadsheetId, SHEET_REKAP_UJIAN, students, mapel, rekapUjian);
+    saveRekapSheet(spreadsheetId, SHEET_REKAP_RAPOR, students, mapel, rekapRapor);
+    saveRekapSheet(spreadsheetId, SHEET_REKAP_IJAZAH, students, mapel, rekapIjazah);
+
     return {status: "success", message: "Data rekapitulasi berhasil diperbarui."};
   } catch(e) {
     Logger.log(e);
@@ -2422,20 +2441,23 @@ function getRekapitulasiData_Optimized(spreadsheetId) {
     const ss = getSpreadsheet(spreadsheetId);
 
     const processSheetData = (sheet) => {
+      // Fungsi processSheetData mengambil data dari sheet dan mengubahnya menjadi objek
+      // dengan NISN sebagai kunci, mengecualikan kolom NISN, Nama Lengkap, dan Kelas.
       if (!sheet || sheet.getLastRow() < 2) return {};
-      sheet.getRange("A:A").setNumberFormat('@');
+      sheet.getRange("A:A").setNumberFormat('@'); // Pastikan NISN dibaca sebagai teks
       const data = sheet.getDataRange().getValues();
-      const headers = data.shift();
+      const headers = data.shift(); // Ambil baris header
       const nisnIndex = headers.indexOf("NISN");
-      if (nisnIndex === -1) return {};
+      if (nisnIndex === -1) return {}; // Kembalikan objek kosong jika kolom NISN tidak ada
 
       const dataObj = {};
       data.forEach(row => {
-        const nisn = row[nisnIndex].toString().trim();
+        const nisn = row[nisnIndex].toString().trim(); // Ambil NISN
         if (nisn) {
           dataObj[nisn] = {};
           headers.forEach((header, index) => {
-            if (header !== "NISN" && header !== "Nama Lengkap") {
+            // Hanya ambil kolom selain NISN, Nama Lengkap, dan Kelas
+            if (header !== "NISN" && header !== "Nama Lengkap" && header !== "Kelas") {
               dataObj[nisn][header] = row[index];
             }
           });
@@ -2444,37 +2466,51 @@ function getRekapitulasiData_Optimized(spreadsheetId) {
       return dataObj;
     };
 
-    // [PERBAIKAN] Menggunakan fungsi getStudents() untuk memastikan semua data siswa termuat
-    const students = getStudents(spreadsheetId);
+    // Menggunakan fungsi getStudents() untuk memastikan semua data siswa termuat
+    const students = getStudents(spreadsheetId); //
 
+    // Mengambil data Mata Pelajaran
     const mapelSheet = ss.getSheetByName(SHEET_MAPEL);
     let mapel = [];
     if (mapelSheet && mapelSheet.getLastRow() >= 2) {
       const mapelValues = mapelSheet.getRange(2, 1, mapelSheet.getLastRow() - 1, 4).getValues();
       mapel = mapelValues.map((row, index) => ({ row: index + 2, kode: row[0], nama: row[1], kelompok: row[2], jenisUjian: row[3] || '' }));
-    }
+    } //
 
+    // Mengambil data Bobot Nilai
     const bobotSheet = ss.getSheetByName(SHEET_BOBOT);
-    let bobot = { bobotUjian: 40, bobotRapor: 60 };
+    let bobot = { bobotUjian: 40, bobotRapor: 60 }; // Default bobot
     if (bobotSheet && bobotSheet.getLastRow() >= 2) {
       const bobotValues = bobotSheet.getRange("A2:B2").getValues()[0];
       if (bobotValues[0] !== '' && bobotValues[1] !== '' && !isNaN(bobotValues[0]) && !isNaN(bobotValues[1])) {
         bobot = { bobotUjian: bobotValues[0], bobotRapor: bobotValues[1] };
       }
-    }
-    
-    const kkmData = getKkm(spreadsheetId);
-    const kkm = kkmData.kkm;
+    } //
 
+    // Mengambil data KKM
+    const kkmData = getKkm(spreadsheetId);
+    const kkm = kkmData.kkm; //
+
+    // Mengambil pengaturan jumlah semester
+    const jumlahSemesterSetting = getJumlahSemester(spreadsheetId); // Panggil fungsi baru
+    const jumlahSemester = jumlahSemesterSetting.jumlah;             // Ambil nilainya
+
+    // Mengambil data dari sheet rekapitulasi
     const rekapUjian = processSheetData(ss.getSheetByName(SHEET_REKAP_UJIAN));
     const rekapRapor = processSheetData(ss.getSheetByName(SHEET_REKAP_RAPOR));
-    const rekapIjazah = processSheetData(ss.getSheetByName(SHEET_REKAP_IJAZAH));
+    const rekapIjazah = processSheetData(ss.getSheetByName(SHEET_REKAP_IJAZAH)); //
 
-    return { status: "success", data: { students, mapel, bobot, kkm, rekapUjian, rekapRapor, rekapIjazah } };
+    // Mengembalikan semua data yang telah dikumpulkan
+    return { status: "success", data: {
+        students, mapel, bobot, kkm,
+        rekapUjian, rekapRapor, rekapIjazah,
+        jumlahSemester // Sertakan jumlah semester dalam respons
+      }
+    };
 
   } catch (e) {
     Logger.log(`Error di getRekapitulasiData_Optimized: ${e}`);
-    return { status: "error", message: "Gagal mengambil data rekapitulasi: " + e.message };
+    return { status: "error", message: "Gagal mengambil data rekapitulasi: " + e.message }; //
   }
 }
 
@@ -7460,8 +7496,8 @@ function getQrCodeAsBase64(nisn, spreadsheetId) {
 }
 
 /**
- * [VERSI FINAL] Membandingkan nilai JUMLAH ijazah yang dihitung secara live
- * dengan nilai JUMLAH yang tersimpan di sheet rekapitulasi untuk deteksi yang lebih akurat.
+ * [VERSI FINAL 2.0 - MEMPERHITUNGAN JUMLAH SEMESTER] Membandingkan nilai JUMLAH ijazah yang dihitung secara live
+ * dengan nilai JUMLAH yang tersimpan di sheet rekapitulasi, kini sesuai pengaturan jumlah semester.
  * @param {string} spreadsheetId - ID spreadsheet pengguna.
  * @returns {{needsUpdate: boolean}} Objek yang berisi status apakah rekap perlu diperbarui.
  */
@@ -7472,19 +7508,42 @@ function checkRekapSyncStatus(spreadsheetId) {
 
     // 2. Lakukan perhitungan live
     const students = getStudents(spreadsheetId);
-    if (!students || students.length === 0) return { needsUpdate: false }; 
+    if (!students || students.length === 0) return { needsUpdate: false };
 
     const mapel = getMapel(spreadsheetId);
     if (!mapel || mapel.length === 0) return { needsUpdate: false };
 
     const bobot = getBobot(spreadsheetId);
-    const jenjang = (getSchoolData(spreadsheetId) || {}).jenjang;
-    if (!jenjang) return { needsUpdate: true }; 
+    const schoolData = getSchoolData(spreadsheetId); // Ambil data sekolah
+    const jenjang = schoolData ? schoolData.jenjang : null; // Ambil jenjang
+    if (!jenjang) return { needsUpdate: true }; // Perlu update jika jenjang belum diatur
 
-    const semesterKeys = { MI: ['k4_ganjil', 'k4_genap', 'k5_ganjil', 'k5_genap', 'k6_ganjil'], MTS: ['k7_ganjil', 'k7_genap', 'k8_ganjil', 'k8_genap', 'k9_ganjil'], MA: ['k10_ganjil', 'k10_genap', 'k11_ganjil', 'k11_genap', 'k12_ganjil'] };
-    const semestersForJenjang = semesterKeys[jenjang] || [];
+    // === AWAL PERUBAHAN UTAMA: Logika Semester ===
+    const jumlahSemesterSetting = getJumlahSemester(spreadsheetId); // Ambil pengaturan
+    const jumlahSemester = jumlahSemesterSetting.jumlah;
 
-    const sheetsToRead = [SHEET_NILAI_UJIAN_MADRASAH, SHEET_NILAI_UJIAN_PRAKTEK, ...semestersForJenjang.flatMap(smKey => [`Rapor_Pengetahuan_${smKey}`, `Rapor_Keterampilan_${smKey}`])];
+    const semesterKeysMap = {
+      MI: ['k4_ganjil', 'k4_genap', 'k5_ganjil', 'k5_genap', 'k6_ganjil'],
+      MTS: ['k7_ganjil', 'k7_genap', 'k8_ganjil', 'k8_genap', 'k9_ganjil'],
+      MA: ['k10_ganjil', 'k10_genap', 'k11_ganjil', 'k11_genap', 'k12_ganjil']
+    };
+    const fullSemesterKeys = semesterKeysMap[jenjang] || [];
+
+    // Tentukan semester yang akan DIBACA untuk PERHITUNGAN LIVE
+    let semestersToConsider;
+    if (jenjang === 'MI' && jumlahSemester === 3) {
+        semestersToConsider = fullSemesterKeys.slice(-3); // Ambil 3 terakhir untuk MI
+    } else {
+        semestersToConsider = fullSemesterKeys; // Ambil semua (5) untuk MI (jika 5), MTS, MA
+    }
+    // === AKHIR PERUBAHAN UTAMA: Logika Semester ===
+
+    // Tentukan sheet mana saja yang perlu dibaca datanya
+    const sheetsToRead = [
+        SHEET_NILAI_UJIAN_MADRASAH, SHEET_NILAI_UJIAN_PRAKTEK,
+        // Gunakan semestersToConsider untuk menentukan sheet rapor yang dibaca
+        ...semestersToConsider.flatMap(smKey => [`Rapor_Pengetahuan_${smKey}`, `Rapor_Keterampilan_${smKey}`])
+    ];
     const allData = {};
     sheetsToRead.forEach(sheetName => { allData[sheetName] = getSheetDataAsObject(spreadsheetId, sheetName); });
 
@@ -7492,7 +7551,7 @@ function checkRekapSyncStatus(spreadsheetId) {
     for (const student of students) {
         const nisn = student.nisn.toString().trim();
         const storedStudentData = storedRekapData[nisn];
-        
+
         // Jika data siswa tidak ada di rekap, berarti perlu update
         if (!storedStudentData) {
           Logger.log(`Siswa baru ditemukan (${nisn}), rekap perlu diupdate.`);
@@ -7503,43 +7562,48 @@ function checkRekapSyncStatus(spreadsheetId) {
 
         mapel.forEach(m => {
             const kode = m.kode;
+            // Perhitungan nilai Ujian (tetap sama)
             const nilaiUM = parseFloat((allData[SHEET_NILAI_UJIAN_MADRASAH][nisn] || {})[kode]);
             const nilaiUP = parseFloat((allData[SHEET_NILAI_UJIAN_PRAKTEK][nisn] || {})[kode]);
-
             let rataUjian = null;
             if (!isNaN(nilaiUM) && !isNaN(nilaiUP)) rataUjian = (nilaiUM + nilaiUP) / 2;
             else if (!isNaN(nilaiUM)) rataUjian = nilaiUM;
             else if (!isNaN(nilaiUP)) rataUjian = nilaiUP;
-            
-            let totalNilaiRapor = 0;
-            let semesterCount = 0;
-            semestersForJenjang.forEach(smKey => {
+
+            // Perhitungan nilai Rapor (menggunakan semestersToConsider)
+            let totalNilaiRaporSemester = 0;
+            // Gunakan semestersToConsider di sini
+            semestersToConsider.forEach(smKey => {
                 const nilaiP = parseFloat(((allData[`Rapor_Pengetahuan_${smKey}`] || {})[nisn] || {})[kode]);
                 const nilaiK = parseFloat(((allData[`Rapor_Keterampilan_${smKey}`] || {})[nisn] || {})[kode]);
-                if (!isNaN(nilaiP) && !isNaN(nilaiK)) { totalNilaiRapor += (nilaiP + nilaiK) / 2; semesterCount++; }
-                else if (!isNaN(nilaiP)) { totalNilaiRapor += nilaiP; semesterCount++; }
-                else if (!isNaN(nilaiK)) { totalNilaiRapor += nilaiK; semesterCount++; }
+                let avgSemesterScore = 0;
+                const validP = !isNaN(nilaiP);
+                const validK = !isNaN(nilaiK);
+                if (validP && validK) avgSemesterScore = (nilaiP + nilaiK) / 2;
+                else if (validP) avgSemesterScore = nilaiP;
+                else if (validK) avgSemesterScore = nilaiK;
+                totalNilaiRaporSemester += avgSemesterScore;
             });
-            const rataRapor = semesterCount > 0 ? totalNilaiRapor / semesterCount : null;
+            // Bagi dengan jumlah semester yang DIPERTIMBANGKAN
+            const rataRapor = semestersToConsider.length > 0 ? (totalNilaiRaporSemester / semestersToConsider.length) : 0;
 
-            if (rataUjian !== null || rataRapor !== null) {
+            // Perhitungan Nilai Ijazah (tetap sama)
+            if (rataUjian !== null || semestersToConsider.length > 0) { // Cek jika ada data rapor
                 const finalRataUjian = rataUjian !== null ? rataUjian : 0;
-                const finalRataRapor = rataRapor !== null ? rataRapor : 0;
-                const nilaiIjazah = (finalRataUjian * (bobot.bobotUjian / 100)) + (finalRataRapor * (bobot.bobotRapor / 100));
-                // Nilai total adalah penjumlahan dari setiap nilai ijazah yang DIBULATKAN
+                const nilaiIjazah = (finalRataUjian * (bobot.bobotUjian / 100)) + (rataRapor * (bobot.bobotRapor / 100));
                 liveTotalNilaiIjazah += Math.round(nilaiIjazah);
             }
         });
-        
-        // [PERUBAHAN UTAMA] Bandingkan nilai 'Jumlah' (bilangan bulat)
+
+        // Bandingkan nilai 'Jumlah' (bilangan bulat)
         const storedTotal = parseInt(storedStudentData['Jumlah']) || 0;
 
         if (liveTotalNilaiIjazah !== storedTotal) {
-            Logger.log(`Data tidak sinkron untuk NISN ${nisn}. Live Total: ${liveTotalNilaiIjazah}, Stored Total: ${storedTotal}`);
-            return { needsUpdate: true }; // Ditemukan perbedaan, langsung hentikan dan kirim status
+            Logger.log(`Data tidak sinkron untuk NISN ${nisn}. Live Total (sesuai ${jumlahSemester} semester): ${liveTotalNilaiIjazah}, Stored Total: ${storedTotal}`);
+            return { needsUpdate: true }; // Ditemukan perbedaan, hentikan dan kirim status
         }
     }
-    
+
     // Jika loop selesai tanpa menemukan perbedaan, data sudah sinkron
     return { needsUpdate: false };
   } catch (e) {
@@ -11610,5 +11674,81 @@ function forceChangePassword(email, newPassword) {
   } catch (error) {
     Logger.log(`forceChangePassword Error: ${error.toString()}`);
     return { status: "error", message: "Gagal menyimpan password baru: " + error.message };
+  }
+}
+
+/**
+ * [BARU] Menyimpan pengaturan jumlah semester rapor ke sheet Pengaturan.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @param {number|string} jumlahSemester Jumlah semester (3 atau 5).
+ * @returns {{status: string, message: string}} Status penyimpanan.
+ */
+function saveJumlahSemester(spreadsheetId, jumlahSemester) {
+  try {
+    const jumlah = parseInt(jumlahSemester);
+    if (jumlah !== 3 && jumlah !== 5) {
+      return { status: "error", message: "Jumlah semester tidak valid (harus 3 atau 5)." };
+    }
+
+    const ss = getSpreadsheet(spreadsheetId);
+    let sheet = ss.getSheetByName(SHEET_PENGATURAN);
+    if (!sheet) {
+        sheet = ss.insertSheet(SHEET_PENGATURAN);
+        sheet.getRange("A1:B1").setValues([['Nama Pengaturan', 'Value']]).setFontWeight('bold');
+    }
+    
+    // --- PERBAIKAN: Hanya izinkan penyimpanan jika jenjang MI ---
+    const schoolData = getSchoolData(spreadsheetId);
+    if (schoolData && schoolData.jenjang !== 'MI') {
+        // Jika bukan MI, paksa simpan nilai 5 dan beri pesan info
+        const row = findOrCreateSettingRow(sheet, "Jumlah Semester Rapor");
+        sheet.getRange(row, 2).setValue(5);
+        return { status: "success", message: "Pengaturan disimpan (Otomatis 5 untuk MTS/MA)." };
+    }
+    // --- AKHIR PERBAIKAN ---
+
+    const row = findOrCreateSettingRow(sheet, "Jumlah Semester Rapor");
+    sheet.getRange(row, 2).setValue(jumlah);
+
+    return { status: "success", message: "Jumlah semester rapor berhasil disimpan." };
+  } catch (e) {
+    Logger.log(`saveJumlahSemester Error: ${e.message}`);
+    return { status: "error", message: `Gagal menyimpan pengaturan: ${e.message}` };
+  }
+}
+
+/**
+ * [BARU] Mengambil pengaturan jumlah semester rapor dari sheet Pengaturan.
+ * @param {string} spreadsheetId ID spreadsheet target.
+ * @returns {{status: string, jumlah: number}} Objek berisi jumlah semester (default 5).
+ */
+function getJumlahSemester(spreadsheetId) {
+  try {
+    // --- PERBAIKAN: Selalu kembalikan 5 untuk MTS/MA ---
+    const schoolData = getSchoolData(spreadsheetId);
+    if (schoolData && schoolData.jenjang !== 'MI') {
+        return { status: 'success', jumlah: 5 };
+    }
+    // --- AKHIR PERBAIKAN ---
+
+    const ss = getSpreadsheet(spreadsheetId);
+    const sheet = ss.getSheetByName(SHEET_PENGATURAN);
+    const defaultValue = 5;
+
+    if (!sheet) {
+      return { status: 'success', jumlah: defaultValue };
+    }
+
+    const data = sheet.getRange("A:B").getValues();
+    const settingRow = data.find(row => row[0] === "Jumlah Semester Rapor");
+    
+    if (settingRow && settingRow[1] && (settingRow[1] === 3 || settingRow[1] === 5)) {
+      return { status: 'success', jumlah: parseInt(settingRow[1]) };
+    }
+    
+    return { status: 'success', jumlah: defaultValue }; // Kembalikan default jika belum diatur atau tidak valid
+  } catch (e) {
+    Logger.log(`getJumlahSemester Error: ${e.message}`);
+    return { status: 'error', message: e.message, jumlah: 5 }; // Kembalikan default jika error
   }
 }
