@@ -16716,10 +16716,10 @@
                 .getUniqueKelasList(userSpreadsheetId);
         }
 
-        // ===== [BARU] FUNGSI UNTUK MERENDER PENGATURAN KUNCI PER KELAS =====
-        // GANTI FUNGSI INI DI Index.html
         /**
-         * Memuat data kelas dan jenjang dari server, lalu memanggil fungsi untuk merender tabel pengaturan.
+         * [MODIFIKASI - SESUAI PENGATURAN SEMESTER]
+         * Memuat semua data untuk halaman Persetujuan Nilai, termasuk pengaturan kunci per kelas,
+         * DAN pengaturan jumlah semester rapor.
          */
         function loadAndRenderSubmissionSettings() {
             const contentDiv = document.getElementById('submission-settings-content');
@@ -16731,17 +16731,21 @@
             Promise.all([
                 new Promise(res => google.script.run.withSuccessHandler(res).getKelas(userSpreadsheetId)),
                 new Promise(res => google.script.run.withSuccessHandler(res).getSchoolData(userSpreadsheetId)),
-                new Promise(res => google.script.run.withSuccessHandler(res).getSubmissionLockSettings(userSpreadsheetId))
-            ]).then(([kelasResponse, schoolDataResponse, settingsResponse]) => {
+                new Promise(res => google.script.run.withSuccessHandler(res).getSubmissionLockSettings(userSpreadsheetId)),
+                // ===== TAMBAHKAN PEMANGGILAN INI =====
+                new Promise(res => google.script.run.withSuccessHandler(res).getJumlahSemester(userSpreadsheetId))
+            ]).then(([kelasResponse, schoolDataResponse, settingsResponse, jumlahSemesterResponse]) => { // <-- Tambah parameter baru
                 const kelasList = (kelasResponse && kelasResponse.status === 'success') ? kelasResponse.kelasList : [];
                 const jenjang = (schoolDataResponse) ? schoolDataResponse.jenjang : null;
                 const currentSettings = settingsResponse || {};
+                // ===== AMBIL JUMLAH SEMESTER DARI RESPONSE =====
+                const jumlahSemester = (jumlahSemesterResponse && jumlahSemesterResponse.status === 'success') ? jumlahSemesterResponse.jumlah : 5; // Default 5 jika gagal
 
                 if (kelasList.length === 0 || !jenjang) {
                     contentDiv.innerHTML = '<p class="text-sm text-gray-500 text-center">Data kelas atau jenjang sekolah belum diatur. Harap lengkapi di menu Pengaturan dan Data Sekolah.</p>';
                 } else {
-                    // Panggil fungsi BARU untuk merender tabel
-                    renderSubmissionSettingsTable(kelasList, jenjang, currentSettings);
+                    // ===== TERUSKAN JUMLAH SEMESTER KE FUNGSI RENDER =====
+                    renderSubmissionSettingsTable(kelasList, jenjang, currentSettings, jumlahSemester);
                 }
 
                 loader.classList.add('hidden');
@@ -16755,18 +16759,17 @@
             });
         }
 
-        // TAMBAHKAN FUNGSI BARU INI DI Index.html
         /**
          * [MODIFIKASI - SESUAI PENGATURAN SEMESTER]
          * Merender pengaturan izin pengiriman dalam format tabel, hanya menampilkan kolom semester yang relevan.
          * @param {Array<string>} kelasList - Daftar semua nama kelas.
          * @param {string} jenjang - Jenjang sekolah (MI/MTS/MA).
          * @param {object} currentSettings - Pengaturan kunci yang tersimpan saat ini.
-         * @param {number} jumlahSemester - Pengaturan jumlah semester (3 atau 5).
+         * @param {number} jumlahSemester - Pengaturan jumlah semester (3 atau 5). // <-- Parameter baru
          */
-        function renderSubmissionSettingsTable(kelasList, jenjang, currentSettings, jumlahSemester) {
+        function renderSubmissionSettingsTable(kelasList, jenjang, currentSettings, jumlahSemester) { // <-- Tambahkan parameter
             const contentDiv = document.getElementById('submission-settings-content');
-            contentDiv.innerHTML = '';
+            contentDiv.innerHTML = ''; // Kosongkan dulu
 
             // Definisikan pemetaan semester LENGKAP
             const semesterHeadersMap = {
